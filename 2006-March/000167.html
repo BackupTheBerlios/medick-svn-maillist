@@ -1,0 +1,378 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r382 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/app/views/project trunk/libs/action/controller trunk/libs/action/view trunk/libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r382%20-%20applications/eltodo/app/controllers%20applications/eltodo/app/models%20applications/eltodo/app/views/project%20trunk/libs/action/controller%20trunk/libs/action/view%20trunk/libs/active/record&In-Reply-To=%3C200603221820.k2MIKrGh008215%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000166.html">
+   <LINK REL="Next"  HREF="000168.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r382 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/app/views/project trunk/libs/action/controller trunk/libs/action/view trunk/libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r382%20-%20applications/eltodo/app/controllers%20applications/eltodo/app/models%20applications/eltodo/app/views/project%20trunk/libs/action/controller%20trunk/libs/action/view%20trunk/libs/active/record&In-Reply-To=%3C200603221820.k2MIKrGh008215%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r382 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/app/views/project trunk/libs/action/controller trunk/libs/action/view trunk/libs/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Wed Mar 22 19:20:53 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000166.html">[Medick-svn] r380 - trunk/skel/scripts
+</A></li>
+        <LI>Next message: <A HREF="000168.html">[Medick-svn] r384 - applications/testor/app/helpers applications/testor/app/views/layouts applications/testor/app/views/main applications/testor/app/views/strone applications/testor/app/views/tone applications/testor/public/stylesheet trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#167">[ date ]</a>
+              <a href="thread.html#167">[ thread ]</a>
+              <a href="subject.html#167">[ subject ]</a>
+              <a href="author.html#167">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-03-22 19:20:34 +0100 (Wed, 22 Mar 2006)
+New Revision: 382
+
+Modified:
+   applications/eltodo/app/controllers/project_controller.php
+   applications/eltodo/app/models/project.php
+   applications/eltodo/app/views/project/overview.phtml
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/view/HTML.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/DatabaseRow.php
+   trunk/libs/active/record/RowsAggregate.php
+   trunk/libs/active/record/Validator.php
+Log:
+ -- (fixed) FormHelper::check_box
+ -- DatabaseRow: do not set more than once the field in field_names array
+ -- RowsAggregate: added size method as an alias to count
+ -- (fixed) Validator::uniqueness_of when editing a Field
+ -- (fixed) ActiveRecordHelper::error_message_on it's working, todo tuned in the near future
+ -- eltodo: edit the project name with Ajax.InLineEditor
+
+
+Modified: applications/eltodo/app/controllers/project_controller.php
+===================================================================
+--- applications/eltodo/app/controllers/project_controller.php	2006-03-20 19:59:14 UTC (rev 381)
++++ applications/eltodo/app/controllers/project_controller.php	2006-03-22 18:20:34 UTC (rev 382)
+@@ -14,50 +14,33 @@
+     /** layout to use for this controller */
+     protected $use_layout= 'eltodo';
+ 
+-    /*
++    /** afiseaza formularul */
+     public function edit() {
+-      $project= Project::find($this-&gt;params['id']);
+-      $project-&gt;name= $this-&gt;request-&gt;getParameter('name');
+-      // try {
+-      $project-&gt;save();
+-      $this-&gt;render_text($project-&gt;name);
+-      // }
++        try {
++            $this-&gt;project= Project::find($this-&gt;request-&gt;getParameter('project'));
++        } catch (RecordNotFoundException $rnfEx) {
++            $this-&gt;redirect_to('all');
++        }
+     }
+-*/
+ 
+-  /** afiseaza formularul */
+-  public function edit() {
+-    try {
+-      $this-&gt;project= Project::find($this-&gt;request-&gt;getParameter('project'));
+-    } catch (RecordNotFoundException $rnfEx) {
+-        $this-&gt;redirect_to('all');
+-    }
+-  }
+-
+-  /** update */
+-    public function update() {
+-  
++    /** update */
++    public function update_name() {
+         try {
+-            $this-&gt;project= Project::find($this-&gt;request-&gt;getParameter('id'));
+-            if ($this-&gt;request-&gt;getParameter('name') != NULL) {
+-                $changed= $this-&gt;project-&gt;name= $this-&gt;params['name'];
+-            }
+-            if ($this-&gt;request-&gt;getParameter('description') != NULL) {
+-                $changed= $this-&gt;project-&gt;description= $this-&gt;params['description'];
+-            }
+-            // -&gt;attributes($this-&gt;request-&gt;getParameter('project'));
++            $this-&gt;project= Project::find($this-&gt;request-&gt;getParameter('project'));
++            $name= $this-&gt;project-&gt;name;
++            $this-&gt;project-&gt;name= $this-&gt;params['name'];
+             if ( $this-&gt;project-&gt;save() === FALSE) {
+-                // erori! se afiseaza din view cu ActiveRecordHelper::error_messages_for($project)
+-                return $this-&gt;redirect_to('all');
++                // render the old name
++                $this-&gt;render_text($name);
+             } else {
+-                $this-&gt;render_text($changed);
++                // reder the new name
++                $this-&gt;render_text($this-&gt;project-&gt;name);
+             }
+         } catch (RecordNotFoundException $rnfEx) {
+             $this-&gt;logger-&gt;warn($rnfEx-&gt;getMessage());
+-            $this-&gt;flash('error', $rnfEx-&gt;getMessage());
+-            $this-&gt;redirect_to('all');
++            $this-&gt;render_text($name);
+         }
+-  }
++    }
+     
+     /** Creates a new Project */
+     public function create() {
+
+Modified: applications/eltodo/app/models/project.php
+===================================================================
+--- applications/eltodo/app/models/project.php	2006-03-20 19:59:14 UTC (rev 381)
++++ applications/eltodo/app/models/project.php	2006-03-22 18:20:34 UTC (rev 382)
+@@ -20,11 +20,14 @@
+         return TRUE;
+     }
+ 
++    public static function find_by_id(Request $request) {
++        return Project::find($request-&gt;getParameter('id'));
++    }
++    
+     public static function find() {
+         $args= func_get_args();
+         return ActiveRecord::build(new QueryBuilder(__CLASS__,$args));
+-        // ActiveRecordBase::initialize(__CLASS__);
+-        // return ActiveRecordBase::__find(func_get_args());
+     }
+ 
+ }
++
+
+Modified: applications/eltodo/app/views/project/overview.phtml
+===================================================================
+--- applications/eltodo/app/views/project/overview.phtml	2006-03-20 19:59:14 UTC (rev 381)
++++ applications/eltodo/app/views/project/overview.phtml	2006-03-22 18:20:34 UTC (rev 382)
+@@ -1,10 +1,10 @@
+ &lt;!-- $Id$ --&gt;
+ &lt;h2&gt;Project Overview&lt;/h2&gt;
+ 
+-&lt;div id=&quot;project_name&quot;&gt;&lt;?=$project-&gt;name;?&gt;&lt;/div&gt;
++&lt;div id=&quot;project_name&quot; style=&quot;font-weight:bold;font-size:1.8em&quot;&gt;&lt;?=$project-&gt;name;?&gt;&lt;/div&gt;
+ 
+ &lt;script language=&quot;JavaScript&quot;&gt;
+-    new Ajax.InPlaceEditor('project_name', '/eltodo/project/update',
++    new Ajax.InPlaceEditor('project_name', '/eltodo/project/update_name',
+     { callback: function(form, value) { return 'id=&lt;?=$project-&gt;id;?&gt;&amp;name=' + value }});
+ &lt;/script&gt;
+ 
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-03-20 19:59:14 UTC (rev 381)
++++ trunk/libs/action/controller/Base.php	2006-03-22 18:20:34 UTC (rev 382)
+@@ -329,7 +329,7 @@
+         // predefined variables:
+         // TODO: check if we have a / at the end, if not, add one
+         
+-        $this-&gt;template-&gt;assign('__base', $this-&gt;config-&gt;getWebContext()-&gt;document_root .'/');
++        $this-&gt;template-&gt;assign('__base', $this-&gt;config-&gt;getWebContext()-&gt;document_root);
+         $this-&gt;template-&gt;assign('__server', (string)$this-&gt;config-&gt;getWebContext()-&gt;server_name);
+         
+         $this-&gt;template-&gt;assign('__controller', $this-&gt;params['controller']);
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-03-20 19:59:14 UTC (rev 381)
++++ trunk/libs/action/view/HTML.php	2006-03-22 18:20:34 UTC (rev 382)
+@@ -84,7 +84,16 @@
+         // $prepend_text = isset($options['prepend']) ? $options['prepend'] : &quot;&quot;;
+         // $append_text  = isset($options['append']) ? $options['append'] : &quot;&quot;;
+         // $css_class    = isset($options['css_class']) ? $options['css_class'] : &quot;formError&quot;;
+-
++        $field= $object-&gt;getRow()-&gt;getFieldByName($method);
++        if (!$field or !$field-&gt;hasErrors()) {
++            return;
++        }
++        $buff= '&lt;div class=&quot;formErrors&quot;&gt;';
++        foreach ($field-&gt;getErrors() as $error) {
++            $buff .= $error . '&lt;br /&gt;';
++        }
++        $buff .= &quot;&lt;/div&gt;\n&quot;;
++        return $buff;
+     }
+ 
+ }
+@@ -161,21 +170,27 @@
+             $buff .= '&lt;div class=&quot;fieldWithErrors&quot;&gt;';
+             $errors= TRUE;
+         }
++        
+         $buff .= '&lt;input type=&quot;checkbox&quot; id=&quot;' . $id . '&quot; name=&quot;' . $name . '&quot; ';
++        
+         foreach ($options as $key=&gt;$value) {
+             $buff .= $key . '=&quot;' . $value . '&quot; ';
+         }
+-        if ((int)$object-&gt;$method &gt; 0) {
+-            $buff .= 'value=&quot;1&quot; checked=&quot;checked&quot;';
++
++        $value= $object-&gt;$method === NULL ? 0: $object-&gt;$method;
++        
++        if ( (int)$value &gt; 0 ) {
++            $buff .= 'checked=&quot;checked&quot;';// value=&quot;' . $value . '&quot;';
+         } else {
+-            $buff .= 'value=&quot;0&quot;';
++            // $buff .= 'value=&quot;0&quot;';
+         }
+         $buff .= ' /&gt;';
+         if ($errors) {
+             $buff .= '&lt;/div&gt;';
+         }
+-        $buff .= '&lt;input name=&quot;' . $name . '&quot; value=&quot;' . $object-&gt;$method . '&quot; type=&quot;hidden&quot; /&gt;';
+         return $buff;
++        // . '&lt;input name=&quot;' . $name . '&quot; value=&quot;' . $value . '&quot; type=&quot;hidden&quot; /&gt;';
++        // return $buff;
+     }
+ }
+ 
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-03-20 19:59:14 UTC (rev 381)
++++ trunk/libs/active/record/Base.php	2006-03-22 18:20:34 UTC (rev 382)
+@@ -108,7 +108,7 @@
+         $this-&gt;class_name = $this-&gt;getClassName();
+         $this-&gt;table_name = Inflector::pluralize(strtolower(Inflector::underscore($this-&gt;class_name)));
+ 
+-        $table_info   = self::$conn-&gt;getDatabaseInfo()-&gt;getTable($this-&gt;table_name);
++        $table_info   = ActiveRecord::$conn-&gt;getDatabaseInfo()-&gt;getTable($this-&gt;table_name);
+         $this-&gt;pk     = $table_info-&gt;getPrimaryKey()-&gt;getName();
+ 
+         $this-&gt;row = new DatabaseRow($this-&gt;table_name);
+@@ -582,6 +582,7 @@
+         if ($limit  = $builder-&gt;getLimit())  $stmt-&gt;setLimit($limit);
+         if ($offset = $builder-&gt;getOffset()) $stmt-&gt;setOffset($offset);
+         $rs = $stmt-&gt;executeQuery();
++        Registry::get('__logger')-&gt;debug(ActiveRecord::$conn-&gt;lastQuery);
+         if ($builder-&gt;getType() == 'first') {
+             if ($rs-&gt;getRecordCount() == 1) {
+                 $rs-&gt;next();
+@@ -599,7 +600,6 @@
+         }
+         // release resources.
+         $rs-&gt;close();$stmt-&gt;close();
+-        Registry::get('__logger')-&gt;debug(ActiveRecord::$conn-&gt;lastQuery);
+         return $results;
+     }
+ }
+
+Modified: trunk/libs/active/record/DatabaseRow.php
+===================================================================
+--- trunk/libs/active/record/DatabaseRow.php	2006-03-20 19:59:14 UTC (rev 381)
++++ trunk/libs/active/record/DatabaseRow.php	2006-03-22 18:20:34 UTC (rev 382)
+@@ -36,7 +36,8 @@
+ 
+ /**
+  * It represents a Row from the Database
+- *
++ * 
++ * @todo this should be refactored to remove dupplicate affected_fields array, it`s not faster.
+  * @package medick.active.record
+  * @author Oancea Aurelian
+  */
+@@ -165,7 +166,9 @@
+     public function updateStatus(Field $field, $value) {
+         $field-&gt;setValue($value);
+         $field-&gt;isAffected = TRUE;
+-        $this-&gt;field_names[] = $field-&gt;getName();
++        if (!in_array($field-&gt;getName(), $this-&gt;field_names)) {
++            $this-&gt;field_names[] = $field-&gt;getName();
++        }
+         $this-&gt;affected_fields[$field-&gt;getName()] = $field;
+         $this-&gt;affected = TRUE;
+     }
+
+Modified: trunk/libs/active/record/RowsAggregate.php
+===================================================================
+--- trunk/libs/active/record/RowsAggregate.php	2006-03-20 19:59:14 UTC (rev 381)
++++ trunk/libs/active/record/RowsAggregate.php	2006-03-22 18:20:34 UTC (rev 382)
+@@ -80,8 +80,13 @@
+ 
+     /**
+      * Magick php5 __call
++     *
++     * Resolved methods:
++     * &lt;ul&gt;&lt;li&gt;size an alias for count&lt;/li&gt;&lt;/ul&gt;
++     *
+      */
+     public function __call($method, $arguments) {
++        if ($method == 'size') return $this-&gt;count();
+         trigger_error(sprintf('Call to undefined method: %s-&gt;%s(%s).', get_class($this), $method,$arguments), E_USER_ERROR);
+     }
+ }
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2006-03-20 19:59:14 UTC (rev 381)
++++ trunk/libs/active/record/Validator.php	2006-03-22 18:20:34 UTC (rev 382)
+@@ -111,18 +111,29 @@
+     /**
+      * Check if the given filed is not unique
+      *
++     * Executes:
++     * &lt;code&gt;
++     *  SELECT ${FIELD.NAME} FROM ${TABLE} WHERE ${FIELD.NAME}=${FIELD.VALUE} AND ${ROW.PRIMARY_KEY.NAME}!=${ROW.PRIMARY_KEY.VALUE}
++     * &lt;/code&gt;
++     * If the result set is empty, we return FALSE, otherwise this Filed is unique and therefore we return TRUE
++     *
++     * @todo this should also work for fields without PK?
++     * 
+      * @param Filed field
+      * @return bool TRUE if is not unique
+      */ 
+     private function isNotUnique(Field $field) {
++        $supp= $this-&gt;row-&gt;getPrimaryKey()-&gt;getValue()===NULL ? '' : ' and ' . $this-&gt;row-&gt;getPrimaryKey()-&gt;getName() . '!=?';
+         try {
+             ActiveRecord::build(
+                 new QueryBuilder(
+                     Inflector::singularize($this-&gt;row-&gt;getTable()), 
+                     array(
+                         'first', 
+-                        array('condition'=&gt;$field-&gt;getName() . '=?'), 
+-                        array($field-&gt;getValue()
++                        array('condition'=&gt;$field-&gt;getName() . '=?' . $supp,
++                              'columns'=&gt;$field-&gt;getName()
++                    ), 
++                        array($field-&gt;getValue(), $this-&gt;row-&gt;getPrimaryKey()-&gt;getValue()
+                     )
+                 )
+             ));
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000166.html">[Medick-svn] r380 - trunk/skel/scripts
+</A></li>
+	<LI>Next message: <A HREF="000168.html">[Medick-svn] r384 - applications/testor/app/helpers applications/testor/app/views/layouts applications/testor/app/views/main applications/testor/app/views/strone applications/testor/app/views/tone applications/testor/public/stylesheet trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#167">[ date ]</a>
+              <a href="thread.html#167">[ thread ]</a>
+              <a href="subject.html#167">[ subject ]</a>
+              <a href="author.html#167">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

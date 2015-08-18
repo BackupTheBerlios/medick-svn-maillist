@@ -1,0 +1,106 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r313 - in trunk/libs: action/controller medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r313%20-%20in%20trunk/libs%3A%20action/controller%20medick&In-Reply-To=%3C200601031952.k03Jq6uY022933%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000110.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r313 - in trunk/libs: action/controller medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r313%20-%20in%20trunk/libs%3A%20action/controller%20medick&In-Reply-To=%3C200601031952.k03Jq6uY022933%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r313 - in trunk/libs: action/controller medick">aurelian at berlios.de
+       </A><BR>
+    <I>Tue Jan  3 20:52:06 CET 2006</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000110.html">[Medick-svn] r314 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#109">[ date ]</a>
+              <a href="thread.html#109">[ thread ]</a>
+              <a href="subject.html#109">[ subject ]</a>
+              <a href="author.html#109">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-03 20:51:56 +0100 (Tue, 03 Jan 2006)
+New Revision: 313
+
+Modified:
+   trunk/libs/action/controller/Route.php
+   trunk/libs/medick/util.php
+Log:
+ -- reverted to support php 5.0.5
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2005-12-26 16:30:38 UTC (rev 312)
++++ trunk/libs/action/controller/Route.php	2006-01-03 19:51:56 UTC (rev 313)
+@@ -90,7 +90,7 @@
+     private $components;
+ 
+ 
+-    public function Route($route_list, $name = '', Array $defaults = array(), Array $requirements = array()) {
++    public function Route($route_list, $name = '', /*Array*/ $defaults = array(), /*Array*/ $requirements = array()) {
+ 
+         $this-&gt;components= new Components();
+ 
+@@ -140,7 +140,7 @@
+      *
+      * @param array an array witch holds defaults values for this Route.
+      */
+-    public function setDefaults(Array $defaults) {
++    public function setDefaults(/*Array*/ $defaults) {
+         $this-&gt;defaults= $defaults;
+     }
+ 
+
+Modified: trunk/libs/medick/util.php
+===================================================================
+--- trunk/libs/medick/util.php	2005-12-26 16:30:38 UTC (rev 312)
++++ trunk/libs/medick/util.php	2006-01-03 19:51:56 UTC (rev 313)
+@@ -142,7 +142,7 @@
+ 
+     private $elements;
+ 
+-    public function AbstractCollection(Array $elements=array()) {
++    public function AbstractCollection(/*Array*/ $elements=array()) {
+         $this-&gt;elements= $elements;
+     }
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000110.html">[Medick-svn] r314 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#109">[ date ]</a>
+              <a href="thread.html#109">[ thread ]</a>
+              <a href="subject.html#109">[ subject ]</a>
+              <a href="author.html#109">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

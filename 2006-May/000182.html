@@ -1,0 +1,472 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r399 - in trunk: . libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r399%20-%20in%20trunk%3A%20.%20libs/active/record&In-Reply-To=%3C200605241727.k4OHRIVs028005%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000181.html">
+   <LINK REL="Next"  HREF="000183.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r399 - in trunk: . libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r399%20-%20in%20trunk%3A%20.%20libs/active/record&In-Reply-To=%3C200605241727.k4OHRIVs028005%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r399 - in trunk: . libs/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Wed May 24 19:27:18 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000181.html">[Medick-svn] r398 - in trunk: . libs/active/record libs/configurator skel/scripts
+</A></li>
+        <LI>Next message: <A HREF="000183.html">[Medick-svn] r400 - in trunk: . libs/action/controller libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#182">[ date ]</a>
+              <a href="thread.html#182">[ thread ]</a>
+              <a href="subject.html#182">[ subject ]</a>
+              <a href="author.html#182">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-05-24 19:27:14 +0200 (Wed, 24 May 2006)
+New Revision: 399
+
+Modified:
+   trunk/CHANGELOG
+   trunk/TODO
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Field.php
+Log:
+ -- refactored ActiveRecord::build()
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-05-23 19:18:28 UTC (rev 398)
++++ trunk/CHANGELOG	2006-05-24 17:27:14 UTC (rev 399)
+@@ -3,15 +3,16 @@
+ 
+ 0.2.3(*)
+     - ActiveRecord: class open by removing some final declarations
+-    - ActiveRecord: is not an abstract class anymore (awaiting php 5.2 changes on abstract static)  
+-    - ActiveRecord: new methods ActiveRecord::isValid
+-    - ActiveRecord: some API docs
+-    - ActiveRecord::Field added toString and length methods
++    - ActiveRecord::find is not declared as abstract, awaiting php 5.2 changes on abstract static syntax
++    - added ActiveRecord::isValid()
++    - ActiveRecord::build() -&gt; split this method in small pieces
++    - added Field::toString, Field::length and Field::h methods
+     - HTTPRequest added new methods to get the current HTTPRequest method: getMethod, isPost, isGet
+     - ActionController ``beautiful&quot;(TM) error template
+     - ActionController will throw a medick exception when trying to load an unexistent before_filter  
+     - FormHelper minor code clean-ups and added password_field method
+-      
++    - more API docs
++    
+ 0.2.2(08.Apr.2006)
+     - Testor::Application more code samples for medick
+     - Implemented Route Requirements
+@@ -114,6 +115,6 @@
+     - Model is capable of getting values by foreign keys. Eg.: $todo-&gt;project-&gt;name;
+     - many minor fixes.
+ 
+-0.0.1 (6.Jul.2005)
++0.0.1 (06.Jul.2005)
+     - minimal functional version
+ 
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-05-23 19:18:28 UTC (rev 398)
++++ trunk/TODO	2006-05-24 17:27:14 UTC (rev 399)
+@@ -3,20 +3,21 @@
+ Medick TODO list.
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 
+-*Planned features for 0.2 series*
+-    # -environments (0.2.1)-
+-    # context like (obsolete app.xml) (0.2.2)
+-    # cheap cache in ActiveRecord (0.2.3)
+-    # obsolete DatabaseRow (0.2.3)
+-    # -routing requirements (0.2.3)-
+-    # expandable validators (0.2.4)
+-    # customizable error messages (0.2.4)
+-    # write in associations (0.2.5)
+-    # refactor &amp;&amp; unit-test
++*Plan for 0.2 series*
++    # 1. obsolete DatabaseRow (0.2.3)
++    # 2. expandable validators (0.2.4)
++    # 3. customizable error messages on validation (0.2.4)
++    # 4. refactor &amp;&amp; unit-test
+     
+-*Planned features for 0.3 series*
+-    # scaffolding generator
+-    # refactor &amp;&amp; unit-test
+-    # RDBAC
+-    # i18n, l10n
+-    # caching
++*Plan for 0.3 series*
++    # 1. context like (obsolete app.xml)
++    # 2. cheap cache in ActiveRecord
++    # 3. creole moveup: RowsAggregate implements IteratorAggregate vs. ResultSet implement IteratorAggregate
++    # 4. write in associations
++    # 5. scaffolding generator
++    # 6. nice to have: RDBAC, i18n, l10n, caching
++    # 7. refactor &amp;&amp; unit-test
++
++*To think about:*
++    # 1. php 5.1.4
++    
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-05-23 19:18:28 UTC (rev 398)
++++ trunk/libs/active/record/Base.php	2006-05-24 17:27:14 UTC (rev 399)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++// Copyright (c) 2005, 2006 Oancea Aurelian &lt;aurelian[at]locknet[dot]ro&gt;
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -90,40 +90,18 @@
+     // }}}
+ 
+     /**
+-     * Establish A Database Connection
+-     *
+-     * @return Creole database connection
+-     */
+-    public static function establish_connection () {
+-        if (ActiveRecord::$conn === NULL) {
+-            ActiveRecord::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn());
+-        }
+-        return ActiveRecord::$conn;
+-    }
+-
+-    /**
+-     * Close the Database Connection
+-     */
+-    public static function close_connection() {
+-        ActiveRecord::$conn= Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn())-&gt;close();
+-    }
+-
+-    /**
+      * Constructor
+      *
+      * @param array, params, parameters as pair of `field name` =&gt; `value`
+      * @final because there is no reason to overwrite in parent classes, PHP Engine will call this constructor by default.
+      */
+-    public function ActiveRecord($params = array()) {
++    public function ActiveRecord($params= array()) {
+         ActiveRecord::establish_connection();
+         $this-&gt;class_name = $this-&gt;getClassName();
+         $this-&gt;table_name = Inflector::pluralize(strtolower(Inflector::underscore($this-&gt;class_name)));
+-        
+         $table_info = ActiveRecordTableInfo::getInstance(ActiveRecord::$conn, $this-&gt;table_name);
+-        // $table_info = ActiveRecord::$conn-&gt;getDatabaseInfo()-&gt;getTable($this-&gt;table_name);
+         $this-&gt;pk   = $table_info-&gt;getPrimaryKey()-&gt;getName();
+-
+-        $this-&gt;row = new DatabaseRow($this-&gt;table_name);
++        $this-&gt;row  = new DatabaseRow($this-&gt;table_name);
+         foreach( $table_info-&gt;getColumns() as $col) {
+             $field = new Field( $col-&gt;getName() );
+             // $field-&gt;size = $col-&gt;getSize();
+@@ -131,7 +109,7 @@
+             // set is_nullable
+             // $field-&gt;isNullable = (bool)$col-&gt;isNullable;
+             if ($this-&gt;pk == $col-&gt;getName() ) {
+-                $field-&gt;isPk = TRUE;
++                $field-&gt;isPk = true;
+             }
+             // set the is_fk and fk_table
+             $pattern = '/^(.*)_id$/';
+@@ -197,35 +175,6 @@
+         }
+     }
+ 
+-    /**
+-     * @todo This method is not working as expected!
+-     *
+-     * This method is run before any call to ActiveRecord public methods! (nope: php 5.1.2)
+-     * Removes some duplicate code from the list with &lt;tt&gt;know_methods&lt;/tt&gt;.
+-     * ALso, it defines some methods aliases (eg: delete===distroy)
+-     *
+-     * Basically it checks before save, insert, update or delete calls that
+-     * the current run has affected fields and throws an ActiveRecordException if not.
+-     *
+-     * @see <A HREF="http://php.net/manual/en/language.oop5.overloading.php">http://php.net/manual/en/language.oop5.overloading.php</A>
+-     * @param string method name
+-     * @param array arguments
+-     * @throws ActiveRecordException
+-    public function __call($method, $arguments) {
+-        if ($method == 'destroy') return $this-&gt;delete();
+-        $know_methods = array('save', 'insert', 'update', 'delete');
+-        if (!in_array($method, $know_methods)) {
+-            trigger_error(
+-                sprintf(
+-                    'Call to undefined method: %s::%s().', $this-&gt;getClassName(), $method), E_USER_ERROR);
+-        } elseif(!$this-&gt;fields-&gt;hasAffected()) {
+-            throw new ActiveRecordException('No field was set before ' . $method);
+-        } else {
+-            $this-&gt;$method($arguments[0]);
+-        }
+-    }
+-    */    
+-
+     /** returns a string representation of this object */
+     public function toString() {
+         $string = '';
+@@ -363,8 +312,8 @@
+     // {{{ save
+     /**
+      * Save,
+-     *    will do a SQL Insert and return the last_inserted_id or
+-     * an Update returning the number of affected rows.
++     *    will do a SQL Insert and return the last_inserted_id 
++     *    or an Update returning the number of affected rows.
+      * If the primary key is affected (changed) on this run we will do an update, otherwise an insert.
+      * &lt;code&gt;
+      *      $author = new Author();
+@@ -562,7 +511,9 @@
+                . ' (' . implode(',', $this-&gt;row-&gt;getAffectedFieldsNames()) . ')'
+                . ' VALUES (' . substr(str_repeat('?,', count($this-&gt;row-&gt;getAffectedFields())), 0, -1) . ')';
+     }
+-
++    // }}}
++    
++    // {{{ Static ActiveRecord
+     /**
+      * populates stmt values (?,?,?) on sql querys
+      * @param PreparedStatement, stmt, the prepared statement.
+@@ -579,54 +530,80 @@
+             }
+         }
+     }
+-    // }}}
+-
++  
+     /**
+      * This method should be overwritten in child classes, 
+-     * from php 5.2 you cannot declare a method as abstract and static
++     * from php 5.2 you cannot declare a method as abstract and static, or can you?
++     *
++     * @see ActiveRecord::build
+      */
+     public static function find() {
+         throw new MedickException('ActiveRecord::find() should be overwritten in child classes!');
+     }
+-
++       
++    /**
++     * @return ActiveRecord or a RowsAggregate (Collection of ActiveRecords)
++     */
+     public static function build(QueryBuilder $builder) {
+-        $class_name= $builder-&gt;getOwner();
+-        try {
+-            // prepare the class instance.
+-            $class = new ReflectionClass($class_name);
+-        } catch (ReflectionException $rEx) {
+-            Registry::get('__injector')-&gt;inject('model', strtolower($class_name));
+-            // retry:
+-            $class = new ReflectionClass($class_name);
+-        }
++        $class= ActiveRecord::reflect_class($builder-&gt;getOwner());
+         ActiveRecord::establish_connection();
++        $rs= ActiveRecord::create_result_set($builder);
++        if ($builder-&gt;getType() == 'first') {
++            return ActiveRecord::fetch_one($rs, $class);
++        }
++        return ActiveRecord::fetch_all($rs, $class);
++    } 
++ 
++    /**
++     * It knows how to load a model class and how to reflect this class
++     *
++     * @return ReflectionClass
++     */
++    public static function reflect_class($class_name) {
++        Registry::get('__injector')-&gt;inject('model', strtolower($class_name));
++        return new ReflectionClass($class_name);
++    }
++    
++    /**
++     * Creates a ResultSet from a QueryBuilder
++     *
++     * @return ResultSet
++     */
++    public static function create_result_set(QueryBuilder $builder) {
+         $stmt = ActiveRecord::$conn-&gt;prepareStatement($builder-&gt;compile()-&gt;getQueryString());
+         $i=1; foreach($builder-&gt;getBindings() as $binding) {
+             $stmt-&gt;set($i++, $binding);
+         }
+         if ($limit  = $builder-&gt;getLimit())  $stmt-&gt;setLimit($limit);
+         if ($offset = $builder-&gt;getOffset()) $stmt-&gt;setOffset($offset);
+-        $rs = $stmt-&gt;executeQuery();
++        $rs= $stmt-&gt;executeQuery();
+         Registry::get('__logger')-&gt;debug('Query: ' . ActiveRecord::$conn-&gt;lastQuery);
+-        if ($builder-&gt;getType() == 'first') {
+-            if ($rs-&gt;getRecordCount() == 1) {
+-                $rs-&gt;next();
+-                $result= $class-&gt;newInstance($rs-&gt;getRow());
+-                $stmt-&gt;close();$rs-&gt;close();
+-                return $result;
+-            } else {
+-                throw new RecordNotFoundException(
+-                    'Couldn\'t find a `' . $class_name . '` to match your query.');
+-            }
+-        }
+         $stmt-&gt;close();
+-        return ActiveRecord::merge($rs, $class);
+-    } 
+-    
++        return $rs;
++    }
++ 
+     /**
++     * Returns an ActiveRecord object
++     * @throws RecordNotFoundException 
++     * @return ActiveRecord
++     */
++    public static function fetch_one(ResultSet $rs, ReflectionClass $class) {
++        if($rs-&gt;getRecordCount() != 1) {
++            $rs-&gt;close();
++            throw new RecordNotFoundException('Couldn\'t find a `' . $class-&gt;getName() . '` to match your query.');
++        }
++        $rs-&gt;next();
++        $ar= $class-&gt;newInstance($rs-&gt;getRow());
++        $rs-&gt;close();
++        return $ar;
++
++    }
++
++    /**
++     * Merge ResultSet into RowsAggregate
+      * @return RowsAggregate
+      */ 
+-    protected static function merge(ResultSet $rs, ReflectionClass $class) {
++    public static function fetch_all(ResultSet $rs, ReflectionClass $class) {
+         $results= new RowsAggregate();
+         while($rs-&gt;next()) {
+             $results-&gt;add($class-&gt;newInstance($rs-&gt;getRow()));
+@@ -634,6 +611,25 @@
+         $rs-&gt;close();
+         return $results;
+     }
+-    
++
++    /**
++     * Establish A Database Connection
++     *
++     * @return Creole database connection
++     */
++    public static function establish_connection () {
++        if (ActiveRecord::$conn === NULL) {
++            ActiveRecord::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn());
++        }
++        return ActiveRecord::$conn;
++    }
++
++    /**
++     * Close the Database Connection
++     */
++    public static function close_connection() {
++        ActiveRecord::$conn= Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn())-&gt;close();
++    }
++    // }}}
+ }
+ 
+
+Modified: trunk/libs/active/record/Field.php
+===================================================================
+--- trunk/libs/active/record/Field.php	2006-05-23 19:18:28 UTC (rev 398)
++++ trunk/libs/active/record/Field.php	2006-05-24 17:27:14 UTC (rev 399)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++// Copyright (c) 2005, 2006 Oancea Aurelian &lt;aurelian[at]locknet[dot]ro&gt;
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -153,13 +153,44 @@
+         $this-&gt;value = $value;
+     }
+ 
++    /**
++     * Returns this field value
++     *
++     * @return mixed
++     */
+     public function toString() {
+         return $this-&gt;value;
+     }
+-
++  
++    /**
++     * Returns the number of chars for this Field
++     *
++     * It's a &lt;tt&gt;strlen&lt;/tt&gt; of the Field value
++     *
++     * @return int
++     */
+     public function length() {
+         return strlen($this-&gt;value);
+     }
+     
++    /**
++     * Alias of htmlentities php function
++     * 
++     * &lt;code&gt;
++     *    $article= new Article();
++     *    $article-&gt;description= &quot;A 'quote' is &lt;b&gt;bold&lt;/b&gt;&quot;;
++     *    $article-&gt;description-&gt;h(); // outputs: A 'quote' is &lt;b&gt;bold&lt;/b&gt;
++     *    $article-&gt;description-&gt;h(ENT_QUOTES); // outputs: A &#039;quote&#039; is &lt;b&gt;bold&lt;/b&gt;
++     * &lt;/code&gt;
++     *
++     * @param int quote_style defaults to ENT_COMPAT
++     * @param string charst defaults to ISO-8859-1
++     * @see <A HREF="http://php.net/htmlentities">http://php.net/htmlentities</A>
++     * @return string 
++     */
++    public function h($quote_style=ENT_COMPAT, $charset='ISO-8859-1') {
++        return htmlentities($this-&gt;value, $quote_style, $charset);
++    }
++    
+ }
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000181.html">[Medick-svn] r398 - in trunk: . libs/active/record libs/configurator skel/scripts
+</A></li>
+	<LI>Next message: <A HREF="000183.html">[Medick-svn] r400 - in trunk: . libs/action/controller libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#182">[ date ]</a>
+              <a href="thread.html#182">[ thread ]</a>
+              <a href="subject.html#182">[ subject ]</a>
+              <a href="author.html#182">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

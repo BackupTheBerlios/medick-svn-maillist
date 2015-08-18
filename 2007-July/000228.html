@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r449 - trunk/libs/context/configurator
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r449%20-%20trunk/libs/context/configurator&In-Reply-To=%3C200707231756.l6NHuSJp017255%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000227.html">
+   <LINK REL="Next"  HREF="000230.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r449 - trunk/libs/context/configurator</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r449%20-%20trunk/libs/context/configurator&In-Reply-To=%3C200707231756.l6NHuSJp017255%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r449 - trunk/libs/context/configurator">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Mon Jul 23 19:56:28 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000227.html">[Medick-svn] r448 - in trunk/libs/context: . configurator
+</A></li>
+        <LI>Next message: <A HREF="000230.html">[Medick-svn] r450 - trunk/libs/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#228">[ date ]</a>
+              <a href="thread.html#228">[ thread ]</a>
+              <a href="subject.html#228">[ subject ]</a>
+              <a href="author.html#228">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-07-23 19:56:27 +0200 (Mon, 23 Jul 2007)
+New Revision: 449
+
+Modified:
+   trunk/libs/context/configurator/IConfigurator.php
+   trunk/libs/context/configurator/INIConfigurator.php
+   trunk/libs/context/configurator/LoggerConfigurator.php
+   trunk/libs/context/configurator/XMLConfigurator.php
+Log:
+ -- don't convert everything to string :)
+
+Modified: trunk/libs/context/configurator/IConfigurator.php
+===================================================================
+--- trunk/libs/context/configurator/IConfigurator.php	2007-07-23 17:53:06 UTC (rev 448)
++++ trunk/libs/context/configurator/IConfigurator.php	2007-07-23 17:56:27 UTC (rev 449)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+
+Modified: trunk/libs/context/configurator/INIConfigurator.php
+===================================================================
+--- trunk/libs/context/configurator/INIConfigurator.php	2007-07-23 17:53:06 UTC (rev 448)
++++ trunk/libs/context/configurator/INIConfigurator.php	2007-07-23 17:56:27 UTC (rev 449)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/context/configurator/LoggerConfigurator.php
+===================================================================
+--- trunk/libs/context/configurator/LoggerConfigurator.php	2007-07-23 17:53:06 UTC (rev 448)
++++ trunk/libs/context/configurator/LoggerConfigurator.php	2007-07-23 17:56:27 UTC (rev 449)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+
+Modified: trunk/libs/context/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/context/configurator/XMLConfigurator.php	2007-07-23 17:53:06 UTC (rev 448)
++++ trunk/libs/context/configurator/XMLConfigurator.php	2007-07-23 17:56:27 UTC (rev 449)
+@@ -93,7 +93,7 @@
+     }
+     
+     public function getWebContext() {
+-        return trim((string)$this-&gt;sxe-&gt;web);
++        return $this-&gt;sxe-&gt;web;
+     }
+     
+     public function getConfigFile() {
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000227.html">[Medick-svn] r448 - in trunk/libs/context: . configurator
+</A></li>
+	<LI>Next message: <A HREF="000230.html">[Medick-svn] r450 - trunk/libs/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#228">[ date ]</a>
+              <a href="thread.html#228">[ thread ]</a>
+              <a href="subject.html#228">[ subject ]</a>
+              <a href="author.html#228">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

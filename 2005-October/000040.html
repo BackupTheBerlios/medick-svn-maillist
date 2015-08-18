@@ -1,0 +1,288 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r236 - in trunk/test: . application mock test/active/record test/active/record/associations test/configurator tmp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r236%20-%20in%20trunk/test%3A%20.%20application%20mock%20test/active/record%20test/active/record/associations%20test/configurator%20tmp&In-Reply-To=%3C200510231438.j9NEcNaJ011670%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000039.html">
+   <LINK REL="Next"  HREF="000041.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r236 - in trunk/test: . application mock test/active/record test/active/record/associations test/configurator tmp</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r236%20-%20in%20trunk/test%3A%20.%20application%20mock%20test/active/record%20test/active/record/associations%20test/configurator%20tmp&In-Reply-To=%3C200510231438.j9NEcNaJ011670%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r236 - in trunk/test: . application mock test/active/record test/active/record/associations test/configurator tmp">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Oct 23 16:38:23 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000039.html">[Medick-svn] r235 - in trunk/test: . application application/models test test/action test/action/controller test/active test/active/record test/active/record/associations test/active/support test/configurator test/medick
+</A></li>
+        <LI>Next message: <A HREF="000041.html">[Medick-svn] r237 - trunk/test
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#40">[ date ]</a>
+              <a href="thread.html#40">[ thread ]</a>
+              <a href="subject.html#40">[ subject ]</a>
+              <a href="author.html#40">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-23 16:38:23 +0200 (Sun, 23 Oct 2005)
+New Revision: 236
+
+Added:
+   trunk/test/application/application.xml
+   trunk/test/tmp/
+   trunk/test/tmp/dummy.folder
+Removed:
+   trunk/test/application/dummy.xml
+Modified:
+   trunk/test/mock/MockConfigurator.php
+   trunk/test/runner.php
+   trunk/test/test/active/record/DBOperationsTest.php
+   trunk/test/test/active/record/FindTest.php
+   trunk/test/test/active/record/associations/HasOneTest.php
+   trunk/test/test/configurator/XMLConfiguratorTest.php
+Log:
+ - [ test/* ] restructuration over.
+
+Copied: trunk/test/application/application.xml (from rev 235, trunk/test/application/dummy.xml)
+
+Deleted: trunk/test/application/dummy.xml
+===================================================================
+--- trunk/test/application/dummy.xml	2005-10-23 13:28:19 UTC (rev 235)
++++ trunk/test/application/dummy.xml	2005-10-23 14:38:23 UTC (rev 236)
+@@ -1,4 +0,0 @@
+-&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+-&lt;!-- $Id$  --&gt;
+-&lt;application&gt;&lt;/application&gt;
+-
+
+Modified: trunk/test/mock/MockConfigurator.php
+===================================================================
+--- trunk/test/mock/MockConfigurator.php	2005-10-23 13:28:19 UTC (rev 235)
++++ trunk/test/mock/MockConfigurator.php	2005-10-23 14:38:23 UTC (rev 236)
+@@ -17,7 +17,7 @@
+     public function getProperty($name) {
+         switch ($name) {
+             case 'application_path':
+-                return 'dummy' . DIRECTORY_SEPARATOR;
++                return 'application' . DIRECTORY_SEPARATOR;
+             default:
+                 throw new ConfiguratorException(__CLASS__ . ' Property `' . $name . '` not implemented!');
+          }
+@@ -26,6 +26,6 @@
+      public function getDatabaseDsn($id=FALSE) {
+          return array(
+                'phptype'  =&gt; 'sqlite',
+-               'database' =&gt; 'test.db');
++               'database' =&gt; TMP . 'test.db');
+     }
+ }
+
+Modified: trunk/test/runner.php
+===================================================================
+--- trunk/test/runner.php	2005-10-23 13:28:19 UTC (rev 235)
++++ trunk/test/runner.php	2005-10-23 14:38:23 UTC (rev 236)
+@@ -3,15 +3,35 @@
+ 
+ // $Id$
+ 
+-// Script that runs all the *Test.php* files from the current folder.
+-    
++// Script that runs all the *Test.php* files from the test folder.
++
++class DirectoryTreeIterator extends RecursiveIteratorIterator
++{
++    /** Construct from a path.
++     * @param $path directory to iterate
++     */
++    function __construct($path)
++    {
++        parent::__construct(
++            new RecursiveCachingIterator(
++                new RecursiveDirectoryIterator($path), CachingIterator::CALL_TOSTRING|CachingIterator::CATCH_GET_CHILD), 1);
++    }
++
++    /** Aggregates the inner iterator
++     */
++    function __call($func, $params)
++    {
++        return call_user_func_array(array($this-&gt;getSubIterator(), $func), $params);
++    }
++}
++
+ $time_start = microtime(true);
+ 
+ define('TOP_LOCATION', dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR);
++define('TMP', 'tmp' . DIRECTORY_SEPARATOR);
+ 
+ set_include_path( TOP_LOCATION . 'libs' . DIRECTORY_SEPARATOR . PATH_SEPARATOR .
+-                  TOP_LOCATION . 'vendor' . DIRECTORY_SEPARATOR . PATH_SEPARATOR . 
+-                  dirname(__FILE__) 
++                  TOP_LOCATION . 'vendor' . DIRECTORY_SEPARATOR . PATH_SEPARATOR . dirname(__FILE__)
+                 );
+ 
+ error_reporting(E_ALL);
+@@ -23,16 +43,18 @@
+ include_once('medick/Registry.php');
+ include_once('medick/Collection.php');
+ 
+-include_once('simpletest/web_tester.php');
++// include_once('simpletest/web_tester.php');
+ include_once('simpletest/unit_tester.php');
+ include_once('simpletest/reporter.php');
+ 
+ $test= new GroupTest('====== Medick Framework Unit Tests =====');
+ 
+-$it = new DirectoryIterator(dirname(__FILE__));
+-foreach($it as $file) {
+-    if ($file-&gt;isDir()) continue;
+-    if (preg_match(&quot;/Test.php/i&quot;, $file-&gt;getFileName())) $test-&gt;addTestFile($file-&gt;getFileName());
++foreach(new DirectoryTreeIterator(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR) as $entry)
++{
++    if ( (strpos($entry-&gt;getFilename(), 'Test.php')  !== FALSE) &amp;&amp;
++         (strpos($entry-&gt;getFilename(), 'Test.php.') === FALSE) ) {
++        $test-&gt;addTestFile($entry-&gt;getPathname());
++    }
+ }
+ 
+ $test-&gt;run(new TextReporter());
+@@ -40,4 +62,5 @@
+ $time_end = microtime(true);
+ echo &quot;Done in &quot; . ($time_end - $time_start) . &quot; seconds\n&quot;;
+ 
+-unlink('test.db');
+<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">+ at unlink</A>(TMP . 'test.db');
++
+
+Modified: trunk/test/test/active/record/DBOperationsTest.php
+===================================================================
+--- trunk/test/test/active/record/DBOperationsTest.php	2005-10-23 13:28:19 UTC (rev 235)
++++ trunk/test/test/active/record/DBOperationsTest.php	2005-10-23 14:38:23 UTC (rev 236)
+@@ -2,7 +2,7 @@
+ 
+ // $Id$
+     
+-include_once('dummy/models/author.php');
++include_once('application/models/author.php');
+ include_once('mock/MockConfigurator.php');
+ include_once('logger/Logger.php');
+ 
+@@ -14,7 +14,7 @@
+      * Prequsites for this TestCase to run: Create a sqlite DB
+      */
+     public function __construct() {
+-        if (is_file(TMP . 'test.db')) unlink(TMP . 'test.db');
++        @unlink(TMP . 'test.db');
+         $query='
+             CREATE TABLE authors (
+                 id INTEGER PRIMARY KEY,
+@@ -22,7 +22,7 @@
+                 email VARCHAR(150)
+             );
+         ';
+-        sqlite_query(sqlite_open('test.db'), $query);
++        sqlite_query(sqlite_open(TMP . 'test.db'), $query);
+     }
+ 
+     /** set up */
+
+Modified: trunk/test/test/active/record/FindTest.php
+===================================================================
+--- trunk/test/test/active/record/FindTest.php	2005-10-23 13:28:19 UTC (rev 235)
++++ trunk/test/test/active/record/FindTest.php	2005-10-23 14:38:23 UTC (rev 236)
+@@ -2,7 +2,7 @@
+ 
+ // $Id$
+     
+-include_once('dummy/models/author.php');
++include_once('application/models/author.php');
+ include_once('mock/MockConfigurator.php');
+ include_once('logger/Logger.php');
+   
+@@ -17,7 +17,7 @@
+      * Prequsites for this TestCase to run: Create a sqlite DB
+      */
+     public function __construct() {
+-        if (is_file(TMP . 'test.db')) unlink(TMP . 'test.db');
++        @unlink(TMP . 'test.db');
+         $query='
+             CREATE TABLE authors (
+                 id INTEGER PRIMARY KEY,
+
+Modified: trunk/test/test/active/record/associations/HasOneTest.php
+===================================================================
+--- trunk/test/test/active/record/associations/HasOneTest.php	2005-10-23 13:28:19 UTC (rev 235)
++++ trunk/test/test/active/record/associations/HasOneTest.php	2005-10-23 14:38:23 UTC (rev 236)
+@@ -2,8 +2,8 @@
+ 
+ // $Id$
+     
+-include_once('dummy/models/author.php');
+-include_once('dummy/models/book.php');
++include_once('application/models/author.php');
++include_once('application/models/book.php');
+ include_once('mock/MockConfigurator.php');
+ include_once('logger/Logger.php');
+ 
+@@ -15,7 +15,7 @@
+      * Prequsites for this TestCase to run: Create a sqlite DB with 2 tables and a foreign key.
+      */
+     public function __construct() {
+-        if (is_file(TMP . 'test.db')) unlink(TMP . 'test.db');
++        @unlink(TMP . 'test.db');
+         $tbd= sqlite_open(TMP . 'test.db');
+         $query='
+             CREATE TABLE AUTHORS (
+
+Modified: trunk/test/test/configurator/XMLConfiguratorTest.php
+===================================================================
+--- trunk/test/test/configurator/XMLConfiguratorTest.php	2005-10-23 13:28:19 UTC (rev 235)
++++ trunk/test/test/configurator/XMLConfiguratorTest.php	2005-10-23 14:38:23 UTC (rev 236)
+@@ -7,7 +7,7 @@
+ class XMLConfiguratorTest extends UnitTestCase {
+ 
+     public function testCreation() {
+-        $this-&gt;assertNotNull(new XMLConfigurator('dummy/dummy.xml'));
++        $this-&gt;assertNotNull(new XMLConfigurator('application/application.xml'));
+         $this-&gt;assertNotNull(new XMLConfigurator('&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;application&gt;&lt;/application&gt;'));
+         try {
+             new XMLConfigurator('non_existant_file.xml');
+
+Added: trunk/test/tmp/dummy.folder
+===================================================================
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000039.html">[Medick-svn] r235 - in trunk/test: . application application/models test test/action test/action/controller test/active test/active/record test/active/record/associations test/active/support test/configurator test/medick
+</A></li>
+	<LI>Next message: <A HREF="000041.html">[Medick-svn] r237 - trunk/test
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#40">[ date ]</a>
+              <a href="thread.html#40">[ thread ]</a>
+              <a href="subject.html#40">[ subject ]</a>
+              <a href="author.html#40">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,1201 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r379 - applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/conf applications/eltodo/public trunk trunk/bin trunk/libs trunk/libs/action/controller trunk/libs/action/view trunk/libs/configurator trunk/libs/context trunk/libs/medick trunk/skel/config trunk/skel/public trunk/skel/scripts
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r379%20-%20applications/eltodo/app/views/layouts%20applications/eltodo/app/views/project%20applications/eltodo/conf%20applications/eltodo/public%20trunk%20trunk/bin%20trunk/libs%20trunk/libs/action/controller%20trunk/libs/action/view%20trunk/libs/configurator%20trunk/libs/context%20trunk/libs/medick%20trunk/skel/config%20trunk/skel/public%20trunk/skel/scripts&In-Reply-To=%3C200603181736.k2IHavaw028715%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000164.html">
+   <LINK REL="Next"  HREF="000166.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r379 - applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/conf applications/eltodo/public trunk trunk/bin trunk/libs trunk/libs/action/controller trunk/libs/action/view trunk/libs/configurator trunk/libs/context trunk/libs/medick trunk/skel/config trunk/skel/public trunk/skel/scripts</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r379%20-%20applications/eltodo/app/views/layouts%20applications/eltodo/app/views/project%20applications/eltodo/conf%20applications/eltodo/public%20trunk%20trunk/bin%20trunk/libs%20trunk/libs/action/controller%20trunk/libs/action/view%20trunk/libs/configurator%20trunk/libs/context%20trunk/libs/medick%20trunk/skel/config%20trunk/skel/public%20trunk/skel/scripts&In-Reply-To=%3C200603181736.k2IHavaw028715%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r379 - applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/conf applications/eltodo/public trunk trunk/bin trunk/libs trunk/libs/action/controller trunk/libs/action/view trunk/libs/configurator trunk/libs/context trunk/libs/medick trunk/skel/config trunk/skel/public trunk/skel/scripts">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Mar 18 18:36:57 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000164.html">[Medick-svn] r378 - in trunk/libs: action/controller/http action/view active/record
+</A></li>
+        <LI>Next message: <A HREF="000166.html">[Medick-svn] r380 - trunk/skel/scripts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#165">[ date ]</a>
+              <a href="thread.html#165">[ thread ]</a>
+              <a href="subject.html#165">[ subject ]</a>
+              <a href="author.html#165">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-03-18 18:36:03 +0100 (Sat, 18 Mar 2006)
+New Revision: 379
+
+Added:
+   trunk/libs/context/
+   trunk/libs/context/ContextManager.php
+Removed:
+   applications/eltodo/public/index.html
+Modified:
+   applications/eltodo/app/views/layouts/eltodo.phtml
+   applications/eltodo/app/views/project/add.phtml
+   applications/eltodo/conf/eltodo.xml
+   applications/eltodo/public/.htaccess
+   applications/eltodo/public/index.php
+   trunk/CHANGELOG
+   trunk/TODO
+   trunk/VERSION
+   trunk/bin/medick.php
+   trunk/boot.php
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Dispatcher.php
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/action/controller/Map.php
+   trunk/libs/action/view/HTML.php
+   trunk/libs/configurator/IConfigurator.php
+   trunk/libs/configurator/XMLConfigurator.php
+   trunk/libs/medick/Medick.php
+   trunk/libs/medick/Object.php
+   trunk/skel/config/application.xml
+   trunk/skel/public/default.htaccess
+   trunk/skel/public/index.php
+   trunk/skel/scripts/generator.php
+Log:
+ -- added environments concept
+ -- added ActiveRecord::attributes(Array $attributes)
+ -- added ContextManager class
+ -- eltodo sample fixed to work with the new concepts
+ -- !!! to get COOKIES from HTTPRequest, use $request-&gt;getHeader('Cookies') !!!
+ -- !!! unit-tests related with XMLConfigurator are broken !!!
+ -- !!! removed _SERVER definitions from .htaccess file (was a bad ideea) !!!
+
+
+Modified: applications/eltodo/app/views/layouts/eltodo.phtml
+===================================================================
+--- applications/eltodo/app/views/layouts/eltodo.phtml	2006-03-14 06:14:25 UTC (rev 378)
++++ applications/eltodo/app/views/layouts/eltodo.phtml	2006-03-18 17:36:03 UTC (rev 379)
+@@ -30,7 +30,7 @@
+ 
+             &lt;div id=&quot;content&quot;&gt;&lt;?=$content_for_layout;?&gt;&lt;/div&gt;
+ 
+-            &lt;div id=&quot;footer&quot;&gt;&lt;p&gt;elTodo :: powered by &lt;a href=&quot;<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>&quot;&gt;medick&lt;/a&gt;.&lt;/p&gt;&lt;/div&gt;
++            &lt;div id=&quot;footer&quot;&gt;&lt;p&gt;elTodo :: powered by &lt;a href=&quot;<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>&quot;&gt;medick (&lt;?=$__version;?&gt;)&lt;/a&gt;.&lt;/p&gt;&lt;/div&gt;
+ 
+         &lt;/div&gt;
+ 
+
+Modified: applications/eltodo/app/views/project/add.phtml
+===================================================================
+--- applications/eltodo/app/views/project/add.phtml	2006-03-14 06:14:25 UTC (rev 378)
++++ applications/eltodo/app/views/project/add.phtml	2006-03-18 17:36:03 UTC (rev 379)
+@@ -4,10 +4,16 @@
+     &lt;fieldset&gt;
+         &lt;legend&gt;Create a new Project&lt;/legend&gt;
+         &lt;?=ActiveRecordHelper::error_messages_for($project);?&gt;
++        &lt;p&gt;&lt;label for=&quot;project_name&quot;&gt;Name&lt;/label&gt;&lt;br /&gt;
+         &lt;?=FormHelper::text_field($project, 'name', array('maxlength'=&gt;255,'size'=&gt;35)); ?&gt;
+-        &lt;br /&gt;
++        &lt;/p&gt;
++        
++        &lt;p&gt;&lt;label for=&quot;project_description&quot;&gt;Description&lt;/label&gt;&lt;br /&gt;
+         &lt;?=FormHelper::text_area($project, 'description', array('cols'=&gt;40,'rows'=&gt;20)); ?&gt;
++        &lt;/p&gt;
++        
+         &lt;?=Form::submit('submit', 'Submit', array('class'=&gt;'submit-button')) ?&gt;
++        
+     &lt;/fieldset&gt;
+ &lt;/form&gt;
+ 
+
+Modified: applications/eltodo/conf/eltodo.xml
+===================================================================
+--- applications/eltodo/conf/eltodo.xml	2006-03-14 06:14:25 UTC (rev 378)
++++ applications/eltodo/conf/eltodo.xml	2006-03-18 17:36:03 UTC (rev 379)
+@@ -1,35 +1,78 @@
+ &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+-&lt;!--
+- ! $Id: application.xml 187 2005-10-07 05:09:20Z aurelian $
+- --&gt;
++&lt;!-- 
++ ! $Id: $
++ ! --&gt;
++&lt;application name=&quot;eltodo&quot;&gt;
++    &lt;!-- localhost environment --&gt;
++    &lt;environment name=&quot;localhost&quot;&gt;
++        &lt;!-- general properties --&gt;
++        &lt;properties&gt;
++            &lt;path&gt;/wwwroot/medick/applications/eltodo&lt;/path&gt;
++        &lt;/properties&gt;
++        &lt;!-- web context --&gt;
++        &lt;web&gt;
++            &lt;server_name&gt;<A HREF="http://localhost&lt;/server_name">http://localhost&lt;/server_name</A>&gt;
++            &lt;document_root&gt;/eltodo&lt;/document_root&gt;
++            &lt;rewrite&gt;on&lt;/rewrite&gt;
++        &lt;/web&gt;
++        &lt;!-- logger system --&gt;
++        &lt;logger&gt;
++            &lt;formatter&gt;simple&lt;/formatter&gt;
++            &lt;outputters&gt;
++                &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
++                    &lt;property name=&quot;path&quot; value=&quot;/wwwroot/medick/applications/eltodo/log/eltodo.log&quot; /&gt;
++                &lt;/outputter&gt;
++                &lt;!-- &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt; --&gt;
++                &lt;outputter name=&quot;mail&quot; level=&quot;3&quot;&gt;
++                    &lt;property name=&quot;subject&quot; value=&quot;Fatality on eltodo&quot; /&gt;
++                    &lt;property name=&quot;address&quot; value=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">user at example.com</A>&quot; /&gt;
++                &lt;/outputter&gt;
++            &lt;/outputters&gt;
++        &lt;/logger&gt;
++        &lt;!-- database(s) settings --&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;mysql&quot;
++                 hostspec = &quot;localhost&quot;
++                 database = &quot;eltodo&quot;
++                 username = &quot;root&quot;
++                 password = &quot;virus&quot; /&gt;
++        &lt;/database&gt;
++    &lt;/environment&gt;
+ 
+-&lt;application&gt;
+-     
+-  &lt;!-- General properties --&gt;
+-  &lt;property name=&quot;server_name&quot;      value=&quot;<A HREF="http://localhost">http://localhost</A>&quot; /&gt;
+-  &lt;property name=&quot;document_root&quot;    value=&quot;/eltodo&quot; /&gt;
+-  &lt;property name=&quot;rewrite&quot;          value=&quot;on&quot; /&gt;
+-     
+-  &lt;!-- Logger System --&gt;
+-  &lt;logger&gt;
+-      &lt;formatter&gt;simple&lt;/formatter&gt;
+-      &lt;outputters&gt;
+-        &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
+-            &lt;property name=&quot;path&quot; value=&quot;/wwwroot/medick/applications/eltodo/log/eltodo.log&quot; /&gt;
+-        &lt;/outputter&gt;
+-        &lt;!-- &lt;outputter name=&quot;stdout&quot;  level=&quot;0&quot; /&gt; --&gt;
+-      &lt;/outputters&gt;
+-  &lt;/logger&gt;
+-
+-  &lt;!-- Database(s) Settings --&gt;
+-  &lt;database default=&quot;one&quot;&gt;
+-    &lt;dsn id = &quot;one&quot;
+-           phptype  = &quot;mysql&quot;
+-           hostspec = &quot;localhost&quot;
+-           database = &quot;eltodo&quot;
+-           username = &quot;root&quot;
+-           password = &quot;virus&quot; /&gt;
+-  &lt;/database&gt;
+-
++    &lt;!-- a sample test environment --&gt;
++    &lt;environment name=&quot;test&quot;&gt;
++        &lt;!-- general properties --&gt;
++        &lt;properties&gt;
++            &lt;path&gt;/wwwroot/medick/applications/eltodo&lt;/path&gt;
++        &lt;/properties&gt;
++        &lt;!-- web context --&gt;
++        &lt;web&gt;
++            &lt;server_name&gt;<A HREF="http://29dots.com&lt;/server_name">http://29dots.com&lt;/server_name</A>&gt;
++            &lt;document_root&gt;/eltodo&lt;/document_root&gt;
++            &lt;rewrite&gt;on&lt;/rewrite&gt;
++        &lt;/web&gt;
++        &lt;!-- logger system --&gt;
++        &lt;logger&gt;
++            &lt;formatter&gt;simple&lt;/formatter&gt;
++            &lt;outputters&gt;
++                &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
++                    &lt;property name=&quot;path&quot; value=&quot;/wwwroot/medick/applications/eltodo/log/eltodo-test.log&quot; /&gt;
++                &lt;/outputter&gt;
++                &lt;!-- &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt; --&gt;
++                &lt;outputter name=&quot;mail&quot; level=&quot;3&quot;&gt;
++                    &lt;property name=&quot;subject&quot; value=&quot;Fatality on 29dots.com::eltodo&quot; /&gt;
++                    &lt;property name=&quot;address&quot; value=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">user at example.com</A>&quot; /&gt;
++                &lt;/outputter&gt;
++            &lt;/outputters&gt;
++        &lt;/logger&gt;
++        &lt;!-- database(s) settings --&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;sqlite&quot;
++                 database = &quot;/wwwroot/medick/applications/eltodo/db/eltodo-sqlite.db&quot; /&gt;
++        &lt;/database&gt;
++    &lt;/environment&gt;
++  
+ &lt;/application&gt;
+-
++  
+
+Modified: applications/eltodo/public/.htaccess
+===================================================================
+--- applications/eltodo/public/.htaccess	2006-03-14 06:14:25 UTC (rev 378)
++++ applications/eltodo/public/.htaccess	2006-03-18 17:36:03 UTC (rev 379)
+@@ -1,31 +1,40 @@
+-# eltodo project .htaccess file
+-# $Id: .htaccess 181 2005-10-03 20:34:29Z aurelian $
++# .htaccess file for eldepot sample medick application
++# $Id: default.htaccess 368 2006-03-05 09:44:42Z aurelian $
+ 
+ # Configuration
+-# php_value auto_prepend_file /wwwroot/medick/trunk/boot.php
+ 
+-SetEnv MEDICK_APPLICATION_PATH /wwwroot/medick/applications/eltodo
+-SetEnv MEDICK_APPLICATION_NAME eltodo
++# 1. Apache Section.
++DirectoryIndex index.html index.php
+ 
++# 2. PHP Options.
++# this options will not work for php as cgi
++# and it will be removed in version 0.2
++# HINT: move this one to PHPTemplateView class
+ php_value short_open_tag 1
++# this should depend on environment.
++# while we are on &quot;planning&quot;, we will 
++# keep this to 1
++php_value display_errors 1
+ 
+-#ErrorDocument 404 /todo.html
+- 
++# 4. Rewrite
+ RewriteEngine on
+ 
+-RewriteRule ^$ index.php  [L]
++# Set 1.
++#RewriteCond %{REQUEST_FILENAME} !-s
++#RewriteCond %{REQUEST_URI} !^index.php/$
++#RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
++
++# Set 2.
++RewriteBase /eltodo
++
++# Send requests without parameters to index.php
++# -- disabled since we want to show index.html
++# -- default index page for medick.
++#RewriteRule ^$ index.php  [L]
++# Send requests for files that exist to those files.
+ RewriteCond %{REQUEST_FILENAME} !-f
++# Send requests for directories that exist to those directories.
+ RewriteCond %{REQUEST_FILENAME} !-d
++# Send requests to index.php, appending the query string part.
+ RewriteRule (.*) index.php/$1  [QSA,L]
+ 
+-# all files with .something are skipped
+-# RewriteCond %{REQUEST_URI} \..+$
+-# RewriteCond %{REQUEST_URI} !\.html$
+-# RewriteRule .* - [L]
+-# the others are redirected to the front web controller
+-# RewriteRule ^(.*)$ index.php [QSA,L]
+-
+-#RewriteCond %{REQUEST_FILENAME} !-s
+-#RewriteCond %{REQUEST_URI} !^index.php/$
+-#RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+-
+
+Deleted: applications/eltodo/public/index.html
+===================================================================
+--- applications/eltodo/public/index.html	2006-03-14 06:14:25 UTC (rev 378)
++++ applications/eltodo/public/index.html	2006-03-18 17:36:03 UTC (rev 379)
+@@ -1,18 +0,0 @@
+-&lt;html&gt;
+-    &lt;head&gt;
+-        &lt;!-- $Id$ --&gt;
+-        &lt;title&gt;Welcome to Medick!&lt;/title&gt;
+-     &lt;/head&gt;
+-     &lt;body&gt;
+-         &lt;h3&gt;
+-             &lt;center&gt;Welcome To Medick&lt;/center&gt;
+-         &lt;/h3&gt;
+-
+-         &lt;h4&gt;You are ready to go!&lt;/h4&gt;
+-         &lt;p&gt;&lt;b&gt;Application name :&lt;/b&gt; eltodo&lt;/p&gt;
+-         &lt;p&gt;&lt;b&gt;Develop eltodo application on: &lt;/b&gt;/wwwroot/medick/applications/eltodo&lt;/p&gt;
+-         &lt;p&gt;Setup a default controller in &lt;i&gt;/wwwroot/medick/applications/eltodo/config/eltodo.routes.php&lt;/i&gt;, and remove this file.&lt;/p&gt;
+-         &lt;p&gt;Ask for support on medick &lt;a href=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-devel">https://lists.berlios.de/mailman/listinfo/medick-devel</A>&quot;&gt;development list&lt;/a&gt;.&lt;/p&gt;
+-    &lt;/body&gt;
+-&lt;/html&gt;
+-
+
+Modified: applications/eltodo/public/index.php
+===================================================================
+--- applications/eltodo/public/index.php	2006-03-14 06:14:25 UTC (rev 378)
++++ applications/eltodo/public/index.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -1,42 +1,19 @@
+ &lt;?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++// $Id: index.php 376 2006-03-12 08:04:30Z aurelian $
++
+ // 
+-// $Id: index.php 183 2005-10-07 04:53:56Z aurelian $
++// This file is part of eltodo project
++// auto-generated on  with medick version: 0.2.1
+ // 
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+ 
+-/**
+- * Index.php file.
+- * The file __APPLICATION__NAME__.bootstrap.php should be included here.
+- */
+-
++// complete path to medick boot.php file.
+ include_once('/wwwroot/medick/trunk/boot.php');
+-Dispatcher::dispatch();
++// complete path to eltodo.xml
++// and environment to load
++$d= new Dispatcher(
++          ContextManager::load(
++            '/wwwroot/medick/applications/eltodo/conf/eltodo.xml',
++            'localhost')
++        );
++$d-&gt;dispatch();
+ 
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/CHANGELOG	2006-03-18 17:36:03 UTC (rev 379)
+@@ -1,7 +1,12 @@
+ $Id$
+ (*) SVN version
+ 
+-0.2.0(*)
++0.2.1(18.Mar.2006)
++    - Added ``environment&quot; concept
++    - Added ActiveRecord::attributes() method
++    - Added ContextManager
++    - removed _SERVER[MEDICK_APPLICATION_NAME] and _SERVER[MEDICK_APPLICATION_PATH]
++    - COOKIES are not merged with HTTPRequest::parameters
+ 
+ 0.1.0(04.Mar.2006)
+     - Renamed ActionViewBase to ActionView, ActionControllerBase to ActionController and ActiveRecordBase to ActiveRecord;
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/TODO	2006-03-18 17:36:03 UTC (rev 379)
+@@ -1,25 +1,21 @@
+ $Id$
+-
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ Medick TODO list.
+-LEGEND:
+-(*) done tasks.
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 
+-Planned features for 0.2 series
+-    -&gt; environments (0.2.1)
+-    -&gt; context like (0.2.2)
+-    -&gt; cheap cache in ActiveRecord (0.2.3)
+-    -&gt; routing requirements (0.2.3)
+-    -&gt; expandable validators (0.2.4)
+-    -&gt; customizable error messages (0.2.4)
+-    -&gt; write in associations (0.2.5)
+-    -&gt; refactor &amp;&amp; unit-test
++*Planned features for 0.2 series*
++    # -environments (0.2.1)-
++    # context like (0.2.2)
++    # cheap cache in ActiveRecord (0.2.3)
++    # routing requirements (0.2.3)
++    # expandable validators (0.2.4)
++    # customizable error messages (0.2.4)
++    # write in associations (0.2.5)
++    # refactor &amp;&amp; unit-test
+     
+-Planned features for 0.3 series
+-    -&gt; scaffolding generator
+-    -&gt; refactor &amp;&amp; unit-test
+-    -&gt; RDBAC
+-    -&gt; i18n, l10n
+-    -&gt; caching
+-
++*Planned features for 0.3 series*
++    # scaffolding generator
++    # refactor &amp;&amp; unit-test
++    # RDBAC
++    # i18n, l10n
++    # caching
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/VERSION	2006-03-18 17:36:03 UTC (rev 379)
+@@ -1 +1 @@
+-0.2.0-svn
++0.2.1
+
+Modified: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/bin/medick.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -113,19 +113,23 @@
+ );
+ 
+ $search= array(
+-            '${LOG}',
+-            '${CORE}',
+-            '${APP_PATH}',
+-            '${APP_NAME}',
+-            '${MEDICK_V}'
++            // '${LOG}',
++            '${medick.core}',
++            '${app.path}',
++            '${app.name}',
++            '${ds}',
++            '${medick.version}',
++            '${date}'
+           );
+ 
+ $replace= array(
+-            $app_location.DIRECTORY_SEPARATOR.$folders['log'].DIRECTORY_SEPARATOR.$short_name.'.log',
++            // $app_location.DIRECTORY_SEPARATOR.$folders['log'].DIRECTORY_SEPARATOR.$short_name.'.log',
+             $medick_core,
+             $app_location,
+             $short_name,
+-            $medick_version
++            DIRECTORY_SEPARATOR,
++            $medick_version,
++            date('Y M d H:i:s')
+           );
+ 
+ foreach ($files as $from=&gt;$file) {
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/boot.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -53,19 +53,4 @@
+ include_once('medick/Medick.php');
+ set_error_handler(array(new ErrorHandler(), 'raiseError'));
+ include_once('action/controller/Dispatcher.php');
+-include_once('configurator/XMLConfigurator.php');
+-include_once('logger/Logger.php');
+ 
+-$conf_files = $_SERVER['MEDICK_APPLICATION_PATH'] . DIRECTORY_SEPARATOR . 'conf' .
+-                        DIRECTORY_SEPARATOR . $_SERVER['MEDICK_APPLICATION_NAME'];
+-
+-$configurator= new XMLConfigurator($conf_files . '.xml');                        
+-Registry::put($configurator, '__configurator');
+-
+-$logger= Registry::put(new Logger($configurator), '__logger');
+-
+-$logger-&gt;debug('Medick $v: ' . Medick::getVersion());
+-$logger-&gt;debug('Config: ' . $conf_files . '.xml');
+-$logger-&gt;debug('Routes: ' . $conf_files . '.routes.php');
+-include_once($conf_files . '.routes.php');
+-
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/libs/action/controller/Base.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -329,9 +329,12 @@
+         $this-&gt;template = ActionView::factory('php');
+         // predefined variables:
+         // TODO: check if we have a / at the end, if not, add one
+-        $this-&gt;template-&gt;assign('__base', $this-&gt;config-&gt;getProperty('document_root').'/');
+-        $this-&gt;template-&gt;assign('__server', $this-&gt;config-&gt;getProperty('server_name'));
++        
++        $this-&gt;template-&gt;assign('__base', $this-&gt;config-&gt;getWebContext()-&gt;document_root .'/');
++        $this-&gt;template-&gt;assign('__server', $this-&gt;config-&gt;getWebContext()-&gt;server_name);
++        
+         $this-&gt;template-&gt;assign('__controller', $this-&gt;params['controller']);
++        $this-&gt;template-&gt;assign('__version', Medick::getVersion());
+         $this-&gt;logger-&gt;debug($this-&gt;request-&gt;toString());
+     }
+ 
+@@ -370,8 +373,9 @@
+         if (is_null($controller)) {
+             $controller= $this-&gt;params['controller'];
+         }
+-        $redirect_to= $this-&gt;config-&gt;getProperty('server_name') . $this-&gt;config-&gt;getProperty('document_root') . '/';
+-        if (!$this-&gt;config-&gt;getProperty('rewrite')) {
++        $redirect_to= $this-&gt;config-&gt;getWebContext()-&gt;server_name . $this-&gt;config-&gt;getWebContext()-&gt;document_root . '/';
++        $rewrite = strtolower($this-&gt;config-&gt;getWebContext()-&gt;rewrite);
++        if ($rewrite == 'false' || $rewrite == 'off' || $rewrite == 0) {
+             $redirect_to .= 'index.php/';
+         }
+         $redirect_to .= $controller . '/' . $action;
+
+Modified: trunk/libs/action/controller/Dispatcher.php
+===================================================================
+--- trunk/libs/action/controller/Dispatcher.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/libs/action/controller/Dispatcher.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -38,29 +38,49 @@
+ include_once('action/controller/Request.php');
+ include_once('action/controller/Response.php');
+ include_once('action/controller/Base.php');
++include_once('context/ContextManager.php');
++include_once('logger/Logger.php');
+ 
+ /**
+  * It knows how to dispatch a request
+  * 
+- * The role of this class will increase in the next version.
++ * The role of this class will increase in the next versions.
+  *
+  * @package medick.action.controller
+  * @author Oancea Aurelian
+  */
+ class Dispatcher extends Object {
+ 
++    private $manager;
++    
++    public function Dispatcher(ContextManager $manager) {
++        $this-&gt;manager= $manager;
++    }
++    
+     /**
+      * Framework entry point
+      * @return void.
+      */
+-    public static function dispatch() {
++    public function dispatch() {
+         $request  = new HTTPRequest();
+         $response = new HTTPResponse();
++        
+         try {
++            $configurator= $this-&gt;manager-&gt;getConfigurator();
++            Registry::put($configurator, '__configurator');
++            Registry::put($logger= new Logger($configurator), '__logger');
++            $logger-&gt;debug('Config File: ' . $configurator-&gt;getConfigFile());
++            $ap= $configurator-&gt;getApplicationPath();
++            $an= $configurator-&gt;getApplicationName();
++            $logger-&gt;debug(&quot;{app.name} -&gt; $an&quot;);
++            $routes_path= $ap . DIRECTORY_SEPARATOR . 'conf' . DIRECTORY_SEPARATOR . $an . '.routes.php';
++            include_once($routes_path);
++            $logger-&gt;debug(&quot;routes loaded from: $routes_path&quot;);
++            $logger-&gt;debug(&quot;Medick {&quot; . Medick::getVersion() . &quot;} ready to dispatch.&quot;);
+             ActionControllerRouting::recognize($request)-&gt;process($request, $response)-&gt;dump();
+         } catch (Exception $ex) {
+             ActionController::process_with_exception($request, $response, $ex)-&gt;dump();
+-            Registry::get('__logger')-&gt;warn($ex-&gt;getMessage());
++            $logger-&gt;warn($ex-&gt;getMessage());
+         }
+     }
+ }
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/libs/action/controller/Injector.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -62,14 +62,8 @@
+     public function Injector($append= TRUE) {
+         $this-&gt;config = Registry::get('__configurator');
+         $this-&gt;logger = Registry::get('__logger');
+-        if (array_key_exists('MEDICK_APPLICATION_PATH', $_SERVER)) {
+-            $app_path = $_SERVER['MEDICK_APPLICATION_PATH'];
+-        } else {
+-            $app_path = $this-&gt;config-&gt;getProperty('application_path');
+-        }
++        $app_path= $this-&gt;config-&gt;getApplicationPath() . DIRECTORY_SEPARATOR;
+         
+-        $app_path .= DIRECTORY_SEPARATOR;
+-        
+         if ($append) {
+             $app_path .= 'app' . DIRECTORY_SEPARATOR;
+         }
+
+Modified: trunk/libs/action/controller/Map.php
+===================================================================
+--- trunk/libs/action/controller/Map.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/libs/action/controller/Map.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -58,7 +58,7 @@
+         foreach ($this-&gt;elements as $element) {
+             if ($element-&gt;match($request)) return $element;
+         }
+-        throw new RoutingException('Cannot find a Route for this hash: ' . $request-&gt;getPathInfo());    
++        throw new RoutingException('Cannot find a Route for this hash: ' . $request-&gt;getRequestURI());
+     }
+     
+     public function getRouteByName($name) {
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/libs/action/view/HTML.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -189,8 +189,9 @@
+ 
+     public static function create($controller, $action='index', $params=array(), $ext='html') {
+         $config = Registry::get('__configurator');
+-        $base   = $config-&gt;getProperty('document_root');
+-        if (!$config-&gt;getProperty('rewrite')) {
++        $base   = $config-&gt;getWebContext()-&gt;document_root;
++        $rewrite= strtolower($config-&gt;getWebContext()-&gt;rewrite);
++        if ($rewrite == 'false' || $rewrite == 'off' || $rewrite == 0) {
+             $base .= '/index.php';
+         }
+         $buff = $base . '/' . $controller . '/' . $action;
+
+Modified: trunk/libs/configurator/IConfigurator.php
+===================================================================
+--- trunk/libs/configurator/IConfigurator.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/libs/configurator/IConfigurator.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -76,7 +76,7 @@
+      * @return string, the property value
+      * @throws ConfiguratorException if the property is not found
+      */
+-    function getProperty($name);
++    // function getProperty($name);
+ 
+     /**
+      * Based on id we return the dsn array
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/libs/configurator/XMLConfigurator.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -46,13 +46,31 @@
+     /** @var SimpleXML */
+     protected $sxe;
+ 
++    protected $application_name;
++    
++    protected $config_file;
++    
+     /**
+      * Constructor
+      * 
+      * @param string/file xml
+      * @throws ConfiguratorException
+      */
+-    public function XMLConfigurator($xml) {
++    public function XMLConfigurator($stream, $env) {
++        $xmlelement= simplexml_load_file($stream);
++        foreach($xmlelement-&gt;environment as $e) {
++            if ($e['name']==$env) {
++                $this-&gt;sxe= $e;
++                break;
++            }
++        }
++
++        if ($this-&gt;sxe === NULL) {
++            throw new ConfiguratorException('Cannot find environment: ' . $env . ' in ' . $stream);
++        }
++        $this-&gt;application_name= $xmlelement['name'];
++        $this-&gt;config_file = $stream;
++        /*
+         if (file_exists($xml)) {
+             if (is_readable($xml)) {
+                 $this-&gt;sxe = simplexml_load_file($xml, 'SimpleXMLIterator');
+@@ -65,8 +83,25 @@
+         if ($this-&gt;sxe === false) {
+             throw new ConfiguratorException(&quot;Cannot read: &quot; . $xml . &quot; Bad Format!&quot;);
+         }
++        */
+     }
+ 
++    public function getApplicationName() {
++        return $this-&gt;application_name;
++    }
++    
++    public function getApplicationPath() {
++        return $this-&gt;sxe-&gt;properties-&gt;path;
++    }
++    
++    public function getWebContext() {
++        return $this-&gt;sxe-&gt;web;
++    }
++    
++    public function getConfigFile() {
++        return $this-&gt;config_file;
++    }
++    
+     /**
+      * Configuration Example:
+      * &lt;code&gt;
+@@ -142,32 +177,6 @@
+         return ucfirst((string)trim($this-&gt;sxe-&gt;logger-&gt;formatter) . 'Formatter');
+     }
+ 
+-    /** @see IConfigurator::getProperty() */
+-    public function getProperty($name) {
+-        foreach($this-&gt;sxe-&gt;property as  $properties ) {
+-            if($properties['name'] != $name)
+-                continue;
+-            $_query= (string)trim($properties['value']);
+-            if(
+-                ($_query=='') ||
+-                (strtolower($_query) == 'false') ||
+-                (strtolower($_query)=='off') ||
+-                ($_query == '0')
+-            ) {
+-                return FALSE;
+-            } elseif(
+-                (strtolower($_query)=='true') ||
+-                (strtolower($_query)=='on') ||
+-                ($_query == '1')
+-            ) {
+-                return TRUE;
+-            } else {
+-                return (string)$_query;
+-            }
+-        }
+-        throw new ConfiguratorException('Property ' . $name . ' not found!');
+-    }
+-
+     /**
+      * Dinamically sets a proprety on runtime.
+      *
+
+Added: trunk/libs/context/ContextManager.php
+===================================================================
+--- trunk/libs/context/ContextManager.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/libs/context/ContextManager.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -0,0 +1,61 @@
++&lt;?php
++// {{{ License
++//////////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005,2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++//////////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * 
++ * @package medick.context
++ */
++class ContextManager extends Object {
++
++    static protected $instance= NULL;
++
++    static public function load($stream, $environment) {
++
++        if (ContextManager::$instance === NULL) {
++            ContextManager::$instance= new ContextManager($stream, $environment);
++        }
++        return ContextManager::$instance;
++    }
++
++    private function ContextManager($stream, $environment) {
++        include_once('configurator/XMLConfigurator.php');
++        $this-&gt;configurator= new XMLConfigurator($stream, $environment);
++    }
++
++    public function getConfigurator() {
++        return $this-&gt;configurator;
++    }
++    
++}
++ 
+
+
+Property changes on: trunk/libs/context/ContextManager.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/libs/medick/Medick.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.2.0-svn';
++        return '0.2.1';
+     }
+ 
+ }
+
+Modified: trunk/libs/medick/Object.php
+===================================================================
+--- trunk/libs/medick/Object.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/libs/medick/Object.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -55,7 +55,7 @@
+      * @throws ReflectionException
+      */
+     public function getClass() {
+-        return new ReflectionClass($this-&gt;getClassName());
++        return new MedickClass($this-&gt;getClassName());
+     }
+ 
+     /**
+@@ -91,3 +91,19 @@
+ 
+ }
+ 
++class MedickClass extends ReflectionClass {
++
++    public function inheritsFrom($parent) {
++        return $this-&gt;isSubclassOf(new MedickClass($parent));
++    }
++    
++}
++
++class MedickMethod extends ReflectionMethod {
++
++}
++
++class MedickProperty extends ReflectionProperty {
++
++}
++
+
+Modified: trunk/skel/config/application.xml
+===================================================================
+--- trunk/skel/config/application.xml	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/skel/config/application.xml	2006-03-18 17:36:03 UTC (rev 379)
+@@ -1,45 +1,78 @@
+ &lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+-&lt;!--
++&lt;!-- 
+  ! $Id$
+- --&gt;
++ ! --&gt;
++&lt;application name=&quot;${app.name}&quot;&gt;
++    &lt;!-- localhost environment --&gt;
++    &lt;environment name=&quot;localhost&quot;&gt;
++        &lt;!-- general properties --&gt;
++        &lt;properties&gt;
++            &lt;path&gt;${app.path}&lt;/path&gt;
++        &lt;/properties&gt;
++        &lt;!-- web context --&gt;
++        &lt;web&gt;
++            &lt;server_name&gt;<A HREF="http://localhost&lt;/server_name">http://localhost&lt;/server_name</A>&gt;
++            &lt;document_root&gt;/${app.name}&lt;/document_root&gt;
++            &lt;rewrite&gt;on&lt;/rewrite&gt;
++        &lt;/web&gt;
++        &lt;!-- logger system --&gt;
++        &lt;logger&gt;
++            &lt;formatter&gt;simple&lt;/formatter&gt;
++            &lt;outputters&gt;
++                &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
++                    &lt;property name=&quot;path&quot; value=&quot;${app.path}${ds}log${ds}${app.name}.log&quot; /&gt;
++                &lt;/outputter&gt;
++                &lt;!-- &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt; --&gt;
++                &lt;outputter name=&quot;mail&quot; level=&quot;3&quot;&gt;
++                    &lt;property name=&quot;subject&quot; value=&quot;Fatality on ${app.name}&quot; /&gt;
++                    &lt;property name=&quot;address&quot; value=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">user at example.com</A>&quot; /&gt;
++                &lt;/outputter&gt;
++            &lt;/outputters&gt;
++        &lt;/logger&gt;
++        &lt;!-- database(s) settings --&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;mysql&quot;
++                 hostspec = &quot;localhost&quot;
++                 database = &quot;${app.name}&quot;
++                 username = &quot;root&quot;
++                 password = &quot;&quot; /&gt;
++        &lt;/database&gt;
++    &lt;/environment&gt;
+ 
+-&lt;application&gt;
+-
+-    &lt;!--  ====================== --&gt;
+-    &lt;!--   General properties    --&gt;
+-    &lt;!--  ====================== --&gt;
+-    &lt;property name=&quot;server_name&quot;      value=&quot;<A HREF="http://localhost">http://localhost</A>&quot; /&gt;
+-    &lt;property name=&quot;document_root&quot;    value=&quot;/${APP_NAME}&quot; /&gt;
+-    &lt;property name=&quot;rewrite&quot;          value=&quot;on&quot; /&gt;
+-
+-    &lt;!--  ====================== --&gt;
+-    &lt;!--     Logger System       --&gt;
+-    &lt;!--  ====================== --&gt;
+-    &lt;logger&gt;
+-        &lt;formatter&gt;simple&lt;/formatter&gt;
+-        &lt;outputters&gt;
+-            &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
+-              &lt;property name=&quot;path&quot; value=&quot;${LOG}&quot; /&gt;
+-            &lt;/outputter&gt;
+-            &lt;!-- &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt; --&gt;
+-            &lt;outputter name=&quot;mail&quot; level=&quot;3&quot;&gt;
+-                &lt;property name=&quot;subject&quot; value=&quot;Fatality on ${APP_NAME}&quot; /&gt;
+-                &lt;property name=&quot;address&quot; value=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">user at example.com</A>&quot; /&gt;
+-            &lt;/outputter&gt;
+-        &lt;/outputters&gt;
+-    &lt;/logger&gt;
+-
+-    &lt;!-- ======================= --&gt;
+-    &lt;!--   Database(s) Settings  --&gt;
+-    &lt;!-- ======================= --&gt;
+-    &lt;database default=&quot;one&quot;&gt;
+-        &lt;dsn id = &quot;one&quot;
+-             phptype  = &quot;mysql&quot;
+-             hostspec = &quot;localhost&quot;
+-             database = &quot;${APP_NAME}&quot;
+-             username = &quot;root&quot;
+-             password = &quot;&quot; /&gt;
+-    &lt;/database&gt;
+-
++    &lt;!-- a sample test environment --&gt;
++    &lt;environment name=&quot;test&quot;&gt;
++        &lt;!-- general properties --&gt;
++        &lt;properties&gt;
++            &lt;path&gt;${app.path}&lt;/path&gt;
++        &lt;/properties&gt;
++        &lt;!-- web context --&gt;
++        &lt;web&gt;
++            &lt;server_name&gt;<A HREF="http://exemplu.com&lt;/server_name">http://exemplu.com&lt;/server_name</A>&gt;
++            &lt;document_root&gt;/${app.name}&lt;/document_root&gt;
++            &lt;rewrite&gt;on&lt;/rewrite&gt;
++        &lt;/web&gt;
++        &lt;!-- logger system --&gt;
++        &lt;logger&gt;
++            &lt;formatter&gt;simple&lt;/formatter&gt;
++            &lt;outputters&gt;
++                &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
++                    &lt;property name=&quot;path&quot; value=&quot;${app.path}${ds}log${ds}${app.name}.log&quot; /&gt;
++                &lt;/outputter&gt;
++                &lt;!-- &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt; --&gt;
++                &lt;outputter name=&quot;mail&quot; level=&quot;3&quot;&gt;
++                    &lt;property name=&quot;subject&quot; value=&quot;Fatality on Exemplu.com::${app.name}&quot; /&gt;
++                    &lt;property name=&quot;address&quot; value=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">user at example.com</A>&quot; /&gt;
++                &lt;/outputter&gt;
++            &lt;/outputters&gt;
++        &lt;/logger&gt;
++        &lt;!-- database(s) settings --&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;sqlite&quot;
++                 database = &quot;${app.path}${ds}db${ds}${app.name}-sqlite.db&quot; /&gt;
++        &lt;/database&gt;
++    &lt;/environment&gt;
++  
+ &lt;/application&gt;
+-
++  
+
+Modified: trunk/skel/public/default.htaccess
+===================================================================
+--- trunk/skel/public/default.htaccess	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/skel/public/default.htaccess	2006-03-18 17:36:03 UTC (rev 379)
+@@ -6,13 +6,7 @@
+ # 1. Apache Section.
+ DirectoryIndex index.html index.php
+ 
+-# 2. Medick Related.
+-# this will not work for php as cgi
+-# and it will be removed in version 0.2
+-SetEnv MEDICK_APPLICATION_PATH ${APP_PATH}
+-SetEnv MEDICK_APPLICATION_NAME ${APP_NAME}
+-
+-# 3. PHP Options.
++# 2. PHP Options.
+ # this options will not work for php as cgi
+ # and it will be removed in version 0.2
+ # HINT: move this one to PHPTemplateView class
+@@ -31,11 +25,11 @@
+ #RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+ 
+ # Set 2.
+-RewriteBase /${APP_NAME}
++RewriteBase /${app.name}
+ 
+ # Send requests without parameters to index.php
+ # -- disabled since we want to show index.html
+-# default index page for medick.
++# -- default index page for medick.
+ #RewriteRule ^$ index.php  [L]
+ # Send requests for files that exist to those files.
+ RewriteCond %{REQUEST_FILENAME} !-f
+
+Modified: trunk/skel/public/index.php
+===================================================================
+--- trunk/skel/public/index.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/skel/public/index.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -1,8 +1,19 @@
+ &lt;?php
+ // $Id$
+ 
+-// Complete path to medick boot.php file.
+-include_once( '${CORE}' . DIRECTORY_SEPARATOR . 'boot.php' );
+-// Dispatch this request.
+-Dispatcher::dispatch();
++// 
++// This file is part of ${app.name} project
++// auto-generated on ${date} with medick version: ${medick.version}
++// 
+ 
++// complete path to medick boot.php file.
++include_once('${medick.core}${ds}boot.php');
++// complete path to ${app.name}.xml
++// and environment to load
++$d= new Dispatcher(
++          ContextManager::load(
++            '${app.path}${ds}conf${ds}${app.name}.xml',
++            'localhost')
++        );
++$d-&gt;dispatch();
++
+
+Modified: trunk/skel/scripts/generator.php
+===================================================================
+--- trunk/skel/scripts/generator.php	2006-03-14 06:14:25 UTC (rev 378)
++++ trunk/skel/scripts/generator.php	2006-03-18 17:36:03 UTC (rev 379)
+@@ -1,25 +1,45 @@
+ &lt;?php
+ /**
+  * Medick generator.
++ * @todo this will be refactored to use the planned IGenerator classes
++ * @package medick.generator
+  * $Id$
+  */
+  
+-$type= isset($argv[1]) ? $argv[1] : exit(&quot;Use one of controller or model for generator.\n&quot;);
++// {{{ main
++$type= isset($argv[1]) ? $argv[1] : exit(main_banner($argv[0]));
+ $name= isset($argv[2]) ? strtolower($argv[2]) : exit($argv[0] . &quot; needs a &quot; . $argv[1] . &quot; name.\n&quot;);
+-
++  
+ switch ($type) {
+     case &quot;controller&quot;:
+-        generate_controller($name, &quot;${APP_PATH}&quot;);
++        generate_controller($name, '${app.path}');
+         break;
+     case &quot;model&quot;:
+-        generate_model($name, &quot;${APP_PATH}&quot;);
+-         break;
+-     default:
+-         exit(&quot;Use one of controller or model for generator.\n&quot;);
+-  }
++        generate_model($name, '${app.path}');
++        break;
++    default:
++        exit(main_banner($argv[0]));
++}  
++exit (&quot;\nMedick (\$v: ${medick.version}) [ DONE ].\n&quot;);
++// }}}
+ 
+-exit (&quot;\nMedick (\$v: ${MEDICK_V}) [ DONE ].\n&quot;);
++// {{{ main_banner
++function main_banner($script_name) {
++    $buffer =&lt;&lt;&lt;EOBANNER
++Medick Generator ${medick.version} 
++(c) 2005-2006 Oancea Aurelian, see LICENSE file for copyright details.
++ 
++     Use one of controller or model:
++ 
++$script_name controller to generate a controller or
++$script_name model to generate a model.
++ 
++EOBANNER;
++     echo $buffer;   
++}
++// }}}
+ 
++// {{{ generate_controller(string name, string app_location)
+ function generate_controller($name, $app_location) {
+     $controller_class_name= ucfirst(strtolower($name)) . 'Controller';
+     echo &quot;Creating controller class $controller_class_name from $name\n&quot;;
+@@ -92,16 +112,18 @@
+      file_put_contents($controller_location, $controller_class_text);
+      echo &quot;$controller_location\n&quot;;
+   }
++// }}}
+ 
+- function generate_model($name, $app_location) {
+-     $model_class_name = ucfirst(strtolower($name));
+-     $model_location   = $app_location.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'models'.DIRECTORY_SEPARATOR.$name.'.php';
+-     echo &quot;Generating model $model_class_name from $name\n&quot;;
+-     if (file_exists($model_location)) {
+-         echo &quot;\texits $model_location\n&quot;;
+-         return;
+-     }
+-     $model_class_text =&lt;&lt;&lt;EOCLASS
++// {{{ generate_model(string name, string app_location)
++function generate_model($name, $app_location) {
++    $model_class_name = ucfirst(strtolower($name));
++    $model_location   = $app_location.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'models'.DIRECTORY_SEPARATOR.$name.'.php';
++    echo &quot;Generating model $model_class_name from $name\n&quot;;
++    if (file_exists($model_location)) {
++        echo &quot;\texits $model_location\n&quot;;
++        return;
++    }
++    $model_class_text =&lt;&lt;&lt;EOCLASS
+ &lt;?php
+ 
+  /**
+@@ -129,6 +151,7 @@
+ 
+     file_put_contents($model_location, $model_class_text);
+     echo &quot;\tcreate $model_location\n&quot;;
+-  }
++}
++// }}}
+ 
+- ?&gt;
++?&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000164.html">[Medick-svn] r378 - in trunk/libs: action/controller/http action/view active/record
+</A></li>
+	<LI>Next message: <A HREF="000166.html">[Medick-svn] r380 - trunk/skel/scripts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#165">[ date ]</a>
+              <a href="thread.html#165">[ thread ]</a>
+              <a href="subject.html#165">[ subject ]</a>
+              <a href="author.html#165">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

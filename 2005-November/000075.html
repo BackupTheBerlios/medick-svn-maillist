@@ -1,0 +1,325 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r279 - in trunk: . config libs/medick public_html
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-November/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r279%20-%20in%20trunk%3A%20.%20config%20libs/medick%20public_html&In-Reply-To=%3C200511261300.jAQD0cKU007702%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000074.html">
+   <LINK REL="Next"  HREF="000076.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r279 - in trunk: . config libs/medick public_html</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r279%20-%20in%20trunk%3A%20.%20config%20libs/medick%20public_html&In-Reply-To=%3C200511261300.jAQD0cKU007702%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r279 - in trunk: . config libs/medick public_html">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Nov 26 14:00:38 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000074.html">[Medick-svn] r278 - trunk/libs/medick
+</A></li>
+        <LI>Next message: <A HREF="000076.html">[Medick-svn] r280 - in trunk/libs/action/controller: . http
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#75">[ date ]</a>
+              <a href="thread.html#75">[ thread ]</a>
+              <a href="subject.html#75">[ subject ]</a>
+              <a href="author.html#75">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-11-26 14:00:33 +0100 (Sat, 26 Nov 2005)
+New Revision: 279
+
+Added:
+   trunk/boot.php
+Removed:
+   trunk/config/application.bootstrap.php
+Modified:
+   trunk/libs/medick/Version.php
+   trunk/public_html/default.htaccess
+   trunk/public_html/index.php
+Log:
+ - simplified installation procedures
+
+Added: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2005-11-25 21:59:49 UTC (rev 278)
++++ trunk/boot.php	2005-11-26 13:00:33 UTC (rev 279)
+@@ -0,0 +1,73 @@
++&lt;?php
++// {{{ License
++//////////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice, 
++//   this list of conditions and the following disclaimer. 
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation 
++//   and/or other materials provided with the distribution. 
++//   * Neither the name of locknet.ro nor the names of its contributors may 
++//   be used to endorse or promote products derived from this software without 
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++// 
++// $Id$
++// 
++//////////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * It boots a medick application
++ * @package locknet7.boot
++ */
++
++define( 'MEDICK_PATH', dirname(__FILE__)  . DIRECTORY_SEPARATOR );
++set_include_path( MEDICK_PATH . 'libs'   . DIRECTORY_SEPARATOR  );
++error_reporting(E_ALL|E_STRICT);
++
++if (version_compare(PHP_VERSION, '5.1.0') &lt;= 0) {
++    date_default_timezone_set('Europe/Bucharest');
++}
++
++include_once('medick/Object.php');
++include_once('medick/Exception.php');
++include_once('medick/ErrorHandler.php');
++set_error_handler(array(new ErrorHandler(), 'raiseError'));
++include_once('medick/Registry.php');
++include_once('medick/Dispatcher.php');
++include_once('medick/Version.php');
++include_once('configurator/XMLConfigurator.php');
++include_once('logger/Logger.php');
++include_once('action/controller/Map.php');
++
++$conf_files = $_SERVER['MEDICK_APPLICATION_PATH'] . DIRECTORY_SEPARATOR . 'conf' . 
++                        DIRECTORY_SEPARATOR . $_SERVER['MEDICK_APPLICATION_NAME'];
++                        
++Registry::put(new XMLConfigurator($conf_files . '.xml'), '__configurator');
++
++$map= Registry::put(new Map(), '__map');
++
++$logger= Registry::put(new Logger(), '__logger');
++
++$logger-&gt;debug('Core Loaded...');
++$logger-&gt;debug('Running on Medick $v:' . Version::getVersion());
++$logger-&gt;debug('XML Config File: ' . $conf_files . '.xml');
++$logger-&gt;debug('Routes File: ' . $conf_files . '.routes.php');
++
++include_once($conf_files . '.routes.php');
+
+
+Property changes on: trunk/boot.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Deleted: trunk/config/application.bootstrap.php
+===================================================================
+--- trunk/config/application.bootstrap.php	2005-11-25 21:59:49 UTC (rev 278)
++++ trunk/config/application.bootstrap.php	2005-11-26 13:00:33 UTC (rev 279)
+@@ -1,94 +0,0 @@
+-&lt;?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * Sample __APPLICATION__NAME__.bootsrap.php file
+- * Will bootstrap the application by setting it`s properties.
+- * Required files for start-up are included here
+- * @package locknet7.start
+- */
+-
+-// error reporting level, turn this off in production!
+-error_reporting(E_ALL|E_STRICT);
+-
+-if (version_compare(PHP_VERSION, '5.1.0') &lt;= 0) {
+-    date_default_timezone_set('Europe/Bucharest');
+-}
+-
+-$pathinfo = pathinfo(__FILE__);
+-$file     = explode('.',$pathinfo['basename']);
+-
+-// application name
+-define('APP_NAME', $file[0]);
+-
+-// main TOP_LOCATION.
+-define('TOP_LOCATION', dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR);
+-
+-// include_path, rewrite the existing one
+-set_include_path( TOP_LOCATION . 'libs'   . DIRECTORY_SEPARATOR . PATH_SEPARATOR );
+-
+-// load core classes.
+-include_once('medick/Object.php');
+-include_once('medick/Exception.php');
+-include_once('medick/ErrorHandler.php');
+-include_once('medick/Registry.php');
+-include_once('medick/Dispatcher.php');
+-include_once('medick/Version.php');
+-
+-// set-up the error handler:
+-set_error_handler(array(new ErrorHandler(), 'raiseError'));
+-
+-// hook a Configurator into Registry.
+-include_once('configurator/XMLConfigurator.php');
+-Registry::put(new XMLConfigurator(TOP_LOCATION . 'config' . DIRECTORY_SEPARATOR . APP_NAME . '.xml'), '__configurator');
+-
+-// get some orientation.
+-include_once('action/controller/Map.php');
+-$map= Registry::put(new Map(), '__map');
+-
+-// core loaded.
+-include_once('logger/Logger.php');
+-$logger= new Logger();
+-$logger-&gt;debug('Core Loaded...');
+-$logger-&gt;debug('Running on Medick $v:' . Version::getVersion());
+-$logger-&gt;debug('Bootstrapped: ' . APP_NAME . '.bootstrap.php');
+-$logger-&gt;debug('XML Config File: ' . APP_NAME . '.xml');
+-$logger-&gt;debug('Routes File: ' . APP_NAME . '.routes.php');
+-Registry::put($logger, '__logger');
+-
+-// load application map.
+-include_once(TOP_LOCATION . 'config' . DIRECTORY_SEPARATOR . APP_NAME . '.routes.php');
+-
+-$logger-&gt;debug('Routes Loaded. Application Ready.');
+-?&gt;
+
+Modified: trunk/libs/medick/Version.php
+===================================================================
+--- trunk/libs/medick/Version.php	2005-11-25 21:59:49 UTC (rev 278)
++++ trunk/libs/medick/Version.php	2005-11-26 13:00:33 UTC (rev 279)
+@@ -48,7 +48,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return Version::MAJOR . '.' . VERSION::MINOR . '.' . VERSION::TINY . '-svn';
++        return Version::MAJOR . '.' . Version::MINOR . '.' . Version::TINY . '-svn';
+     }
+ 
+ }
+
+Modified: trunk/public_html/default.htaccess
+===================================================================
+--- trunk/public_html/default.htaccess	2005-11-25 21:59:49 UTC (rev 278)
++++ trunk/public_html/default.htaccess	2005-11-26 13:00:33 UTC (rev 279)
+@@ -1,18 +1,18 @@
+ # default.htaccess file for Medick framework.
+ # rename-it to .htaccess
+ # $Id$
++
++# Configuration
++php_value auto_prepend_file /wwwroot/medick/trunk/boot.php
++# php_value error_reporting 2047
++
++SetEnv MEDICK_APPLICATION_PATH __MEDICK__APPLICATION__PATH__
++SetEnv MEDICK_APPLICATION_NAME __MEDICK__APPLICATION__NAME__
+  
+-ErrorDocument 404 /todo.html
+- 
+ RewriteEngine on
+ 
+ RewriteCond    %{REQUEST_FILENAME}  -d
+ RewriteRule    ^(.+[^/])$           $1/  [R]
+- 
+-# ## Works
+-#RewriteRule ^todo/edit/(.*)$ /index.php?controller=todo&amp;action=edit&amp;id=$1 [NE,L]
+-#RewriteRule ^todo/(.*)$ /index.php?controller=todo&amp;action=$1 [NE,L]
+-# ##
+   
+ RewriteRule ^([A-Za-z]+)/?([A-Za-z]+)/?\.html$ index.php?controller=$1&amp;action=$2 [NS]
+ RewriteRule ^([A-Za-z]+)/([A-Za-z]+)/([0-9]+)\.html?$ index.php?controller=$1&amp;action=$2&amp;id=$3 [NS]
+
+Modified: trunk/public_html/index.php
+===================================================================
+--- trunk/public_html/index.php	2005-11-25 21:59:49 UTC (rev 278)
++++ trunk/public_html/index.php	2005-11-26 13:00:33 UTC (rev 279)
+@@ -32,12 +32,5 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-/**
+- * Index.php file.
+- * The file __APPLICATION__NAME__.bootstrap.php should be included here.
+- */
+-
+-include_once(___PATH__TO__YOUR__bootstrap.php__FILE__HERE__);
+-
++/** Main Entry Point */
+ Dispatcher::dispatch();
+-
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000074.html">[Medick-svn] r278 - trunk/libs/medick
+</A></li>
+	<LI>Next message: <A HREF="000076.html">[Medick-svn] r280 - in trunk/libs/action/controller: . http
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#75">[ date ]</a>
+              <a href="thread.html#75">[ thread ]</a>
+              <a href="subject.html#75">[ subject ]</a>
+              <a href="author.html#75">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

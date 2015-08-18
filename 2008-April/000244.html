@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r464 - trunk/libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2008-April/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r464%20-%20trunk/libs/active/record&In-Reply-To=%3C200804071925.m37JPVQ7009333%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000243.html">
+   <LINK REL="Next"  HREF="000245.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r464 - trunk/libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r464%20-%20trunk/libs/active/record&In-Reply-To=%3C200804071925.m37JPVQ7009333%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r464 - trunk/libs/active/record">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Mon Apr  7 21:25:31 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000243.html">[Medick-svn] r463 - in exp: . medick2 medick2/config medick2/public	medick2/tmp medick2/tmp/one medick2/tmp/two medick2/vendor	medick2/vendor/medick medick2/vendor/medick/lib	medick2/vendor/medick/lib/action	medick2/vendor/medick/lib/action/controller	medick2/vendor/medick/lib/action/controller/http	medick2/vendor/medick/lib/context medick2/vendor/medick/lib/logger	medick2/vendor/medick/lib/logger/formatter	medick2/vendor/medick/lib/logger/outputter	medick2/vendor/medick/lib/medick	medick2/vendor/medick/lib/plugin medick2/vendor/plugins	medick2/vendor/plugins/foo medick2/vendor/plugins/foo/lib
+</A></li>
+        <LI>Next message: <A HREF="000245.html">[Medick-svn] r465 - trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#244">[ date ]</a>
+              <a href="thread.html#244">[ thread ]</a>
+              <a href="subject.html#244">[ subject ]</a>
+              <a href="author.html#244">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2008-04-07 21:25:31 +0200 (Mon, 07 Apr 2008)
+New Revision: 464
+
+Modified:
+   trunk/libs/active/record/Base.php
+Log:
+ -- fixed a bug related with updating records and call to undefinied method isAffected(), where is should be a call to Field property isAffected
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2008-04-02 21:45:05 UTC (rev 463)
++++ trunk/libs/active/record/Base.php	2008-04-07 19:25:31 UTC (rev 464)
+@@ -625,7 +625,7 @@
+ 
+         // foreach($this-&gt;getAffectedFields() as $field) {
+         foreach($this-&gt;fields as $field) {
+-            if($field-&gt;isAffected()) $sql .= $field-&gt;getName() . ' = ?, ';
++            if($field-&gt;isAffected) $sql .= $field-&gt;getName() . ' = ?, ';
+         }
+         return substr($sql, 0, -2) . $sqlSnippet;
+     }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000243.html">[Medick-svn] r463 - in exp: . medick2 medick2/config medick2/public	medick2/tmp medick2/tmp/one medick2/tmp/two medick2/vendor	medick2/vendor/medick medick2/vendor/medick/lib	medick2/vendor/medick/lib/action	medick2/vendor/medick/lib/action/controller	medick2/vendor/medick/lib/action/controller/http	medick2/vendor/medick/lib/context medick2/vendor/medick/lib/logger	medick2/vendor/medick/lib/logger/formatter	medick2/vendor/medick/lib/logger/outputter	medick2/vendor/medick/lib/medick	medick2/vendor/medick/lib/plugin medick2/vendor/plugins	medick2/vendor/plugins/foo medick2/vendor/plugins/foo/lib
+</A></li>
+	<LI>Next message: <A HREF="000245.html">[Medick-svn] r465 - trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#244">[ date ]</a>
+              <a href="thread.html#244">[ thread ]</a>
+              <a href="subject.html#244">[ subject ]</a>
+              <a href="author.html#244">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

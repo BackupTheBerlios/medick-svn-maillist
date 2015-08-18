@@ -1,0 +1,1504 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r431 - in trunk/libs: action/controller	action/controller/http action/controller/session action/view	active/record active/support configurator context logger	logger/formatter medick medick/io
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r431%20-%20in%20trunk/libs%3A%20action/controller%0A%09action/controller/http%20action/controller/session%20action/view%0A%09active/record%20active/support%20configurator%20context%20logger%0A%09logger/formatter%20medick%20medick/io&In-Reply-To=%3C200706121437.l5CEbKgW015202%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000211.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r431 - in trunk/libs: action/controller	action/controller/http action/controller/session action/view	active/record active/support configurator context logger	logger/formatter medick medick/io</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r431%20-%20in%20trunk/libs%3A%20action/controller%0A%09action/controller/http%20action/controller/session%20action/view%0A%09active/record%20active/support%20configurator%20context%20logger%0A%09logger/formatter%20medick%20medick/io&In-Reply-To=%3C200706121437.l5CEbKgW015202%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r431 - in trunk/libs: action/controller	action/controller/http action/controller/session action/view	active/record active/support configurator context logger	logger/formatter medick medick/io">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Tue Jun 12 16:37:20 CEST 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000211.html">[Medick-svn] r432 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#212">[ date ]</a>
+              <a href="thread.html#212">[ thread ]</a>
+              <a href="subject.html#212">[ subject ]</a>
+              <a href="author.html#212">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-06-12 16:37:19 +0200 (Tue, 12 Jun 2007)
+New Revision: 431
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Dispatcher.php
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/action/controller/Map.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Response.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/Routing.php
+   trunk/libs/action/controller/http/Cookie.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+   trunk/libs/action/controller/session/CreoleSessionContainer.php
+   trunk/libs/action/controller/session/ISessionContainer.php
+   trunk/libs/action/controller/session/Session.php
+   trunk/libs/action/view/Base.php
+   trunk/libs/action/view/HTML.php
+   trunk/libs/action/view/JSON.php
+   trunk/libs/active/record/Association.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Field.php
+   trunk/libs/active/record/QueryBuilder.php
+   trunk/libs/active/record/RowsAggregate.php
+   trunk/libs/active/record/SQLCommand.php
+   trunk/libs/active/record/Validator.php
+   trunk/libs/active/support/Inflector.php
+   trunk/libs/configurator/IConfigurator.php
+   trunk/libs/configurator/INIConfigurator.php
+   trunk/libs/configurator/LoggerConfigurator.php
+   trunk/libs/configurator/XMLConfigurator.php
+   trunk/libs/context/ContextManager.php
+   trunk/libs/logger/ILogger.php
+   trunk/libs/logger/Logger.php
+   trunk/libs/logger/LoggingEvent.php
+   trunk/libs/logger/formatter/DefaultFormatter.php
+   trunk/libs/logger/formatter/Formatter.php
+   trunk/libs/logger/formatter/SimpleFormatter.php
+   trunk/libs/medick/ConsoleOptions.php
+   trunk/libs/medick/ErrorHandler.php
+   trunk/libs/medick/Medick.php
+   trunk/libs/medick/Object.php
+   trunk/libs/medick/Registry.php
+   trunk/libs/medick/io/Folder.php
+   trunk/libs/medick/util.php
+Log:
+ -- more docs for ActionController, more features added
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/Base.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -35,48 +35,195 @@
+ include_once('action/view/Base.php');
+ 
+ /**
+- * Base Class For Our Application Controllers
++ * Base Class For User Application Controllers
+  *
+- * Controller Sample
++ * &lt;h3&gt;Controllers Basics&lt;/h3&gt;
++ *
++ * Sample1:
++ *
+  * &lt;code&gt;
+  *  class ProjectController extends ApplicationController {
++ *     
+  *    public function index() {
+  *      $this-&gt;render_text(&quot;Hello Index!&quot;);
+  *    }
++ *
++ *    public function hello() {
++ *      $this-&gt;date= date('%Y-%m-%d');
++ *      // similar with this:
++ *      // $this-&gt;template-&gt;assign('date', date('%Y-%m-%d'));
++ *    }
++ *
+  *  }
+  * &lt;/code&gt;
+- * Valid Controllers will be keept inside the folder app/controllers and will extend
+- * ApplicationController or ActionController.
++ * 
++ * The class &lt;em&gt;ProjectController&lt;/em&gt; is a Controller for your application.
+  *
+- * Incoming actions should be declared as public methods inside the ActionController.
+- * Keep your helper methods as protected or private since one could somehow find 
+- * the URL to invoke them.
++ * To hava a valid Controller you need to:
+  *
+- * Inside ApplicationController (usualy is the base class for your application controllers)
+- * a method named &lt;i&gt;__common&lt;/i&gt; is always invoked before the action itself. You can use this
+- * method for assing template variables common to all your templates (like a menu with items from database).
++ * 1. name your Controller class with &lt;em&gt;${Name}Controller&lt;/em&gt;, eg: ProjectController, UserController, MainController
+  *
++ * 2. extend ApplicationController or ActionController
++ *
++ * 3. save the Controller class file as &lt;em&gt;${name}_controller.php&lt;/em&gt; 
++ * inside &lt;em&gt;app/controllers&lt;/em&gt; folder, eg: app/controllers/project_controller.php
++ *
++ * Each application can have a base ApplicationController defined in &lt;em&gt;app/controllers/application.php&lt;/em&gt;.
++ * Using inheritance other Controllers can use methods defined in ApplicationController.
++ *
++ * In the above sample, &lt;em&gt;index&lt;/em&gt; and &lt;em&gt;hello&lt;/em&gt; methods represents an Action.
++ * Using the medick Routing system, incoming requests are mapped to an action. 
++ * In fact, every public method inside your Controllers are Actions that can be executed 
++ * invoking the proper URL in the browser.
++ *
++ * To protect your data and to avoid strange behaviors in your application, keep any other method
++ * that do not represents an Action as protected or private.
++ *
++ * Back to Sample1, the method &lt;em&gt;index&lt;/em&gt; inside &lt;em&gt;ProjectController&lt;/em&gt; class 
++ * is mapped to a Request with this form:
++ *
++ * &lt;pre&gt;
++ *  /project/index
++ *  /project/index.html
++ *  /project.html
++ * &lt;/pre&gt;
++ *
++ * while the &lt;em&gt;hello&lt;/em&gt; action will be invoked when the Request URL is:
++ *
++ * &lt;pre&gt;
++ *   /project/hello.html
++ *   /project/hello
++ * &lt;/pre&gt;
++ *
++ * &lt;h3&gt;Building a Response, the View&lt;/h3&gt;
++ *
++ * After the Action is executed, medick will build a Response object that later on will be 
++ * passed to the user agent. This object is build using the rendering system.
++ * 
++ * By default, medick will try to load and parse - using a template engine system - 
++ * a View located inside the folder app/views/CONTROLLER/ACTION.phtml.
++ *
++ * A View is the place where you should write client-side code or the place 
++ * where you should use variables defined in the Controller.
++ *
++ * The default template engine system is a pure PHP implementation, this way you can use PHP syntax
++ * for whatever operations you need without learning or debuging code that you are not familiar with it.
++ * On medick users request, other systems could be integrated into the framework. 
++ * And I'm thinking about Smarty or PHPTAL.
++ *
++ * Inside of an Action, the user can define &lt;em&gt;template variables&lt;/em&gt;. A template variable is a
++ * PHP variable that will be available in the Views.
++ * To define such a variable, you can access &lt;em&gt;assign&lt;/em&gt; method on the template object 
++ * - witch is the recommended way to do it - or, you can use the PHP magick (already implemented):
++ *
++ * &lt;code&gt;
++ *  $this-&gt;template-&gt;assing('variable_name', 'variable_value');
++ * &lt;/code&gt;
++ * or:
++ * &lt;code&gt;
++ *  $this-&gt;variable_name = variable_value;
++ * &lt;/code&gt;
++ * 
++ * Later on, in the View, you can access the &lt;em&gt;variable_name&lt;/em&gt; using &lt;em&gt;$variable_name&lt;/em&gt; syntax.
++ *
++ * &lt;h3&gt;Anatomy of a medick Request&lt;/h3&gt;
++ *
++ * Order of the invoked methods:
++ * [Medick Framework]: instantiate --&gt; load_models --&gt; 
++ * [User Controller]: __common --&gt; before_filters --&gt; action --&gt; after_filters
++ * 
++ * &lt;h4&gt;Loading Models&lt;/h4&gt;
++ *
++ * A Controller is the place where we indicate what Models we need. 
++ * We do this by defining a &lt;em&gt;models&lt;/em&gt; instance variable.
++ *
++ * Sample2:
++ * &lt;code&gt;
++ * class ProjectController extends ApplicationController {
++ *      protected $models= array('project', 'user');
++ *     // same as:
++ *     // protected $models = 'project, user';
++ *
++ *     // lists available projects
++ *     public function show() {
++ *          $this-&gt;template-&gt;assign('projects', Project::find());
++ *     }
++ *
++ * }
++ * &lt;/code&gt;
++ *
++ * The framework will know how to include the requested models and how to perform basic checks on them.
++ *
++ * &lt;h4&gt;Need a constructor?&lt;/h4&gt;
++ *
++ * Since you might need some sort of contructor for your Controller, but defining one might lead to
++ * confusions on the system, medick introduced a magick method: &lt;em&gt;__common&lt;/em&gt; 
++ * that it's invoked after the Controller is ready.
++ * Not a real constructor, but the &lt;em&gt;__common&lt;/em&gt; method can be used to perform all kind of initializations that
++ * one needs.
++ *
++ * Sample3:
++ * &lt;code&gt;
++ * class ProjectController extends ApplicationController {
++ *     private $base_project;
++ *     protected $models = 'project, user';
++ *
++ *     protected function __common() {
++ *          $this-&gt;base_project= Project::find('first');
++ *     }
++ *
++ *     public function sub_projects() {
++ *          $p= Project::find('all', array('conditions'=&gt;&quot;parent_id=&quot; . $this-&gt;base_project-&gt;id));
++ *          $this-&gt;template-&gt;assign('projects', $p);
++ *     }
++ * }
++ * &lt;/code&gt;
++ *
++ * &lt;h4&gt;ActionController filters&lt;/h4&gt;
++ * 
++ * &lt;h3&gt;Available Objects&lt;/h3&gt;
++ * 
++ * &lt;h4&gt;Accessing the Request parameters&lt;/h4&gt;
++ *
++ * &lt;h4&gt;Session&lt;/h4&gt;
++ *
++ * &lt;h4&gt;Respose tunning&lt;/h4&gt;
++ *
++ * &lt;h4&gt;Using Logger&lt;/h4&gt;
++ *
++ * &lt;h4&gt;Accessing custom confguration&lt;/h4&gt;
++ *
++ * &lt;h3&gt;Pre-defined template variables&lt;/h3&gt;
++ *
+  * ActionController also defines some magic medick template variables. We will use &lt;b&gt;__&lt;/b&gt; to mark them.
+  * Predefined medick variables available in templates:
+  * &lt;ul&gt;
+  *  &lt;li&gt;__base: the document root&lt;/li&gt;
+  *  &lt;li&gt;__server_name: this server name&lt;/li&gt;
+  *  &lt;li&gt;__controller: incoming controller&lt;/li&gt;
+- *  &lt;li&gt;__action: curent action&lt;/li&gt;
++ *  &lt;li&gt;__action: current action&lt;/li&gt;
+  *  &lt;li&gt;__version: medick version&lt;/li&gt;
+  * &lt;/ul&gt;
+  * 
+- * Other features:
+- * &lt;ul&gt;
+- *  &lt;li&gt;flash() method can keep anything in session for the next controller, after that the flash container is discarded&lt;/li&gt;
+- *  &lt;li&gt;unified look and feel for your application by using layouts&lt;/li&gt;
+- *  &lt;li&gt;straight access to ActionView&lt;/li&gt;
+- *  &lt;li&gt;filters (this is still a work in progress)&lt;/li&gt;
+- *  &lt;li&gt;logging capabilities&lt;/li&gt;
+- * &lt;/ul&gt;
++ * &lt;h3&gt;Other features&lt;/h3&gt;
++ *
++ * &lt;h4&gt;flash!&lt;/h4&gt; 
++ *  
++ * method can keep anything in session for the next controller, after that the flash container is discarded
+  * 
++ * &lt;h4&gt;layouts&lt;/h4&gt;
++ * 
++ * unified look and feel for your application using layouts
++ *
++ * &lt;h4&gt;redirects&lt;/h4&gt;
++ *
++ * &lt;h3&gt;Missing features&lt;/h3&gt;
++ *
++ * 
++ *
++ * 
+  * @package medick.action.controller
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class ActionController extends Object {
+ 
+@@ -126,9 +273,13 @@
+ 
+     /** @var array
+         before_filters array */
+-    protected $before_filter= array();
++    protected $before_filters= array();
+ 
+     /** @var array
++        after_filters array */
++    protected $after_filters= array();    
++
++    /** @var array
+         list of models */
+     protected $models= array();
+ 
+@@ -178,14 +329,20 @@
+      * @param Response response, the response
+      * @return Response
+      */
+-    public function process(Request $request, Response $response) {
++    public final function process(Request $request, Response $response) {
+         $this-&gt;instantiate($request, $response);
+-        $this-&gt;add_models();
+-        $this-&gt;add_before_filters();
+-        $this-&gt;perform_action($request-&gt;getParameter('action'));
++        $this-&gt;load_models();
++        $this-&gt;__common();
++        $this-&gt;execute_before_filters();
++        $this-&gt;perform_action( $request-&gt;getParameter('action') );
++        $this-&gt;execute_after_filters();
+         return $response;
+     }
+ 
++    // {{{ callbacks
++    protected function __common() {  }
++    // }}}
++
+     // {{{ renders.
+ 
+     /**
+@@ -483,12 +640,11 @@
+         $this-&gt;template-&gt;assign('__action', $this-&gt;params['action']);
+         // $this-&gt;logger-&gt;debug('Action:: ' . strtolower($action_name));
+         // quickly load the common magick method.
+-        if ($_common= $this-&gt;createMethod('__common')) {
+-            $_common-&gt;invoke($this);
+-        }
++        // if ($_common= $this-&gt;createMethod('__common')) {
++        //     $_common-&gt;invoke($this);
++        // }
+         // invoke the action.
+         $action-&gt;invoke($this);
+-
+         if ($this-&gt;action_performed) return;
+         $this-&gt;render();
+     }
+@@ -503,7 +659,7 @@
+      *    protected before_filter = array('authenticate');
+      *    // an action
+      *    public function index() {
+-     *      return News::find_all();
++     *      $this-&gt;news= News::find_all();
+      *    }
+      *    // Notes: 1) use protected for internal filters
+      *    // 2) a filter must return void, in case of a failure,
+@@ -515,32 +671,40 @@
+      * &lt;/code&gt;
+      * @throws MedickException if the definition of the before filter is wrong
+      */
+-    private function add_before_filters() {
+-        if (!is_array($this-&gt;before_filter)) {
+-            throw new MedickException(
+-                $this-&gt;getClassName() . '-&gt;$before_filter should be an array
+-                    of strings, each string representing a protected method name');
+-        }
+-        foreach($this-&gt;before_filter as $filter_name) {
+-            if (!$filter= $this-&gt;createMethod($filter_name)) {
+-                throw new MedickException('Cannot load filter: ' . $this-&gt;getClassName() . '::' . $filter_name . 
+-                                    ' Call to undefined method: ' .$this-&gt;getClassName() . '::' . $filter_name);
++    private function execute_before_filters() {
++        $this-&gt;execute_filters( $this-&gt;before_filters );
++    }
++    
++    private function execute_after_filters() {
++        $this-&gt;execute_filters( $this-&gt;after_filters );
++    }
++
++    private function execute_filters( $filters ) {
++        if(!is_array($filters)) $filters = explode(',', $filters);
++        foreach($filters as $name) {
++            $name= trim($name);
++            // try to create the method
++            if(!$filter= $this-&gt;createMethod( $name )) {
++                $this-&gt;logger-&gt;warn(sprintf('[Medick] &gt;&gt; Cannot laod filter %s::%s, call to undefined method.',
++                    $this-&gt;getClassName(),$name));
++                continue;                
+             }
+             // a filter should be declared as protected.
+             if (!$filter-&gt;isProtected()) {
+-                throw new MedickException(
+-                    'Your filter,``'. $filter_name . '&quot; is declared as a
+-                        public method of class ``' . $this-&gt;getClassName() .'&quot; !');
++                $this-&gt;logger-&gt;warn('[Medick] &gt;&gt; Your filter, '. $name . ' is not declared as a
++                    protected method for class ' . $this-&gt;getClassName() .', so it cannot be executed.');
++                continue;
+             }
+-            // we cannot use invoke since the filter is not public
+-            $this-&gt;$filter_name();
++            $this-&gt;logger-&gt;debug('[Medick] &gt;&gt; Executing filter ' . $name. '.');
++            $this-&gt;$name();
++            // $this-&gt;logger-&gt;debug('[Medick] &gt;&gt; Filter ' . $name . ' executed.');
+         }
+     }
+ 
+     /**
+      * Injects model names into ActiveRecordBase by using the ModelInjector.
+      */
+-    private function add_models() {
++    private function load_models() {
+         if (!is_array($this-&gt;models)) {
+             $this-&gt;models= explode(',',$this-&gt;models);
+         }
+@@ -566,7 +730,7 @@
+         try {
+             return new ReflectionMethod($this, strtolower($method_name));
+         } catch (ReflectionException $rEx) {
+-            $this-&gt;logger-&gt;info($rEx-&gt;getMessage());
++            // $this-&gt;logger-&gt;info($rEx-&gt;getMessage());
+             return FALSE;
+         }
+     }
+
+Modified: trunk/libs/action/controller/Dispatcher.php
+===================================================================
+--- trunk/libs/action/controller/Dispatcher.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/Dispatcher.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -44,10 +44,10 @@
+ /**
+  * It knows how to dispatch a request
+  * 
+- * The role of this class will increase in the next versions.
++ * It reads the configuration file and loads the application routes
+  *
+  * @package medick.action.controller
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Dispatcher extends Object {
+ 
+@@ -69,14 +69,14 @@
+             $configurator= $this-&gt;manager-&gt;getConfigurator();
+             Registry::put($configurator, '__configurator');
+             Registry::put($logger= new Logger($configurator), '__logger');
+-            $logger-&gt;debug('Config File: ' . $configurator-&gt;getConfigFile());
+-            $ap= $configurator-&gt;getApplicationPath();
+-            $an= $configurator-&gt;getApplicationName();
+-            $logger-&gt;debug(&quot;{app.name} -&gt; $an&quot;);
++            $ap= $configurator-&gt;getApplicationPath(); // application path
++            $an= $configurator-&gt;getApplicationName(); // application name
++            $logger-&gt;debug('[Medick] &gt;&gt; version: ' . Medick::getVersion() . ' ready for ' . $an);
++            $logger-&gt;debug('[Medick] &gt;&gt; Application path ' . $ap);
+             $routes_path= $ap . DIRECTORY_SEPARATOR . 'conf' . DIRECTORY_SEPARATOR . $an . '.routes.php';
+-            include_once($routes_path);
+-            $logger-&gt;debug(&quot;routes loaded from: $routes_path&quot;);
+-            $logger-&gt;debug(&quot;Medick {&quot; . Medick::getVersion() . &quot;} ready to dispatch.&quot;);
++            include_once($routes_path); // load routes
++            $logger-&gt;debug('[Medick] &gt;&gt; Config File: ' . str_replace($ap, '${'.$an.'}', $configurator-&gt;getConfigFile()) );
++            $logger-&gt;debug('[Medick] &gt;&gt; Routes loaded from: '. str_replace($ap, '${'.$an.'}', $routes_path));
+             ActionControllerRouting::recognize($request)-&gt;process($request, $response)-&gt;dump();
+         } catch (Exception $ex) {
+             ActionController::process_with_exception($request, $response, $ex)-&gt;dump();
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/Injector.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -40,6 +40,7 @@
+  * Aditional using php reflection api, it validates the user classes
+  *
+  * @package medick.action.controller
++ * @author Aurelian Oancea
+  */
+ class Injector extends Object {
+ 
+@@ -126,14 +127,17 @@
+      * @return void
+      * @access protected
+      */
+-    protected function injectModel($name) {
++    protected function injectModel( $name ) {
+         $location= $this-&gt;path['models'] . $name . '.php';
+-        $this-&gt;logger-&gt;debug('Model: ' . $location);
++        
++        $this-&gt;logger-&gt;debug( '[Medick] &gt;&gt; Loading Model ' . ucfirst( $name ) . ' from ' . 
++            str_replace( $this-&gt;config-&gt;getApplicationPath(), '${'. $this-&gt;config-&gt;getApplicationName() .'}', $location) );
++
+         $this-&gt;includeFile($location, ucfirst($name));
+         $model_class_name= Inflector::camelize($name);
+         try {
+             $model_object = new ReflectionClass($model_class_name);
+-
++            // XXX @USE
+             if (@$model_object-&gt;getParentClass()-&gt;name != 'ActiveRecord') {
+                 throw new InjectorException (
+                     'Wrong Definition of user Model, `' . $model_class_name . '`, it must extend ActiveRecord object!');
+@@ -144,7 +148,8 @@
+             $method= $model_object-&gt;getMethod('find');
+             if (!$method-&gt;isStatic() &amp;&amp; !$method-&gt;isPublic()) {
+                 throw new InjectorException (
+-                    'Class method: ' . $model_class_name . '::find([mixed arguments]) should be declared as static and public!');
++                    'Class method: ' . $model_class_name . '::find([mixed arguments]) 
++                        should be declared as static and public!');
+             }
+         } catch (ReflectionException $rEx) {
+             throw new InjectorException (
+@@ -176,6 +181,7 @@
+ 
+         try {
+             $controller_class = new ReflectionClass($clazz);
++            // XXX @USE
+             if (
+                 ($controller_class-&gt;isInstantiable())
+                 &amp;&amp;
+@@ -206,10 +212,11 @@
+      * @return void
+      * @access private
+      */
+-    protected function injectHelper($location) {
+-        $helper_file= $this-&gt;path['helpers'] . $location . '_helper.php';
+-        $this-&gt;logger-&gt;debug('Helper: ' . $helper_file);
+-        return $this-&gt;includeFile($helper_file, $location . '_helper.php');
++    protected function injectHelper($name) {
++        $helper_file= $this-&gt;path['helpers'] . $name . '_helper.php';
++        $this-&gt;logger-&gt;debug('[Medick] &gt;&gt; Lading Helper ' . $name . ' from ' .
++            str_replace( $this-&gt;config-&gt;getApplicationPath(), '${'. $this-&gt;config-&gt;getApplicationName() .'}', $helper_file) );
++        return $this-&gt;includeFile($helper_file, $name . '_helper.php');
+     }
+ 
+     /**
+@@ -221,6 +228,7 @@
+      * @access private
+      */
+     private function includeFile($location, $failure_message) {
++        // XXX @USE
+         if(!@file_exists($location) ) {
+             throw new FileNotFoundException('Cannot load : `' . $failure_message .'`. Searched in: `' . $location . '`');
+         } else {
+
+Modified: trunk/libs/action/controller/Map.php
+===================================================================
+--- trunk/libs/action/controller/Map.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/Map.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -37,7 +37,7 @@
+  * 
+  * @package medick.action.controller
+  * @subpackage routing
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Map extends Collection {
+ 
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/Request.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -40,7 +40,7 @@
+  * Contains various informations about the Request Parameters
+  * @see HTTPRequest, Dispatcher, Route
+  * @package medick.action.controller
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Request extends Object {
+ 
+
+Modified: trunk/libs/action/controller/Response.php
+===================================================================
+--- trunk/libs/action/controller/Response.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/Response.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -40,7 +40,7 @@
+  * A Dispatcher will know how to dump the buffer of this response back to the user.
+  * 
+  * @package medick.action.controller
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Response extends Object {
+     
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/Route.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -38,7 +38,7 @@
+  * @see Route
+  * @package medick.action.controller
+  * @subpackage routing
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Component extends Object {
+ 
+@@ -115,6 +115,7 @@
+  *  $request-&gt;getParameter('action'); // =&gt; view
+  *  $request-&gt;getParameter('id'); // =&gt; 12
+  * &lt;/code&gt;
++ *
+  * @see Map, ActionControllerRouting, Component
+  * @todo more docs
+  * @package medick.action.controller
+@@ -333,7 +334,7 @@
+     public function createControllerInstance(Request $request) {
+         if (!$this-&gt;isLoaded) $this-&gt;load($request);
+         try {
+-            // Registry::get('__logger')-&gt;debug($this-&gt;toString());
++            // Registry::get('__logger')-&gt;debug('[Medick] &gt;&gt; found ' . $this-&gt;toString());
+             return Registry::put(new Injector(), '__injector')-&gt;inject('controller', $request-&gt;getParameter('controller'));
+         } catch (FileNotFoundException $fnfEx) {
+             throw new RoutingException('Cannot create a controller instance, ' . $fnfEx-&gt;getMessage());
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/Routing.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -39,7 +39,7 @@
+  * 
+  * @package medick.action.controller
+  * @subpackage routing
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class ActionControllerRouting extends Object {
+ 
+
+Modified: trunk/libs/action/controller/http/Cookie.php
+===================================================================
+--- trunk/libs/action/controller/http/Cookie.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/http/Cookie.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -33,9 +33,11 @@
+ // }}}
+ 
+ /**
+- * 
++ * It's a HTTPCookie 
++ *
+  * @package medick.action.controller
+  * @subpackage http
++ * @author Aurelian Oancea
+  */
+ 
+ class Cookie extends Object {
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -40,7 +40,7 @@
+  *
+  * @package medick.action.controller
+  * @subpackage http
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class HTTPRequest extends Request {
+ 
+@@ -123,6 +123,15 @@
+     }
+     
+     /**
++     * Check if this Request was made with an AJAX call (Xhr)
++     *
++     * @return bool true if it was Xhr
++     */ 
++    public function isXhr() {
++      return isset($_SERVER['HTTP_X_REQUESTED_WITH']) &amp;&amp; ($_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest');
++    }    
++    
++    /**
+      * Gets an array of Cookies
+      *
+      * @return array
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -37,7 +37,7 @@
+  *
+  * @package medick.action.controller
+  * @subpackage http
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class HTTPResponse extends Response {
+ 
+
+Modified: trunk/libs/action/controller/session/CreoleSessionContainer.php
+===================================================================
+--- trunk/libs/action/controller/session/CreoleSessionContainer.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/session/CreoleSessionContainer.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -50,7 +50,7 @@
+  *  
+  * @package medick.action.controller
+  * @subpackage session
+- * @author Oancea Aurelian 
++ * @author Aurelian Oancea
+  */
+ class CreoleSessionContainer extends Object implements ISessionContainer {
+  
+
+Modified: trunk/libs/action/controller/session/ISessionContainer.php
+===================================================================
+--- trunk/libs/action/controller/session/ISessionContainer.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/session/ISessionContainer.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -50,12 +50,13 @@
+  *  session.MyFileSessionContainer
+  * &lt;/code&gt;
+  * since the &lt;em&gt;_your_application_/libs&lt;/em&gt; folder is under &lt;em&gt;include path&lt;/em&gt;
++ *
+  * @see <A HREF="http://php.net/manual/en/function.session-set-save-handler.php">http://php.net/manual/en/function.session-set-save-handler.php</A>
+  * @see Session
+  * @see ActionController
+  * @package medick.action.controller
+  * @subpackage session
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ interface ISessionContainer {
+ 
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/controller/session/Session.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -37,7 +37,7 @@
+  *
+  * @package medick.action.controller
+  * @subpackage session
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Session extends Object {
+ 
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/view/Base.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -37,7 +37,7 @@
+ /**
+  *
+  * @package medick.action.view
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ interface ITemplateEngine {
+     public function render_partial($controller, $partial);
+@@ -48,34 +48,15 @@
+ /**
+  *
+  * @package medick.action.view
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class ActionView extends Object {
+ 
+-    public static function factory($engine) {
++    public static function factory( $engine ) {
+         $clazz= strtoupper($engine) . 'TemplateEngine';
+         return new $clazz;
+     }
+-
+-    /**
+-     * Strips slashes, method called recursive
+-     *
+-     * @todo Move this OUT of this class, or, in __set.
+-     * @todo What if $value is Object?
+-     * @param mixed value, the value on witch we strip slashes.
+-     *                  It can be array/string or object.
+-     */
+-     
+-    /* public static function stripslashes_deep($value) {
+-        if (is_array($value)) {
+-            array_map(array('ActionView','stripslashes_deep'), $value);
+-        } elseif (is_object($value)) {
+-
+-        } else {
+-            stripslashes($value);
+-        }
+-        return $value;
+-     } */ 
++    
+ }
+ 
+ /**
+@@ -85,7 +66,7 @@
+  * may share the same name and behavior
+  *
+  * @package medick.action.view
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class PHPTemplateEngine extends Object implements ITemplateEngine {
+ 
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/view/HTML.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -33,9 +33,10 @@
+ // }}}
+ 
+ /**
++ *
+  * @package medick.action.view
+  * @subpackage helpers
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class ActiveRecordHelper extends Object {
+ 
+@@ -104,7 +105,7 @@
+  * @package medick.action.view
+  * @subpackage helpers
+  * @see <A HREF="http://api.rubyonrails.com/classes/ActionView/Helpers/FormHelper.html">http://api.rubyonrails.com/classes/ActionView/Helpers/FormHelper.html</A>
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class FormHelper extends Object {
+ 
+@@ -218,7 +219,7 @@
+  *
+  * @package medick.action.view
+  * @subpackage helpers
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class URL extends Object {
+ 
+@@ -247,7 +248,7 @@
+  * @package medick.action.view
+  * @subpackage helpers
+  * @deprecated use FormHelper since it provides more features
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Form extends Object {
+ 
+
+Modified: trunk/libs/action/view/JSON.php
+===================================================================
+--- trunk/libs/action/view/JSON.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/action/view/JSON.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -36,44 +36,51 @@
+  *
+  * @package medick.action.view
+  * @subpackage Json
++ * @author Aurelian Oancea
+  */
+ class JSON extends Object {
+ 
+   public static function encode($value) {
+-    if (is_array($value)) return JSON::array_encode($value);
+-    else return JSON::scalar_encode($value);
++      if(function_exists('json_encode')) return json_encode($value);
++      if (is_array($value)) return JSON::array_encode($value);
++      else return JSON::scalar_encode($value);
+   }
++  
++  public static function decode($value) {
++      if(function_exists('json_decode')) return json_decode($value);
++      throw new MedickException('JSON::decode(string $value) method is not implemented.')
++  }
+ 
+   public static function array_encode(Array $value) {
+-    $tmp= array();
++      $tmp= array();
+ 
+-    if ( array_keys($value) !== range(0, sizeof($value) - 1) ) {
+-      foreach ($value as $k=&gt;$v) {
+-        $tmp[]= JSON::string_encode((string)$k) . ' : ' . JSON::encode($v);
++      if ( array_keys($value) !== range(0, sizeof($value) - 1) ) {
++          foreach ($value as $k=&gt;$v) {
++              $tmp[]= JSON::string_encode((string)$k) . ' : ' . JSON::encode($v);
++          }
++          return '{' . join(', ', $tmp) . '}';
+       }
+-      return '{' . join(', ', $tmp) . '}';
+-    }
+ 
+-    for ($i= 0; $i &lt; sizeof($value); $i++) {
+-      $tmp[]= JSON::encode($value[$i]);
+-    }
+-    return '['. join(', ', $tmp) . ']';
++      for ($i= 0; $i &lt; sizeof($value); $i++) {
++          $tmp[]= JSON::encode($value[$i]);
++      }
++      return '['. join(', ', $tmp) . ']';
+   }
+ 
+   public static function scalar_encode($value) {
+-    if     (is_numeric($value)) return (string)$value;
+-    elseif (is_string($value))  return JSON::string_encode($value);
+-    elseif (is_bool($value))    return $value ? 'true' : 'false';
+-    elseif (is_null($value))    return 'null';
+-    else throw new MedickException($value . ' is not a scalar!');
++      if     (is_numeric($value)) return (string)$value;
++      elseif (is_string($value))  return JSON::string_encode($value);
++      elseif (is_bool($value))    return $value ? 'true' : 'false';
++      elseif (is_null($value))    return 'null';
++      else throw new MedickException($value . ' is not a scalar!');
+   }
+ 
+   public static function string_encode($string) {
+-    $search  = array('\\', &quot;\n&quot;, &quot;\t&quot;, &quot;\r&quot;, &quot;\b&quot;, &quot;\f&quot;, '&quot;');
+-    $replace = array('\\\\', '\\n', '\\t', '\\r', '\\b', '\\f', '\&quot;');
+-    $string  = str_replace($search, $replace, $string);
+-    $string = str_replace(array(chr(0x08), chr(0x0C)), array('\b', '\f'), $string);
+-    return '&quot;' . $string . '&quot;';
++      $search  = array('\\', &quot;\n&quot;, &quot;\t&quot;, &quot;\r&quot;, &quot;\b&quot;, &quot;\f&quot;, '&quot;');
++      $replace = array('\\\\', '\\n', '\\t', '\\r', '\\b', '\\f', '\&quot;');
++      $string  = str_replace($search, $replace, $string);
++      $string = str_replace(array(chr(0x08), chr(0x0C)), array('\b', '\f'), $string);
++      return '&quot;' . $string . '&quot;';
+   }
+ 
+ }
+
+Modified: trunk/libs/active/record/Association.php
+===================================================================
+--- trunk/libs/active/record/Association.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/active/record/Association.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -41,7 +41,7 @@
+  * 
+  * @package medick.active.record
+  * @subpackage association
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ abstract class Association extends Object {
+ 
+@@ -163,7 +163,7 @@
+  *
+  * @package medick.active.record
+  * @subpackage association
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  * @since Rev. 272
+  */
+ class HasManyAssociation extends Association {
+@@ -191,7 +191,7 @@
+  *
+  * @package medick.active.record
+  * @subpackage association
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  * @since Rev. 272
+  */
+ class HasOneAssociation extends Association {
+@@ -227,7 +227,7 @@
+  *
+  * @package medick.active.record
+  * @subpackage association
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  * @since Rev. 272
+  */
+ class BelongsToAssociation extends HasOneAssociation {    }
+@@ -237,7 +237,7 @@
+  * 
+  * @package medick.active.record
+  * @subpackage association
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class HasAndBelongsToManyAssociation extends Association {
+ 
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/active/record/Base.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -49,7 +49,7 @@
+  * Cached Database table information
+  * 
+  * @package medick.active.record
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */ 
+ class ActiveRecordTableInfo extends Object {
+     static $instance= NULL;
+@@ -65,7 +65,7 @@
+  * Main ActiveRecord Class
+  *
+  * @package medick.active.record
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ abstract class ActiveRecord extends Object {
+ 
+@@ -166,7 +166,8 @@
+         try {
+             return Association::resolve($this, $name)-&gt;execute();
+         } catch (AssociationNotFoundException $anfEx) {
+-            throw new ActiveRecordException ('Cannot Get the value of filed: `' . $name . '`. No such filed!', $anfEx-&gt;getMessage());
++            throw new ActiveRecordException(
++                'Cannot Get the value of filed: `' . $name . '`. No such filed!', $anfEx-&gt;getMessage() );
+         }
+     }
+     
+
+Modified: trunk/libs/active/record/Field.php
+===================================================================
+--- trunk/libs/active/record/Field.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/active/record/Field.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -36,7 +36,7 @@
+  * It represents a field from DB
+  *
+  * @package medick.active.record
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Field extends Object {
+ 
+
+Modified: trunk/libs/active/record/QueryBuilder.php
+===================================================================
+--- trunk/libs/active/record/QueryBuilder.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/active/record/QueryBuilder.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -36,7 +36,7 @@
+  * It knows how to create a SQLCommand from an array
+  *
+  * @package medick.active.record
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class QueryBuilder extends Object {
+ 
+
+Modified: trunk/libs/active/record/RowsAggregate.php
+===================================================================
+--- trunk/libs/active/record/RowsAggregate.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/active/record/RowsAggregate.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -36,7 +36,7 @@
+  * Container for DatabaseRow Objects
+  * 
+  * @package medick.active.record
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class RowsAggregate extends Object implements IteratorAggregate {
+ 
+
+Modified: trunk/libs/active/record/SQLCommand.php
+===================================================================
+--- trunk/libs/active/record/SQLCommand.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/active/record/SQLCommand.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -46,7 +46,7 @@
+  * More methods will be added later-on, API will be provided on request.
+  * 
+  * @package medick.active.record
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  * @since Rev. 343
+  */
+ class SQLCommand extends Object {
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/active/record/Validator.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -84,7 +84,7 @@
+  * @see ActiveRecord, Field, UniquenessOfValidator, FormatOfValidator, LengthOfValidator, PresenceOfValidator
+  * @package medick.active.record
+  * @subpackage validator
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */ 
+ abstract class Validator extends Object {
+     
+@@ -167,7 +167,7 @@
+  * @see Validator, ActiveRecord, Field, preg_match
+  * @package medick.active.record
+  * @subpackage validator
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class FormatOfValidator extends Validator {
+     
+@@ -221,7 +221,7 @@
+  * @see Validator, ActiveRecord, Field
+  * @package medick.active.record
+  * @subpackage validator
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */ 
+ class PresenceOfValidator extends Validator {
+     
+@@ -260,7 +260,7 @@
+  * @see Validator, ActiveRecord, Field, is_numeric, intvalue
+  * @package medick.active.record
+  * @subpackage validator
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */ 
+ class NumericalityOfValidator extends Validator {
+     
+@@ -297,7 +297,7 @@
+  * @see Validator, ActiveRecord, Field
+  * @package medick.active.record
+  * @subpackage validator
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */ 
+ class UniquenessOfValidator extends Validator {
+     
+@@ -352,7 +352,7 @@
+  * @see Validator, ActiveRecord, Field
+  * @package medick.active.record
+  * @subpackage validator
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */ 
+ 
+ class LengthOfValidator extends Validator {
+@@ -450,4 +450,3 @@
+     }
+ 
+ }
+-
+
+Modified: trunk/libs/active/support/Inflector.php
+===================================================================
+--- trunk/libs/active/support/Inflector.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/active/support/Inflector.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -36,6 +36,7 @@
+  * Convenient methods to work on english words 
+  * Based on: <A HREF="http://dev.rubyonrails.com/file/trunk/activesupport/lib/active_support/inflections.rb">http://dev.rubyonrails.com/file/trunk/activesupport/lib/active_support/inflections.rb</A>
+  * @package medick.active.support
++ * @author Aurelian Oancea
+  */
+ 
+ class Inflector extends Object {
+
+Modified: trunk/libs/configurator/IConfigurator.php
+===================================================================
+--- trunk/libs/configurator/IConfigurator.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/configurator/IConfigurator.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -53,7 +53,7 @@
+  * @package medick.configurator
+  * @see XMLConfigurator
+  * @see LoggerConfigurator
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ interface IConfigurator {
+ 
+
+Modified: trunk/libs/configurator/INIConfigurator.php
+===================================================================
+--- trunk/libs/configurator/INIConfigurator.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/configurator/INIConfigurator.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -39,7 +39,7 @@
+  * 
+  * @deprecated this class is deprecated, use medick.configurator.XMLConfigurator
+  * @package medick.configurator
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class INIConfigurator extends Object implements IConfigurator {
+ 
+
+Modified: trunk/libs/configurator/LoggerConfigurator.php
+===================================================================
+--- trunk/libs/configurator/LoggerConfigurator.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/configurator/LoggerConfigurator.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -38,7 +38,7 @@
+  * A plain Application Configurator
+  * 
+  * @package medick.configurator
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */ 
+ class LoggerConfigurator extends Object implements IConfigurator {
+     /** @see medick.configurator.IConfigurator::getLoggerOutputters() */
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/configurator/XMLConfigurator.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -40,7 +40,7 @@
+  * From medick 0.3.0 this class will be removed due to the new way of configurating a medick application!
+  *
+  * @package medick.configurator
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ 
+ class XMLConfigurator extends Object implements IConfigurator {
+
+Modified: trunk/libs/context/ContextManager.php
+===================================================================
+--- trunk/libs/context/ContextManager.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/context/ContextManager.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -32,9 +32,12 @@
+ //////////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
++include_once('configurator/XMLConfigurator.php');
++
+ /**
+  * 
+  * @package medick.context
++ * @author Aurelian Oancea
+  */
+ class ContextManager extends Object {
+ 
+@@ -49,7 +52,6 @@
+     }
+ 
+     private function ContextManager($stream, $environment) {
+-        include_once('configurator/XMLConfigurator.php');
+         $this-&gt;configurator= new XMLConfigurator($stream, $environment);
+     }
+ 
+
+Modified: trunk/libs/logger/ILogger.php
+===================================================================
+--- trunk/libs/logger/ILogger.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/logger/ILogger.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -36,7 +36,7 @@
+  * Outputters interface
+  * 
+  * @package medick.logger
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ interface ILogger {
+ 
+
+Modified: trunk/libs/logger/Logger.php
+===================================================================
+--- trunk/libs/logger/Logger.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/logger/Logger.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -41,7 +41,7 @@
+ /**
+  * 
+  * @package medick.logger
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Logger extends Object implements ILogger {
+ 
+
+Modified: trunk/libs/logger/LoggingEvent.php
+===================================================================
+--- trunk/libs/logger/LoggingEvent.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/logger/LoggingEvent.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -36,7 +36,7 @@
+  * A logged event object
+  * 
+  * @package medick.logger
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class LoggingEvent extends Object {
+ 
+
+Modified: trunk/libs/logger/formatter/DefaultFormatter.php
+===================================================================
+--- trunk/libs/logger/formatter/DefaultFormatter.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/logger/formatter/DefaultFormatter.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -37,7 +37,7 @@
+  * 
+  * @package medick.logger
+  * @subpackage formatter
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class DefaultFormatter extends Formatter {
+     /** @see medick.logger.formatter.Formatter::format(medick.logger.LoggingEvent event) */
+
+Modified: trunk/libs/logger/formatter/Formatter.php
+===================================================================
+--- trunk/libs/logger/formatter/Formatter.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/logger/formatter/Formatter.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -37,7 +37,7 @@
+  * 
+  * @package medick.logger
+  * @subpackage formatter
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ abstract class Formatter extends Object {
+     /**
+@@ -56,9 +56,9 @@
+      */
+     protected function extractMessage($message) {
+         if(!is_string($message)) $message = print_r($message, TRUE);
+-        if (array_key_exists('MEDICK_APPLICATION_PATH', $_SERVER)) {
+-            $message= str_replace($_SERVER['MEDICK_APPLICATION_PATH'], &quot;{&quot; . strtoupper($_SERVER['MEDICK_APPLICATION_NAME']) . &quot;}&quot;, $message);
+-        }
++        // if (array_key_exists('MEDICK_APPLICATION_PATH', $_SERVER)) {
++        //     $message= str_replace($_SERVER['MEDICK_APPLICATION_PATH'], &quot;{&quot; . strtoupper($_SERVER['MEDICK_APPLICATION_NAME']) . &quot;}&quot;, $message);
++        // }
+         return $message;
+     }
+ }
+
+Modified: trunk/libs/logger/formatter/SimpleFormatter.php
+===================================================================
+--- trunk/libs/logger/formatter/SimpleFormatter.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/logger/formatter/SimpleFormatter.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -37,7 +37,7 @@
+  * 
+  * @package medick.logger
+  * @subpackage formatter
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class SimpleFormatter extends Formatter {
+     /** @see medick.logger.formatter.Formatter::format(medick.logger.LoggingEvent event) */
+@@ -46,4 +46,3 @@
+             &quot; [ {$event-&gt;level} ] &gt;&gt;&gt; {$this-&gt;extractMessage($event-&gt;message)}&quot;;
+     }
+ }
+-
+
+Modified: trunk/libs/medick/ConsoleOptions.php
+===================================================================
+--- trunk/libs/medick/ConsoleOptions.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/medick/ConsoleOptions.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -52,7 +52,7 @@
+  * @see <A HREF="http://www.php.net/manual/en/features.commandline.php">http://www.php.net/manual/en/features.commandline.php</A>
+  * @package medick.core
+  * @subpackage console
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class ConsoleOptions extends Object {
+     /** @var array
+
+Modified: trunk/libs/medick/ErrorHandler.php
+===================================================================
+--- trunk/libs/medick/ErrorHandler.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/medick/ErrorHandler.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -36,7 +36,7 @@
+  * The Medick Error Handler.
+  *
+  * @package medick.core
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class ErrorHandler extends Object {
+ 
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/medick/Medick.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -42,7 +42,7 @@
+ /**
+  * 
+  * @package medick.core
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Medick extends Object {
+ 
+
+Modified: trunk/libs/medick/Object.php
+===================================================================
+--- trunk/libs/medick/Object.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/medick/Object.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -36,7 +36,7 @@
+  * Base Framework Object
+  * 
+  * @package medick.core
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Object {
+ 
+@@ -99,10 +99,6 @@
+     
+ }
+ 
+-class MedickMethod extends ReflectionMethod {
++class MedickMethod extends ReflectionMethod {}
+ 
+-}
+-
+-class MedickProperty extends ReflectionProperty {
+-
+-}
++class MedickProperty extends ReflectionProperty {}
+
+Modified: trunk/libs/medick/Registry.php
+===================================================================
+--- trunk/libs/medick/Registry.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/medick/Registry.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -38,7 +38,7 @@
+  * Registry is an object witch holds instances of other objects
+  * 
+  * @package medick.core
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Registry extends Object {
+ 
+
+Modified: trunk/libs/medick/io/Folder.php
+===================================================================
+--- trunk/libs/medick/io/Folder.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/medick/io/Folder.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -38,10 +38,13 @@
+  * This is used only when collecting test cases.
+  * @package medick.core
+  * @subpackage io
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Folder extends Object {
+-
++    
++    /**
++     * based on a method from ez-components
++     */
+     public static function recursiveFindRelative( $baseDir, $subDir, $suffix ) {
+         $returnFiles = array();
+         $dir = $baseDir;
+
+Modified: trunk/libs/medick/util.php
+===================================================================
+--- trunk/libs/medick/util.php	2007-01-22 07:58:24 UTC (rev 430)
++++ trunk/libs/medick/util.php	2007-06-12 14:37:19 UTC (rev 431)
+@@ -41,7 +41,7 @@
+  *
+  * @package medick.core
+  * @subpackage util
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ interface ICollection extends ArrayAccess {
+ 
+@@ -95,7 +95,7 @@
+  * An Iterator over a Collection
+  * @package medick.core
+  * @subpackage util
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ interface IIterator {
+ 
+@@ -157,7 +157,7 @@
+  *
+  * @package medick.core
+  * @subpackage util
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class Collection extends Object implements ICollection {
+ 
+@@ -368,7 +368,7 @@
+  *
+  * @package medick.core
+  * @subpackage util
+- * @author Oancea Aurelian
++ * @author Aurelian Oancea
+  */
+ class CollectionIterator extends Object implements IIterator {
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000211.html">[Medick-svn] r432 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#212">[ date ]</a>
+              <a href="thread.html#212">[ thread ]</a>
+              <a href="subject.html#212">[ subject ]</a>
+              <a href="author.html#212">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

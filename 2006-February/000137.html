@@ -1,0 +1,165 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r346 - in trunk: . bin skel/scripts
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r346%20-%20in%20trunk%3A%20.%20bin%20skel/scripts&In-Reply-To=%3C200602111744.k1BHiNxZ026432%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000136.html">
+   <LINK REL="Next"  HREF="000138.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r346 - in trunk: . bin skel/scripts</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r346%20-%20in%20trunk%3A%20.%20bin%20skel/scripts&In-Reply-To=%3C200602111744.k1BHiNxZ026432%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r346 - in trunk: . bin skel/scripts">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Feb 11 18:44:23 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000136.html">[Medick-svn] r344 - applications/eltodo/app/controllers applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/public/stylesheet trunk trunk/libs/action/controller trunk/libs/action/view trunk/libs/active/record trunk/libs/active/support trunk/libs/creole/drivers/oracle trunk/libs/logger trunk/libs/logger/formatter trunk/libs/medick
+</A></li>
+        <LI>Next message: <A HREF="000138.html">[Medick-svn] r347 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#137">[ date ]</a>
+              <a href="thread.html#137">[ thread ]</a>
+              <a href="subject.html#137">[ subject ]</a>
+              <a href="author.html#137">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-02-11 18:44:19 +0100 (Sat, 11 Feb 2006)
+New Revision: 346
+
+Modified:
+   trunk/CHANGELOG
+   trunk/bin/medick.php
+   trunk/skel/scripts/generator.php
+Log:
+ -- updated generators to match the latest changes on ActionController renaming and ActiveRecord renaming and way of building sql querys
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-02-06 19:33:06 UTC (rev 345)
++++ trunk/CHANGELOG	2006-02-11 17:44:19 UTC (rev 346)
+@@ -2,26 +2,27 @@
+ (*) SVN version
+ 
+ 0.0.5(*)
+-    - Renamed ActionViewBase to ActionView, ActionControllerBase to ActionController and ActiveRecordBase to ActiveRecord
++    - Renamed ActionViewBase to ActionView, ActionControllerBase to ActionController and ActiveRecordBase to ActiveRecord;
+     - 3-rd version of ActiveRecord::find() method, this time the user model classes find method should be written as:
+       class News extends ActiveRecord{
+         public static function find() {
+           $args= func_get_args();
+           return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
+         }
+-      }
+-    - re-wrote QueryBuilder, this time it knows how to build sqlquery`s from an array of options
+-    - added SQLCommand class (more API on request!)
+-    - added Validators (more API will be provided on request!)
++      };
++    - re-wrote QueryBuilder, this time it knows how to build sqlquery`s from an array of options;
++    - added SQLCommand class (more API on request!);
++    - added Validators (more API will be provided on request!);
+     - ActiveRecord filters should return TRUE 
+         and the size of errors associated with a databaserow should be 0 (no errors), 
+-        otherwise changing an object state will fail
+-    - added the &quot;flash&quot; thing
+-    - added ActiveRecordHelper and FormHelper classes on ActionView:::HTML namespace  
+-    - added 3 new methods on Inflector: sanitize, tabelize() and humanize()
+-    - on logger, the full path to application is replaced with the name of the application.
+-    - removed some debugging infos  
+-    - more API docs.
++        otherwise changing an object state will fail;
++    - added the &quot;flash&quot; thing;
++    - added ActiveRecordHelper and FormHelper classes on ActionView:::HTML;
++    - added 3 new methods on Inflector: sanitize, tabelize() and humanize();
++    - on logger, the full path to application is replaced with the name of the application;
++    - removed some debugging infos;
++    - more API docs and Unit Tests;
++    - Injector: if SERVER['MEDICK_APPLICATION_PATH'] key is missing, use application_path from Configurator,
+     - bundled prototype (<A HREF="http://prototype.conio.net/">http://prototype.conio.net/</A>) 
+       and script.aculo.us (<A HREF="http://script.aculo.us/">http://script.aculo.us/</A>) javascript libraries, both under a MIT-style licence.
+ 
+
+Modified: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2006-02-06 19:33:06 UTC (rev 345)
++++ trunk/bin/medick.php	2006-02-11 17:44:19 UTC (rev 346)
+@@ -189,7 +189,7 @@
+    * \$Id$
+    * @package $app_name.controllers
+    */
+-  class ApplicationController extends ActionControllerBase {
++  class ApplicationController extends ActionController {
+ 
+   }
+ 
+@@ -205,4 +205,4 @@
+ 
+ echo &quot;\nMedick (\$v: $medick_version) [ DONE ].\n&quot;;
+ 
+-?&gt;
+\ No newline at end of file
++?&gt;
+
+Modified: trunk/skel/scripts/generator.php
+===================================================================
+--- trunk/skel/scripts/generator.php	2006-02-06 19:33:06 UTC (rev 345)
++++ trunk/skel/scripts/generator.php	2006-02-11 17:44:19 UTC (rev 346)
+@@ -110,17 +110,17 @@
+   * @package ${APP_NAME}.models
+   * \$Id$
+   */
+-class $model_class_name extends ActiveRecordBase {
++class $model_class_name extends ActiveRecord {
+ 
+      /**
+       * Finds a $model_class_name
+       *
+-      * @see ActiveRecordBase::__find()
++      * @see ActiveRecord::build()
+       * @return mixed
+       */
+      public static function find() {
+-         ActiveRecordBase::initialize(__CLASS__);
+-         return ActiveRecordBase::__find(func_get_args());
++         \$args = func_get_args();
++         return ActiveRecord::build(new QueryBuilder(__CLASS__, \$args));
+      }
+ 
+   }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000136.html">[Medick-svn] r344 - applications/eltodo/app/controllers applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/public/stylesheet trunk trunk/libs/action/controller trunk/libs/action/view trunk/libs/active/record trunk/libs/active/support trunk/libs/creole/drivers/oracle trunk/libs/logger trunk/libs/logger/formatter trunk/libs/medick
+</A></li>
+	<LI>Next message: <A HREF="000138.html">[Medick-svn] r347 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#137">[ date ]</a>
+              <a href="thread.html#137">[ thread ]</a>
+              <a href="subject.html#137">[ subject ]</a>
+              <a href="author.html#137">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

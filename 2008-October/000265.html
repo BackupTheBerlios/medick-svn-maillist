@@ -1,0 +1,167 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r485 - in exp/medick2: public	vendor/medick/lib/action/controller vendor/medick/lib/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2008-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r485%20-%20in%20exp/medick2%3A%20public%0A%09vendor/medick/lib/action/controller%20vendor/medick/lib/active/record&In-Reply-To=%3C200810111854.m9BIsCa1020917%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r485 - in exp/medick2: public	vendor/medick/lib/action/controller vendor/medick/lib/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r485%20-%20in%20exp/medick2%3A%20public%0A%09vendor/medick/lib/action/controller%20vendor/medick/lib/active/record&In-Reply-To=%3C200810111854.m9BIsCa1020917%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r485 - in exp/medick2: public	vendor/medick/lib/action/controller vendor/medick/lib/active/record">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Sat Oct 11 20:54:12 CEST 2008</I>
+    <P><UL>
+        
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#265">[ date ]</a>
+              <a href="thread.html#265">[ thread ]</a>
+              <a href="subject.html#265">[ subject ]</a>
+              <a href="author.html#265">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2008-10-11 20:54:12 +0200 (Sat, 11 Oct 2008)
+New Revision: 485
+
+Modified:
+   exp/medick2/public/.htaccess
+   exp/medick2/public/index.php
+   exp/medick2/vendor/medick/lib/action/controller/Base.php
+   exp/medick2/vendor/medick/lib/active/record/Base.php
+Log:
+ * umm...
+
+Modified: exp/medick2/public/.htaccess
+===================================================================
+--- exp/medick2/public/.htaccess	2008-06-01 20:07:25 UTC (rev 484)
++++ exp/medick2/public/.htaccess	2008-10-11 18:54:12 UTC (rev 485)
+@@ -25,7 +25,7 @@
+ #RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+ 
+ # Set 2.
+-RewriteBase /
++RewriteBase /medick2
+ 
+ # Send requests without parameters to index.php
+ # -- disabled since we want to show index.html
+
+Modified: exp/medick2/public/index.php
+===================================================================
+--- exp/medick2/public/index.php	2008-06-01 20:07:25 UTC (rev 484)
++++ exp/medick2/public/index.php	2008-10-11 18:54:12 UTC (rev 485)
+@@ -7,13 +7,13 @@
+ // 
+ 
+ // complete path to medick boot.php file.
+-include_once('/home/aurelian/Code/medick/exp/medick2/boot.php');
++include_once('/W/Devel/medick/exp/medick2/boot.php');
+ 
+ // complete path to cFields.xml
+ // and environment to load
+ $d= new Dispatcher(
+           ContextManager::load(
+-            '/home/aurelian/Code/medick/exp/medick2/config/cfields.xml',
++            '/W/Devel/medick/exp/medick2/config/cfields.xml',
+             'localhost')
+         );
+ $d-&gt;dispatch();
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Base.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Base.php	2008-06-01 20:07:25 UTC (rev 484)
++++ exp/medick2/vendor/medick/lib/action/controller/Base.php	2008-10-11 18:54:12 UTC (rev 485)
+@@ -57,9 +57,9 @@
+     // validate the action
+     $this-&gt;__validate_action();
+ 
+-    // collect before filters now
++    $this-&gt;__setup_active_record();
+ 
+-    // execute those filters
++    // collect and execute before filters now
+ 
+     // execute the action
+     $this-&gt;__execute_action();
+@@ -68,10 +68,8 @@
+     if(false === $this-&gt;action_performed)
+       $this-&gt;render();
+ 
+-    // collect after filters
++    // collect and execute after filters
+ 
+-    // execute after filters
+-
+     // Medick::dump( $request );
+     return $response;
+   }
+@@ -203,5 +201,9 @@
+     $this-&gt;execution_chain-&gt;exec_action();
+   }
+ 
++  private function __setup_active_record() {
++    ActiveRecord::__setup( $this-&gt;context );
++  }
++
+ }
+ 
+
+Modified: exp/medick2/vendor/medick/lib/active/record/Base.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/active/record/Base.php	2008-06-01 20:07:25 UTC (rev 484)
++++ exp/medick2/vendor/medick/lib/active/record/Base.php	2008-10-11 18:54:12 UTC (rev 485)
+@@ -2,8 +2,17 @@
+ 
+ // $Id: $
+ 
+-class ActiveRecord extends Base {
++class ActiveRecord extends Object {
+ 
++  protected static $__context;
+ 
++  public static function __setup(ContextManager $context) {
++    self::$__context= $context;
++    $model_paths= array();
++    foreach($context-&gt;load_paths() as $path) {
++      if(is_dir($path.'app/models')) $model_paths[]= $path.'/app/models/';
++    }
++  }
++
+ }
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#265">[ date ]</a>
+              <a href="thread.html#265">[ thread ]</a>
+              <a href="subject.html#265">[ subject ]</a>
+              <a href="author.html#265">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

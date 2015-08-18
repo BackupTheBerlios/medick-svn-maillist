@@ -1,0 +1,148 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r200 - trunk/libs/logger
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r200%20-%20trunk/libs/logger&In-Reply-To=%3C200510141817.j9EIHBEo019915%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000003.html">
+   <LINK REL="Next"  HREF="000005.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r200 - trunk/libs/logger</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r200%20-%20trunk/libs/logger&In-Reply-To=%3C200510141817.j9EIHBEo019915%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r200 - trunk/libs/logger">aurelian at berlios.de
+       </A><BR>
+    <I>Fri Oct 14 20:17:11 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000003.html">[Medick-svn] r199 - in trunk/test: . dummy dummy/models mock
+</A></li>
+        <LI>Next message: <A HREF="000005.html">[Medick-svn] r201 - trunk/libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4">[ date ]</a>
+              <a href="thread.html#4">[ thread ]</a>
+              <a href="subject.html#4">[ subject ]</a>
+              <a href="author.html#4">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-14 20:17:10 +0200 (Fri, 14 Oct 2005)
+New Revision: 200
+
+Modified:
+   trunk/libs/logger/Logger.php
+Log:
+ - [ logger ] Logger will work even if we dont configure the outputters or the formatter without breaking the script execution
+
+Modified: trunk/libs/logger/Logger.php
+===================================================================
+--- trunk/libs/logger/Logger.php	2005-10-14 18:04:52 UTC (rev 199)
++++ trunk/libs/logger/Logger.php	2005-10-14 18:17:10 UTC (rev 200)
+@@ -71,31 +71,23 @@
+     
+     /**
+      * Constructor.
+-     * It reads the config file and setup the logging system 
++     * It reads the config file and setup the logging system
+      */
+     public function __construct() {
+-    
+         $configurator = Registry::get('__configurator');
+         $outputters   = $configurator-&gt;getLoggerOutputters();
+-
+-        for ($outputters-&gt;rewind(); $outputters-&gt;valid(); $outputters-&gt;next()) {   
+-            foreach($outputters-&gt;getChildren() as $outputter) {
+-                try {
+-                    $class_name= ucfirst((string)trim($outputter['name'])) . 'Outputter';
+-                    $class_file= 'logger' . DIRECTORY_SEPARATOR . 'outputter' . DIRECTORY_SEPARATOR . $class_name . '.php';
+-                    include_once($class_file);
+-                    $class= new ReflectionClass($class_name);
+-                    $this-&gt;attach( 
+-                        $class-&gt;newInstance( (string)trim($outputter['level']), (string)trim($outputter['value']) ));
+-                } catch (ReflectionException $rEx) {
+-                    $this-&gt;warn($rEx-&gt;getMessage());
+-                }
+-            }
++        
++        if (sizeof($outputters) != 0) {
++            $this-&gt;load($outputters);
+         }
+-        $this-&gt;setLevel(Logger::DEBUG);
+-        $_klazz = $configurator-&gt;getLoggerFormatter();
+-        include_once('logger' . DIRECTORY_SEPARATOR . 'formatter' . DIRECTORY_SEPARATOR . $_klazz . '.php');
+-        $this-&gt;formatter= new $_klazz;
++        
++        $this-&gt;setLevel(Logger::DEBUG); // TODO: check this line again please.
++        
++        if ($_klazz = $configurator-&gt;getLoggerFormatter()) {
++            include_once('logger' . DIRECTORY_SEPARATOR . 'formatter' . DIRECTORY_SEPARATOR . $_klazz . '.php');
++            $this-&gt;formatter= new $_klazz;
++        }
++        
+         $this-&gt;debug('Logger ready');
+     }
+ 
+@@ -162,6 +154,28 @@
+     }
+     
+     /**
++     * Loads the Outputters.
++     * TODO: why do we need 2 iterations?
++     * @param Iterator outputters collection
++     */
++    public function load(Iterator $outputters) {
++        for ($outputters-&gt;rewind(); $outputters-&gt;valid(); $outputters-&gt;next()) {
++            foreach($outputters-&gt;getChildren() as $outputter) {
++                try {
++                    $class_name= ucfirst((string)trim($outputter['name'])) . 'Outputter';
++                    $class_file= 'logger' . DIRECTORY_SEPARATOR . 'outputter' . DIRECTORY_SEPARATOR . $class_name . '.php';
++                    include_once($class_file);
++                    $class= new ReflectionClass($class_name);
++                    $this-&gt;attach( 
++                        $class-&gt;newInstance( (string)trim($outputter['level']), (string)trim($outputter['value']) ));
++                } catch (ReflectionException $rEx) {
++                    $this-&gt;warn($rEx-&gt;getMessage());
++                }
++            }
++        }    
++    } 
++    
++    /**
+      * It gets the list with attached outputters
+      * @return IOutputter[]
+      */ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000003.html">[Medick-svn] r199 - in trunk/test: . dummy dummy/models mock
+</A></li>
+	<LI>Next message: <A HREF="000005.html">[Medick-svn] r201 - trunk/libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#4">[ date ]</a>
+              <a href="thread.html#4">[ thread ]</a>
+              <a href="subject.html#4">[ subject ]</a>
+              <a href="author.html#4">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

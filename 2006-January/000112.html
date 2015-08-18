@@ -1,0 +1,218 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r316 - in trunk: . skel skel/config skel/public
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r316%20-%20in%20trunk%3A%20.%20skel%20skel/config%20skel/public&In-Reply-To=%3C200601032128.k03LS0vg000191%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000111.html">
+   <LINK REL="Next"  HREF="000113.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r316 - in trunk: . skel skel/config skel/public</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r316%20-%20in%20trunk%3A%20.%20skel%20skel/config%20skel/public&In-Reply-To=%3C200601032128.k03LS0vg000191%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r316 - in trunk: . skel skel/config skel/public">aurelian at berlios.de
+       </A><BR>
+    <I>Tue Jan  3 22:28:00 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000111.html">[Medick-svn] r315 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000113.html">[Medick-svn] r317 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#112">[ date ]</a>
+              <a href="thread.html#112">[ thread ]</a>
+              <a href="subject.html#112">[ subject ]</a>
+              <a href="author.html#112">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-03 22:27:58 +0100 (Tue, 03 Jan 2006)
+New Revision: 316
+
+Added:
+   trunk/skel/
+   trunk/skel/config/
+   trunk/skel/config/application.routes.php
+   trunk/skel/config/application.xml
+   trunk/skel/public/
+   trunk/skel/public/default.htaccess
+   trunk/skel/scripts/
+Removed:
+   trunk/skel/config/application.routes.php
+   trunk/skel/config/application.xml
+   trunk/skel/public/default.htaccess
+Log:
+ -- moved config to skel/config public_html to skel/public and scripts to skel/scripts
+
+Copied: trunk/skel/config (from rev 302, trunk/config)
+
+Deleted: trunk/skel/config/application.routes.php
+===================================================================
+--- trunk/config/application.routes.php	2005-12-20 19:08:15 UTC (rev 302)
++++ trunk/skel/config/application.routes.php	2006-01-03 21:27:58 UTC (rev 316)
+@@ -1,45 +0,0 @@
+-&lt;?php
+-// routes.php
+-// $Id$
+-// @TODO: write some documentation about this file :)
+-
+-// an example of route configuration in medick.
+-
+-// $map= MedickRegistry::get('__map');
+-
+-{
+-    { // /todo/edit/id.html
+-        $route= new Route('todo', 'edit');
+-        $route-&gt;setAccess(1);
+-        $route-&gt;add(new RouteParam('id'));
+-        $map-&gt;add($route);
+-    }
+-    
+-    { // /todo/create.html
+-        $route= new Route('todo', 'create');
+-        $route-&gt;setAccess(1);
+-        $param= new RouteParam('description');
+-        $route-&gt;add($param);
+-        $param= new RouteParam('done');
+-        $route-&gt;add($param);
+-        $map-&gt;add($route);
+-    }
+-
+-    { // /todo/update.html
+-        $route= new Route('todo', 'update');
+-        $route-&gt;setAccess(1);
+-        $param= new RouteParam('description');
+-        $route-&gt;add($param);
+-        $param= new RouteParam('done');
+-        $route-&gt;add($param);
+-        $map-&gt;add($route);
+-    }
+-    
+-    { // /todo/delete.html
+-        $route= new Route('todo', 'delete');
+-        $route-&gt;setAccess(1);
+-        $route-&gt;add(new RouteParam('id'));
+-        $map-&gt;add($route);
+-    }
+-}
+-?&gt;
+
+Copied: trunk/skel/config/application.routes.php (from rev 310, trunk/config/application.routes.php)
+
+Deleted: trunk/skel/config/application.xml
+===================================================================
+--- trunk/config/application.xml	2005-12-20 19:08:15 UTC (rev 302)
++++ trunk/skel/config/application.xml	2006-01-03 21:27:58 UTC (rev 316)
+@@ -1,45 +0,0 @@
+-&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
+-&lt;!--
+- ! $Id$
+- --&gt;
+-
+-&lt;application&gt;
+-     
+-    &lt;!--  ====================== --&gt;
+-    &lt;!--   General properties    --&gt;
+-    &lt;!--  ====================== --&gt;
+-    &lt;property name=&quot;server_name&quot;      value=&quot;<A HREF="http://morgan:8091">http://morgan:8091</A>&quot; /&gt;
+-    &lt;property name=&quot;document_root&quot;    value=&quot;/&quot; /&gt;
+-    &lt;property name=&quot;rewrite&quot;          value=&quot;on&quot; /&gt;
+-     
+-    &lt;!--  ====================== --&gt;
+-    &lt;!--     Logger System       --&gt;
+-    &lt;!--  ====================== --&gt;
+-    &lt;logger&gt;
+-        &lt;formatter&gt;simple&lt;/formatter&gt;
+-        &lt;outputters&gt;
+-            &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
+-                &lt;property name=&quot;path&quot; value=&quot;/wwwroot/htdocs/locknet7/log/locknet7.log&quot; /&gt;
+-            &lt;/outputter&gt;
+-            &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt;
+-            &lt;outputter name=&quot;&quot; level=&quot;3&quot;&gt;
+-                &lt;property name=&quot;subject&quot; value=&quot;Fatality on {$server}&quot; /&gt;
+-                &lt;property name=&quot;address&quot; value=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">user at example.com</A>&quot; /&gt;
+-            &lt;/outputter&gt;
+-        &lt;/outputters&gt;
+-    &lt;/logger&gt;
+-
+-    &lt;!-- ======================= --&gt;
+-    &lt;!--   Database(s) Settings  --&gt;
+-    &lt;!-- ======================= --&gt;
+-    &lt;database default=&quot;one&quot;&gt;
+-        &lt;dsn id = &quot;one&quot;
+-             phptype  = &quot;mysql&quot;
+-             hostspec = &quot;localhost&quot;
+-             database = &quot;elproto&quot;
+-             username = &quot;root&quot;
+-             password = &quot;pazzword&quot; /&gt;
+-    &lt;/database&gt;
+-
+-&lt;/application&gt;
+-
+
+Copied: trunk/skel/config/application.xml (from rev 304, trunk/config/application.xml)
+
+Copied: trunk/skel/public (from rev 302, trunk/public_html)
+
+Deleted: trunk/skel/public/default.htaccess
+===================================================================
+--- trunk/public_html/default.htaccess	2005-12-20 19:08:15 UTC (rev 302)
++++ trunk/skel/public/default.htaccess	2006-01-03 21:27:58 UTC (rev 316)
+@@ -1,18 +0,0 @@
+-# .htaccess file for eldepot sample medick application
+-# $Id$
+-
+-# Configuration
+-php_value auto_prepend_file ___PATH___TO___MEDICK___INSTALATION___/boot.php
+-
+-SetEnv MEDICK_APPLICATION_PATH ___YOUR___APPLICATION___PATH___
+-SetEnv MEDICK_APPLICATION_NAME ___YOUR___APPLICATION___NAME___
+- 
+-RewriteEngine on
+-
+-########## Set 2
+-RewriteCond %{REQUEST_FILENAME} !-s
+-RewriteCond %{REQUEST_URI} !^index.php/$
+-RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+-
+-#RewriteRule !^(stylesheet|images|javascript)/ index.php [NC,L]
+-
+
+Copied: trunk/skel/public/default.htaccess (from rev 304, trunk/public_html/default.htaccess)
+
+Copied: trunk/skel/scripts (from rev 302, trunk/scripts)
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000111.html">[Medick-svn] r315 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000113.html">[Medick-svn] r317 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#112">[ date ]</a>
+              <a href="thread.html#112">[ thread ]</a>
+              <a href="subject.html#112">[ subject ]</a>
+              <a href="author.html#112">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

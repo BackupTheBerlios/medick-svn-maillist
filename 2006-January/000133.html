@@ -1,0 +1,190 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r341 - trunk/libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r341%20-%20trunk/libs/active/record&In-Reply-To=%3C200601220853.k0M8r7px012242%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000132.html">
+   <LINK REL="Next"  HREF="000134.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r341 - trunk/libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r341%20-%20trunk/libs/active/record&In-Reply-To=%3C200601220853.k0M8r7px012242%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r341 - trunk/libs/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Jan 22 09:53:07 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000132.html">[Medick-svn] r340 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/db applications/eltodo/public/images applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record trunk/libs/active/support
+</A></li>
+        <LI>Next message: <A HREF="000134.html">[Medick-svn] r342 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#133">[ date ]</a>
+              <a href="thread.html#133">[ thread ]</a>
+              <a href="subject.html#133">[ subject ]</a>
+              <a href="author.html#133">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-22 09:53:07 +0100 (Sun, 22 Jan 2006)
+New Revision: 341
+
+Modified:
+   trunk/libs/active/record/Validator.php
+Log:
+ -- created __call method to remove duplicate code.
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2006-01-21 17:37:08 UTC (rev 340)
++++ trunk/libs/active/record/Validator.php	2006-01-22 08:53:07 UTC (rev 341)
+@@ -1,26 +1,67 @@
+ &lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005, 2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
+ 
+ class ValidationException extends MedickException {     }
+ 
+ class Validator extends Object {
+ 
++    /** @var DatabaseRow
++        current database row */
+     private $row;
+ 
++    /**
++     * Creates a new validator
++     *
++     * @param DatabaseRow row
++     */
+     public function Validator(DatabaseRow $row) {
+         $this-&gt;row= $row;
+     }
+ 
+-    // pass a separated array list:
+-    // presence_of('title','body')
+-    public function presence_of() {
+-        $args= func_get_args();
++    public function __call ($method, $args) {
+         $has_errors= FALSE;
+         foreach ($args as $argument) {
+-            if ($field=$this-&gt;row-&gt;getFieldByName($argument)) {
+-                if ($field-&gt;getValue() == '') {
+-                    $field-&gt;addError('is empty');
+-                    $has_errors= TRUE;
++            if ($field = $this-&gt;row-&gt;getFieldByName($argument)) {
++                if ($method == &quot;presence_of&quot;) {
++                    $has_errors = $this-&gt;notEmpty($field);
++                } elseif ($method == &quot;uniqueness_of&quot; ) {
++                    $has_errors = $this-&gt;notUnique($field);
++                } else {
++                    trigger_error('No such method validation method:' . $method, E_USER_ERROR);
+                 }
++            } else {
++                trigger_error('No such field to validate:' . $argument, E_USER_ERROR);
+             }
+         }
+         if ($has_errors) {
+@@ -30,25 +71,21 @@
+         }
+     }
+ 
+-    public function uniqueness_of() {
+-        $args= func_get_args();
+-        $has_errors= FALSE;
+-        foreach ($args as $argument) {
+-            if ($field = $this-&gt;row-&gt;getFieldByName($argument)) {
+-                try {
+-                    ActiveRecordBase::__find(array(
+-                        array('condition'=&gt;$field-&gt;getName() .'=\''.$field-&gt;getValue().'\'')));
+-                    $field-&gt;addError('is not unique');
+-                    $has_errors= TRUE;
+-                } catch (RecordNotFoundException $rnfEx) {
+-                    continue;
+-                }
+-            }
++    private function notEmpty(Field $field) {
++        if ($field-&gt;getValue() == '') {
++            $field-&gt;addError('is empty');
++            return TRUE;
+         }
+-        if ($has_errors) {
+-            throw new ValidationException('Validation failed!');
+-        } else {
++    }
++
++    private function notUnique (Field $field) {
++        try {
++            ActiveRecordBase::__find(array(
++                array('condition'=&gt;$field-&gt;getName() .'=\''.$field-&gt;getValue().'\'')));
++            $field-&gt;addError('is not unique');
+             return TRUE;
++        } catch (RecordNotFoundException $rnfEx) {
++            return FALSE;
+         }
+     }
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000132.html">[Medick-svn] r340 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/db applications/eltodo/public/images applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record trunk/libs/active/support
+</A></li>
+	<LI>Next message: <A HREF="000134.html">[Medick-svn] r342 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#133">[ date ]</a>
+              <a href="thread.html#133">[ thread ]</a>
+              <a href="subject.html#133">[ subject ]</a>
+              <a href="author.html#133">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

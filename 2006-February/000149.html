@@ -1,0 +1,164 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r358 - applications/eltodo/public trunk/libs/action/controller/http trunk/skel/public
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r358%20-%20applications/eltodo/public%20trunk/libs/action/controller/http%20trunk/skel/public&In-Reply-To=%3C200602251957.k1PJvt2C003191%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000148.html">
+   <LINK REL="Next"  HREF="000150.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r358 - applications/eltodo/public trunk/libs/action/controller/http trunk/skel/public</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r358%20-%20applications/eltodo/public%20trunk/libs/action/controller/http%20trunk/skel/public&In-Reply-To=%3C200602251957.k1PJvt2C003191%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r358 - applications/eltodo/public trunk/libs/action/controller/http trunk/skel/public">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Feb 25 20:57:55 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000148.html">[Medick-svn] r357 - applications/eltodo/db
+</A></li>
+        <LI>Next message: <A HREF="000150.html">[Medick-svn] r360 - branches/release_0.1 branches/release_0.1/libs/medick trunk trunk/libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#149">[ date ]</a>
+              <a href="thread.html#149">[ thread ]</a>
+              <a href="subject.html#149">[ subject ]</a>
+              <a href="author.html#149">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-02-25 20:57:47 +0100 (Sat, 25 Feb 2006)
+New Revision: 358
+
+Modified:
+   applications/eltodo/public/.htaccess
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/skel/public/default.htaccess
+Log:
+ -- minor changes to make-it work for php as CGI or Apache 1
+
+Modified: applications/eltodo/public/.htaccess
+===================================================================
+--- applications/eltodo/public/.htaccess	2006-02-24 20:43:19 UTC (rev 357)
++++ applications/eltodo/public/.htaccess	2006-02-25 19:57:47 UTC (rev 358)
+@@ -13,6 +13,11 @@
+  
+ RewriteEngine on
+ 
++RewriteRule ^$ index.php  [L]
++RewriteCond %{REQUEST_FILENAME} !-f
++RewriteCond %{REQUEST_FILENAME} !-d
++RewriteRule (.*) index.php/$1  [QSA,L]
++
+ # all files with .something are skipped
+ # RewriteCond %{REQUEST_URI} \..+$
+ # RewriteCond %{REQUEST_URI} !\.html$
+@@ -20,7 +25,7 @@
+ # the others are redirected to the front web controller
+ # RewriteRule ^(.*)$ index.php [QSA,L]
+ 
+-RewriteCond %{REQUEST_FILENAME} !-s
+-RewriteCond %{REQUEST_URI} !^index.php/$
+-RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
++#RewriteCond %{REQUEST_FILENAME} !-s
++#RewriteCond %{REQUEST_URI} !^index.php/$
++#RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+ 
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-02-24 20:43:19 UTC (rev 357)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-02-25 19:57:47 UTC (rev 358)
+@@ -61,9 +61,16 @@
+ 
+         unset($_REQUEST); unset($_GET); unset($_POST);
+ 
+-        if (array_key_exists('PATH_INFO', $_SERVER)) {
++        if (array_key_exists('PATH_INFO', $_SERVER) &amp;&amp; $_SERVER['PATH_INFO']!='' ) {
+             $this-&gt;path_info= $_SERVER['PATH_INFO'];
+         }
++        // TODO:
++        //      -&gt; this is for php as cgi
++        //      -&gt; should substract the documnet root
++        elseif (array_key_exists('REQUEST_URI', $_SERVER)) {
++            $this-&gt;path_info= substr($_SERVER['REQUEST_URI'],7);
++        }
++        
+         $this-&gt;session = new Session();
+         $this-&gt;headers = HTTPRequest::getAllHeaders();
+     }
+
+Modified: trunk/skel/public/default.htaccess
+===================================================================
+--- trunk/skel/public/default.htaccess	2006-02-24 20:43:19 UTC (rev 357)
++++ trunk/skel/public/default.htaccess	2006-02-25 19:57:47 UTC (rev 358)
+@@ -3,10 +3,12 @@
+ 
+ # Configuration
+ # 1. Medick Related.
++# this will not work for php as cgi
+ SetEnv MEDICK_APPLICATION_PATH ${APP_PATH}
+ SetEnv MEDICK_APPLICATION_NAME ${APP_NAME}
+ 
+ # 2. php options.
++# this will not work for php as cgi
+ php_value short_open_tag 1
+ # this should depend on environment.
+ # while we are on &quot;planning&quot;, we will 
+@@ -14,10 +16,18 @@
+ php_value display_errors 1
+ 
+ # Rewrite
++
+ RewriteEngine on
+-RewriteCond %{REQUEST_FILENAME} !-s
+-RewriteCond %{REQUEST_URI} !^index.php/$
+-RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+ 
+-#RewriteRule !^(stylesheet|images|javascript)/ index.php [NC,L]
++# Set 1.
++#RewriteCond %{REQUEST_FILENAME} !-s
++#RewriteCond %{REQUEST_URI} !^index.php/$
++#RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+ 
++# Set 2.
++# RewriteBase /${APP_NAME}
++RewriteRule ^$ index.php  [L]
++RewriteCond %{REQUEST_FILENAME} !-f
++RewriteCond %{REQUEST_FILENAME} !-d
++RewriteRule (.*) index.php/$1  [QSA,L]
++
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000148.html">[Medick-svn] r357 - applications/eltodo/db
+</A></li>
+	<LI>Next message: <A HREF="000150.html">[Medick-svn] r360 - branches/release_0.1 branches/release_0.1/libs/medick trunk trunk/libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#149">[ date ]</a>
+              <a href="thread.html#149">[ thread ]</a>
+              <a href="subject.html#149">[ subject ]</a>
+              <a href="author.html#149">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

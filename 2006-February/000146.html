@@ -1,0 +1,683 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r355 - applications/eltodo/app/views/layouts applications/eltodo/public applications/eltodo/public/stylesheet trunk trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/medick trunk/skel/public
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r355%20-%20applications/eltodo/app/views/layouts%20applications/eltodo/public%20applications/eltodo/public/stylesheet%20trunk%20trunk/libs/action/controller%20trunk/libs/action/controller/http%20trunk/libs/medick%20trunk/skel/public&In-Reply-To=%3C200602241928.k1OJSYON026639%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000145.html">
+   <LINK REL="Next"  HREF="000147.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r355 - applications/eltodo/app/views/layouts applications/eltodo/public applications/eltodo/public/stylesheet trunk trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/medick trunk/skel/public</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r355%20-%20applications/eltodo/app/views/layouts%20applications/eltodo/public%20applications/eltodo/public/stylesheet%20trunk%20trunk/libs/action/controller%20trunk/libs/action/controller/http%20trunk/libs/medick%20trunk/skel/public&In-Reply-To=%3C200602241928.k1OJSYON026639%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r355 - applications/eltodo/app/views/layouts applications/eltodo/public applications/eltodo/public/stylesheet trunk trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/medick trunk/skel/public">aurelian at berlios.de
+       </A><BR>
+    <I>Fri Feb 24 20:28:34 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000145.html">[Medick-svn] r354 - applications/eltodo/public/javascript trunk/skel/public/javascript trunk/test
+</A></li>
+        <LI>Next message: <A HREF="000147.html">[Medick-svn] r356 - in trunk: . libs/action/controller libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#146">[ date ]</a>
+              <a href="thread.html#146">[ thread ]</a>
+              <a href="subject.html#146">[ subject ]</a>
+              <a href="author.html#146">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-02-24 20:28:29 +0100 (Fri, 24 Feb 2006)
+New Revision: 355
+
+Added:
+   trunk/libs/action/controller/Dispatcher.php
+   trunk/libs/medick/Medick.php
+Removed:
+   trunk/libs/medick/Dispatcher.php
+   trunk/libs/medick/Version.php
+Modified:
+   applications/eltodo/app/views/layouts/eltodo.phtml
+   applications/eltodo/public/.htaccess
+   applications/eltodo/public/stylesheet/eltodo.v0.2.css
+   trunk/boot.php
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Response.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+   trunk/skel/public/default.htaccess
+Log:
+ -- Request/Response not abstract classes anymore (just protected constructors)
+ -- moved response codes from Response to HTTPResponse (that`s there place)
+ -- moved Dispatcher to action.controller.Dispatcher
+ -- added short_open_tags and display_errors on .htaccess
+ 
+
+
+Modified: applications/eltodo/app/views/layouts/eltodo.phtml
+===================================================================
+--- applications/eltodo/app/views/layouts/eltodo.phtml	2006-02-22 19:26:26 UTC (rev 354)
++++ applications/eltodo/app/views/layouts/eltodo.phtml	2006-02-24 19:28:29 UTC (rev 355)
+@@ -5,7 +5,7 @@
+ &lt;html xmlns=&quot;<A HREF="http://www.w3.org/1999/xhtml">http://www.w3.org/1999/xhtml</A>&quot; lang=&quot;en&quot; xml:lang=&quot;en&quot;&gt;
+     &lt;head&gt;
+         &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
+-        &lt;base href=&quot;<A HREF="http://localhost/eltodo/">http://localhost/eltodo/</A>&quot; /&gt;
++        &lt;base href=&quot;&lt;?=$__server . $__base;?&gt;&quot; /&gt;
+         &lt;link rel=&quot;stylesheet&quot; href=&quot;stylesheet/eltodo.v0.2.css&quot; /&gt;
+         &lt;script src=&quot;javascript/prototype.js&quot; type=&quot;text/javascript&quot;&gt;&lt;/script&gt;
+         &lt;script src=&quot;javascript/scriptaculous.js&quot; type=&quot;text/javascript&quot;&gt;&lt;/script&gt;
+@@ -16,7 +16,9 @@
+ 
+         &lt;div id=&quot;container&quot;&gt;
+ 
+-            &lt;div id=&quot;header&quot;&gt;elTodo&lt;/div&gt;
++            &lt;div id=&quot;header&quot;&gt;
++              &lt;h3&gt;elTodo&lt;/h3&gt;
++            &lt;/div&gt;
+ 
+             &lt;div id=&quot;sidebar&quot;&gt;
+                 &lt;h1&gt;sidebar&lt;/h1&gt;
+
+Modified: applications/eltodo/public/.htaccess
+===================================================================
+--- applications/eltodo/public/.htaccess	2006-02-22 19:26:26 UTC (rev 354)
++++ applications/eltodo/public/.htaccess	2006-02-24 19:28:29 UTC (rev 355)
+@@ -7,6 +7,8 @@
+ SetEnv MEDICK_APPLICATION_PATH /wwwroot/medick/applications/eltodo
+ SetEnv MEDICK_APPLICATION_NAME eltodo
+ 
++php_value short_open_tag 1
++
+ #ErrorDocument 404 /todo.html
+  
+ RewriteEngine on
+
+Modified: applications/eltodo/public/stylesheet/eltodo.v0.2.css
+===================================================================
+--- applications/eltodo/public/stylesheet/eltodo.v0.2.css	2006-02-22 19:26:26 UTC (rev 354)
++++ applications/eltodo/public/stylesheet/eltodo.v0.2.css	2006-02-24 19:28:29 UTC (rev 355)
+@@ -75,13 +75,13 @@
+   background-color: #fff;
+ }
+ 
+-a:link, a:visited{
++a:link, a:visited {
+     color: #30c;
+     background-color: transparent;
+     text-decoration: underline;
+ }
+ 
+-a:hover,a:active{
++a:hover,a:active {
+     color: #c03;
+     background-color: transparent;
+ }
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/boot.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -40,7 +40,7 @@
+ // medick path.
+ define( 'MEDICK_PATH', dirname(__FILE__) . DIRECTORY_SEPARATOR );
+ // rewrite system include path
+-set_include_path( MEDICK_PATH . 'libs'   . DIRECTORY_SEPARATOR  );
++set_include_path( MEDICK_PATH . 'libs'   . DIRECTORY_SEPARATOR );
+ 
+ // this should depend on environment
+ error_reporting(E_ALL|E_STRICT);
+@@ -48,6 +48,7 @@
+ if (version_compare(PHP_VERSION, '5.1.0') &gt; 0) {
+     date_default_timezone_set('Europe/Bucharest');
+ }
++
+ // load core classes
+ include_once('medick/Object.php');
+ include_once('medick/Exception.php');
+@@ -55,7 +56,7 @@
+ set_error_handler(array(new ErrorHandler(), 'raiseError'));
+ include_once('medick/util.php');
+ include_once('medick/Registry.php');
+-include_once('medick/Dispatcher.php');
++include_once('action/controller/Dispatcher.php');
+ include_once('medick/Version.php');
+ include_once('configurator/XMLConfigurator.php');
+ include_once('logger/Logger.php');
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/action/controller/Base.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -126,7 +126,7 @@
+         $template = ActionView::factory('php');
+         $template-&gt;error= $exception;
+         $text= $template-&gt;render_file(MEDICK_PATH . '/libs/action/controller/templates/error.phtml');
+-        $response-&gt;setStatus(Response::SC_INTERNAL_SERVER_ERROR);
++        $response-&gt;setStatus(HTTPResponse::SC_INTERNAL_SERVER_ERROR);
+         $response-&gt;setContent($text);
+         return $response;
+     }
+@@ -161,7 +161,7 @@
+      *  }
+      * &lt;/code&gt;
+      * @param string template_name, [optional], the template name, default is null, the curent action.
+-     * @param Response::SC_*, status, [optional] status code, default is 200 OK
++     * @param HTTPResponse::SC_*, status, [optional] status code, default is 200 OK
+      * @return void
+      */
+     protected function render($template_name = NULL, $status = NULL) {
+@@ -242,7 +242,7 @@
+             $this-&gt;logger-&gt;info('Action already performed...');
+             return;
+         }
+-        $status = $status === NULL ? Response::SC_OK : $status;
++        $status = $status === NULL ? HTTPResponse::SC_OK : $status;
+         $this-&gt;response-&gt;setStatus($status);
+         $this-&gt;response-&gt;setContent($text);
+         $this-&gt;action_performed = TRUE;
+@@ -289,7 +289,8 @@
+ 
+         $this-&gt;template = ActionView::factory('php');
+         // predefined variables:
+-        $this-&gt;template-&gt;assign('__base', $this-&gt;config-&gt;getProperty('document_root'));
++        // TODO: check if we have a / at the end, if not, add one
++        $this-&gt;template-&gt;assign('__base', $this-&gt;config-&gt;getProperty('document_root').'/');
+         $this-&gt;template-&gt;assign('__server', $this-&gt;config-&gt;getProperty('server_name'));
+         $this-&gt;template-&gt;assign('__controller', $this-&gt;params['controller']);
+         $this-&gt;logger-&gt;debug($this-&gt;request-&gt;toString());
+@@ -374,8 +375,8 @@
+             $action= $this-&gt;createMethod($action_name);
+             if (!$action || $action-&gt;isStatic()) {
+                 throw new RoutingException(
+-                    'Cannot invoke default action, \'index\' for this Route!',
+-                    'Method named \'index\' is not defined in class: ' . $this-&gt;getClassName()
++                    'Cannot invoke default action, ``index&quot; for this Route!',
++                    'Method named ``index&quot; is not defined in class: ' . $this-&gt;getClassName()
+                 );
+             }
+         }
+@@ -423,15 +424,16 @@
+         foreach($this-&gt;before_filter as $filter_name) {
+             if (!$filter= $this-&gt;createMethod($filter_name)) {
+                 $this-&gt;logger-&gt;info(
+-                    'Could not create filter: `'.$filter_name.'`, skipping...');
++                    'Could not create filter: ``'.$filter_name.'&quot;, skipping...');
+                 continue;
+             }
+             // a filter should be declared as protected.
+             if (!$filter-&gt;isProtected()) {
+                 throw new MedickException(
+-                    'Your filter,`'. $filter_name . '` is declared as a
+-                        public method of class `' . $this-&gt;getClassName() .'` !');
++                    'Your filter,``'. $filter_name . '&quot; is declared as a
++                        public method of class ``' . $this-&gt;getClassName() .'&quot; !');
+             }
++            // can we use invoke?
+             $this-&gt;$filter_name();
+         }
+     }
+
+Copied: trunk/libs/action/controller/Dispatcher.php (from rev 344, trunk/libs/medick/Dispatcher.php)
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/action/controller/Request.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -37,12 +37,15 @@
+ /**
+  * @package locknet7.action.controller.request
+  */
+-abstract class Request extends Object {
++class Request extends Object {
+ 
+     /** @var array
+         current request parameters */
+     private $params = array();
+ 
++    /** Hidden Constructor */
++    protected function Request() {  }
++
+     /**
+      * It gets the param
+      * @param mixed, param, the paremeter name
+@@ -91,6 +94,4 @@
+         }
+         return $buff;
+     }
+-    
+ }
+-
+
+Modified: trunk/libs/action/controller/Response.php
+===================================================================
+--- trunk/libs/action/controller/Response.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/action/controller/Response.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -37,38 +37,18 @@
+ /**
+  * @package locknet7.action.controller.response
+  */
+-abstract class Response extends Object {
+-
+-    /** Status code (200) indicating the request succeeded normally. */
+-    const SC_OK = 200;
+-
+-    /** Status code (304) indicating that a conditional GET
+-        operation found that the resource was available and not modified. */
+-    const SC_NOT_MODIFIED = 304;
+-
+-    /** Status code (400) indicating the request sent by the
+-        client was syntactically incorrect. */
+-    const SC_BAD_REQUEST = 400;
+-
+-    /** Status code (403) indicating the server
+-        understood the request but refused to fulfill it. */
+-    const SC_FORBIDDEN = 403;
+-
+-    /** Status code (404) indicating that the requested
+-        resource is not available. */
+-    const SC_NOT_FOUND = 404;
+-
+-    /** Status code (500) indicating an error inside
+-        the HTTP server which prevented it from fulfilling the request. */
+-    const SC_INTERNAL_SERVER_ERROR = 500;
+-
+-    /** Status code (503) indicating that the HTTP server
+-        is temporarily overloaded, and unable to handle the request. */
+-    const SC_SERVICE_UNAVAILABLE = 503;
+-
++class Response extends Object {
++    
++    /** @var string
++        response content */
+     protected $content;
+ 
+     /**
++     * Hidden Constructor
++     */
++    protected function Response(){  }
++
++    /**
+      * Set the content
+      * @param mixed content, the content
+      */
+@@ -91,11 +71,5 @@
+         echo $this-&gt;content;
+     }
+ 
+-    /**
+-     * Sets the status of this response
+-     * @param Response::SC_*, status, the status of this response
+-     */
+-    abstract function setStatus($status);
+-
+ }
+ 
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -46,11 +46,15 @@
+         path_info_parts */
+     private $path_info= NULL;
+ 
++    /** @var array
++        the list of headers associated with this HTTPRequest */
++    private $headers= array();
++
+     /**
+      * Constructor.
+      * It builds the HTTPRequest object
+      */
+-    public function __construct() {
++    public function HTTPRequest() {
+         foreach ($_REQUEST as $key=&gt;$value) {
+             $this-&gt;setParameter($key, $value);
+         }
+@@ -61,8 +65,21 @@
+             $this-&gt;path_info= $_SERVER['PATH_INFO'];
+         }
+         $this-&gt;session = new Session();
++        $this-&gt;headers = HTTPRequest::getAllHeaders();
+     }
+ 
++    public function getHeaders() {
++        return $this-&gt;headers;
++    }
++    
++    public function getHeader($name) {
++        return $this-&gt;hasHeader($name) ? $this-&gt;headers[ucfirst($name)] : FALSE;
++    }
++    
++    public function hasHeader($name) {
++        return isset($this-&gt;headers[ucfirst($name)]);
++    }
++
+     /**
+      * It gets a part of the path info associated with this request
+      * @param int, key, the part index
+@@ -90,6 +107,28 @@
+     public function getRequestURI() {  }
+     public function getProtocol() {  }
+     // }}}
++    
++    /**
++     * A wrapper around getallheaders apache function that gets a list
++     * of headers associated with this HTTPRequest.
++     *
++     * @TODO: 
++     * @return array
++     */
++    protected static function getAllHeaders() {
++        $headers= array();
++        if (function_exists('getallheaders')) {
++            // this will work only for mod_php
++            $headers= getallheaders();
++        } else {
++            foreach($_SERVER as $header=&gt;$value) {
++                if(ereg('HTTP_(.+)',$header,$hp)) {
++                    $headers[ucfirst(strtolower($hp[1]))] = $value;
++                }
++            }       
++        }
++        return $headers;
++    }
+ 
+ }
+ 
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -35,11 +35,43 @@
+ /**
+  * @package locknet7.action.controller.response
+  */
+-
+ class HTTPResponse extends Response {
+ 
++    /** Status code (200) indicating the request succeeded normally. */
++    const SC_OK = 200;
++
++    /** Status code (304) indicating that a conditional GET
++        operation found that the resource was available and not modified. */
++    const SC_NOT_MODIFIED = 304;
++
++    /** Status code (400) indicating the request sent by the
++        client was syntactically incorrect. */
++    const SC_BAD_REQUEST = 400;
++
++    /** Status code (403) indicating the server
++        understood the request but refused to fulfill it. */
++    const SC_FORBIDDEN = 403;
++
++    /** Status code (404) indicating that the requested
++        resource is not available. */
++    const SC_NOT_FOUND = 404;
++
++    /** Status code (500) indicating an error inside
++        the HTTP server which prevented it from fulfilling the request. */
++    const SC_INTERNAL_SERVER_ERROR = 500;
++
++    /** Status code (503) indicating that the HTTP server
++        is temporarily overloaded, and unable to handle the request. */
++    const SC_SERVICE_UNAVAILABLE = 503;
++
++    /** Constructor */
++    public function HTTPResponse() {
++
++    }
++    
+     /**
+      * Sets the header $name with $value
++     *
+      * @param string, name the name of the header
+      * @param mixed, value, the value of this header
+      */
+@@ -49,6 +81,7 @@
+ 
+     /**
+      * Sets the content type header
++     *
+      * @param strign type, the content type
+      */
+     public function setContentType($type) {
+@@ -56,20 +89,24 @@
+     }
+ 
+     /**
+-     * @see Response::setStatus($status)
++     * Sets the status of this response
++     *
++     * @TODO: should choose between HTTP/1.1 and HTTP/1.0
++     * @TODO: more cases in the switch
++     * @param HTTPResponse::SC_*, status, the status of this response
+      */
+     public function setStatus($status) {
+         switch($status){
+-            case self::SC_OK: // 200
++            case HTTPResponse::SC_OK: // 200
+                 $message = 'OK';
+                 break;
+-            case self::SC_NOT_MODIFIED: // 304
++            case HTTPResponse::SC_NOT_MODIFIED: // 304
+                 $message = 'Not Modified';
+                 break;
+-            case self::SC_NOT_FOUND: // 404
++            case HTTPResponse::SC_NOT_FOUND: // 404
+                 $message = 'Not Found';
+                 break;
+-            case self::SC_INTERNAL_SERVER_ERROR: // 500
++            case HTTPResponse::SC_INTERNAL_SERVER_ERROR: // 500
+                 $message = 'Internal Server Error';
+                 break;
+             default:
+@@ -78,7 +115,11 @@
+         header(&quot;HTTP/1.1 &quot; . $status . $message, TRUE, $status);
+     }
+ 
+-    /** Perform a HTTP redirection */
++    /**
++     * Perform a HTTP redirect
++     *
++     * @param string location, location to redirect to
++     */
+     public function redirect($location) {
+         $this-&gt;setHeader('Location', $location);
+         $this-&gt;content = &quot;&lt;html&gt;&lt;body&gt;You are being &lt;a href=\&quot;$location\&quot;&gt;redirected&lt;/a&gt;.&lt;/body&gt;&lt;/html&gt;&quot;;
+
+Deleted: trunk/libs/medick/Dispatcher.php
+===================================================================
+--- trunk/libs/medick/Dispatcher.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/medick/Dispatcher.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -1,61 +0,0 @@
+-&lt;?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005, 2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice,
+-//   this list of conditions and the following disclaimer.
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation
+-//   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
+-//   be used to endorse or promote products derived from this software without
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-//
+-// $Id$
+-//
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-include_once('action/controller/Routing.php');
+-include_once('action/controller/Request.php');
+-include_once('action/controller/Response.php');
+-include_once('action/controller/Base.php');
+-
+-/**
+- * It knows how to dispatch a request
+- *
+- * @package locknet7.medick
+- */
+-class Dispatcher extends Object {
+-
+-    /**
+-     * Framework entry point
+-     * @return void.
+-     */
+-    public static function dispatch() {
+-        $request  = new HTTPRequest();
+-        $response = new HTTPResponse();
+-        try {
+-            ActionControllerRouting::recognize($request)-&gt;process($request, $response)-&gt;dump();
+-        } catch (Exception $ex) {
+-            ActionController::process_with_exception($request, $response, $ex)-&gt;dump();
+-            Registry::get('__logger')-&gt;warn($ex-&gt;getMessage());
+-        }
+-    }
+-}
+
+Copied: trunk/libs/medick/Medick.php (from rev 343, trunk/libs/medick/Version.php)
+
+Deleted: trunk/libs/medick/Version.php
+===================================================================
+--- trunk/libs/medick/Version.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/medick/Version.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -1,55 +0,0 @@
+-&lt;?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005, 2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice,
+-//   this list of conditions and the following disclaimer.
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation
+-//   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
+-//   be used to endorse or promote products derived from this software without
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-//
+-// $Id$
+-//
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * Holds the current Medick version
+- * @package locknet7.medick
+- */
+-
+-class Version extends Object {
+-
+-    const TINY  = 5;
+-    const MINOR = 0;
+-    const MAJOR = 0;
+-
+-    /**
+-     * It gets the medick version.
+-     * @return string the medick version
+-     */
+-    public static function getVersion() {
+-        return Version::MAJOR . '.' . Version::MINOR . '.' . Version::TINY . '-svn';
+-    }
+-
+-}
+-
+
+Modified: trunk/skel/public/default.htaccess
+===================================================================
+--- trunk/skel/public/default.htaccess	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/skel/public/default.htaccess	2006-02-24 19:28:29 UTC (rev 355)
+@@ -2,13 +2,19 @@
+ # $Id$
+ 
+ # Configuration
+-
++# 1. Medick Related.
+ SetEnv MEDICK_APPLICATION_PATH ${APP_PATH}
+ SetEnv MEDICK_APPLICATION_NAME ${APP_NAME}
+- 
++
++# 2. php options.
++php_value short_open_tag 1
++# this should depend on environment.
++# while we are on &quot;planning&quot;, we will 
++# keep this to 1
++php_value display_errors 1
++
++# Rewrite
+ RewriteEngine on
+-
+-########## Set 2
+ RewriteCond %{REQUEST_FILENAME} !-s
+ RewriteCond %{REQUEST_URI} !^index.php/$
+ RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000145.html">[Medick-svn] r354 - applications/eltodo/public/javascript trunk/skel/public/javascript trunk/test
+</A></li>
+	<LI>Next message: <A HREF="000147.html">[Medick-svn] r356 - in trunk: . libs/action/controller libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#146">[ date ]</a>
+              <a href="thread.html#146">[ thread ]</a>
+              <a href="subject.html#146">[ subject ]</a>
+              <a href="author.html#146">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

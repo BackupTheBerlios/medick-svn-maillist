@@ -1,0 +1,1515 @@
+From aurelian at berlios.de  Sun May 14 16:25:54 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 14 May 2006 16:25:54 +0200
+Subject: [Medick-svn] r396 - in trunk/test: . test
+Message-ID: <200605141425.k4EEPs1r013727@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-05-14 16:25:53 +0200 (Sun, 14 May 2006)
+New Revision: 396
+
+Removed:
+   trunk/test/application/
+   trunk/test/mock/
+   trunk/test/test/action/
+   trunk/test/test/configurator/
+   trunk/test/test/medick/
+Log:
+ -- focus on ActiveRecord testing
+
+
+
+From aurelian at berlios.de  Mon May 22 19:31:31 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 22 May 2006 19:31:31 +0200
+Subject: [Medick-svn] r397 - in trunk: . libs/action/controller libs/action/controller/http libs/action/controller/templates libs/action/view libs/active/record
+Message-ID: <200605221731.k4MHVVx7008767@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-05-22 19:31:17 +0200 (Mon, 22 May 2006)
+New Revision: 397
+
+Modified:
+   trunk/CHANGELOG
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Response.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+   trunk/libs/action/controller/templates/error.phtml
+   trunk/libs/action/view/HTML.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Field.php
+Log:
+ -- see CHANGELOG form this commit
+
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/CHANGELOG	2006-05-22 17:31:17 UTC (rev 397)
+@@ -1,6 +1,17 @@
+ $Id$
+ (*) SVN version
+ 
++0.2.3(*)
++    - ActiveRecord: class open by removing some final declarations
++    - ActiveRecord: is not an abstract class anymore (awaiting php 5.2 changes on abstract static)  
++    - ActiveRecord: new methods ActiveRecord::isValid
++    - ActiveRecord: some API docs
++    - ActiveRecord::Field added toString and length methods
++    - HTTPRequest added new methods to get the current HTTPRequest method: getMethod, isPost, isGet
++    - ActionController ``beautiful"(TM) error template
++    - ActionController will throw a medick exception when trying to load an unexistent before_filter  
++    - FormHelper minor code clean-ups and added password_field method
++      
+ 0.2.2(08.Apr.2006)
+     - Testor::Application more code samples for medick
+     - Implemented Route Requirements
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/action/controller/Base.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -156,11 +156,15 @@
+                                                    Request $request,
+                                                    Response $response,
+                                                    Exception $exception) {
++        $body = $response->getContent();
+         if(ob_get_length()) {
+             ob_end_clean();
+         }
+         $template = ActionView::factory('php');
+-        $template->error= $exception;
++        $template->assign('error', $exception);
++        $template->assign('request', $request);
++        $template->assign('response', $response);
++        $template->assign('body', $body);
+         $text= $template->render_file(MEDICK_PATH . '/libs/action/controller/templates/error.phtml');
+         $response->setStatus(HTTPResponse::SC_INTERNAL_SERVER_ERROR);
+         $response->setContent($text);
+@@ -506,14 +510,13 @@
+     private function add_before_filters() {
+         if (!is_array($this->before_filter)) {
+             throw new MedickException(
+-                $this->getClassName() . '->\$before_filter should be an array
+-                    of strings, each string representing a method name');
++                $this->getClassName() . '->$before_filter should be an array
++                    of strings, each string representing a protected method name');
+         }
+         foreach($this->before_filter as $filter_name) {
+             if (!$filter= $this->createMethod($filter_name)) {
+-                $this->logger->info(
+-                    'Could not create filter: ``'.$filter_name.'", skipping...');
+-                continue;
++                throw new MedickException('Cannot load filter: ' . $this->getClassName() . '::' . $filter_name . 
++                                    ' Call to undefined method: ' .$this->getClassName() . '::' . $filter_name);
+             }
+             // a filter should be declared as protected.
+             if (!$filter->isProtected()) {
+
+Modified: trunk/libs/action/controller/Response.php
+===================================================================
+--- trunk/libs/action/controller/Response.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/action/controller/Response.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -93,4 +93,3 @@
+     }
+ 
+ }
+-
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -44,6 +44,8 @@
+  */
+ class HTTPRequest extends Request {
+ 
++    private $method;
++    
+     /** @var Session */
+     private $session;
+ 
+@@ -67,6 +69,7 @@
+      * @todo a Cookie class should be written.
+      */
+     public function HTTPRequest() {
++        $this->method= isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
+         foreach (array_merge($_GET,$_POST) as $key=>$value) {
+             $this->setParameter($key, $value);
+         }
+@@ -92,6 +95,18 @@
+         $this->headers = HTTPRequest::getAllHeaders();
+     }
+ 
++    public function getMethod() {
++        return $this->method;
++    }
++    
++    public function isPost() {
++        return $this->method == 'POST';
++    }
++    
++    public function isGet() {
++        return $this->method == 'GET';
++    }
++    
+     public function getCookies() {
+         return $this->cookies;
+     }
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -68,9 +68,7 @@
+     const SC_SERVICE_UNAVAILABLE = 503;
+ 
+     /** Constructor */
+-    public function HTTPResponse() {
+-
+-    }
++    public function HTTPResponse() {    }
+     
+     /**
+      * Sets the header $name with $value
+
+Modified: trunk/libs/action/controller/templates/error.phtml
+===================================================================
+--- trunk/libs/action/controller/templates/error.phtml	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/action/controller/templates/error.phtml	2006-05-22 17:31:17 UTC (rev 397)
+@@ -2,16 +2,21 @@
+         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+ <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+ <!-- $Id$ -->
+-    <head>
+-        <title>Server Error!</title>
+-        <style type="text/css" media="all">
+-            body { margin: 3px; padding: 3px; border:1px solid red; font-size: .9em;
+-            font-family: "Lucida Grande", Helvetica, Tahoma, sans-serif; }
+-            h1 { text-align:center; }
+-            #container { margin: 3px; padding: 3px; }
+-        </style>
+-    </head>
+-    <body>
++  <head>
++    <title>Server Error!</title>
++    <style type="text/css" media="all">
++      html * { padding:0; margin:0; }
++      body * { padding:10px 20px; }
++      body * * { padding:0; }
++      body { font:small sans-serif; }
++      body>div { border-bottom:1px solid #ddd; }
++      h1 { font-weight:normal; }
++      h2 { margin-bottom:.8em; }
++      #container { background: #ffc; }
++      #container h2 { font-weight: normal; color: #666; }
++    </style>
++  </head>
++  <body>
+        <div id="container">
+        <h1>Cannot process your request!</h1>
+            <h2><?=get_class($error);?></h2>
+@@ -29,6 +34,8 @@
+            Backtrace:<br />
+            <pre><?=$error->getTraceAsString();?></pre>
+            <hr />
++           <h2>Request Info:</h2>
++           <?=$request->toString();?>
+         </div>
+     </body>
+ </html>
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/action/view/HTML.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -107,20 +107,18 @@
+  */
+ class FormHelper extends Object {
+ 
+-    public static function text_field(ActiveRecord $object, $method, $options = array()) {
+-        if (!$field= $object->getRow()->getFieldByName($method)) {
++    public static function input_field(ActiveRecord $object, $method, $options= array(), $type='text') {
++        if (!$field= FormHelper::get_field($object, $method)) {
+             return; // ex?
+         }
+-        $id   = strtolower(get_class($object)) . '_'.$method;
+-        $name = strtolower(get_class($object)).'['.$method.']';
++        list($id, $name) = FormHelper::attributes($object, $method);
+         $buff = '';
+         $errors= FALSE;
+         if($field->hasErrors()) {
+             $buff .= '<div class="fieldWithErrors">';
+             $errors= TRUE;
+         }
+-
+-        $buff .= '<input type="text" id="' . $id . '" ';
++        $buff .= '<input type="' . $type . '" id="' . $id . '" ';
+         $buff .= 'name="'.$name . '" ';
+         $buff .= 'value="'.$object->$method.'" ';
+         foreach ($options as $key=>$value) {
+@@ -132,36 +130,33 @@
+         }
+         return $buff;
+     }
++    
++    public static function text_field(ActiveRecord $object, $method, $options = array()) {
++        return FormHelper::input_field($object, $method, $options);
++    }
+ 
+     public static function password_field(ActiveRecord $object, $method, $options = array()) {
+-        if (!$field= $object->getRow()->getFieldByName($method)) {
+-            return; // ex?
+-        }
+-        $id   = strtolower(get_class($object)) . '_'.$method;
+-        $name = strtolower(get_class($object)).'['.$method.']';
+-        $buff = '';
+-        $errors= FALSE;
+-        if($field->hasErrors()) {
+-            $buff .= '<div class="fieldWithErrors">';
+-            $errors= TRUE;
+-        }
+-
+-        $buff .= '<input type="password" id="' . $id . '" ';
+-        $buff .= 'name="'.$name . '" ';
+-        $buff .= 'value="'.$object->$method.'" ';
+-        foreach ($options as $key=>$value) {
+-            $buff .= $key . '="'.$value.'" ';
+-        }
+-        $buff .= ' />';
+-        if ($errors) {
+-            $buff .= '</div>';
+-        }
+-        return $buff;
++        return FormHelper::input_field($object, $method, $options, 'password');
+     }
+ 
+-
++    /**
++     * @return medick.active.record.Field
++     */ 
++    protected static function get_field(ActiveRecord $object, $method) {
++        return $object->getRow()->getFieldByName($method);
++    }
+     
+-
++    /**
++     * Gets form element attributes
++     * 
++     * @return array
++     */ 
++    protected static function attributes(ActiveRecord $object, $method) {
++        $id   = strtolower($object->getClassName()) . '_'.$method;
++        $name = strtolower($object->getClassName()).'['.$method.']';
++        return array($id, $name);
++    }
++    
+     public static function text_area(ActiveRecord $object, $method, $options=array()) {
+         if (!$field= $object->getRow()->getFieldByName($method)) {
+             return; // ex?
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/active/record/Base.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -104,7 +104,7 @@
+      * @param array, params, parameters as pair of `field name` => `value`
+      * @final because there is no reason to overwrite in parent classes, PHP Engine will call this constructor by default.
+      */
+-    public final function ActiveRecord($params = array()) {
++    public function ActiveRecord($params = array()) {
+         ActiveRecord::establish_connection();
+         $this->class_name = $this->getClassName();
+         $this->table_name = Inflector::pluralize(strtolower(Inflector::underscore($this->class_name)));
+@@ -200,8 +200,6 @@
+      * @param string method name
+      * @param array arguments
+      * @throws ActiveRecordException
+-     */
+-     
+     public function __call($method, $arguments) {
+         if ($method == 'destroy') return $this->delete();
+         $know_methods = array('save', 'insert', 'update', 'delete');
+@@ -215,7 +213,8 @@
+             $this->$method($arguments[0]);
+         }
+     }
+-    
++    */    
++
+     /** returns a string representation of this object */
+     public function toString() {
+         $string = '';
+@@ -251,6 +250,13 @@
+         return $this->row;
+     }
+ 
++    /**
++     * 
++     */ 
++    public function isValid() {
++        return count($this->row->collectErrors()) == 0;
++    }
++
+     protected function validates () {
+         return new Validator($this->row);
+     }
+@@ -344,8 +350,8 @@
+      *      $author->save(); // performs the update and returns the number of affected rows (1).
+      * </code>
+      */
+-    public final function save() {
+-        if ( !$this->before_save() or count($this->row->collectErrors()) > 0) {
++    public function save() {
++        if ( !$this->before_save() || !$this->isValid()) {
+             return false;
+         }
+         if ($this->row->getPrimaryKey()->isAffected) {
+@@ -371,7 +377,7 @@
+      * @return int next primary key id or, 1 (affected rows).
+      * @throws SQLException
+      */
+-    public final function insert() {
++    public function insert() {
+         if ( !$this->before_insert() or count($this->row->collectErrors()) > 0) {
+             return false;
+         }
+@@ -398,7 +404,7 @@
+      * @return int affected rows.
+      * @throws SQLException
+      */
+-    public final function update() {
++    public function update() {
+         if ( !$this->before_update() or count($this->row->collectErrors()) > 0) {
+             return false;
+         }
+@@ -406,8 +412,23 @@
+         $this->after_update();
+         return $af;
+     }
+-
+-    public final function attributes(/*Array*/ $params=array()) {
++    
++    /**
++     * Sets an array af attributes
++     *
++     * <code>
++     *   $author= Author::find(5); // select * from authors where id=5;
++     *   $author->attributes(array('name'=>'Jon'))->save(); // update authors set name='Jon' where id=5;
++     * </code>
++     * This method is also useful when receiving an array of parameters from HTTPRequest (form).
++     * <code>
++     *   // controller
++     *   $user= User::find($request->getParameter('id'))->attributes($request->getParameter('user'))->save();
++     * </code>
++     *
++     * @return ActiveRecord
++     */ 
++    public function attributes(/*Array*/ $params=array()) {
+         foreach($params as $name=>$value) {
+             $this->$name=$value;
+         }
+@@ -432,7 +453,7 @@
+      * @return int affected rows.
+      * @throws SQLException
+      */
+-    public final function delete() {
++    public function delete() {
+         if (!$this->before_delete() || count($this->row->collectErrors()) > 0) {
+             return false;
+         }
+@@ -534,7 +555,13 @@
+     }
+     // }}}
+ 
+-    abstract static function find();
++    /**
++     * This method should be overwritten in child classes, 
++     * from php 5.2 you cannot declare a method as abstract and static
++     */
++    static function find() {
++        throw new MedickException('ActiveRecord::find() should be overwritten in child classes!');
++    }
+ 
+     public static function build(QueryBuilder $builder) {
+         $class_name= $builder->getOwner();
+
+Modified: trunk/libs/active/record/Field.php
+===================================================================
+--- trunk/libs/active/record/Field.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/active/record/Field.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -152,5 +152,14 @@
+     public function setValue($value) {
+         $this->value = $value;
+     }
++
++    public function toString() {
++        return $this->value;
++    }
++
++    public function length() {
++        return strlen($this->value);
++    }
++    
+ }
+ 
+
+
+
+From aurelian at berlios.de  Tue May 23 21:18:35 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Tue, 23 May 2006 21:18:35 +0200
+Subject: [Medick-svn] r398 - in trunk: . libs/active/record libs/configurator skel/scripts
+Message-ID: <200605231918.k4NJIZGV021338@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-05-23 21:18:28 +0200 (Tue, 23 May 2006)
+New Revision: 398
+
+Modified:
+   trunk/boot.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/QueryBuilder.php
+   trunk/libs/active/record/SQLCommand.php
+   trunk/libs/configurator/XMLConfigurator.php
+   trunk/skel/scripts/generator.php
+Log:
+ -- updated the TODO list
+ -- refactor ActiveRecord by
+      adding a ActiveRecordTableInfo class 
+        to speed up things in ActiveRecord::ActiveRecord 
+        when finding table fields 
+      adding ActiveRecord::merge method witch will ``convert" a ResultSet to a RowsAggregate
+ -- added ``from" option on QueryBuilder
+ -- minor code arrangements (boot.php and generator.php) and some API docs.
+
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2006-05-22 17:31:17 UTC (rev 397)
++++ trunk/boot.php	2006-05-23 19:18:28 UTC (rev 398)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -34,10 +34,10 @@
+ 
+ /**
+  * It boots a medick application
+- * @package locknet7.boot
++ * @package medick.boot
+  */
+ 
+-// medick path.
++// medick framework path.
+ define( 'MEDICK_PATH', dirname(__FILE__) . DIRECTORY_SEPARATOR );
+ // rewrite system include path
+ set_include_path( MEDICK_PATH . 'libs'   . DIRECTORY_SEPARATOR );
+@@ -50,7 +50,7 @@
+ }
+ 
+ // load core classes
+-include_once('medick/Medick.php');
++require('medick/Medick.php');
+ set_error_handler(array(new ErrorHandler(), 'raiseError'));
+-include_once('action/controller/Dispatcher.php');
++require('action/controller/Dispatcher.php');
+ 
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-05-22 17:31:17 UTC (rev 397)
++++ trunk/libs/active/record/Base.php	2006-05-23 19:18:28 UTC (rev 398)
+@@ -44,6 +44,16 @@
+ include_once('creole/Creole.php');
+ include_once('creole/CreoleTypes.php');
+ 
++class ActiveRecordTableInfo extends Object {
++    static $instance= NULL;
++    static function getInstance(Connection $conn, $table_name) {
++        if (self::$instance === NULL || !isset(self::$instance[$table_name])) {
++            self::$instance[$table_name]= $conn->getDatabaseInfo()->getTable($table_name);
++        }
++        return self::$instance[$table_name];
++    }
++}
++
+ /**
+  * Main ActiveRecord Class
+  *
+@@ -95,7 +105,7 @@
+      * Close the Database Connection
+      */
+     public static function close_connection() {
+-        ActiveRecord::$conn = Creole::getConnection(Registry::get('__configurator')->getDatabaseDsn())->close();
++        ActiveRecord::$conn= Creole::getConnection(Registry::get('__configurator')->getDatabaseDsn())->close();
+     }
+ 
+     /**
+@@ -108,8 +118,9 @@
+         ActiveRecord::establish_connection();
+         $this->class_name = $this->getClassName();
+         $this->table_name = Inflector::pluralize(strtolower(Inflector::underscore($this->class_name)));
+-
+-        $table_info = ActiveRecord::$conn->getDatabaseInfo()->getTable($this->table_name);
++        
++        $table_info = ActiveRecordTableInfo::getInstance(ActiveRecord::$conn, $this->table_name);
++        // $table_info = ActiveRecord::$conn->getDatabaseInfo()->getTable($this->table_name);
+         $this->pk   = $table_info->getPrimaryKey()->getName();
+ 
+         $this->row = new DatabaseRow($this->table_name);
+@@ -130,7 +141,7 @@
+             } else {
+                 $field->isFK = false;
+             }
+-            $this->row[] = $field;
++            $this->row[]= $field;
+         }
+         // confused?
+         if(!empty($params)) { foreach ($params as $field_name => $field_value) {
+@@ -251,22 +262,31 @@
+     }
+ 
+     /**
+-     * 
++     * Check if this row is valid by counting the associated rows errors
++     *
++     * @return true if is valid
+      */ 
+     public function isValid() {
+         return count($this->row->collectErrors()) == 0;
+     }
+ 
++    /**
++     * Validates this row
++     *
++     * @return Validator
++     */ 
+     protected function validates () {
+         return new Validator($this->row);
+     }
+ 
+-    // {{{ filters:
++    // {{{ filters
+     /**
+      * Before Insert Filter.
+      *
+      * This filter is executed before running an sql insert.
+      * You should overwrite this method in your models.
++     * Remember to return TRUE and check with === FALSE to get the error
++     * 
+      * @return bool
+      * @since Rev.272
+      */
+@@ -277,6 +297,8 @@
+      *
+      * This filter is executed before running an sql update.
+      * You should overwrite this method in your models.
++     * Remember to return TRUE and check with === FALSE to get the error
++     * 
+      * @return bool
+      * @since Rev.272
+      */
+@@ -287,6 +309,8 @@
+      *
+      * This filter is executed before running an sql delete.
+      * You should overwrite this method in your models.
++     * Remember to return TRUE and check with === FALSE to get the error
++     * 
+      * @return bool
+      * @since Rev.272
+      */
+@@ -297,6 +321,8 @@
+      *
+      * This filter is executed before running an sql insert or update
+      * You should overwrite this method in your models.
++     * Remember to return TRUE and check with === FALSE to get the error
++     * 
+      * @return bool
+      * @since Rev.342
+      */
+@@ -559,7 +585,7 @@
+      * This method should be overwritten in child classes, 
+      * from php 5.2 you cannot declare a method as abstract and static
+      */
+-    static function find() {
++    public static function find() {
+         throw new MedickException('ActiveRecord::find() should be overwritten in child classes!');
+     }
+ 
+@@ -593,13 +619,21 @@
+                     'Couldn\'t find a `' . $class_name . '` to match your query.');
+             }
+         }
+-        $results = new RowsAggregate();
+-        while ($rs->next()) {
++        $stmt->close();
++        return ActiveRecord::merge($rs, $class);
++    } 
++    
++    /**
++     * @return RowsAggregate
++     */ 
++    protected static function merge(ResultSet $rs, ReflectionClass $class) {
++        $results= new RowsAggregate();
++        while($rs->next()) {
+             $results->add($class->newInstance($rs->getRow()));
+         }
+-        // release resources.
+-        $rs->close();$stmt->close();
++        $rs->close();
+         return $results;
+-    } 
++    }
+     
+ }
++
+
+Modified: trunk/libs/active/record/QueryBuilder.php
+===================================================================
+--- trunk/libs/active/record/QueryBuilder.php	2006-05-22 17:31:17 UTC (rev 397)
++++ trunk/libs/active/record/QueryBuilder.php	2006-05-23 19:18:28 UTC (rev 398)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -142,19 +142,21 @@
+      * Compile an SQLCommand from this query clauses.
+      * 
+      * Valid Clauses:
+-     * <code>
+-     *  'condition' => to insert a sql condition
+-     *  'order by'  => to set an order by
+-     *  'columns'   => specify only the columns you want to select (check if it work on aliases too?)
+-     *  'limit'     => adjust the limit (this is not sended to the SQLCommand since is intended to be used with PreparedStatements)
+-     *  'offset'    => adds an offset (this is not sended to the SQLCommand since is intended to be used with PreparedStatements)
+-     *  'left join' => add a left join
+-     * </code>
++     * <ul>
++     *  <li>'from'      => to add an additional from clause</li>
++     *  <li>'condition' => to insert a sql condition</li>
++     *  <li>'order by'  => to set an order by</li>
++     *  <li>'columns'   => specify only the columns you want to select (check if it work on aliases too?)</li>
++     *  <li>'limit'     => adjust the limit (this is not sended to the SQLCommand since is intended to be used with PreparedStatements)</li>
++     *  <li>'offset'    => adds an offset (this is not sended to the SQLCommand since is intended to be used with PreparedStatements)</li>
++     *  <li>'left join' => add a left join</li>
++     * </ul>
+      *
+      * @return SQLCommand
+      */
+     public function compile() {
+         $command= SQLCommand::select()->from(Inflector::tabelize($this->owner));
++        if (isset($this->clauses['from']))       $command->from($this->clauses['from']);
+         if (isset($this->clauses['condition']))  $command->where($this->clauses['condition']);
+         if (isset($this->clauses['order by']))   $command->orderBy($this->clauses['order by']);
+         if (isset($this->clauses['columns']))    $command->columns($this->clauses['columns']);
+
+Modified: trunk/libs/active/record/SQLCommand.php
+===================================================================
+--- trunk/libs/active/record/SQLCommand.php	2006-05-22 17:31:17 UTC (rev 397)
++++ trunk/libs/active/record/SQLCommand.php	2006-05-23 19:18:28 UTC (rev 398)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -115,7 +115,7 @@
+         for ($i = 0; $i < $size; ++$i) {
+             $q .= $this->tables[$i];
+             if ($i <= $size - 2) {
+-                $q .= "  ";
++                $q .= " , ";
+             }
+         }
+         return $q;
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2006-05-22 17:31:17 UTC (rev 397)
++++ trunk/libs/configurator/XMLConfigurator.php	2006-05-23 19:18:28 UTC (rev 398)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005,2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005,2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -45,9 +45,13 @@
+ 
+     /** @var SimpleXML */
+     protected $sxe;
+-
++    
++    /** @var string
++        application name */
+     protected $application_name;
+     
++    /** @var string
++        configuration file */
+     protected $config_file;
+     
+     /**
+
+Modified: trunk/skel/scripts/generator.php
+===================================================================
+--- trunk/skel/scripts/generator.php	2006-05-22 17:31:17 UTC (rev 397)
++++ trunk/skel/scripts/generator.php	2006-05-23 19:18:28 UTC (rev 398)
+@@ -56,15 +56,14 @@
+     }
+ 
+     if (!file_exists($views.'layouts'.DIRECTORY_SEPARATOR.$name.'.phtml')) {
+-    $layout =<<<LAYOUT
++      $layout =<<<LAYOUT
+ <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+-     <head>
+-         <title>$name</title>
+-         <base href="<?=\$__server;?><?=\$__base;?>/" />
+-         <link rel="stylesheet" href="stylesheet/medick.css" />
+-         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+-     </head>
+-     <body><?=\$content_for_layout;?></body>
++  <head><title>$name</title>
++    <base href="<?=\$__server;?><?=\$__base;?>/" />
++    <link rel="stylesheet" href="stylesheet/medick.css" />
++    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
++  </head>
++  <body><?=\$content_for_layout;?></body>
+ </html>
+ LAYOUT;
+         file_put_contents($views.'layouts'.DIRECTORY_SEPARATOR.$name.'.phtml',$layout);
+@@ -90,7 +89,7 @@
+                  continue;
+              }
+              echo "\tadding method: $method \n";
+-             $controller_class_text .= "\t\tpublic function $method() {    }\n\n";
++             $controller_class_text .= "\tpublic function $method() {    }\n\n";
+              $view_location = $views.$name.DIRECTORY_SEPARATOR.$method.'.phtml';
+              if (file_exists($view_location)) {
+                  echo "\texists $view_location\n";
+@@ -125,28 +124,26 @@
+     }
+     $model_class_text =<<<EOCLASS
+ <?php
+-
+- /**
+-  * This class is part of ${app.name} project
+-  *
+-  * @package ${app.name}.models
+-  * \$Id$
+-  */
++/**
++ * This class is part of ${app.name} project
++ *
++ * @package ${app.name}.models
++ * \$Id$
++ */
+ class $model_class_name extends ActiveRecord {
+ 
+-     /**
+-      * Finds a $model_class_name
+-      *
+-      * @see ActiveRecord::build()
+-      * @return mixed
+-      */
+-     public static function find() {
+-         \$args = func_get_args();
+-         return ActiveRecord::build(new QueryBuilder(__CLASS__, \$args));
+-     }
++    /**
++     * Finds a $model_class_name
++     *
++     * @see ActiveRecord::build()
++     * @return mixed
++     */
++    public static function find() {
++        \$args = func_get_args();
++        return ActiveRecord::build(new QueryBuilder(__CLASS__, \$args));
++    }
++}
+ 
+-  }
+-
+ EOCLASS;
+ 
+     file_put_contents($model_location, $model_class_text);
+
+
+
+From aurelian at berlios.de  Wed May 24 19:27:18 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Wed, 24 May 2006 19:27:18 +0200
+Subject: [Medick-svn] r399 - in trunk: . libs/active/record
+Message-ID: <200605241727.k4OHRIVs028005@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-05-24 19:27:14 +0200 (Wed, 24 May 2006)
+New Revision: 399
+
+Modified:
+   trunk/CHANGELOG
+   trunk/TODO
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Field.php
+Log:
+ -- refactored ActiveRecord::build()
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-05-23 19:18:28 UTC (rev 398)
++++ trunk/CHANGELOG	2006-05-24 17:27:14 UTC (rev 399)
+@@ -3,15 +3,16 @@
+ 
+ 0.2.3(*)
+     - ActiveRecord: class open by removing some final declarations
+-    - ActiveRecord: is not an abstract class anymore (awaiting php 5.2 changes on abstract static)  
+-    - ActiveRecord: new methods ActiveRecord::isValid
+-    - ActiveRecord: some API docs
+-    - ActiveRecord::Field added toString and length methods
++    - ActiveRecord::find is not declared as abstract, awaiting php 5.2 changes on abstract static syntax
++    - added ActiveRecord::isValid()
++    - ActiveRecord::build() -> split this method in small pieces
++    - added Field::toString, Field::length and Field::h methods
+     - HTTPRequest added new methods to get the current HTTPRequest method: getMethod, isPost, isGet
+     - ActionController ``beautiful"(TM) error template
+     - ActionController will throw a medick exception when trying to load an unexistent before_filter  
+     - FormHelper minor code clean-ups and added password_field method
+-      
++    - more API docs
++    
+ 0.2.2(08.Apr.2006)
+     - Testor::Application more code samples for medick
+     - Implemented Route Requirements
+@@ -114,6 +115,6 @@
+     - Model is capable of getting values by foreign keys. Eg.: $todo->project->name;
+     - many minor fixes.
+ 
+-0.0.1 (6.Jul.2005)
++0.0.1 (06.Jul.2005)
+     - minimal functional version
+ 
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-05-23 19:18:28 UTC (rev 398)
++++ trunk/TODO	2006-05-24 17:27:14 UTC (rev 399)
+@@ -3,20 +3,21 @@
+ Medick TODO list.
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 
+-*Planned features for 0.2 series*
+-    # -environments (0.2.1)-
+-    # context like (obsolete app.xml) (0.2.2)
+-    # cheap cache in ActiveRecord (0.2.3)
+-    # obsolete DatabaseRow (0.2.3)
+-    # -routing requirements (0.2.3)-
+-    # expandable validators (0.2.4)
+-    # customizable error messages (0.2.4)
+-    # write in associations (0.2.5)
+-    # refactor && unit-test
++*Plan for 0.2 series*
++    # 1. obsolete DatabaseRow (0.2.3)
++    # 2. expandable validators (0.2.4)
++    # 3. customizable error messages on validation (0.2.4)
++    # 4. refactor && unit-test
+     
+-*Planned features for 0.3 series*
+-    # scaffolding generator
+-    # refactor && unit-test
+-    # RDBAC
+-    # i18n, l10n
+-    # caching
++*Plan for 0.3 series*
++    # 1. context like (obsolete app.xml)
++    # 2. cheap cache in ActiveRecord
++    # 3. creole moveup: RowsAggregate implements IteratorAggregate vs. ResultSet implement IteratorAggregate
++    # 4. write in associations
++    # 5. scaffolding generator
++    # 6. nice to have: RDBAC, i18n, l10n, caching
++    # 7. refactor && unit-test
++
++*To think about:*
++    # 1. php 5.1.4
++    
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-05-23 19:18:28 UTC (rev 398)
++++ trunk/libs/active/record/Base.php	2006-05-24 17:27:14 UTC (rev 399)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -90,40 +90,18 @@
+     // }}}
+ 
+     /**
+-     * Establish A Database Connection
+-     *
+-     * @return Creole database connection
+-     */
+-    public static function establish_connection () {
+-        if (ActiveRecord::$conn === NULL) {
+-            ActiveRecord::$conn = Creole::getConnection(Registry::get('__configurator')->getDatabaseDsn());
+-        }
+-        return ActiveRecord::$conn;
+-    }
+-
+-    /**
+-     * Close the Database Connection
+-     */
+-    public static function close_connection() {
+-        ActiveRecord::$conn= Creole::getConnection(Registry::get('__configurator')->getDatabaseDsn())->close();
+-    }
+-
+-    /**
+      * Constructor
+      *
+      * @param array, params, parameters as pair of `field name` => `value`
+      * @final because there is no reason to overwrite in parent classes, PHP Engine will call this constructor by default.
+      */
+-    public function ActiveRecord($params = array()) {
++    public function ActiveRecord($params= array()) {
+         ActiveRecord::establish_connection();
+         $this->class_name = $this->getClassName();
+         $this->table_name = Inflector::pluralize(strtolower(Inflector::underscore($this->class_name)));
+-        
+         $table_info = ActiveRecordTableInfo::getInstance(ActiveRecord::$conn, $this->table_name);
+-        // $table_info = ActiveRecord::$conn->getDatabaseInfo()->getTable($this->table_name);
+         $this->pk   = $table_info->getPrimaryKey()->getName();
+-
+-        $this->row = new DatabaseRow($this->table_name);
++        $this->row  = new DatabaseRow($this->table_name);
+         foreach( $table_info->getColumns() as $col) {
+             $field = new Field( $col->getName() );
+             // $field->size = $col->getSize();
+@@ -131,7 +109,7 @@
+             // set is_nullable
+             // $field->isNullable = (bool)$col->isNullable;
+             if ($this->pk == $col->getName() ) {
+-                $field->isPk = TRUE;
++                $field->isPk = true;
+             }
+             // set the is_fk and fk_table
+             $pattern = '/^(.*)_id$/';
+@@ -197,35 +175,6 @@
+         }
+     }
+ 
+-    /**
+-     * @todo This method is not working as expected!
+-     *
+-     * This method is run before any call to ActiveRecord public methods! (nope: php 5.1.2)
+-     * Removes some duplicate code from the list with <tt>know_methods</tt>.
+-     * ALso, it defines some methods aliases (eg: delete===distroy)
+-     *
+-     * Basically it checks before save, insert, update or delete calls that
+-     * the current run has affected fields and throws an ActiveRecordException if not.
+-     *
+-     * @see http://php.net/manual/en/language.oop5.overloading.php
+-     * @param string method name
+-     * @param array arguments
+-     * @throws ActiveRecordException
+-    public function __call($method, $arguments) {
+-        if ($method == 'destroy') return $this->delete();
+-        $know_methods = array('save', 'insert', 'update', 'delete');
+-        if (!in_array($method, $know_methods)) {
+-            trigger_error(
+-                sprintf(
+-                    'Call to undefined method: %s::%s().', $this->getClassName(), $method), E_USER_ERROR);
+-        } elseif(!$this->fields->hasAffected()) {
+-            throw new ActiveRecordException('No field was set before ' . $method);
+-        } else {
+-            $this->$method($arguments[0]);
+-        }
+-    }
+-    */    
+-
+     /** returns a string representation of this object */
+     public function toString() {
+         $string = '';
+@@ -363,8 +312,8 @@
+     // {{{ save
+     /**
+      * Save,
+-     *    will do a SQL Insert and return the last_inserted_id or
+-     * an Update returning the number of affected rows.
++     *    will do a SQL Insert and return the last_inserted_id 
++     *    or an Update returning the number of affected rows.
+      * If the primary key is affected (changed) on this run we will do an update, otherwise an insert.
+      * <code>
+      *      $author = new Author();
+@@ -562,7 +511,9 @@
+                . ' (' . implode(',', $this->row->getAffectedFieldsNames()) . ')'
+                . ' VALUES (' . substr(str_repeat('?,', count($this->row->getAffectedFields())), 0, -1) . ')';
+     }
+-
++    // }}}
++    
++    // {{{ Static ActiveRecord
+     /**
+      * populates stmt values (?,?,?) on sql querys
+      * @param PreparedStatement, stmt, the prepared statement.
+@@ -579,54 +530,80 @@
+             }
+         }
+     }
+-    // }}}
+-
++  
+     /**
+      * This method should be overwritten in child classes, 
+-     * from php 5.2 you cannot declare a method as abstract and static
++     * from php 5.2 you cannot declare a method as abstract and static, or can you?
++     *
++     * @see ActiveRecord::build
+      */
+     public static function find() {
+         throw new MedickException('ActiveRecord::find() should be overwritten in child classes!');
+     }
+-
++       
++    /**
++     * @return ActiveRecord or a RowsAggregate (Collection of ActiveRecords)
++     */
+     public static function build(QueryBuilder $builder) {
+-        $class_name= $builder->getOwner();
+-        try {
+-            // prepare the class instance.
+-            $class = new ReflectionClass($class_name);
+-        } catch (ReflectionException $rEx) {
+-            Registry::get('__injector')->inject('model', strtolower($class_name));
+-            // retry:
+-            $class = new ReflectionClass($class_name);
+-        }
++        $class= ActiveRecord::reflect_class($builder->getOwner());
+         ActiveRecord::establish_connection();
++        $rs= ActiveRecord::create_result_set($builder);
++        if ($builder->getType() == 'first') {
++            return ActiveRecord::fetch_one($rs, $class);
++        }
++        return ActiveRecord::fetch_all($rs, $class);
++    } 
++ 
++    /**
++     * It knows how to load a model class and how to reflect this class
++     *
++     * @return ReflectionClass
++     */
++    public static function reflect_class($class_name) {
++        Registry::get('__injector')->inject('model', strtolower($class_name));
++        return new ReflectionClass($class_name);
++    }
++    
++    /**
++     * Creates a ResultSet from a QueryBuilder
++     *
++     * @return ResultSet
++     */
++    public static function create_result_set(QueryBuilder $builder) {
+         $stmt = ActiveRecord::$conn->prepareStatement($builder->compile()->getQueryString());
+         $i=1; foreach($builder->getBindings() as $binding) {
+             $stmt->set($i++, $binding);
+         }
+         if ($limit  = $builder->getLimit())  $stmt->setLimit($limit);
+         if ($offset = $builder->getOffset()) $stmt->setOffset($offset);
+-        $rs = $stmt->executeQuery();
++        $rs= $stmt->executeQuery();
+         Registry::get('__logger')->debug('Query: ' . ActiveRecord::$conn->lastQuery);
+-        if ($builder->getType() == 'first') {
+-            if ($rs->getRecordCount() == 1) {
+-                $rs->next();
+-                $result= $class->newInstance($rs->getRow());
+-                $stmt->close();$rs->close();
+-                return $result;
+-            } else {
+-                throw new RecordNotFoundException(
+-                    'Couldn\'t find a `' . $class_name . '` to match your query.');
+-            }
+-        }
+         $stmt->close();
+-        return ActiveRecord::merge($rs, $class);
+-    } 
+-    
++        return $rs;
++    }
++ 
+     /**
++     * Returns an ActiveRecord object
++     * @throws RecordNotFoundException 
++     * @return ActiveRecord
++     */
++    public static function fetch_one(ResultSet $rs, ReflectionClass $class) {
++        if($rs->getRecordCount() != 1) {
++            $rs->close();
++            throw new RecordNotFoundException('Couldn\'t find a `' . $class->getName() . '` to match your query.');
++        }
++        $rs->next();
++        $ar= $class->newInstance($rs->getRow());
++        $rs->close();
++        return $ar;
++
++    }
++
++    /**
++     * Merge ResultSet into RowsAggregate
+      * @return RowsAggregate
+      */ 
+-    protected static function merge(ResultSet $rs, ReflectionClass $class) {
++    public static function fetch_all(ResultSet $rs, ReflectionClass $class) {
+         $results= new RowsAggregate();
+         while($rs->next()) {
+             $results->add($class->newInstance($rs->getRow()));
+@@ -634,6 +611,25 @@
+         $rs->close();
+         return $results;
+     }
+-    
++
++    /**
++     * Establish A Database Connection
++     *
++     * @return Creole database connection
++     */
++    public static function establish_connection () {
++        if (ActiveRecord::$conn === NULL) {
++            ActiveRecord::$conn = Creole::getConnection(Registry::get('__configurator')->getDatabaseDsn());
++        }
++        return ActiveRecord::$conn;
++    }
++
++    /**
++     * Close the Database Connection
++     */
++    public static function close_connection() {
++        ActiveRecord::$conn= Creole::getConnection(Registry::get('__configurator')->getDatabaseDsn())->close();
++    }
++    // }}}
+ }
+ 
+
+Modified: trunk/libs/active/record/Field.php
+===================================================================
+--- trunk/libs/active/record/Field.php	2006-05-23 19:18:28 UTC (rev 398)
++++ trunk/libs/active/record/Field.php	2006-05-24 17:27:14 UTC (rev 399)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -153,13 +153,44 @@
+         $this->value = $value;
+     }
+ 
++    /**
++     * Returns this field value
++     *
++     * @return mixed
++     */
+     public function toString() {
+         return $this->value;
+     }
+-
++  
++    /**
++     * Returns the number of chars for this Field
++     *
++     * It's a <tt>strlen</tt> of the Field value
++     *
++     * @return int
++     */
+     public function length() {
+         return strlen($this->value);
+     }
+     
++    /**
++     * Alias of htmlentities php function
++     * 
++     * <code>
++     *    $article= new Article();
++     *    $article->description= "A 'quote' is <b>bold</b>";
++     *    $article->description->h(); // outputs: A 'quote' is &lt;b&gt;bold&lt;/b&gt;
++     *    $article->description->h(ENT_QUOTES); // outputs: A &#039;quote&#039; is &lt;b&gt;bold&lt;/b&gt;
++     * </code>
++     *
++     * @param int quote_style defaults to ENT_COMPAT
++     * @param string charst defaults to ISO-8859-1
++     * @see http://php.net/htmlentities
++     * @return string 
++     */
++    public function h($quote_style=ENT_COMPAT, $charset='ISO-8859-1') {
++        return htmlentities($this->value, $quote_style, $charset);
++    }
++    
+ }
+ 
+
+
+
+From aurelian at berlios.de  Sun May 28 09:42:02 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 28 May 2006 09:42:02 +0200
+Subject: [Medick-svn] r400 - in trunk: . libs/action/controller libs/active/record
+Message-ID: <200605280742.k4S7g2kM010142@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-05-28 09:42:00 +0200 (Sun, 28 May 2006)
+New Revision: 400
+
+Modified:
+   trunk/README
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/active/record/Base.php
+Log:
+ -- more refactoring on ActiveRecord static methods, cheap cache in Inflector::pluralize
+
+Modified: trunk/README
+===================================================================
+--- trunk/README	2006-05-24 17:27:14 UTC (rev 399)
++++ trunk/README	2006-05-28 07:42:00 UTC (rev 400)
+@@ -1,17 +1,17 @@
+ ================================================
+-Medick :: One PHP Framework
++Medick :: PHP 5 Framework
+ $Id$
+ ================================================
+ 
+ ABOUT:
+ ------
+-    Medick is a free software licensed under a BSD-style licence, see LICENSE file for details.
++    Medick is an open-source software licensed under a BSD-style licence, see LICENSE file for details.
+ 
+ REQUIREMENTS:
+ -------------
+     1. php 5.0.3 or higher (http://php.net/downloads).
+         The following PHP extensions are required: simplexml and spl.
+-        Starting with php 5.1.2 Reflection is also needed.
++        Starting with php 5.1.2 reflection is also needed.
+         This extensions are enbled by default on every php installation.
+         
+     2. for web application you will need, of course a web server, Apache 2 with mod_php is recommended.
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2006-05-24 17:27:14 UTC (rev 399)
++++ trunk/libs/action/controller/Injector.php	2006-05-28 07:42:00 UTC (rev 400)
+@@ -114,7 +114,7 @@
+     public function injectInclude_path() {
+         $top= $this->path['__base'] . '..' . DIRECTORY_SEPARATOR;
+         if (is_dir($top . 'libs')) {
+-            set_include_path(get_include_path() . PATH_SEPARATOR . $top . 'libs');
++            set_include_path(get_include_path() . PATH_SEPARATOR . $top . 'libs' . PATH_SEPARATOR . $top . 'app');
+         }
+     }
+ 
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-05-24 17:27:14 UTC (rev 399)
++++ trunk/libs/active/record/Base.php	2006-05-28 07:42:00 UTC (rev 400)
+@@ -72,7 +72,7 @@
+ 
+     /** @var CreoleConnection
+         database connection */
+-    static protected $conn= NULL;
++    static public $conn= NULL;
+ 
+     /** @var DatabaseRow
+         our database row. */
+@@ -96,10 +96,9 @@
+      * @final because there is no reason to overwrite in parent classes, PHP Engine will call this constructor by default.
+      */
+     public function ActiveRecord($params= array()) {
+-        ActiveRecord::establish_connection();
+         $this->class_name = $this->getClassName();
+         $this->table_name = Inflector::pluralize(strtolower(Inflector::underscore($this->class_name)));
+-        $table_info = ActiveRecordTableInfo::getInstance(ActiveRecord::$conn, $this->table_name);
++        $table_info = ActiveRecordTableInfo::getInstance(ActiveRecord::connection(), $this->table_name);
+         $this->pk   = $table_info->getPrimaryKey()->getName();
+         $this->row  = new DatabaseRow($this->table_name);
+         foreach( $table_info->getColumns() as $col) {
+@@ -191,7 +190,7 @@
+ 
+     /** restore the Object state after unserialize  */
+     public function __wakeup() {
+-        ActiveRecord::establish_connection();
++        ActiveRecord::connection();
+         $it= $this->row->iterator();
+         while($it->hasNext()) {
+             $current= $it->next();
+@@ -530,7 +529,13 @@
+             }
+         }
+     }
+-  
++    
++    public static function execute($sql) {
++        $r= ActiveRecord::connection()->executeQuery($sql);
++        Registry::get('__logger')->debug(ActiveRecord::$conn->lastQuery);
++        return $r;
++    }
++
+     /**
+      * This method should be overwritten in child classes, 
+      * from php 5.2 you cannot declare a method as abstract and static, or can you?
+@@ -546,11 +551,8 @@
+      */
+     public static function build(QueryBuilder $builder) {
+         $class= ActiveRecord::reflect_class($builder->getOwner());
+-        ActiveRecord::establish_connection();
+         $rs= ActiveRecord::create_result_set($builder);
+-        if ($builder->getType() == 'first') {
+-            return ActiveRecord::fetch_one($rs, $class);
+-        }
++        if ($builder->getType() == 'first') return ActiveRecord::fetch_one($rs, $class);
+         return ActiveRecord::fetch_all($rs, $class);
+     } 
+  
+@@ -570,10 +572,8 @@
+      * @return ResultSet
+      */
+     public static function create_result_set(QueryBuilder $builder) {
+-        $stmt = ActiveRecord::$conn->prepareStatement($builder->compile()->getQueryString());
+-        $i=1; foreach($builder->getBindings() as $binding) {
+-            $stmt->set($i++, $binding);
+-        }
++        $stmt = ActiveRecord::connection()->prepareStatement($builder->compile()->getQueryString());
++        $i=1; foreach($builder->getBindings() as $binding) $stmt->set($i++, $binding);
+         if ($limit  = $builder->getLimit())  $stmt->setLimit($limit);
+         if ($offset = $builder->getOffset()) $stmt->setOffset($offset);
+         $rs= $stmt->executeQuery();
+@@ -584,6 +584,7 @@
+  
+     /**
+      * Returns an ActiveRecord object
++     *
+      * @throws RecordNotFoundException 
+      * @return ActiveRecord
+      */
+@@ -616,8 +617,13 @@
+      * Establish A Database Connection
+      *
+      * @return Creole database connection
++     * @deprecate use ActiveRecord::connection, I want to use short names
+      */
+-    public static function establish_connection () {
++    public static function establish_connection() {
++        return ActiveRecord::connection();
++    }
++
++    public static function connection() {
+         if (ActiveRecord::$conn === NULL) {
+             ActiveRecord::$conn = Creole::getConnection(Registry::get('__configurator')->getDatabaseDsn());
+         }
+
+
+
+From aurelian at berlios.de  Tue May 30 21:38:55 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Tue, 30 May 2006 21:38:55 +0200
+Subject: [Medick-svn] r401 - trunk/libs/medick
+Message-ID: <200605301938.k4UJctSW004849@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-05-30 21:38:54 +0200 (Tue, 30 May 2006)
+New Revision: 401
+
+Modified:
+   trunk/libs/medick/Registry.php
+Log:
+ -- removed unused Registry::getInstance() method
+
+Modified: trunk/libs/medick/Registry.php
+===================================================================
+--- trunk/libs/medick/Registry.php	2006-05-28 07:42:00 UTC (rev 400)
++++ trunk/libs/medick/Registry.php	2006-05-30 19:38:54 UTC (rev 401)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -47,11 +47,13 @@
+ 
+     // {{{ static
+ 
+-    /** @var array registry database */
++    /** @var array 
++        registry database */
+     private static $registry= array();
+ 
+     /**
+-     * put an Object into Registry database
++     * Put an Object into Registry database
++     * 
+      * @param Object the Object instance to add into registry
+      * @param string key
+      * @return Object, the Object just added.
+@@ -63,6 +65,7 @@
+ 
+     /**
+      * It gets an Object from the registry database
++     * 
+      * @param string key, the object identifier
+      * @return Object
+      * @throws InvalidOffsetException
+@@ -76,9 +79,9 @@
+ 
+     /**
+      * Removes an Object from the Registry Database
++     * 
+      * @param string key, object identifier
+      * @return Object, the object removed.
+-     * @throws NullPointerException
+      */
+     public static function remove($key) {
+         $obj= self::get($key);
+@@ -92,17 +95,6 @@
+     public static function close() {
+         return self::$registry= array();
+     }
+-
+-    /**
+-     * It gets the Registry instance
+-     * @return Registry
+-     */
+-    public static function getInstance() {
+-        if (!isset(self::$registry['__registry'])) {
+-            self::$registry['__registry']= new Registry();
+-        }
+-        return self::$registry['__registry'];
+-    }
+     // }}}
+ }
+ 
+
+
+

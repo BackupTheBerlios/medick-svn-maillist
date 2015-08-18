@@ -1,0 +1,138 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r392 - in trunk: . libs/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-April/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r392%20-%20in%20trunk%3A%20.%20libs/medick&In-Reply-To=%3C200604071948.k37JmJBE005558%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000175.html">
+   <LINK REL="Next"  HREF="000177.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r392 - in trunk: . libs/medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r392%20-%20in%20trunk%3A%20.%20libs/medick&In-Reply-To=%3C200604071948.k37JmJBE005558%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r392 - in trunk: . libs/medick">aurelian at berlios.de
+       </A><BR>
+    <I>Fri Apr  7 21:48:19 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000175.html">[Medick-svn] r391 - applications/testor/app/controllers applications/testor/app/models applications/testor/app/views applications/testor/app/views/portfolio applications/testor/app/views/project applications/testor/db applications/testor/public/stylesheet trunk/libs/action/controller
+</A></li>
+        <LI>Next message: <A HREF="000177.html">[Medick-svn] r393 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#176">[ date ]</a>
+              <a href="thread.html#176">[ thread ]</a>
+              <a href="subject.html#176">[ subject ]</a>
+              <a href="author.html#176">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-04-07 21:48:18 +0200 (Fri, 07 Apr 2006)
+New Revision: 392
+
+Modified:
+   trunk/CHANGELOG
+   trunk/TODO
+   trunk/VERSION
+   trunk/libs/medick/Medick.php
+Log:
+ -- preparing for 0.2.2 release
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-04-06 21:00:28 UTC (rev 391)
++++ trunk/CHANGELOG	2006-04-07 19:48:18 UTC (rev 392)
+@@ -1,6 +1,19 @@
+ $Id$
+ (*) SVN version
+ 
++0.2.2(08.Apr.2006)
++    - Testor::Application more code samples for medick
++    - Implemented Route Requirements
++    - Fixed Cookies problems by adding a new class (Cookie) 
++      and methods to pull cookies for request or to add them to response
++    - Added CreoleSessionContainer a session handler for php on top of creole,
++      using a database as backend
++    - (fixed): FormHelper::check_box
++    - (fixed): ActiveRecordHelper::error_messages_on(Field)
++    - (fixed): Storing an ActiveRecord object in session
++    - (fixed): Rewrite on/off setting
++    - (fixed): Validates::uniqueness_of when updating  
++
+ 0.2.1(18.Mar.2006)
+     - Added ``environment&quot; concept
+     - Added ActiveRecord::attributes() method
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-04-06 21:00:28 UTC (rev 391)
++++ trunk/TODO	2006-04-07 19:48:18 UTC (rev 392)
+@@ -5,9 +5,10 @@
+ 
+ *Planned features for 0.2 series*
+     # -environments (0.2.1)-
+-    # context like (0.2.2)
++    # context like (obsolete app.xml) (0.2.2)
+     # cheap cache in ActiveRecord (0.2.3)
+-    # routing requirements (0.2.3)
++    # obsolete DatabaseRow (0.2.3)
++    # -routing requirements (0.2.3)-
+     # expandable validators (0.2.4)
+     # customizable error messages (0.2.4)
+     # write in associations (0.2.5)
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-04-06 21:00:28 UTC (rev 391)
++++ trunk/VERSION	2006-04-07 19:48:18 UTC (rev 392)
+@@ -1 +1 @@
+-0.2.2-svn
++0.2.2
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-04-06 21:00:28 UTC (rev 391)
++++ trunk/libs/medick/Medick.php	2006-04-07 19:48:18 UTC (rev 392)
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.2.2-svn';
++        return '0.2.2';
+     }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000175.html">[Medick-svn] r391 - applications/testor/app/controllers applications/testor/app/models applications/testor/app/views applications/testor/app/views/portfolio applications/testor/app/views/project applications/testor/db applications/testor/public/stylesheet trunk/libs/action/controller
+</A></li>
+	<LI>Next message: <A HREF="000177.html">[Medick-svn] r393 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#176">[ date ]</a>
+              <a href="thread.html#176">[ thread ]</a>
+              <a href="subject.html#176">[ subject ]</a>
+              <a href="author.html#176">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,147 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r216 - trunk/test
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r216%20-%20trunk/test&In-Reply-To=%3C200510151900.j9FJ0Mke008113%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000019.html">
+   <LINK REL="Next"  HREF="000021.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r216 - trunk/test</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r216%20-%20trunk/test&In-Reply-To=%3C200510151900.j9FJ0Mke008113%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r216 - trunk/test">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Oct 15 21:00:22 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000019.html">[Medick-svn] r215 - trunk/test/dummy/models
+</A></li>
+        <LI>Next message: <A HREF="000021.html">[Medick-svn] r217 - in trunk/test: . dummy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#20">[ date ]</a>
+              <a href="thread.html#20">[ thread ]</a>
+              <a href="subject.html#20">[ subject ]</a>
+              <a href="author.html#20">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-15 21:00:22 +0200 (Sat, 15 Oct 2005)
+New Revision: 216
+
+Modified:
+   trunk/test/ARBaseBasicsTest.php
+   trunk/test/testrunner.php
+Log:
+ take care of the renaming of Todo to Author.
+
+Modified: trunk/test/ARBaseBasicsTest.php
+===================================================================
+--- trunk/test/ARBaseBasicsTest.php	2005-10-15 18:56:00 UTC (rev 215)
++++ trunk/test/ARBaseBasicsTest.php	2005-10-15 19:00:22 UTC (rev 216)
+@@ -2,23 +2,23 @@
+ 
+ // $Id$
+     
+-include_once('dummy/models/todo.php');
++include_once('dummy/models/author.php');
+ 
+ /** Tests insert, update, save (insert/update), delete. */
+ class ARBaseBasicsTest extends UnitTestCase {
+ 
+     /** &lt;tt&gt;save &amp;&amp; delete test&lt;/tt&gt; */
+     public function testSave() {
+-        $item= new Todo();
+-        $item-&gt;description= 'A new Todo';
++        $item= new Author();
++        $item-&gt;name= 'Andrei Cristescu';
+         $this-&gt;assertEqual($item-&gt;save(), $item-&gt;id);
+         $this-&gt;assertEqual($item-&gt;delete(), 1);
+     }
+ 
+     /** &lt;tt&gt;save &amp;&amp; delete test&lt;/tt&gt; */
+     public function testDelete() {
+-        $item = new Todo();
+-        $item-&gt;description = 'Brr';
++        $item = new Author();
++        $item-&gt;name = 'Andrei Cristescu';
+         $item-&gt;save();
+         $this-&gt;assertEqual($item-&gt;delete(), 1);
+         $this-&gt;assertEqual($item-&gt;delete(), 0);
+@@ -26,17 +26,17 @@
+     
+     /** &lt;tt&gt;insert&lt;/tt&gt; */
+     public function testInsert() {
+-        $item = new Todo();
+-        $item-&gt;description = 'Inserting...';
++        $item = new Author();
++        $item-&gt;name = 'Andrei Cristescu';
+         $this-&gt;assertEqual($item-&gt;insert(), $item-&gt;id);
+         $item-&gt;delete();
+     }
+     /** &lt;tt&gt;update test&lt;/tt&gt; */
+     public function testUpdate() {
+-        $item = new Todo();
+-        $item-&gt;description = 'Foo...';
++        $item = new Author();
++        $item-&gt;name = 'Andrei Cristescu';
+         $this-&gt;assertEqual($item-&gt;insert(), $item-&gt;id);
+-        $item-&gt;description = 'Bar...';
++        $item-&gt;email = '<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">cristescu at yahoo.com</A>';
+         $this-&gt;assertEqual($item-&gt;update(), 1);
+         $this-&gt;assertEqual($item-&gt;delete(), 1);
+     }
+
+Modified: trunk/test/testrunner.php
+===================================================================
+--- trunk/test/testrunner.php	2005-10-15 18:56:00 UTC (rev 215)
++++ trunk/test/testrunner.php	2005-10-15 19:00:22 UTC (rev 216)
+@@ -30,10 +30,10 @@
+ if (is_file('test.db')) unlink('test.db');
+ 
+ $query=&lt;&lt;&lt;__
+-    CREATE TABLE todos (
++    CREATE TABLE authors (
+         id INTEGER PRIMARY KEY,
+-        description VARCHAR(100),
+-        done INTEGER(1)
++        name VARCHAR(100),
++        email VARCHAR(150)
+     );
+ __;
+ sqlite_query(sqlite_open('test.db'), $query);
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000019.html">[Medick-svn] r215 - trunk/test/dummy/models
+</A></li>
+	<LI>Next message: <A HREF="000021.html">[Medick-svn] r217 - in trunk/test: . dummy
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#20">[ date ]</a>
+              <a href="thread.html#20">[ thread ]</a>
+              <a href="subject.html#20">[ subject ]</a>
+              <a href="author.html#20">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

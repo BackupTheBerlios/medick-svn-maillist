@@ -1,0 +1,198 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r217 - in trunk/test: . dummy
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r217%20-%20in%20trunk/test%3A%20.%20dummy&In-Reply-To=%3C200510152016.j9FKG9PT012967%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000020.html">
+   <LINK REL="Next"  HREF="000022.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r217 - in trunk/test: . dummy</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r217%20-%20in%20trunk/test%3A%20.%20dummy&In-Reply-To=%3C200510152016.j9FKG9PT012967%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r217 - in trunk/test: . dummy">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Oct 15 22:16:09 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000020.html">[Medick-svn] r216 - trunk/test
+</A></li>
+        <LI>Next message: <A HREF="000022.html">[Medick-svn] r218 - trunk/libs/configurator
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#21">[ date ]</a>
+              <a href="thread.html#21">[ thread ]</a>
+              <a href="subject.html#21">[ subject ]</a>
+              <a href="author.html#21">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-15 22:16:08 +0200 (Sat, 15 Oct 2005)
+New Revision: 217
+
+Added:
+   trunk/test/XMLConfiguratorTest.php
+   trunk/test/dummy/dummy.xml
+Log:
+ - initial import of XMLConfigurator UnitTests.
+
+Added: trunk/test/XMLConfiguratorTest.php
+===================================================================
+--- trunk/test/XMLConfiguratorTest.php	2005-10-15 19:00:22 UTC (rev 216)
++++ trunk/test/XMLConfiguratorTest.php	2005-10-15 20:16:08 UTC (rev 217)
+@@ -0,0 +1,99 @@
++&lt;?php
++
++// $Id$
++
++include_once('configurator/XMLConfigurator.php');
++
++class XMLConfiguratorTest extends UnitTestCase {
++
++    public function testCreation() {
++        $this-&gt;assertNotNull(new XMLConfigurator('dummy/dummy.xml'));
++        $this-&gt;assertNotNull(new XMLConfigurator('&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;application&gt;&lt;/application&gt;'));
++        try {
++            new XMLConfigurator('non_existant_file.xml');
++            $this-&gt;fail('ConfiguratorException should be thrown!');
++        } catch (Exception $e) {
++            $this-&gt;assertIsA($e, 'ConfiguratorException');
++        }
++    }
++
++    public function testDatabaseDsn() {
++        $xml='&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;application&gt;
++                &lt;database default=&quot;two&quot;&gt;
++                    &lt;dsn id=&quot;one&quot;
++                        phptype  = &quot;mysql&quot;
++                        hostspec = &quot;localhost&quot;
++                        database = &quot;todo&quot;
++                        username = &quot;root&quot;
++                        password = &quot;zzz&quot; /&gt;
++                    &lt;dsn id = &quot;two&quot;
++                        phptype  = &quot;pgsql&quot;
++                        hostspec = &quot;192.18.1.1&quot;
++                        database =&quot;test&quot;
++                        username =&quot;antonescu&quot;
++                        password =&quot;x-creeme&quot; /&gt;
++                &lt;/database&gt;
++            &lt;/application&gt;';
++        $config= new XMLConfigurator($xml);
++        try {
++            $config-&gt;getDatabaseDsn('foo');
++            $this-&gt;fail('ConfiguratorException should be thrown!');
++        } catch (MedickException $cEx) {
++            $this-&gt;assertIsA($cEx, 'ConfiguratorException');
++        }
++        $dsn= $config-&gt;getDatabaseDsn();
++        $this-&gt;assertEqual('pgsql', $dsn['phptype']);
++        $dsn= $config-&gt;getDatabaseDsn('one');
++        $this-&gt;assertEqual('mysql', $dsn['phptype']);
++    }
++
++    public function testLoggerOutputters() {
++        $xml='&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;application&gt;
++                &lt;logger&gt;
++                    &lt;outputters&gt;
++                        &lt;outputter name=&quot;file&quot;    level=&quot;0&quot; value=&quot;/wwwroot/htdocs/locknet7/log/locknet7.log&quot; /&gt;
++                        &lt;outputter name=&quot;stdout&quot;  level=&quot;0&quot; /&gt;
++                    &lt;/outputters&gt;
++                &lt;/logger&gt;
++            &lt;/application&gt;';
++        $config= new XMLConfigurator($xml);
++        $this-&gt;assertIsA($config-&gt;getLoggerOutputters(), 'SimpleXMLIterator');
++        $xml='&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;application&gt;&lt;outputter name=&quot;stdout&quot;  level=&quot;0&quot; /&gt;&lt;/application&gt;';
++        $config= new XMLConfigurator($xml);
++        $this-&gt;assertNull($config-&gt;getLoggerOutputters());
++    }
++
++    public function testLoggerFormatter() {
++        $xml='&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;application&gt;&lt;logger&gt;&lt;formatter&gt;simple&lt;/formatter&gt;&lt;/logger&gt;&lt;/application&gt;';
++        $config= new XMLConfigurator($xml);
++        $this-&gt;assertEqual('SimpleFormatter', $config-&gt;getLoggerFormatter());
++    }
++
++    public function testProperty() {
++       $xml='&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;application&gt;
++                &lt;property name=&quot;one&quot;    value=&quot;/wwwroot&quot; /&gt;
++                &lt;property name=&quot;two&quot;    value=&quot;on&quot; /&gt;
++                &lt;property name=&quot;three&quot;  value=&quot;1&quot; /&gt;
++                &lt;property name=&quot;four&quot;   value=&quot;TRUE&quot; /&gt;
++                &lt;property name=&quot;five&quot;   value=&quot;off&quot; /&gt;
++                &lt;property name=&quot;six&quot;    value=&quot;0&quot; /&gt;
++                &lt;property name=&quot;seven&quot;  value=&quot;false&quot; /&gt;
++            &lt;/application&gt;';
++        $config= new XMLConfigurator($xml);
++        $this-&gt;assertEqual('/wwwroot', $config-&gt;getProperty('one'));
++        $this-&gt;assertTrue($config-&gt;getProperty('two'));
++        $this-&gt;assertTrue($config-&gt;getProperty('three'));
++        $this-&gt;assertTrue($config-&gt;getProperty('four'));
++        $this-&gt;assertFalse($config-&gt;getProperty('five'));
++        $this-&gt;assertFalse($config-&gt;getProperty('six'));
++        $this-&gt;assertFalse($config-&gt;getProperty('seven'));
++        try {
++            $config-&gt;getProperty('foo');
++            $this-&gt;fail('ConfiguratorException should be thrown!');
++        } catch (Exception $cEx) {
++            $this-&gt;assertIsA($cEx, 'ConfiguratorException');
++        }
++    }
++
++}
++
+
+
+Property changes on: trunk/test/XMLConfiguratorTest.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/test/dummy/dummy.xml
+===================================================================
+--- trunk/test/dummy/dummy.xml	2005-10-15 19:00:22 UTC (rev 216)
++++ trunk/test/dummy/dummy.xml	2005-10-15 20:16:08 UTC (rev 217)
+@@ -0,0 +1,4 @@
++&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
++&lt;!-- $Id$  --&gt;
++&lt;application&gt;&lt;/application&gt;
++
+
+
+Property changes on: trunk/test/dummy/dummy.xml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000020.html">[Medick-svn] r216 - trunk/test
+</A></li>
+	<LI>Next message: <A HREF="000022.html">[Medick-svn] r218 - trunk/libs/configurator
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#21">[ date ]</a>
+              <a href="thread.html#21">[ thread ]</a>
+              <a href="subject.html#21">[ subject ]</a>
+              <a href="author.html#21">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

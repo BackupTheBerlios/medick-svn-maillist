@@ -1,0 +1,197 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r299 - in trunk/libs/action/controller: . http
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r299%20-%20in%20trunk/libs/action/controller%3A%20.%20http&In-Reply-To=%3C200512121941.jBCJfsTY031232%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000094.html">
+   <LINK REL="Next"  HREF="000096.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r299 - in trunk/libs/action/controller: . http</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r299%20-%20in%20trunk/libs/action/controller%3A%20.%20http&In-Reply-To=%3C200512121941.jBCJfsTY031232%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r299 - in trunk/libs/action/controller: . http">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Dec 12 20:41:54 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000094.html">[Medick-svn] r298 - in trunk/libs/creole: . common contrib drivers/mssql drivers/mysql drivers/odbc drivers/oracle drivers/sqlite/metadata
+</A></li>
+        <LI>Next message: <A HREF="000096.html">[Medick-svn] r300 - in applications/eltodo: app/controllers app/models app/views/project conf public public/images
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#95">[ date ]</a>
+              <a href="thread.html#95">[ thread ]</a>
+              <a href="subject.html#95">[ subject ]</a>
+              <a href="author.html#95">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-12-12 20:41:48 +0100 (Mon, 12 Dec 2005)
+New Revision: 299
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Routing.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+Log:
+ -- fix php 5.0 fatal error (Only variables should be passed by reference) in HTTPRequest, made Request params private.
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-12-12 19:13:00 UTC (rev 298)
++++ trunk/libs/action/controller/Base.php	2005-12-12 19:41:48 UTC (rev 299)
+@@ -289,8 +289,8 @@
+         if(!is_file($location)) {
+             throw new MedickException(&quot;File not found...&quot;);
+         }
+-        // $options['length'] = File-&gt;size($location);
+-        // $options['filename'] = File-&gt;basename($location);
++        // $options['length'] =   File::size($location);
++        // $options['filename'] = File::basename($location);
+     }
+ 
+     // {{{ redirects
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2005-12-12 19:13:00 UTC (rev 298)
++++ trunk/libs/action/controller/Request.php	2005-12-12 19:41:48 UTC (rev 299)
+@@ -41,7 +41,7 @@
+ 
+     /** @var array
+         current request parameters */
+-    protected $params = array();
++    private $params = array();
+ 
+     /** @var Route current request Route */ // XXX. is this used anymore?
+     protected $route;
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2005-12-12 19:13:00 UTC (rev 298)
++++ trunk/libs/action/controller/Routing.php	2005-12-12 19:41:48 UTC (rev 299)
+@@ -63,7 +63,10 @@
+                 $request-&gt;setParam($param-&gt;getName(), $request-&gt;getPathInfo($key));
+             }
+         } else {
+-            $logger-&gt;debug('Unknown Route! Loading default...');
++            $logger-&gt;debug('Unknown Route! {' . 
++                            $request-&gt;getParam('controller') . 
++                            '/'. $request-&gt;getParam('action') . 
++                            '} Loading default...');
+             $route= $map-&gt;getRouteByName('default');
+             $request-&gt;setParam('controller', $route-&gt;getController());
+             $request-&gt;setParam('action', $route-&gt;getAction());
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2005-12-12 19:13:00 UTC (rev 298)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2005-12-12 19:41:48 UTC (rev 299)
+@@ -40,11 +40,11 @@
+ class HTTPRequest extends Request {
+     
+     /** @var Session */
+-    protected $session;
++    private $session;
+ 
+     /** @var array
+         path_info_parts */
+-    protected $path_info= array();
++    private $path_info= array();
+ 
+     /**
+      * Constructor.
+@@ -52,7 +52,7 @@
+      */
+     public function __construct() {
+         foreach ($_REQUEST as $key=&gt;$value) {
+-            $this-&gt;params[$key] = $value;
++            $this-&gt;setParam($key, $value);
+         }
+         
+         unset($_REQUEST); unset($_GET); unset($_POST);
+@@ -61,15 +61,15 @@
+             $parts= explode('/', trim($_SERVER['PATH_INFO'], '/'));
+             foreach ($parts as $key=&gt;$part) {
+                 if ($key == 0) {
+-                    $this-&gt;params['controller'] = current(explode('.', $part));
++                    $this-&gt;setParam('controller', current($x=explode('.', $part)));
+                 } elseif ($key == 1) {
+-                    $this-&gt;params['action']     = current(explode('.', $part));
++                    $this-&gt;setParam('action', current($x=explode('.', $part)));
+                 } else {
+-                    $this-&gt;path_info[]          = current(explode('.', $part));
++                    $this-&gt;path_info[] = current($x=explode('.', $part));
+                 }
+             }
+         }
+-        $this-&gt;session= new Session();
++        $this-&gt;session = new Session();
+     }
+ 
+     /**
+@@ -90,16 +90,10 @@
+     }
+     
+     // {{{ todos.
+-    
+-    // XXX
+     public function getIP() {  }
+-    
+-    // XXX
+     public function getRequestURI() {  }
+-    
+-    // XXX: 
+     public function getProtocol() {  }
+-    
+     // }}}
+     
+ }
++
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2005-12-12 19:13:00 UTC (rev 298)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2005-12-12 19:41:48 UTC (rev 299)
+@@ -84,3 +84,4 @@
+         $this-&gt;content = &quot;&lt;html&gt;&lt;body&gt;You are being &lt;a href=\&quot;$location\&quot;&gt;redirected&lt;/a&gt;.&lt;/body&gt;&lt;/html&gt;&quot;;
+     }
+ }
++
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000094.html">[Medick-svn] r298 - in trunk/libs/creole: . common contrib drivers/mssql drivers/mysql drivers/odbc drivers/oracle drivers/sqlite/metadata
+</A></li>
+	<LI>Next message: <A HREF="000096.html">[Medick-svn] r300 - in applications/eltodo: app/controllers app/models app/views/project conf public public/images
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#95">[ date ]</a>
+              <a href="thread.html#95">[ thread ]</a>
+              <a href="subject.html#95">[ subject ]</a>
+              <a href="author.html#95">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

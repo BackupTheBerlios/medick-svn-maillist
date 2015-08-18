@@ -1,0 +1,166 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r406 - in trunk: . libs/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r406%20-%20in%20trunk%3A%20.%20libs/medick&In-Reply-To=%3C200606240754.k5O7sDj0008985%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000188.html">
+   <LINK REL="Next"  HREF="000190.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r406 - in trunk: . libs/medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r406%20-%20in%20trunk%3A%20.%20libs/medick&In-Reply-To=%3C200606240754.k5O7sDj0008985%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r406 - in trunk: . libs/medick">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Jun 24 09:54:13 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000188.html">[Medick-svn] r405 - trunk/libs/active/record
+</A></li>
+        <LI>Next message: <A HREF="000190.html">[Medick-svn] r407 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#189">[ date ]</a>
+              <a href="thread.html#189">[ thread ]</a>
+              <a href="subject.html#189">[ subject ]</a>
+              <a href="author.html#189">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-06-24 09:54:13 +0200 (Sat, 24 Jun 2006)
+New Revision: 406
+
+Modified:
+   trunk/README
+   trunk/TODO
+   trunk/VERSION
+   trunk/libs/medick/Medick.php
+Log:
+ -- preparing release 0.2.3
+
+Modified: trunk/README
+===================================================================
+--- trunk/README	2006-06-09 15:43:08 UTC (rev 405)
++++ trunk/README	2006-06-24 07:54:13 UTC (rev 406)
+@@ -6,6 +6,9 @@
+ ABOUT:
+ ------
+     Medick is an open-source software licensed under a BSD-style licence, see LICENSE file for details.
++    Medick is a php 5 web framework.
++    Medick is alpha stage project, use it on your own risk. Function names or framework workflow might change without prior notice.
++    This is the README file for version 0.2.3 of medick released on 24.06.2006.
+ 
+ REQUIREMENTS:
+ -------------
+@@ -28,10 +31,16 @@
+     Checkout Medick sources from svn:
+     
+         $ svn checkout <A HREF="svn://svn.berlios.de/medick">svn://svn.berlios.de/medick</A> medick
+-
++        
++    See docs for details.
++    
+ WHERE TO GET HELP:
+ -----------------
++    Web Home     : <A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>
+     Documentation: <A HREF="http://medick.locknet.ro/documentation.html">http://medick.locknet.ro/documentation.html</A>
++    API Docs     : <A HREF="http://medick.locknet.ro/api">http://medick.locknet.ro/api</A>
++    Dev Blog     : <A HREF="http://www.locknet.ro/?c=medick">http://www.locknet.ro/?c=medick</A>
++    
+     Subscribe to our internals email lists: <A HREF="http://lists.berlios.de/mailman/listinfo/medick-devel">http://lists.berlios.de/mailman/listinfo/medick-devel</A>
+     You can also read the archives: <A HREF="http://lists.berlios.de/pipermail/medick-devel">http://lists.berlios.de/pipermail/medick-devel</A>
+     
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-06-09 15:43:08 UTC (rev 405)
++++ trunk/TODO	2006-06-24 07:54:13 UTC (rev 406)
+@@ -3,21 +3,16 @@
+ Medick TODO list.
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 
+-*Plan for 0.2 series*
+-    # 1. obsolete DatabaseRow (0.2.3)
+-    # 2. expandable validators (0.2.4)
+-    # 3. customizable error messages on validation (0.2.4)
+-    # 4. refactor &amp;&amp; unit-test
+-    
+ *Plan for 0.3 series*
+-    # 1. context like (obsolete app.xml)
+-    # 2. cheap cache in ActiveRecord
+-    # 3. creole moveup: RowsAggregate implements IteratorAggregate vs. ResultSet implement IteratorAggregate
+-    # 4. write in associations
+-    # 5. scaffolding generator
+-    # 6. nice to have: RDBAC, i18n, l10n, caching
+-    # 7. refactor &amp;&amp; unit-test
+ 
+-*To think about:*
+-    # 1. php 5.1.4
+-    
++    #  1. obsolete DatabaseRow (0.3.0)
++    #  2. expandable validators (0.3.0)
++    #  3. customizable error messages on validation (0.3.0)
++    #  4. context like (0.3.0)
++    #  5. cheap cache in ActiveRecord
++    #  6. creole moveup: RowsAggregate implements IteratorAggregate vs. ResultSet implement IteratorAggregate
++    #  7. write in associations
++    #  8. scaffolding generator
++    #  9. nice to have: RDBAC, i18n, l10n, caching
++    # 10. refactor &amp;&amp; unit-test
++
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-06-09 15:43:08 UTC (rev 405)
++++ trunk/VERSION	2006-06-24 07:54:13 UTC (rev 406)
+@@ -1 +1 @@
+-0.2.3-svn
++0.2.3
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-06-09 15:43:08 UTC (rev 405)
++++ trunk/libs/medick/Medick.php	2006-06-24 07:54:13 UTC (rev 406)
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.2.3-svn';
++        return '0.2.3';
+     }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000188.html">[Medick-svn] r405 - trunk/libs/active/record
+</A></li>
+	<LI>Next message: <A HREF="000190.html">[Medick-svn] r407 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#189">[ date ]</a>
+              <a href="thread.html#189">[ thread ]</a>
+              <a href="subject.html#189">[ subject ]</a>
+              <a href="author.html#189">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

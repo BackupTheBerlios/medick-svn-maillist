@@ -1,0 +1,222 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r291 - in trunk/libs/action: controller view
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r291%20-%20in%20trunk/libs/action%3A%20controller%20view&In-Reply-To=%3C200512111336.jBBDaQex016147%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000086.html">
+   <LINK REL="Next"  HREF="000088.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r291 - in trunk/libs/action: controller view</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r291%20-%20in%20trunk/libs/action%3A%20controller%20view&In-Reply-To=%3C200512111336.jBBDaQex016147%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r291 - in trunk/libs/action: controller view">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Dec 11 14:36:26 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000086.html">[Medick-svn] r290 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000088.html">[Medick-svn] r292 - in trunk/libs/action: controller view
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#87">[ date ]</a>
+              <a href="thread.html#87">[ thread ]</a>
+              <a href="subject.html#87">[ subject ]</a>
+              <a href="author.html#87">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-12-11 14:36:23 +0100 (Sun, 11 Dec 2005)
+New Revision: 291
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/view/Base.php
+Log:
+ -- clean-up our template engine
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-12-10 16:07:13 UTC (rev 290)
++++ trunk/libs/action/controller/Base.php	2005-12-11 13:36:23 UTC (rev 291)
+@@ -34,6 +34,8 @@
+ 
+ include_once('action/view/Base.php');
+ 
++// namespace ActionController {
++
+ /**
+  * @package locknet7.action.controller
+  * Base Class For Our Application Controllers
+@@ -257,17 +259,6 @@
+     // }}}
+ 
+     /**
+-     * It sets the value a template entry
+-     * @see <A HREF="http://php.net/manual/en/language.oop5.overloading.php">http://php.net/manual/en/language.oop5.overloading.php</A>
+-     * @param string, name,  name
+-     * @param mixed, value, value
+-     * @throw Error if using a reserved word
+-     */
+-    public function __set($name, $value) {
+-        $this-&gt;template-&gt;$name= $value;
+-    }
+-
+-    /**
+      * Act as an internal constructor.
+      * @param Request request, the request
+      * @param Response response, the response
+@@ -287,7 +278,8 @@
+         $this-&gt;app_path      = $this-&gt;injector-&gt;getPath('__base');
+         $this-&gt;template_root = $this-&gt;injector-&gt;getPath('views') . $this-&gt;params['controller'] . DIRECTORY_SEPARATOR;
+ 
+-        $this-&gt;template = ActionViewBase::factory();
++        $this-&gt;template = new ActionViewBase();
++        // $this-&gt;template = new ActionView:::Base();
+         $this-&gt;template-&gt;__base= $this-&gt;config-&gt;getProperty('document_root');
+     }
+ 
+@@ -384,7 +376,8 @@
+      *              return News::find_all();
+      *          }
+      *          // Notes: 1) use protected for internal filters
+-     *          // 2) a filter must return void, in case of a failure, use the redirect method.
++     *          // 2) a filter must return void, in case of a failure, 
++     *          // use the redirect method.
+      *          protected function authenticate() {
+      *              // authentication code here
+      *          }
+@@ -395,17 +388,20 @@
+     private function add_before_filters() {
+         if (!is_array($this-&gt;before_filter)) {
+             throw new MedickException(
+-                $this-&gt;getClassName() . '-&gt;\$before_filter should be an array of strings, each string representing a method name');
++                $this-&gt;getClassName() . '-&gt;\$before_filter should be an array 
++                    of strings, each string representing a method name');
+         }
+         foreach($this-&gt;before_filter as $filter_name) {
+             if (!$filter= $this-&gt;createMethod($filter_name)) {
+-                $this-&gt;logger-&gt;info('Could not create filter: `'.$filter_name.'`, skipping...');
++                $this-&gt;logger-&gt;info(
++                    'Could not create filter: `'.$filter_name.'`, skipping...');
+                 continue;
+             }
+             // a filter should be declared as protected.
+             if (!$filter-&gt;isProtected()) {
+                 throw new MedickException(
+-                    'Your filter,`'. $filter_name . '` is declared as a public method of class `' . $this-&gt;getClassName() .'` !');
++                    'Your filter,`'. $filter_name . '` is declared as a 
++                        public method of class `' . $this-&gt;getClassName() .'` !');
+             }    
+             $this-&gt;$filter_name();
+         }
+@@ -447,3 +443,4 @@
+     }
+ }
+ 
++// }
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2005-12-10 16:07:13 UTC (rev 290)
++++ trunk/libs/action/view/Base.php	2005-12-11 13:36:23 UTC (rev 291)
+@@ -38,41 +38,18 @@
+ 
+ include_once('action/view/HTML.php');
+ 
+-/**
+- * Abstract Template Engine.
+- * This way, we can extend this rendering engine to output xslt templates and so on.
+- * 
+- * This object, is a factory that builds concrete Template Engine
+- */
+-abstract class ActionViewBase extends Object {
++// namespace ActionView {
+ 
+-    /** Safe way of keeping the assigned vars */
+-	protected $vars = array();
+-    
+-    /**
+-     * Renders the file
+-     * Is a wrapper for &lt;code&gt;Sonart::render($file)&lt;/code&gt;
+-     * @param string, template_file, the template file to render.
+-     */
+-	abstract function render_file($template_file);
+-
+-	abstract function assign($name, $value);
+-
+-	public static function factory() {
+-		return new Sonart();	
+-	}
+-	
+-}
+-
+ /**
+- * Sonart is the default Template Engine for Medick Framwork.
++ * ActionViewBase is the default `Template Engine' for Medick Framwork.
+  * 
+  * For a smoother transaction from &lt;tt&gt;Smarty&lt;/tt&gt;, some variabiles/methods 
+  * may share the same name and behavior
+  */
+-class Sonart extends ActionViewBase {
++class ActionViewBase extends Object {
+ 	
+-    /** @see ActionViewBase::render_file($template_file) */
++    private $vars= array();
++
+ 	public function render_file($template_file) {
+ 		return $this-&gt;render($template_file);
+ 	}
+@@ -95,11 +72,6 @@
+         ob_end_clean();
+         return $c;
+ 	}
+-	
+-	/** xxx */
+-	public function getVars() {
+-		return $this-&gt;vars;
+-	}
+ 
+ 	/**
+      * Wrapper for __set
+@@ -152,3 +124,5 @@
+         return $value;
+     }	
+ }
++
++// }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000086.html">[Medick-svn] r290 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000088.html">[Medick-svn] r292 - in trunk/libs/action: controller view
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#87">[ date ]</a>
+              <a href="thread.html#87">[ thread ]</a>
+              <a href="subject.html#87">[ subject ]</a>
+              <a href="author.html#87">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

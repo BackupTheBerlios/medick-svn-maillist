@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r284 - trunk/public_html
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-November/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r284%20-%20trunk/public_html&In-Reply-To=%3C200511282030.jASKUW26006774%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000079.html">
+   <LINK REL="Next"  HREF="000081.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r284 - trunk/public_html</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r284%20-%20trunk/public_html&In-Reply-To=%3C200511282030.jASKUW26006774%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r284 - trunk/public_html">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Nov 28 21:30:32 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000079.html">[Medick-svn] r283 - in trunk/libs: action/controller action/view active/record active/support
+</A></li>
+        <LI>Next message: <A HREF="000081.html">[Medick-svn] r285 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#80">[ date ]</a>
+              <a href="thread.html#80">[ thread ]</a>
+              <a href="subject.html#80">[ subject ]</a>
+              <a href="author.html#80">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-11-28 21:30:31 +0100 (Mon, 28 Nov 2005)
+New Revision: 284
+
+Modified:
+   trunk/public_html/default.htaccess
+Log:
+ -- clean up defaul.htaccess file
+
+Modified: trunk/public_html/default.htaccess
+===================================================================
+--- trunk/public_html/default.htaccess	2005-11-28 20:10:04 UTC (rev 283)
++++ trunk/public_html/default.htaccess	2005-11-28 20:30:31 UTC (rev 284)
+@@ -1,20 +1,18 @@
+-# default.htaccess file for Medick framework.
+-# rename-it to .htaccess
++# .htaccess file for eldepot sample medick application
+ # $Id$
+ 
+ # Configuration
+-php_value auto_prepend_file /wwwroot/medick/trunk/boot.php
+-# php_value error_reporting 2047
++php_value auto_prepend_file ___PATH___TO___MEDICK___INSTALATION___/boot.php
+ 
+-SetEnv MEDICK_APPLICATION_PATH __MEDICK__APPLICATION__PATH__
+-SetEnv MEDICK_APPLICATION_NAME __MEDICK__APPLICATION__NAME__
++SetEnv MEDICK_APPLICATION_PATH ___YOUR___APPLICATION___PATH___
++SetEnv MEDICK_APPLICATION_NAME ___YOUR___APPLICATION___NAME___
+  
+ RewriteEngine on
+ 
+-RewriteCond    %{REQUEST_FILENAME}  -d
+-RewriteRule    ^(.+[^/])$           $1/  [R]
+-  
+-RewriteRule ^([A-Za-z]+)/?([A-Za-z]+)/?\.html$ index.php?controller=$1&amp;action=$2 [NS]
+-RewriteRule ^([A-Za-z]+)/([A-Za-z]+)/([0-9]+)\.html?$ index.php?controller=$1&amp;action=$2&amp;id=$3 [NS]
+-RewriteRule ^([A-Za-z]+)/([A-Za-z]+)/([0-9]+)/?$ index.php?controller=$1&amp;action=$2&amp;id=$3 [L]
+- 
++########## Set 2
++RewriteCond %{REQUEST_FILENAME} !-s
++RewriteCond %{REQUEST_URI} !^index.php/$
++RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
++
++#RewriteRule !^(stylesheet|images|javascript)/ index.php [NC,L]
++
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000079.html">[Medick-svn] r283 - in trunk/libs: action/controller action/view active/record active/support
+</A></li>
+	<LI>Next message: <A HREF="000081.html">[Medick-svn] r285 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#80">[ date ]</a>
+              <a href="thread.html#80">[ thread ]</a>
+              <a href="subject.html#80">[ subject ]</a>
+              <a href="author.html#80">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

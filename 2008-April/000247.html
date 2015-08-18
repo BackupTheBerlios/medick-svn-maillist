@@ -1,0 +1,291 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r467 - in trunk/libs: action/controller active/record	active/support medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2008-April/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r467%20-%20in%20trunk/libs%3A%20action/controller%20active/record%0A%09active/support%20medick&In-Reply-To=%3C200804180822.m3I8MHTh021977%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000246.html">
+   <LINK REL="Next"  HREF="000248.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r467 - in trunk/libs: action/controller active/record	active/support medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r467%20-%20in%20trunk/libs%3A%20action/controller%20active/record%0A%09active/support%20medick&In-Reply-To=%3C200804180822.m3I8MHTh021977%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r467 - in trunk/libs: action/controller active/record	active/support medick">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Fri Apr 18 10:22:17 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000246.html">[Medick-svn] r466 - in trunk/libs: action/controller active/support
+</A></li>
+        <LI>Next message: <A HREF="000248.html">[Medick-svn] r468 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#247">[ date ]</a>
+              <a href="thread.html#247">[ thread ]</a>
+              <a href="subject.html#247">[ subject ]</a>
+              <a href="author.html#247">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2008-04-18 10:22:16 +0200 (Fri, 18 Apr 2008)
+New Revision: 467
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Field.php
+   trunk/libs/active/support/Inflector.php
+   trunk/libs/medick/Medick.php
+Log:
+ * Bumped version to 0.4.2
+ * Inflector::underscore -&gt; call camelize before transformation
+ * ActiveRecord -&gt; added new_record() method
+ * ActiveRecord -&gt; improved toString output and more debug informations on field errors
+ * ActionController -&gt; render inline text for XHR calls on errors/exceptions
+ * ActionController -&gt; remove trailling slash on redirect
+ * Route -&gt; merge parameters only if the coponent is dynamic
+
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2008-04-09 14:18:57 UTC (rev 466)
++++ trunk/libs/action/controller/Base.php	2008-04-18 08:22:16 UTC (rev 467)
+@@ -313,12 +313,17 @@
+         if(ob_get_length()) {
+             ob_end_clean();
+         }
+-        $template = ActionView::factory('php');
+-        $template-&gt;assign('error', $exception);
+-        $template-&gt;assign('request', $request);
+-        $template-&gt;assign('response', $response);
+-        $template-&gt;assign('body', $body);
+-        $text= $template-&gt;render_file(MEDICK_PATH . '/libs/action/controller/templates/error.phtml');
++        if($request-&gt;isXhr()) {
++          $x=$exception-&gt;getTrace();
++          $text= sprintf(&quot;Got %s\nat line %d in %s\n%s&quot;, get_class($exception), @$x[0]['line'], @$x[0]['file'], $exception-&gt;getMessage());
++        } else {
++          $template = ActionView::factory('php');
++          $template-&gt;assign('error', $exception);
++          $template-&gt;assign('request', $request);
++          $template-&gt;assign('response', $response);
++          $template-&gt;assign('body', $body);
++          $text= $template-&gt;render_file(MEDICK_PATH . '/libs/action/controller/templates/error.phtml');
++        }
+         $response-&gt;setStatus(HTTPResponse::SC_INTERNAL_SERVER_ERROR);
+         $response-&gt;setContent($text);
+         return $response;
+@@ -600,7 +605,7 @@
+         
+         $rewrite = strtolower($this-&gt;config-&gt;getWebContext()-&gt;rewrite);
+         
+-        $redirect_to= $this-&gt;config-&gt;getWebContext()-&gt;server_name . $this-&gt;config-&gt;getWebContext()-&gt;document_root . '/';
++        $redirect_to= $this-&gt;config-&gt;getWebContext()-&gt;server_name . $this-&gt;config-&gt;getWebContext()-&gt;document_root;
+         
+         if ($rewrite == 'false' || $rewrite == 'off' || $rewrite == '0') {
+             $redirect_to .= 'index.php/';
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2008-04-09 14:18:57 UTC (rev 466)
++++ trunk/libs/action/controller/Route.php	2008-04-18 08:22:16 UTC (rev 467)
+@@ -313,7 +313,10 @@
+                     {
+                         return false;
+                     } else {
+-                        $this-&gt;merges[$component-&gt;getName()] = $this-&gt;ignoreExtension($parts[$it-&gt;key()]);
++                        // Registry::get('__logger')-&gt;debug( sprintf(&quot;Adding %s to merges&quot;, $component-&gt;getName()) );
++                        if($component-&gt;isDynamic()) {
++                           $this-&gt;merges[$component-&gt;getName()] = $this-&gt;ignoreExtension($parts[$it-&gt;key()]);
++                        }
+                     }
+                 }
+             }
+@@ -374,8 +377,10 @@
+      * @param Request request, the request on witch we want to merge
+      */ 
+     private function doMerge(Request $request) {
++        // $l= Registry::get('__logger');
+         foreach ($this-&gt;merges as $name=&gt;$value) {
+             if (isset(Route::$old_merges[$name])) unset(Route::$old_merges[$name]);
++            // $l-&gt;debug( sprintf(&quot;Name: [%s]=[%s]&quot;, $name, $value) );
+             $request-&gt;setParameter($name, $value);
+         }
+         // discard previously route parameters.
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2008-04-09 14:18:57 UTC (rev 466)
++++ trunk/libs/active/record/Base.php	2008-04-18 08:22:16 UTC (rev 467)
+@@ -232,8 +232,6 @@
+             $this-&gt;validators[]= $validator;
+             return $validator;
+         }
+-        // if (substr($method,0,7) == 'before_')return true; 
+-        // if (substr($method,0,6) == 'after_')  return;
+         if (substr($method,0,3) == 'get' &amp;&amp; $this-&gt;hasField(strtolower(substr($method, 3)))) {
+             return $this-&gt;getField(strtolower(substr($method, 3)));
+         }
+@@ -249,9 +247,17 @@
+      * @return string
+      */
+     public function toString() {
+-        $string = ''; foreach ($this-&gt;getAffectedFields() as $field) {
+-            $string .= &quot;[ &quot; . $field-&gt;type . &quot; ] &quot; . $field-&gt;getName() . &quot; : &quot; . $field-&gt;getValue() . &quot;\n&quot;;
+-        } return $string;
++      $string = sprintf(&quot;{\n%s [%s]--&gt;\n&quot;, $this-&gt;getClassName(), $this-&gt;new_record()? &quot;new&quot;:$this-&gt;id);
++      foreach ($this-&gt;getFields() as $field) {
++        $string .= sprintf( &quot;\t %s --&gt; (%s) %s%s affected? %s\n&quot;,
++            $field-&gt;getName(),
++            strtolower($field-&gt;type),
++            substr($field-&gt;getValue(), 0, 45),
++            strlen($field-&gt;getValue())&gt;45?'...':'',
++            $field-&gt;isAffected? &quot;true&quot; : &quot;false&quot;
++          );
++      }
++      return $string . &quot;}&quot;;
+     }
+ 
+     /** 
+@@ -397,10 +403,12 @@
+     private function collect_errors( $force= false ) {
+         if ($this-&gt;collected &amp;&amp; !$force) return sizeof( $this-&gt;errors );
+         $this-&gt;run_validators();
++        $l= Registry::get('__logger');
+         foreach ($this-&gt;fields as $field) {
+             if ($field-&gt;hasErrors()) {
+                 foreach($field-&gt;getErrors() as $error) {
+                     // $this-&gt;errors[$field-&gt;getName()][] = $error;
++                    $l-&gt;info( sprintf('err on `%s`: %s', $field-&gt;getName(), $error) );
+                     $this-&gt;errors[] = $error;
+                 }
+                 // $this-&gt;errors= $field-&gt;getErrors();
+@@ -432,6 +440,10 @@
+     protected function after_delete() { }
+     // }}}
+ 
++    public function new_record() {
++      return $this-&gt;getPrimaryKey()-&gt;isAffected === false;
++    }
++
+     // {{{ save
+     /**
+      * Save,
+@@ -449,9 +461,9 @@
+      * &lt;/code&gt;
+      */
+     public function save() {
++        Registry::get('__logger')-&gt;debug( $this-&gt;toString() );
+         if ( !$this-&gt;before_save() || !$this-&gt;isValid()) return false;
+-        if ( $this-&gt;getPrimaryKey()-&gt;isAffected ) $af= $this-&gt;update();
+-        else $af= $this-&gt;insert();
++        $af = $this-&gt;new_record()? $this-&gt;insert() : $this-&gt;update();
+         $this-&gt;after_save();
+         return $af;
+     }
+
+Modified: trunk/libs/active/record/Field.php
+===================================================================
+--- trunk/libs/active/record/Field.php	2008-04-09 14:18:57 UTC (rev 466)
++++ trunk/libs/active/record/Field.php	2008-04-18 08:22:16 UTC (rev 467)
+@@ -61,15 +61,15 @@
+ 
+     /** @var bool
+         is primary key flag */
+-    public $isPk = FALSE;
++    public $isPk = false;
+ 
+     /** @var bool
+         is foreign key flag */
+-    public $isFk = FALSE;
++    public $isFk = false;
+ 
+     /** @var bool
+         if this field was affected by the current run */
+-    public $isAffected = FALSE;
++    public $isAffected = false;
+ 
+     /** @var string
+         the foreign key table */
+@@ -149,9 +149,17 @@
+      *
+      * @param mixed value
+      */
+-    public function setValue($value) {
++    public function setValue( $value ) {
++
++        // if($this-&gt;value==&quot;&quot; &amp;&amp; !$this-&gt;isPk) {
++        //   $this-&gt;isAffected= false;
++        // } else {
++        //   $this-&gt;isAffected= true;
++        // }
++        // $this-&gt;value= $value;
++
+         $this-&gt;value = $value;
+-        $this-&gt;isAffected= TRUE;
++        $this-&gt;isAffected= true;
+     }
+ 
+     /**
+
+Modified: trunk/libs/active/support/Inflector.php
+===================================================================
+--- trunk/libs/active/support/Inflector.php	2008-04-09 14:18:57 UTC (rev 466)
++++ trunk/libs/active/support/Inflector.php	2008-04-18 08:22:16 UTC (rev 467)
+@@ -127,7 +127,7 @@
+     }
+ 
+     public static function underscore($word) {
+-        $word = preg_replace('/([A-Z]+)([A-Z])/','\1_\2', $word);
++        $word = preg_replace('/([A-Z]+)([A-Z])/','\1_\2', self::camelize($word));
+         return strtolower(preg_replace('/([a-z])([A-Z])/','\1_\2', $word));
+     }
+ 
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2008-04-09 14:18:57 UTC (rev 466)
++++ trunk/libs/medick/Medick.php	2008-04-18 08:22:16 UTC (rev 467)
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.4.1';
++        return '0.4.2';
+     }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000246.html">[Medick-svn] r466 - in trunk/libs: action/controller active/support
+</A></li>
+	<LI>Next message: <A HREF="000248.html">[Medick-svn] r468 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#247">[ date ]</a>
+              <a href="thread.html#247">[ thread ]</a>
+              <a href="subject.html#247">[ subject ]</a>
+              <a href="author.html#247">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

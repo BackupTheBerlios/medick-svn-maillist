@@ -1,0 +1,429 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r254 - trunk/libs/action/controller/session
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-November/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r254%20-%20trunk/libs/action/controller/session&In-Reply-To=%3C200511061942.jA6JgqVG025222%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000057.html">
+   <LINK REL="Next"  HREF="000059.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r254 - trunk/libs/action/controller/session</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r254%20-%20trunk/libs/action/controller/session&In-Reply-To=%3C200511061942.jA6JgqVG025222%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r254 - trunk/libs/action/controller/session">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Nov  6 20:42:52 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000057.html">[Medick-svn] r253 - trunk/libs/action/controller/cli
+</A></li>
+        <LI>Next message: <A HREF="000059.html">[Medick-svn] r255 - trunk/libs/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#58">[ date ]</a>
+              <a href="thread.html#58">[ thread ]</a>
+              <a href="subject.html#58">[ subject ]</a>
+              <a href="author.html#58">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-11-06 20:42:52 +0100 (Sun, 06 Nov 2005)
+New Revision: 254
+
+Added:
+   trunk/libs/action/controller/session/ISessionContainer.php
+Removed:
+   trunk/libs/action/controller/session/ISession.php
+   trunk/libs/action/controller/session/driver/
+Modified:
+   trunk/libs/action/controller/session/Session.php
+Log:
+ [ ACSession ] starting to work on it. removed unused files.
+
+Deleted: trunk/libs/action/controller/session/ISession.php
+===================================================================
+--- trunk/libs/action/controller/session/ISession.php	2005-11-06 19:37:35 UTC (rev 253)
++++ trunk/libs/action/controller/session/ISession.php	2005-11-06 19:42:52 UTC (rev 254)
+@@ -1,70 +0,0 @@
+-&lt;?php
+-// {{{ License
+-//////////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-//////////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * @package locknet7.action.controller.session
+- */
+-
+-interface ISession {
+-    /**
+-     *
+-     */
+-    public function open($save_path,$session_name);
+-
+-
+-    /**
+-     *
+-     */
+-    public function close();
+-
+-    /**
+-     *
+-     */
+-    public function read($id);
+-
+-    /**
+-     * 
+-     */
+-    public function destroy($id);
+-
+-    /**
+-     * 
+-     */
+-    public function write($id,$session_data);
+-
+-    /**
+-     * 
+-     */
+-    public function gc($maxlifetime=300);
+-}
+
+Copied: trunk/libs/action/controller/session/ISessionContainer.php (from rev 248, trunk/libs/action/controller/session/ISession.php)
+===================================================================
+--- trunk/libs/action/controller/session/ISession.php	2005-10-29 19:32:25 UTC (rev 248)
++++ trunk/libs/action/controller/session/ISessionContainer.php	2005-11-06 19:42:52 UTC (rev 254)
+@@ -0,0 +1,70 @@
++&lt;?php
++// {{{ License
++//////////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++//////////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * @package locknet7.action.controller.session
++ */
++interface ISessionContainer {
++
++    /**
++     *
++     */
++    public function open($save_path, $session_name);
++
++
++    /**
++     *
++     */
++    public function close();
++
++    /**
++     *
++     */
++    public function read($id);
++
++    /**
++     *
++     */
++    public function destroy($id);
++
++    /**
++     *
++     */
++    public function write($id, $session_data);
++
++    /**
++     *
++     */
++    public function gc($maxlifetime=300);
++}
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2005-11-06 19:37:35 UTC (rev 253)
++++ trunk/libs/action/controller/session/Session.php	2005-11-06 19:42:52 UTC (rev 254)
+@@ -7,13 +7,13 @@
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+ //
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+@@ -26,119 +26,66 @@
+ // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
++//
+ // $Id$
+-// 
++//
+ //////////////////////////////////////////////////////////////////////////////////
+ // }}}
+- 
+-include_once('action/controller/session/SessionException.php');
+-include_once('action/controller/session/ISession.php');
+ 
+ /**
+  * @package locknet7.action.controller.session
+- */
+-
+-class Session {
+-    
+-    /**
+-     * @var $instance object, this session instance
+-     */
+-    static private $instance=null;
+-    
+-    /**
+-     * Constructor.
+-     *
+-     * Just hide him
+-     */
+-    private function __construct() { }
+-
+-    public function regenerateId() {
+-        session_regenerate_id();
+-    }
+-    
+-    /**
+-     * Sets a session value for the specified name
+-     *
+-     * @param $name, string the name of this session object
+-     * @param $value, string the value
+-     */
+-    public function setAttribute($name,$value) {
+-        return $_SESSION[$name] = $value;
+-    }
+-    
+-    public function removeAttribute($name) {
+-        $_SESSION[$name] = null;
+-        unset($_SESSION[$name]);
+-    }
+-
+-    public function getAttribute($name) {
+-        return session_is_registered($name) ? $_SESSION[$name] : false;
+-    }
+-    
+-    public function getId(){
+-        return session_id();
+-    }
+-    
+-    public function dump() {
+-        return $_SESSION;
+-    }
+-    
+-    /**
+-     * Attempts to return a concrete Session instance based on
+-     * $driver.
+-     *
+-     * @param optional string $driver The type of concrete Session
+-     *                                subclass to return. The is based on the
+-     *                                driver ($driver). The code is
+-     *                                dynamically included.
+-     * @param optional array $params  A hash containing any additional
+-     *                                configuration or connection parameters
+-     *                                a subclass might need.
+-     *
+-     * @return mixed    The newly created concrete Session instance, or
+-     *                  false on an error.
+-     */
+-    private static final function factory($driver='', $params = array())
+-    {
+-        $drivers = array('Creole','PDO','File');
+-        
+-        if( ($driver=='') OR (!in_array($driver,$drivers)) ) {
+-            $driver = 'Default';
+-        }
+-        
+-        $class = $driver . 'Session';
+-        $file  = 'Session/driver/' . $class  . '.php';
+-        
+-        include_once($file);
+-        
+-        if (class_exists($class)) {
+-            return new $class($params);
+-        } else {
+-            throw new SessionException(&quot;Class &quot; . $class . &quot; don`t exist!&quot;);
+-        }
+-    }
+-
+-    /**
+-     * Attempts to return a reference to a concrete Session
+-     * instance based on $driver. It will only create a new instance
+-     * if no Session instance with the same parameters
+-     * currently exists.
+-     *
+-     * This method must be invoked as: $var = Session::getInstance()
+-     *
+-     * @param string $driver          See Session::factory().
+-     * @param optional array $params  See Session::factory().
+-     *
+-     * @return mixed  The created concrete Session instance, or false
+-     *                on error.
+-     */
+-    public static final function getInstance($driver, $params = null)
+-    {
+-        $signature = serialize(array($driver, $params));
+-        if(!isset(self::$instance[$signature])){
+-            self::$instance[$signature] = self::factory($driver, $params);
+-        }
+-        return self::$instance[$signature];
+-    }
+-}
++ */
++class Session extends Object {
++
++    private $container;
++
++    private $isStarted = FALSE;
++
++    /**
++     * Constructor.
++     */
++    public function __construct() {
++
++    }
++
++    public function start() {
++        if ($this-&gt;isStarted) {
++            throw new IllegalStateException();
++        }
++        return session_start();
++    }
++
++    public function __set($name, $value) {
++        $_SESSION[$name] = $value;
++    }
++
++    public function __get() {
++        return session_is_registered($name) ? $_SESSION[$name] : false;
++    }
++
++    public function putValue($name, $value) {
++        $this-&gt;__set($name, $value);
++    }
++
++    public function hasValue($name) {
++        return session_is_registered($name);
++    }
++
++    public function removeValue($name) {
++        $this-&gt;__set($name, null);
++        unset($_SESSION[$name]);
++    }
++
++    public function getId(){
++        return session_id();
++    }
++
++    public function setContainer(ISessionContainer $container) {
++        $this-&gt;container= $container;
++    }
++
++    public function dump() {
++        return $_SESSION;
++    }
++
++}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000057.html">[Medick-svn] r253 - trunk/libs/action/controller/cli
+</A></li>
+	<LI>Next message: <A HREF="000059.html">[Medick-svn] r255 - trunk/libs/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#58">[ date ]</a>
+              <a href="thread.html#58">[ thread ]</a>
+              <a href="subject.html#58">[ subject ]</a>
+              <a href="author.html#58">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

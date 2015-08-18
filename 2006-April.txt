@@ -1,0 +1,2156 @@
+From aurelian at berlios.de  Mon Apr  3 20:29:04 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 3 Apr 2006 20:29:04 +0200
+Subject: [Medick-svn] r388 - applications/testor/app/controllers applications/testor/conf applications/testor/db trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/action/controller/session trunk/skel/config
+Message-ID: <200604031829.k33IT4li028977@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-04-03 20:28:25 +0200 (Mon, 03 Apr 2006)
+New Revision: 388
+
+Modified:
+   applications/testor/app/controllers/main_controller.php
+   applications/testor/conf/testor.xml
+   applications/testor/db/schema.sql
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+   trunk/libs/action/controller/session/ISessionContainer.php
+   trunk/libs/action/controller/session/Session.php
+   trunk/skel/config/application.xml
+Log:
+ -- configurable session container via app.xml
+ -- can set a cookie now with $http_response->setCookie($cookie);
+ -- can get a cookie or the list of cookies from HTTPRequest
+ -- minor changes to testor sample
+
+
+Modified: applications/testor/app/controllers/main_controller.php
+===================================================================
+--- applications/testor/app/controllers/main_controller.php	2006-03-28 18:40:11 UTC (rev 387)
++++ applications/testor/app/controllers/main_controller.php	2006-04-03 18:28:25 UTC (rev 388)
+@@ -15,23 +15,17 @@
+   public function index() {
+     $ctrl= array();
+     foreach (glob(dirname(__FILE__) . DIRECTORY_SEPARATOR . "*_controller.php") as $key=>$filename) {
+-        $this->logger->debug('Classes:' . $filename);
++        // $this->logger->debug('Classes:' . $filename);
+         include_once($filename);
+-        $c= explode(DIRECTORY_SEPARATOR, $filename);
+-        $cend= end($c);
+-        $f= explode('_', $cend);
+-        $class_name= ucfirst($f[0]) . 'Controller';
++        $c= explode(DIRECTORY_SEPARATOR, $filename); // ==> main_controller.php
++        $f= explode('_', end($c)); // ==> main
++        $class_name= ucfirst($f[0]) . 'Controller'; // ==> MainController
+         $class= new ReflectionClass($class_name);
+         if ($class->isSubclassOf(new ReflectionClass('ApplicationController'))) {
+-          // $this->logger->debug($class);
+           $ctrl[$key] = $class;
+-          // $this->logger->debug($ctrl[$key]);
+         }
+     }
+-    // $this->logger->debug($ctrl);
+-    $this->ctrl= $ctrl;
+-    
++    $this->template->assign('ctrl',$ctrl);
+   }
+-  
+ }
+ 
+
+Modified: applications/testor/conf/testor.xml
+===================================================================
+--- applications/testor/conf/testor.xml	2006-03-28 18:40:11 UTC (rev 387)
++++ applications/testor/conf/testor.xml	2006-04-03 18:28:25 UTC (rev 388)
+@@ -14,6 +14,9 @@
+             <server_name>http://localhost:8091</server_name>
+             <document_root>/testor</document_root>
+             <rewrite>on</rewrite>
++            <session>
++                <container>action.controller.session.CreoleSessionContainer</container>
++            </session>
+         </web>
+         <!-- logger system -->
+         <logger>
+@@ -71,8 +74,8 @@
+             <dsn id = "one"
+                 phptype  = "pgsql"
+                 hostspec = "localhost"
+-                username = "andro"
+-                password = "su^lor*"
++                username = "albeit"
++                password = "pri$6g"
+                 database = "testor" />
+         </database>
+     </environment>
+
+Modified: applications/testor/db/schema.sql
+===================================================================
+--- applications/testor/db/schema.sql	2006-03-28 18:40:11 UTC (rev 387)
++++ applications/testor/db/schema.sql	2006-04-03 18:28:25 UTC (rev 388)
+@@ -18,8 +18,9 @@
+ 
+ INSERT INTO `strones` (`id`,`inc`) VALUES (1,0);
+ 
+-CREATE TABLE c_session (
++CREATE TABLE c_sessions (
+ 	`session_id` VARCHAR (255) PRIMARY KEY,
+ 	`session_data` TEXT,
+ 	`session_lastmodified` DATETIME
+ ) ENGINE=InnoDB;
++
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-03-28 18:40:11 UTC (rev 387)
++++ trunk/libs/action/controller/Base.php	2006-04-03 18:28:25 UTC (rev 388)
+@@ -325,26 +325,42 @@
+      * @param Response response, the response
+      */
+     private function instantiate(Request $request, Response $response) {
++        // class memebers
+         $this->request  = $request;
+         $this->response = $response;
+-        $this->session  = $request->getSession();
+         $this->params   = $request->getParameters();
+-
+         $this->logger   = Registry::get('__logger');
+         $this->injector = Registry::get('__injector');
+         $this->config   = Registry::get('__configurator');
+-
+-        $this->app_path      = $this->injector->getPath('__base');
++        $this->session  = $request->getSession();
++        $this->app_path = $this->injector->getPath('__base');
+         $this->template_root = $this->injector->getPath('views') . $this->params['controller'] . DIRECTORY_SEPARATOR;
+-
+         $this->template = ActionView::factory('php');
++         
++        // register session container if any
++        // TODO: this should be moved elsewhere
++        if ($this->config->getWebContext()->session !== NULL && 
++            $this->config->getWebContext()->session->container !== NULL
++        ) {
++            // container location.
++            $c_location= str_replace('.', DIRECTORY_SEPARATOR, 
++                  (string)$this->config->getWebContext()->session->container) . '.php';
++            include_once($c_location);
++            // container class name.
++            $e= explode('.',(string)$this->config->getWebContext()->session->container);
++            // reflect on container.
++            $container= new ReflectionClass(end($e));
++            if ($container->implementsInterface('ISessionContainer')) {
++                $this->session->setContainer($container->newInstance());
++            }
++        }
++       
+         // predefined variables:
+         // TODO: check if we have a / at the end, if not, add one
+-        
+-        $this->template->assign('__base', (string)$this->config->getWebContext()->document_root);
+-        $this->template->assign('__server', (string)$this->config->getWebContext()->server_name);
++        $this->template->assign('__base',       (string)$this->config->getWebContext()->document_root);
++        $this->template->assign('__server',     (string)$this->config->getWebContext()->server_name);
+         $this->template->assign('__controller', $this->params['controller']);
+-        $this->template->assign('__version', Medick::getVersion());
++        $this->template->assign('__version',    Medick::getVersion());
+         
+         $this->logger->debug($this->request->toString());
+     }
+@@ -353,6 +369,9 @@
+      * Shortcut for template assigns
+      */
+     public function __set($name, $value) {
++        // if (in_array($name, array_keys(get_object_vars($this)))) {
++        //     throw new MedickException('Cannot set ' . $name . ' as template variable');
++        // }
+         $this->template->assign($name, $value);
+     }
+ 
+@@ -360,11 +379,10 @@
+         return $this->template->$name;
+     }
+ 
+-    // XXX: not-done!
+     protected function sendFile($location, $options = array()) {
+-        if(!is_file($location)) {
+-            throw new MedickException('File not found...');
+-        }
++        // if(!is_file($location)) {
++            throw new MedickException('Method ' . __METHOD__ . ' Not Implemented!');
++        // }
+         // $options['length'] =   File::size($location);
+         // $options['filename'] = File::basename($location);
+     }
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-03-28 18:40:11 UTC (rev 387)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-04-03 18:28:25 UTC (rev 388)
+@@ -54,18 +54,24 @@
+         the list of headers associated with this HTTPRequest */
+     private $headers= array();
+ 
++    /** @var array
++        cookies list */
++    private $cookies= array();
++    
+     /**
+      * Constructor.
+      * It builds the HTTPRequest object
+      *
+      * @todo a URI Helper should be written.
+-     * @todo $_COOKIES are not merged anymore!!!
++     * @todo a Cookie class should be written.
+      */
+     public function HTTPRequest() {
+         foreach (array_merge($_GET,$_POST) as $key=>$value) {
+             $this->setParameter($key, $value);
+         }
+-
++        
++        $this->cookies= $_COOKIE;
++        
+         unset($_REQUEST); unset($_GET); unset($_POST);
+ 
+         if (array_key_exists('PATH_INFO', $_SERVER) && $_SERVER['PATH_INFO']!='' ) {
+@@ -74,7 +80,7 @@
+         // TODO:
+         //      -> this is for php as cgi, or where PATH_INFO is not available
+         //      -> ORIG_PATH_INFO should also work
+-        //      -> should substract the documnet root
++        //      -> should substract only the documnet root
+         elseif (array_key_exists('REQUEST_URI', $_SERVER)) {
+             $this->requestUri= substr($_SERVER['REQUEST_URI'],7);
+         }
+@@ -83,6 +89,18 @@
+         $this->headers = HTTPRequest::getAllHeaders();
+     }
+ 
++    public function getCookies() {
++        return $this->cookies;
++    }
++
++    public function hasCookie($name) {
++        return isset($this->cookies[$name]);
++    }
++
++    public function getCookie($name) {
++        return $this->hasCookie($name) ? $this->cookies[$name] : FALSE;
++    }
++    
+     public function getHeaders() {
+         return $this->headers;
+     }
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2006-03-28 18:40:11 UTC (rev 387)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2006-04-03 18:28:25 UTC (rev 388)
+@@ -75,28 +75,33 @@
+     /**
+      * Sets the header $name with $value
+      *
+-     * @param string, name the name of the header
+-     * @param mixed, value, the value of this header
++     * @param string the name of the header
++     * @param mixed  the value of this header
+      */
+     public function setHeader($name,$value) {
+         header($name . ": " . $value);
+     }
+ 
+     /**
+-     * Sets the content type header
++     * Sets the content-type header
+      *
+-     * @param strign type, the content type
++     * @param string the content type
+      */
+     public function setContentType($type) {
+-        return $this->setHeader('Content-type',$type);
++        return $this->setHeader('Content-type', $type);
+     }
+ 
++
++    public function setCookie($cookie) {
++        $this->setHeader('Set-Cookie', $cookie);
++    }
++    
+     /**
+      * Sets the status of this response
+      *
+-     * @todo should choose between HTTP/1.1 and HTTP/1.0
+-     * @todo more cases in the switch
+-     * @param HTTPResponse::SC_*, status, the status of this response
++     * @todo should choose between HTTP/1.1 and HTTP/1.0?
++     * @todo add more cases in the switch
++     * @param HTTPResponse::SC_* the status of this response
+      */
+     public function setStatus($status) {
+         switch($status){
+
+Modified: trunk/libs/action/controller/session/ISessionContainer.php
+===================================================================
+--- trunk/libs/action/controller/session/ISessionContainer.php	2006-03-28 18:40:11 UTC (rev 387)
++++ trunk/libs/action/controller/session/ISessionContainer.php	2006-04-03 18:28:25 UTC (rev 388)
+@@ -33,7 +33,26 @@
+ // }}}
+ 
+ /**
++ * This interface defines methods for user session handler
+  * 
++ * This container is added automatically in ActionController::instantiate() method
++ *
++ * You must declare this container application.xml file:
++ * <code>
++ * &lt;session&gt;
++ *  &lt;container&gt;action.controller.session.CreoleSessionContainer&lt;/container&gt;
++ * &lt;/session&gt;
++ * </code>
++ * If you add a container, <em>MyFileSessionContainer</em> 
++ * in <em>_your_application_/libs/session/MyFileSessionContainer.php</em>,
++ * your definition should be:
++ * <code>
++ *  session.MyFileSessionContainer
++ * </code>
++ * since the <em>_your_application_/libs</em> folder is under <em>include path</em>
++ * @see http://php.net/manual/en/function.session-set-save-handler.php
++ * @see Session
++ * @see ActionController
+  * @package medick.action.controller
+  * @subpackage session
+  * @author Oancea Aurelian
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2006-03-28 18:40:11 UTC (rev 387)
++++ trunk/libs/action/controller/session/Session.php	2006-04-03 18:28:25 UTC (rev 388)
+@@ -49,7 +49,7 @@
+ 
+     /** @var ISessionContainer
+         the session container */
+-    private $container;
++    private $container = NULL;
+ 
+     /**
+      * Constructor, creates a new session object
+@@ -76,15 +76,15 @@
+         
+         // TODO: more settings
+         // session_cache_limiter("nocache");
+-        // session_write_close();
+-        // $container= new CreoleSessionContainer();
+-   		// session_set_save_handler(array($container, 'open'),
+-        //                     array($container, 'close'),
+-        //                     array($container, 'read'),
+-        //                     array($container, 'write'),
+-        //                     array($container, 'destroy'),
+-        //                     array($container, 'gc'));
+-                
++        if ($this->container!==NULL) {
++            session_set_save_handler(
++                array($this->container, 'open'),
++                array($this->container, 'close'),
++                array($this->container, 'read'),
++                array($this->container, 'write'),
++                array($this->container, 'destroy'),
++                array($this->container, 'gc'));
++        }
+         session_start();
+         //session_regenerate_id(TRUE);
+         $this->isStarted= TRUE;
+
+Modified: trunk/skel/config/application.xml
+===================================================================
+--- trunk/skel/config/application.xml	2006-03-28 18:40:11 UTC (rev 387)
++++ trunk/skel/config/application.xml	2006-04-03 18:28:25 UTC (rev 388)
+@@ -14,6 +14,23 @@
+             <server_name>http://localhost</server_name>
+             <document_root>/${app.name}</document_root>
+             <rewrite>on</rewrite>
++            <!-- Session Container
++            Only CreoleSessionContainer is available.
++            It needs a database table:
++            === start ===
++            create table c_sessions (
++                `session_id`   VARCHAR (255) PRIMARY KEY,
++                `session_data` TEXT,
++                `session_lastmodified` DATETIME
++            );
++            ===  end  ===
++            NOTE: this was tested only on mysql driver
++            NOTE: to implement your own session container (handler), see ISessionContainer inteface
++            === end comment here ===
++            <session>
++                <container>action.controller.session.CreoleSessionContainer</container>
++            </session>
++            -->
+         </web>
+         <!-- logger system -->
+         <logger>
+
+
+
+From aurelian at berlios.de  Tue Apr  4 20:36:38 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Tue, 4 Apr 2006 20:36:38 +0200
+Subject: [Medick-svn] r389 - applications/testor/app/controllers applications/testor/app/views applications/testor/app/views/cookie applications/testor/app/views/project applications/testor/conf applications/testor/db trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/action/controller/session trunk/libs/medick
+Message-ID: <200604041836.k34IacCZ028700@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-04-04 20:36:34 +0200 (Tue, 04 Apr 2006)
+New Revision: 389
+
+Added:
+   applications/testor/app/controllers/cookie_controller.php
+   applications/testor/app/controllers/project_controller.php
+   applications/testor/app/views/cookie/
+   applications/testor/app/views/cookie/index.phtml
+   applications/testor/app/views/project/
+   applications/testor/app/views/project/index.phtml
+   applications/testor/app/views/project/show.phtml
+   trunk/libs/action/controller/http/Cookie.php
+Modified:
+   applications/testor/conf/testor.routes.php
+   applications/testor/db/schema.sql
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+   trunk/libs/action/controller/session/Session.php
+   trunk/libs/medick/Object.php
+Log:
+ -- added Cookies class
+ -- testor: a project controller to test medick associations (WIP)
+ -- testor: a cookie controller to test medick cookies
+
+
+Added: applications/testor/app/controllers/cookie_controller.php
+===================================================================
+--- applications/testor/app/controllers/cookie_controller.php	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/app/controllers/cookie_controller.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -0,0 +1,62 @@
++<?php
++/**
++ * $Id$
++ * @desc: tests cookies behavior
++ */ 
++class CookieController extends ApplicationController {
++    
++    protected $use_layout= 'main';
++    
++    /**
++     * @desc: list all the cookies and print a form to <a href="cookie/add">add</a> a new one, the user can also remove a cookie
++     */ 
++    public function index() {
++        $this->template->assign('cookies', $this->request->getCookies());
++    }
++
++    /**
++     * @desc: process the form that adds a new cookie
++     */ 
++    public function add() {
++        $values= $this->request->getParameter('cookie');
++        // manual check.
++        if ( $values === NULL ||
++            (isset($values['name']) && $values['name'] == '') || 
++            (isset($values['value']) && $values['value'] == '')
++        ) {
++            return $this->sendError($values, 'Cannot set cookie, one of cookie name or value is missing');
++        }
++        $cookie= new Cookie($values['name'], $values['value']);
++        // $cookie->setPath($values['path']);
++        // $cookie->setExpire((int)$values['expire']);
++        // $cookie->setDomain($values['domain']);
++        // $cookie->setSecure($values['secure']);
++        $this->response->setCookie($cookie);
++        $this->flash('notice', 'Added Cookie <em>' . $cookie->getName() . '</em>');
++        $this->redirect_to('index');
++    }
++    
++    /**
++     * @desc: removes a cookie
++     */ 
++    public function nuke() {
++        if ($this->request->getParameter('name') === $this->session->getName()) {
++            $this->flash('error', 'Cookie: <b>' . $this->session->getName() . '</b> 
++                                   cannot be removed since this is your Session Name');
++        } else {
++            // a cookie can be distroyed by setting the value to FALSE
++            $this->response->setCookie(new Cookie($this->request->getParameter('name'), FALSE));
++            $this->flash('notice', 'Cookie: <em>' . $this->request->getParameter('name') . '</em> was removed.<br />
++                                    <b>Close/Open</b> your browser to see the change.');
++        }
++        $this->redirect_to('index');
++    }
++
++    private function sendError($cookie_values, $reason) {
++        $this->template->assign('cookie_values', $cookie_values);
++        $this->flash('error', $reason);
++        $this->redirect_to('index');
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/controllers/cookie_controller.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/controllers/project_controller.php
+===================================================================
+--- applications/testor/app/controllers/project_controller.php	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/app/controllers/project_controller.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -0,0 +1,34 @@
++<?php
++
++/**
++ * This class is part of elproject, medick sample application
++ * $Id$
++ * @package elproject.controllers
++ */
++
++class ProjectController extends ApplicationController {
++
++    protected $models = array('project');
++
++    protected $use_layout= 'main';
++
++    /** List all projects */
++    public function index() {
++        try {
++            $this->template->projects= Project::find();
++        } catch (RecordNotFoundException $rnfEx) {
++            $this->render_text($rnfEx->getMessage());
++        }
++    }
++
++    /** Show one project */
++    public function show() {
++        try {
++            $this->template->project= Project::find($this->params['id']);
++        } catch (ActiveRecordException $rnfEx) {
++            $this->redirect_to('index');
++        }
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/controllers/project_controller.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/cookie/index.phtml
+===================================================================
+--- applications/testor/app/views/cookie/index.phtml	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/app/views/cookie/index.phtml	2006-04-04 18:36:34 UTC (rev 389)
+@@ -0,0 +1,69 @@
++<!-- $Id: -->
++<h5>Cookies Movements</h5>
++
++<? if(isset($flash['notice'])):?>
++    <div class="flash_notice">
++        <div class="label">Note</div>
++        <div class="content"><?=$flash['notice'];?></div>
++    </div>
++<? endif;?>
++<? if(isset($flash['error'])):?>
++    <div class="flash_error">
++        <div class="label">Warning</div>
++        <div class="content"><?=$flash['error'];?></div>
++    </div>
++<? endif;?>
++
++<hr />
++
++<? foreach($cookies as $cookie): ?>
++
++    <a href="<?=URL::create('cookie', 'nuke', array('name'=>$cookie->getName()));?>">Remove</a>&nbsp;
++    <b>Name:</b>&nbsp;<?=$cookie->getName();?>&nbsp;<b>Value:</b><?=$cookie->getValue();?><br />
++    <b>DUMP: </b>&nbsp;<?=$cookie;?>
++    <hr />
++
++<? endforeach; ?>
++
++<form name="add_cookie" method="post" action="<?=URL::create('cookie', 'add');?>">
++
++<fieldset>
++<legend>Add A new Cookie</legend>
++
++<p>
++    <label for="cookie[name]">Name : <sup style="color:red;">*</sup></label>
++    <input type="text" name="cookie[name]" value="" />
++</p>
++
++<p>
++    <label for="cookie[value]">Value : <sup style="color:red;">*</sup></label>
++    <input type="text" name="cookie[value]" value="" />
++</p>
++<!--
++<p>
++    <label for="cookie[expire]">Expire</label>
++    <input type="text" name="cookie[expire]" value="0" />
++</p>
++
++<p>
++    <label for="cookie[path]">Path</label>
++    <input type="text" name="cookie[path]" value="/" />
++</p>
++
++<p>
++    <label for="cookie[domain]">Name</label>
++    <input type="text" name="cookie[domain]" value="<?=$__server;?>" />
++</p>
++
++<p>
++    <label for="cookie[secure]">Name</label>
++    <input type="radio" name="cookie[secure]" value="0" />
++    <input type="radio" name="cookie[secure]" value="1" />
++</p>
++    -->
++<p><input name="submit" value="Add Cookie" type="submit" /></p>
++
++</fieldset>
++
++</form>
++
+
+
+Property changes on: applications/testor/app/views/cookie/index.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/project/index.phtml
+===================================================================
+--- applications/testor/app/views/project/index.phtml	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/app/views/project/index.phtml	2006-04-04 18:36:34 UTC (rev 389)
+@@ -0,0 +1,27 @@
++<h2>All Projects</h2>
++<table border="1">
++    <tr>
++        <td>&nbsp;</td>
++        <td>Project Name</td>
++        <td>Portfolio</td>
++        <td>Project Manager</td>
++        <td>Number of Milestones</td>
++        <td>Categories</td>
++        <td>Start Date</td>
++    </tr>
++    <? foreach($projects as $project): ?>
++        <tr>
++            <td><a href="<?= URL::create('project', 'show', array('id'=>$project->id));?>">View</a></td>
++            <td><?= $project->name ?></td>
++            <td><?= $project->portfolio->name ?></td>
++            <td><?= $project->manager->last_name ?>, <?= $project->manager->first_name ?></td>
++            <td><?= $project->milestones->count() ?></td>
++            <td>
++                <? foreach ($project->categories as $category): ?>
++                    <?= $category->name ?>,
++                <? endforeach; ?>
++            </td>
++            <td><?= $project->created_at ?></td>
++        </tr>
++    <? endforeach; ?>
++</table>
+
+
+Property changes on: applications/testor/app/views/project/index.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/project/show.phtml
+===================================================================
+--- applications/testor/app/views/project/show.phtml	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/app/views/project/show.phtml	2006-04-04 18:36:34 UTC (rev 389)
+@@ -0,0 +1,30 @@
++<h2> Project <?= $project->name ?></h2><br>
++
++Portfolio: <?= $project->portfolio->name ?><br>
++
++Project Manager: <?= $project->manager->first_name ?>,
++            <?= $project->manager->last_name ?><br>
++
++<? if($project->milestones->count()): ?>
++    Milestones:<br>
++    <? foreach($project->milestones as $milestone): ?>
++        &nbsp;&nbsp;-<?= $milestone->title ?><br>
++    <? endforeach; ?>
++<? else: ?>
++    no Milestones found.
++<? endif; ?>
++
++<br>
++
++<? if(count($project->categories)): ?>
++    Currently in Categories:<br>
++    <? foreach($project->categories as $category): ?>
++        &nbsp;&nbsp;-<?= $category->name ?><br>
++    <? endforeach; ?>
++<? else: ?>
++    no Milestones found.
++<? endif; ?>
++
++<br>
++
++Start Date: <?= $project->created_at ?><br>
+\ No newline at end of file
+
+
+Property changes on: applications/testor/app/views/project/show.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/testor/conf/testor.routes.php
+===================================================================
+--- applications/testor/conf/testor.routes.php	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/conf/testor.routes.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -6,6 +6,11 @@
+ $map= Map::getInstance();
+ $map->add(new Route('/main/index', Route::WELCOME, array('controller'=>'main', 'action'=>'index')));
+ 
++$route= new Route('cookie/nuke/:name');
++$route->setDefault('action','nuke');
++$route->setDefault('controller','cookie');
++$map->add($route);
++
+ $route= new Route(':controller/:number');
+ $route->setDefault('action','index');
+ $route->setRequirement('number', '/([0-9])/');
+
+Modified: applications/testor/db/schema.sql
+===================================================================
+--- applications/testor/db/schema.sql	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/db/schema.sql	2006-04-04 18:36:34 UTC (rev 389)
+@@ -1,16 +1,26 @@
+ -- $Id$
+ -- Database Schema for testor project
+ 
++SET AUTOCOMMIT=0;
++START TRANSACTION;
++
+ DROP DATABASE IF EXISTS `testor`;
+ CREATE DATABASE `testor`;
+ USE `testor`;
+ 
++-- --------------------------------------------------------
++-- Table structure for table `tones`
++
+ CREATE TABLE tones (
+   `id`      INT (11) PRIMARY KEY auto_increment,
+   `name`    VARCHAR (255),
+   `status`  INT(1)
+ ) ENGINE=InnoDB;
+ 
++
++-- --------------------------------------------------------
++-- Table structure for table `strones`
++
+ CREATE TABLE strones (
+   `id`      INT (11) PRIMARY KEY auto_increment,
+   `inc`     INT (11)
+@@ -18,9 +28,112 @@
+ 
+ INSERT INTO `strones` (`id`,`inc`) VALUES (1,0);
+ 
++-- --------------------------------------------------------
++-- Table structure for table `c_sessions`
++
+ CREATE TABLE c_sessions (
+ 	`session_id` VARCHAR (255) PRIMARY KEY,
+ 	`session_data` TEXT,
+ 	`session_lastmodified` DATETIME
+ ) ENGINE=InnoDB;
+ 
++-- --------------------------------------------------------
++-- ActiveRecord::Association related tables
++-- --------------------------------------------------------
++
++-- --------------------------------------------------------
++-- Table structure for table `categories`
++
++CREATE TABLE categories (
++  id        int(11)         NOT NULL auto_increment,
++  `name`    varchar(150)    NOT NULL,
++  PRIMARY KEY  (id)
++) Engine=InnoDB;
++
++-- --------------------------------------------------------
++-- Table structure for table `categories_projects`
++
++CREATE TABLE categories_projects (
++  category_id   int(11) NOT NULL,
++  project_id    int(11) NOT NULL
++) Engine=InnoDB;
++
++-- --------------------------------------------------------
++-- Table structure for table `milestones`
++
++CREATE TABLE milestones (
++  id            int(11)      NOT NULL auto_increment,
++  project_id    int(11)      NOT NULL,
++  title         varchar(150) NOT NULL,
++  description   text,
++  PRIMARY KEY  (id)
++) Engine=InnoDB;
++
++-- --------------------------------------------------------
++-- Table structure for table `portfolios`
++
++CREATE TABLE portfolios (
++  id        int(11)     NOT NULL auto_increment,
++  `name`    varchar(40) default NULL,
++  PRIMARY KEY  (id)
++) Engine=InnoDB;
++
++-- --------------------------------------------------------
++-- Table structure for table `managers`
++
++CREATE TABLE managers (
++  id            int(11)     NOT NULL auto_increment,
++  first_name    varchar(40) default NULL,
++  last_name     varchar(40) default NULL,
++  PRIMARY KEY  (id)
++) Engine=InnoDB;
++
++-- --------------------------------------------------------
++-- Table structure for table `projects`
++
++CREATE TABLE projects (
++  id            int(11)     NOT NULL auto_increment,
++  portfolio_id  int(11)     NOT NULL,
++  manager_id    int(11)     NOT NULL,
++  `name`        varchar(40) default NULL,
++  created_at    datetime    default NULL,
++  PRIMARY KEY  (id)
++) Engine=InnoDB;
++
++-- --------------------------------------------------------
++-- Foreign Keys
++
++ALTER TABLE projects ADD
++    constraint fk_project_portofolio foreign key (portfolio_id) references portfolios(id);
++
++ALTER TABLE projects ADD
++    constraint fk_project_manager foreign key (manager_id) references managers(id);
++
++ALTER TABLE categories_projects ADD
++    constraint fk_categories foreign key (category_id) references categories(id);
++
++ALTER TABLE categories_projects ADD
++    constraint fk_projects foreign key (project_id) references projects(id);
++
++ALTER TABLE milestones ADD
++    constraint fk_milestones_project foreign key (project_id) references projects(id);
++
++-- --------------------------------------------------------
++-- Inserts
++
++INSERT INTO `categories` ( `id` , `name` )
++    VALUES (NULL , 'medick');
++INSERT INTO `categories` ( `id` , `name` )
++    VALUES (NULL , 'PHP');
++INSERT INTO `portfolios` ( `id` , `name` )
++    VALUES (NULL , 'locknet.ro');
++INSERT INTO `managers` ( `id` , `first_name` , `last_name` )
++    VALUES ( NULL , 'oancea', 'aurelian');
++INSERT INTO `projects` ( `id` , `portfolio_id` , `manager_id`,`name` , `created_at` )
++    VALUES ( NULL , '1', '1', 'elproject', NOW());
++INSERT INTO `milestones` ( `id` , `project_id` , `title` , `description` )
++    VALUES (NULL , '1', 'First Release', 'A description of this milestone.');
++INSERT INTO `categories_projects` ( `category_id` , `project_id` )
++    VALUES ('1', '1'), ('2', '1');
++
++COMMIT;
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-04-03 18:28:25 UTC (rev 388)
++++ trunk/libs/action/controller/Base.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -336,7 +336,7 @@
+         $this->app_path = $this->injector->getPath('__base');
+         $this->template_root = $this->injector->getPath('views') . $this->params['controller'] . DIRECTORY_SEPARATOR;
+         $this->template = ActionView::factory('php');
+-         
++        
+         // register session container if any
+         // TODO: this should be moved elsewhere
+         if ($this->config->getWebContext()->session !== NULL && 
+
+Added: trunk/libs/action/controller/http/Cookie.php
+===================================================================
+--- trunk/libs/action/controller/http/Cookie.php	2006-04-03 18:28:25 UTC (rev 388)
++++ trunk/libs/action/controller/http/Cookie.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -0,0 +1,141 @@
++<?php
++// {{{ License
++//////////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005,2006 Oancea Aurelian <aurelian at locknet.ro>
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++//////////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * 
++ * @package medick.action.controller
++ * @subpackage http
++ */
++
++class Cookie extends Object {
++    
++    /** @var string
++        Cookie name */ 
++    private $name;
++
++    /** @var string
++        Cookie value */ 
++    private $value;
++
++    /** @var int
++        Cookie expire */ 
++    private $expire;
++    
++    /** @var string
++        Cookie path */ 
++    private $path;
++    
++    /** @var string 
++        Cookie domain */
++    private $domain;
++
++    /** @var bool
++        Cookie secure */ 
++    private $secure;
++    
++    /**
++     * Creates A new Cookie
++     *
++     * @param string Cookie name
++     * @param string Cookie value
++     * @param int 
++     * @param string Cookie path
++     * @param string Cookie domain
++     * @param bool    
++     */ 
++    public function Cookie($name, $value = '', $expire = 0, $path = '/', $domain = '', $secure = FALSE) {
++        $this->name   = $name;
++        $this->value  = $value;
++        $this->expire = $expire;
++        $this->path   = $path;
++        $this->domain = $domain;
++        $this->secure = $secure;
++    }
++
++    public function getName() {
++        return $this->name;
++    }
++
++    public function getValue() {
++        return $this->value;
++    }
++
++    public function setValue($value) {
++        $this->value= $value;
++    }
++
++    public function getExpire() {
++        return $this->expire;
++    }
++
++    public function setExpire($expire) {
++        $this->expire = $expire;
++    }
++    
++    public function getPath() {
++        return $this->path;
++    }
++
++    public function setPath($path) {
++        $this->path= $path;
++    }
++    
++    public function getDomain() {
++        return $this->domain;
++    }
++
++    public function setDomain($domain) {
++        $this->domain = $domain;
++    }
++    
++    public function getSecure() {
++        return (bool)$this->secure;
++    }
++
++    public function setSecure($secure) {
++        $this->secure= (bool)$secure;
++    }
++    
++    public function toString() {
++      return (
++        $this->name . '=' . 
++        ($this->value === '' ? 'deleted' : $this->value).
++        ($this->expire !== 0 ? '; expires=' . gmdate('D, d-M-Y H:i:s \G\M\T', $this->expire) : '').
++        ($this->path !== '' ? '; path=' . $this->path : '').
++        ($this->domain !== '' ? '; domain=' . $this->domain : '').
++        ($this->secure ? '; secure' : '')
++      );
++    }
++}
++ 
+
+
+Property changes on: trunk/libs/action/controller/http/Cookie.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-04-03 18:28:25 UTC (rev 388)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -32,6 +32,7 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
++include_once('action/controller/http/Cookie.php');
+ include_once('action/controller/session/Session.php');
+ 
+ /**
+@@ -69,9 +70,11 @@
+         foreach (array_merge($_GET,$_POST) as $key=>$value) {
+             $this->setParameter($key, $value);
+         }
++
++        foreach ($_COOKIE as $cookie_name=>$cookie_value) {
++            $this->cookies[$cookie_name]= new Cookie($cookie_name, $cookie_value);
++        }
+         
+-        $this->cookies= $_COOKIE;
+-        
+         unset($_REQUEST); unset($_GET); unset($_POST);
+ 
+         if (array_key_exists('PATH_INFO', $_SERVER) && $_SERVER['PATH_INFO']!='' ) {
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2006-04-03 18:28:25 UTC (rev 388)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -78,7 +78,7 @@
+      * @param string the name of the header
+      * @param mixed  the value of this header
+      */
+-    public function setHeader($name,$value) {
++    public function setHeader($name, $value) {
+         header($name . ": " . $value);
+     }
+ 
+@@ -91,9 +91,8 @@
+         return $this->setHeader('Content-type', $type);
+     }
+ 
+-
+-    public function setCookie($cookie) {
+-        $this->setHeader('Set-Cookie', $cookie);
++    public function setCookie(Cookie $cookie) {
++        $this->setHeader('Set-Cookie', $cookie->toString());
+     }
+     
+     /**
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2006-04-03 18:28:25 UTC (rev 388)
++++ trunk/libs/action/controller/session/Session.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -32,8 +32,6 @@
+ //////////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-// include_once('action/controller/session/CreoleSessionContainer.php');
+-
+ /**
+  * A wrapper around PHP session handling
+  *
+@@ -50,7 +48,11 @@
+     /** @var ISessionContainer
+         the session container */
+     private $container = NULL;
+-
++  
++    /** @var string
++        Session name */
++    private $name = 'MSESSID';
++    
+     /**
+      * Constructor, creates a new session object
+      *
+@@ -76,6 +78,7 @@
+         
+         // TODO: more settings
+         // session_cache_limiter("nocache");
++        session_name($this->name);
+         if ($this->container!==NULL) {
+             session_set_save_handler(
+                 array($this->container, 'open'),
+@@ -91,6 +94,24 @@
+     }
+ 
+     /**
++     * It sets the Session Name.
++     * 
++     * Medick uses MSESSID as a session name identifier, overwritting PHPSESSID
++     * @param string the session name
++     */
++    public function setName($name) {
++        $this->name = $name;
++    }
++    
++    /**
++     * It gets this Session name
++     *
++     * @return string the Session Name
++     */
++    public function getName() {
++        return $this->name;
++    }
++    /**
+      * Sets a session variable
+      *
+      * @param string name, the name of the session variable
+
+Modified: trunk/libs/medick/Object.php
+===================================================================
+--- trunk/libs/medick/Object.php	2006-04-03 18:28:25 UTC (rev 388)
++++ trunk/libs/medick/Object.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -73,7 +73,7 @@
+      * @return string 
+      */ 
+     public function toString() {
+-        return $this->__toString();
++        return ucfirst($this->getClassName());
+     }
+     
+     /**
+@@ -86,7 +86,7 @@
+      * @return string
+      */
+     public function __toString() {
+-        return ucfirst($this->getClassName());
++        return $this->toString();
+     }
+ 
+ }
+
+
+
+From aurelian at berlios.de  Tue Apr  4 20:41:50 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Tue, 4 Apr 2006 20:41:50 +0200
+Subject: [Medick-svn] r390 - in applications/testor/app/views: cookie project
+Message-ID: <200604041841.k34IfoTD032025@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-04-04 20:41:49 +0200 (Tue, 04 Apr 2006)
+New Revision: 390
+
+Modified:
+   applications/testor/app/views/cookie/index.phtml
+   applications/testor/app/views/project/index.phtml
+   applications/testor/app/views/project/show.phtml
+Log:
+ -- keywords
+
+Modified: applications/testor/app/views/cookie/index.phtml
+===================================================================
+--- applications/testor/app/views/cookie/index.phtml	2006-04-04 18:36:34 UTC (rev 389)
++++ applications/testor/app/views/cookie/index.phtml	2006-04-04 18:41:49 UTC (rev 390)
+@@ -1,4 +1,4 @@
+-<!-- $Id: -->
++<!-- $Id$ -->
+ <h5>Cookies Movements</h5>
+ 
+ <? if(isset($flash['notice'])):?>
+
+Modified: applications/testor/app/views/project/index.phtml
+===================================================================
+--- applications/testor/app/views/project/index.phtml	2006-04-04 18:36:34 UTC (rev 389)
++++ applications/testor/app/views/project/index.phtml	2006-04-04 18:41:49 UTC (rev 390)
+@@ -1,4 +1,5 @@
+-<h2>All Projects</h2>
++<h5>All Projects</h5>
++<!-- $Id$ -->
+ <table border="1">
+     <tr>
+         <td>&nbsp;</td>
+
+Modified: applications/testor/app/views/project/show.phtml
+===================================================================
+--- applications/testor/app/views/project/show.phtml	2006-04-04 18:36:34 UTC (rev 389)
++++ applications/testor/app/views/project/show.phtml	2006-04-04 18:41:49 UTC (rev 390)
+@@ -1,30 +1,33 @@
+-<h2> Project <?= $project->name ?></h2><br>
++<h5> Project <?= $project->name ?></h5>
+ 
++<!-- $Id$ -->
++
+ Portfolio: <?= $project->portfolio->name ?><br>
+ 
+ Project Manager: <?= $project->manager->first_name ?>,
+-            <?= $project->manager->last_name ?><br>
++            <?= $project->manager->last_name ?><br />
+ 
+ <? if($project->milestones->count()): ?>
+     Milestones:<br>
+     <? foreach($project->milestones as $milestone): ?>
+-        &nbsp;&nbsp;-<?= $milestone->title ?><br>
++        &nbsp;&nbsp;-<?= $milestone->title ?><br />
+     <? endforeach; ?>
+ <? else: ?>
+     no Milestones found.
+ <? endif; ?>
+ 
+-<br>
++<br />
+ 
+ <? if(count($project->categories)): ?>
+     Currently in Categories:<br>
+     <? foreach($project->categories as $category): ?>
+-        &nbsp;&nbsp;-<?= $category->name ?><br>
++        &nbsp;&nbsp;-<?= $category->name ?><br />
+     <? endforeach; ?>
+ <? else: ?>
+     no Milestones found.
+ <? endif; ?>
+ 
+-<br>
++<br />
+ 
+-Start Date: <?= $project->created_at ?><br>
+\ No newline at end of file
++<b>Start Date: </b><?= $project->created_at ?><br />
++
+
+
+
+From aurelian at berlios.de  Thu Apr  6 23:00:32 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Thu, 6 Apr 2006 23:00:32 +0200
+Subject: [Medick-svn] r391 - applications/testor/app/controllers applications/testor/app/models applications/testor/app/views applications/testor/app/views/portfolio applications/testor/app/views/project applications/testor/db applications/testor/public/stylesheet trunk/libs/action/controller
+Message-ID: <200604062100.k36L0WcS027651@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-04-06 23:00:28 +0200 (Thu, 06 Apr 2006)
+New Revision: 391
+
+Added:
+   applications/testor/app/controllers/portfolio_controller.php
+   applications/testor/app/models/category.php
+   applications/testor/app/models/manager.php
+   applications/testor/app/models/milestone.php
+   applications/testor/app/models/portfolio.php
+   applications/testor/app/models/project.php
+   applications/testor/app/views/portfolio/
+   applications/testor/app/views/portfolio/_form.phtml
+   applications/testor/app/views/portfolio/add.phtml
+   applications/testor/app/views/portfolio/edit.phtml
+   applications/testor/app/views/portfolio/index.phtml
+Removed:
+   applications/testor/app/controllers/tone_controller.php
+   applications/testor/app/views/tone/
+Modified:
+   applications/testor/app/controllers/project_controller.php
+   applications/testor/app/views/project/index.phtml
+   applications/testor/db/schema.sql
+   applications/testor/public/stylesheet/testor.css
+   trunk/libs/action/controller/Base.php
+Log:
+more on testor
+
+Added: applications/testor/app/controllers/portfolio_controller.php
+===================================================================
+--- applications/testor/app/controllers/portfolio_controller.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/controllers/portfolio_controller.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,102 @@
++<?php
++/**
++ * 
++ * @desc: Test for: <ul><li>FormHelper::check_box</li><li>uniqueness_of validator</li><li>ActiveRecordHelper::error_message_on</li></ul>
++ * @package testor.controller
++ * $Id$
++ */ 
++class PortfolioController extends ApplicationController {
++    
++    protected $use_layout= 'main';
++    
++    protected $models= 'portfolio';
++    
++    /** 
++     * @desc: it lists all <em>portfolios</em> 
++     */
++    public function index() {
++        $this->portfolios= Portfolio::find();
++    }
++    
++    /** 
++     * @desc: prints the form for adding a new <em>portfolio</em>, it submits to <a href="portfolio/create">create</a>
++     */
++    public function add() {
++        $this->portfolio= new Portfolio();
++    }
++    
++    /** 
++     * @desc: creates a new <em>portfolio</em>
++     */
++    public function create() {
++        $this->portfolio= new Portfolio($this->request->getParameter('portfolio'));
++        $this->set_status($this->portfolio);
++
++        if ($this->portfolio->save() === FALSE) {
++            $this->render('add');
++        } else {
++            $this->flash('notice', '<em>' . $this->portfolio->name . '</em> created');
++            $this->redirect_to('index');
++        }
++    }
++    
++    /** 
++     * @desc: prints the form for editing a <em>portfolio</em>, it submits to <a href="portfolio/update">update</a>
++     */
++    public function edit() {
++        try {
++            $this->portfolio= Portfolio::find($this->request->getParameter('id'));
++        } catch (RecordNotFoundException $rnfEx) {
++            $this->flash('error', $rnfEx->getMessage());
++            $this->redirect_to('index');
++        }
++    }
++
++    /** 
++     * @desc: updates a <em>portfolio</em>
++     */
++    public function update() {
++        try {
++            $this->portfolio= Portfolio::find($this->request->getParameter('id'))->attributes($this->request->getParameter('portfolio'));
++            $this->set_status($this->portfolio);
++            if ($this->portfolio->save() === FALSE) {
++                $this->render('edit');
++            } else {
++                $this->flash('notice', $this->portfolio->name . ' updated');
++                $this->redirect_to('index');
++            }
++        } catch (ActiveRecordException $arEx) {
++            $this->logger->warn($arEx->getMessage());   
++            $this->flash('error', $arEx->getMessage());
++            $this->redirect_to('index');
++        }
++    }
++
++    private function set_status($portfolio) {
++        if (!isset($this->params['portfolio']['status'])) {
++          $portfolio->status=0;
++        } else {
++          $portfolio->status=1;
++        }
++    }
++    
++    /**
++     * @desc: removes a <em>portfolio</em>
++     */
++    public function delete() {
++        try {
++            $portfolio= Portfolio::find($this->request->getParameter('id'));
++            if ($portfolio->delete()===FALSE) {
++                $this->flash('error', 'Cannot delete <em>' . $portfolio->name . '</em>!');
++                return $this->redirect_to('index');
++            }
++            $this->flash('notice', '<em>' . $portfolio->name . '</em> succesfully removed');
++            $this->redirect_to('index');
++        } catch (ActiveRecordException $arEx) {
++            $this->flash('error', $arEx->getMessage());
++            $this->redirect_to('index');
++        }
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/controllers/portfolio_controller.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/testor/app/controllers/project_controller.php
+===================================================================
+--- applications/testor/app/controllers/project_controller.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/controllers/project_controller.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -1,9 +1,9 @@
+ <?php
+-
+ /**
+  * This class is part of elproject, medick sample application
+  * $Id$
+  * @package elproject.controllers
++ * @desc: Tests ActiveRecord Associations.<br /><code>Project</code> model definition:<ul><li><code>$belongs_to=portfolio;</code></li><li><code>$has_one='manager'</code></li><li><code>$has_many='milestones'</code></li><li><code>$has_and_belongs_to_many='categories'</code></li></ul>
+  */
+ 
+ class ProjectController extends ApplicationController {
+@@ -12,20 +12,21 @@
+ 
+     protected $use_layout= 'main';
+ 
+-    /** List all projects */
++    /**
++     * @desc: List all projects
++     */
+     public function index() {
+-        try {
+-            $this->template->projects= Project::find();
+-        } catch (RecordNotFoundException $rnfEx) {
+-            $this->render_text($rnfEx->getMessage());
+-        }
++        $this->template->assign('projects', Project::find());
+     }
+ 
+-    /** Show one project */
++    /**
++     * @desc: Shows a project
++     */
+     public function show() {
+         try {
+-            $this->template->project= Project::find($this->params['id']);
++            $this->template->assign('project', Project::find($this->request->getParameter('id')));
+         } catch (ActiveRecordException $rnfEx) {
++            $this->flash('error', $rnfEx->getMessage());
+             $this->redirect_to('index');
+         }
+     }
+
+Deleted: applications/testor/app/controllers/tone_controller.php
+===================================================================
+--- applications/testor/app/controllers/tone_controller.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/controllers/tone_controller.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -1,99 +0,0 @@
+-<?php
+-/**
+- * 
+- * @desc: Test for: <ul><li>FormHelper::check_box</li><li>uniqueness_of validator</li><li>ActiveRecordHelper::error_message_on</li></ul>
+- * @package testor.controller
+- * $Id$
+- */ 
+-class ToneController extends ApplicationController {
+-    
+-    protected $use_layout= 'main';
+-    
+-    protected $models= 'tone';
+-    
+-    /** 
+-     * @desc: it lists all <em>tones</em> 
+-     */
+-    public function index() {
+-        $this->tone= Tone::find();
+-    }
+-    
+-    /** 
+-     * @desc: prints the form for adding a new <em>tone</em>, it submits to <a href="tone/create">create</a>
+-     */
+-    public function add() {
+-        $this->tone= new Tone();
+-    }
+-    
+-    /** 
+-     * @desc: creates a new <em>tone</em>
+-     */
+-    public function create() {
+-        $this->tone= new Tone($this->request->getParameter('tone'));
+-        $this->set_status($this->tone);
+-
+-        if ($this->tone->save() === FALSE) {
+-            $this->render('add');
+-        } else {
+-            $this->flash('notice', '<em>' . $this->tone->name . '</em> created');
+-            $this->redirect_to('index');
+-        }
+-    }
+-    
+-    /** 
+-     * @desc: prints the form for editing a <em>tone</em>, it submits to <a href="tone/update">update</a>
+-     */
+-    public function edit() {
+-        try {
+-            $this->tone= Tone::find($this->request->getParameter('id'));
+-        } catch (RecordNotFoundException $rnfEx) {
+-            $this->flash('error', $rnfEx->getMessage());
+-            $this->redirect_to('index');
+-        }
+-    }
+-
+-    /** 
+-     * @desc: updates a <em>tone</em>
+-     */
+-    public function update() {
+-        try {
+-            $this->tone= Tone::find($this->request->getParameter('id'))->attributes($this->request->getParameter('tone'));
+-            $this->set_status($this->tone);
+-            if ($this->tone->save() === FALSE) {
+-                $this->render('edit');
+-            } else {
+-                $this->flash('notice', $this->tone->name . ' updated');
+-                $this->redirect_to('index');
+-            }
+-        } catch (ActiveRecordException $arEx) {
+-            $this->logger->warn($arEx->getMessage());   
+-            $this->flash('error', $arEx->getMessage());
+-            $this->redirect_to('index');
+-        }
+-    }
+-
+-    private function set_status($tone) {
+-        if (!isset($this->params['tone']['status'])) {
+-          $tone->status=0;
+-        } else {
+-          $tone->status=1;
+-        }
+-    }
+-    
+-    /**
+-     * @desc: removes a <em>tone</em>
+-     */
+-    public function delete() {
+-        try {
+-            $tone= Tone::find($this->request->getParameter('id'));
+-            $tone->delete();
+-            $this->flash('notice', '<em>' . $tone->name . '</em> succesfully removed');
+-            $this->redirect_to('index');
+-        } catch (ActiveRecordException $arEx) {
+-            $this->flash('error', $arEx->getMessage());
+-            $this->redirect_to('index');
+-        }
+-    }
+-
+-}
+-
+
+Added: applications/testor/app/models/category.php
+===================================================================
+--- applications/testor/app/models/category.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/models/category.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,22 @@
++<?php
++/**
++ * This class is part of testor project
++ *
++ * @package testor.models
++ * $Id$
++ */
++class Category extends ActiveRecord {
++
++    /**
++     * Finds a Category
++     *
++     * @see ActiveRecord::build()
++     * @return mixed
++     */
++    public static function find() {
++        $args = func_get_args();
++        return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/models/category.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/models/manager.php
+===================================================================
+--- applications/testor/app/models/manager.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/models/manager.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,22 @@
++<?php
++/**
++ * This class is part of testor project
++ *
++ * @package testor.models
++ * $Id$
++ */
++class Manager extends ActiveRecord {
++
++    /**
++     * Finds a Manager
++     *
++     * @see ActiveRecord::build()
++     * @return mixed
++     */
++    public static function find() {
++        $args = func_get_args();
++        return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/models/manager.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/models/milestone.php
+===================================================================
+--- applications/testor/app/models/milestone.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/models/milestone.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,22 @@
++<?php
++/**
++ * This class is part of testor project
++ *
++ * @package testor.models
++ * $Id$
++ */
++class Milestone extends ActiveRecord {
++
++    /**
++     * Finds a Milestone
++     *
++     * @see ActiveRecord::build()
++     * @return mixed
++     */
++    public static function find() {
++        $args = func_get_args();
++        return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/models/milestone.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/models/portfolio.php
+===================================================================
+--- applications/testor/app/models/portfolio.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/models/portfolio.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,33 @@
++<?php
++ /**
++  * This class is part of testor project
++  *
++  * @package testor.models
++  * $Id$
++  */
++class Portfolio extends ActiveRecord {
++
++    protected function before_save() {
++        $this->name= htmlentities($this->name);
++        $this->validates()->presence_of('name');
++        $this->validates()->uniqueness_of('name');
++        return TRUE;
++    }
++
++    protected function before_delete() {
++        return !($this->name=='locknet.ro');
++    }
++    
++    /**
++     * Finds a Portfolio
++     *
++     * @see ActiveRecord::build()
++     * @return mixed
++     */
++    public static function find() {
++        $args = func_get_args();
++        return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/models/portfolio.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/models/project.php
+===================================================================
+--- applications/testor/app/models/project.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/models/project.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,28 @@
++<?php
++
++ /**
++  * This class is part of testor project
++  *
++  * @package testor.models
++  * $Id$
++  */
++class Project extends ActiveRecord {
++
++    protected $belongs_to= 'portfolio';
++    protected $has_one   = 'manager';
++    protected $has_many  = 'milestones';
++    protected $has_and_belongs_to_many = 'categories';
++    
++    /**
++     * Finds a Project
++     *
++     * @see ActiveRecord::build()
++     * @return mixed
++     */
++    public static function find() {
++        $args = func_get_args();
++        return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/models/project.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/portfolio/_form.phtml
+===================================================================
+--- applications/testor/app/views/portfolio/_form.phtml	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/views/portfolio/_form.phtml	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,12 @@
++<!-- $Id$ -->    
++<div>
++      <label for="portfolio_name">Name:</label>
++      <?=ActiveRecordHelper::error_message_on($portfolio, 'name');?>
++      <?=FormHelper::text_field($portfolio, 'name', array('size'=>35));?>
++</div>
++    
++<div>
++      <label for="portfolio_status">Status:</label>
++      <?=FormHelper::check_box($portfolio,'status');?>
++</div>
++
+
+
+Property changes on: applications/testor/app/views/portfolio/_form.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/portfolio/add.phtml
+===================================================================
+--- applications/testor/app/views/portfolio/add.phtml	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/views/portfolio/add.phtml	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,9 @@
++<!-- $Id$ --> 
++<form action="<?=URL::create('portfolio','create');?>" method="post">
++  <fieldset>
++    <legend>Add portfolio</legend>
++    <?=$this->render_partial(NULL, 'form');?>
++    <div><?=Form::submit('submit', 'Submit');?></div>
++  </fieldset>
++</form>
++
+
+
+Property changes on: applications/testor/app/views/portfolio/add.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/portfolio/edit.phtml
+===================================================================
+--- applications/testor/app/views/portfolio/edit.phtml	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/views/portfolio/edit.phtml	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,10 @@
++<!-- $Id$ --> 
++<form action="<?=URL::create('portfolio','update');?>" method="post">
++<input type="hidden" name="id" value="<?=$portfolio->id;?>" />
++  <fieldset>
++    <legend>Edit portfolio: <?=$portfolio->name;?></legend>
++    <?=$this->render_partial(NULL, 'form');?>
++    <div><?=Form::submit('submit', 'Edit');?></div>
++  </fieldset>
++</form>
++
+
+
+Property changes on: applications/testor/app/views/portfolio/edit.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/portfolio/index.phtml
+===================================================================
+--- applications/testor/app/views/portfolio/index.phtml	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/views/portfolio/index.phtml	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,34 @@
++<!-- $Id$ --> 
++<h5>All Portfolios</h5>
++
++<hr />
++
++<? if(isset($flash['notice'])):?>
++    <div class="flash_notice">
++        <div class="label">Note</div>
++        <div class="content"><?=$flash['notice'];?></div>
++    </div>
++<? endif;?>
++<? if(isset($flash['error'])):?>
++    <div class="flash_error">
++        <div class="label">Warning</div>
++        <div class="content"><?=$flash['error'];?></div>
++    </div>
++<? endif;?>
++
++<? if($portfolios->size()==0):?>
++  Didnt find any portfolio!
++<? else: ?>
++  <? foreach ($portfolios as $portfolio): ?>
++    <div id="e_<?=$portfolio->id;?>" class="portfolio_<?=$portfolio->status == '1' ? 'online' : 'offline';?>">
++      <a href="<?=URL::create('portfolio', 'edit',   array('id'=>$portfolio->id));?>">Edit</a> / 
++      <a href="<?=URL::create('portfolio', 'delete', array('id'=>$portfolio->id));?>">Delete</a>&nbsp;
++      <?=$portfolio->name;?>
++    </div>
++  <? endforeach; ?>
++<? endif; ?>
++
++<hr />
++
++<a href="<?=URL::create('portfolio', 'add');?>">Add a new Portfolio</a>
++
+
+
+Property changes on: applications/testor/app/views/portfolio/index.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/testor/app/views/project/index.phtml
+===================================================================
+--- applications/testor/app/views/project/index.phtml	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/views/project/index.phtml	2006-04-06 21:00:28 UTC (rev 391)
+@@ -1,5 +1,20 @@
+ <h5>All Projects</h5>
+ <!-- $Id$ -->
++<? if(isset($flash['notice'])):?>
++    <div class="flash_notice">
++        <div class="label">Note</div>
++        <div class="content"><?=$flash['notice'];?></div>
++    </div>
++<? endif;?>
++<? if(isset($flash['error'])):?>
++    <div class="flash_error">
++        <div class="label">Warning</div>
++        <div class="content"><?=$flash['error'];?></div>
++    </div>
++<? endif;?>
++ 
++<hr />
++
+ <table border="1">
+     <tr>
+         <td>&nbsp;</td>
+@@ -26,3 +41,4 @@
+         </tr>
+     <? endforeach; ?>
+ </table>
++
+
+Modified: applications/testor/db/schema.sql
+===================================================================
+--- applications/testor/db/schema.sql	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/db/schema.sql	2006-04-06 21:00:28 UTC (rev 391)
+@@ -11,11 +11,11 @@
+ -- --------------------------------------------------------
+ -- Table structure for table `tones`
+ 
+-CREATE TABLE tones (
+-  `id`      INT (11) PRIMARY KEY auto_increment,
+-  `name`    VARCHAR (255),
+-  `status`  INT(1)
+-) ENGINE=InnoDB;
++-- CREATE TABLE tones (
++--  `id`      INT (11) PRIMARY KEY auto_increment,
++--  `name`    VARCHAR (255),
++--  `status`  INT(1)
++-- ) ENGINE=InnoDB;
+ 
+ 
+ -- --------------------------------------------------------
+@@ -75,6 +75,7 @@
+ CREATE TABLE portfolios (
+   id        int(11)     NOT NULL auto_increment,
+   `name`    varchar(40) default NULL,
++  `status`  int(1)      NOT NULL default 1,
+   PRIMARY KEY  (id)
+ ) Engine=InnoDB;
+ 
+@@ -128,7 +129,7 @@
+ INSERT INTO `portfolios` ( `id` , `name` )
+     VALUES (NULL , 'locknet.ro');
+ INSERT INTO `managers` ( `id` , `first_name` , `last_name` )
+-    VALUES ( NULL , 'oancea', 'aurelian');
++    VALUES ( NULL , 'Oancea', 'Aurelian');
+ INSERT INTO `projects` ( `id` , `portfolio_id` , `manager_id`,`name` , `created_at` )
+     VALUES ( NULL , '1', '1', 'elproject', NOW());
+ INSERT INTO `milestones` ( `id` , `project_id` , `title` , `description` )
+
+Modified: applications/testor/public/stylesheet/testor.css
+===================================================================
+--- applications/testor/public/stylesheet/testor.css	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/public/stylesheet/testor.css	2006-04-06 21:00:28 UTC (rev 391)
+@@ -35,7 +35,7 @@
+   padding: 5px 10px;
+ }
+ 
+-.entry_on {
++.portfolio_online {
+   background: #a6f9cf;
+   /*color: white;*/
+   border-bottom: 1px solid black;
+@@ -43,7 +43,7 @@
+   margin: 2px;
+ }
+ 
+-.entry_off {
++.portfolio_offline {
+   background: #e3a6a6;
+   /*color: white;*/
+   border-bottom: 1px solid black;
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-04-04 18:41:49 UTC (rev 390)
++++ trunk/libs/action/controller/Base.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -398,6 +398,7 @@
+      * @param array params, additional parameters to pass with this redirect.
+      */
+     protected function redirect_to($action, $controller= NULL, $params = array(), $ext='html') {
++        if ($this->action_performed) return;
+         if ($controller === NULL) {
+             $controller= $this->params['controller'];
+         }
+
+
+
+From aurelian at berlios.de  Fri Apr  7 21:48:19 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Fri, 7 Apr 2006 21:48:19 +0200
+Subject: [Medick-svn] r392 - in trunk: . libs/medick
+Message-ID: <200604071948.k37JmJBE005558@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-04-07 21:48:18 +0200 (Fri, 07 Apr 2006)
+New Revision: 392
+
+Modified:
+   trunk/CHANGELOG
+   trunk/TODO
+   trunk/VERSION
+   trunk/libs/medick/Medick.php
+Log:
+ -- preparing for 0.2.2 release
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-04-06 21:00:28 UTC (rev 391)
++++ trunk/CHANGELOG	2006-04-07 19:48:18 UTC (rev 392)
+@@ -1,6 +1,19 @@
+ $Id$
+ (*) SVN version
+ 
++0.2.2(08.Apr.2006)
++    - Testor::Application more code samples for medick
++    - Implemented Route Requirements
++    - Fixed Cookies problems by adding a new class (Cookie) 
++      and methods to pull cookies for request or to add them to response
++    - Added CreoleSessionContainer a session handler for php on top of creole,
++      using a database as backend
++    - (fixed): FormHelper::check_box
++    - (fixed): ActiveRecordHelper::error_messages_on(Field)
++    - (fixed): Storing an ActiveRecord object in session
++    - (fixed): Rewrite on/off setting
++    - (fixed): Validates::uniqueness_of when updating  
++
+ 0.2.1(18.Mar.2006)
+     - Added ``environment" concept
+     - Added ActiveRecord::attributes() method
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-04-06 21:00:28 UTC (rev 391)
++++ trunk/TODO	2006-04-07 19:48:18 UTC (rev 392)
+@@ -5,9 +5,10 @@
+ 
+ *Planned features for 0.2 series*
+     # -environments (0.2.1)-
+-    # context like (0.2.2)
++    # context like (obsolete app.xml) (0.2.2)
+     # cheap cache in ActiveRecord (0.2.3)
+-    # routing requirements (0.2.3)
++    # obsolete DatabaseRow (0.2.3)
++    # -routing requirements (0.2.3)-
+     # expandable validators (0.2.4)
+     # customizable error messages (0.2.4)
+     # write in associations (0.2.5)
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-04-06 21:00:28 UTC (rev 391)
++++ trunk/VERSION	2006-04-07 19:48:18 UTC (rev 392)
+@@ -1 +1 @@
+-0.2.2-svn
++0.2.2
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-04-06 21:00:28 UTC (rev 391)
++++ trunk/libs/medick/Medick.php	2006-04-07 19:48:18 UTC (rev 392)
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.2.2-svn';
++        return '0.2.2';
+     }
+ 
+ }
+
+
+
+From aurelian at berlios.de  Sun Apr 16 10:12:45 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 16 Apr 2006 10:12:45 +0200
+Subject: [Medick-svn] r393 - in trunk: . libs/medick
+Message-ID: <200604160812.k3G8CjQh023927@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-04-16 10:12:43 +0200 (Sun, 16 Apr 2006)
+New Revision: 393
+
+Modified:
+   trunk/VERSION
+   trunk/libs/medick/Medick.php
+Log:
+ -- still alive, bumping the version to 0.2.3-svn
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-04-07 19:48:18 UTC (rev 392)
++++ trunk/VERSION	2006-04-16 08:12:43 UTC (rev 393)
+@@ -1 +1 @@
+-0.2.2
++0.2.3-svn
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-04-07 19:48:18 UTC (rev 392)
++++ trunk/libs/medick/Medick.php	2006-04-16 08:12:43 UTC (rev 393)
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.2.2';
++        return '0.2.3-svn';
+     }
+ 
+ }
+
+
+
+From aurelian at berlios.de  Sun Apr 16 18:34:28 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 16 Apr 2006 18:34:28 +0200
+Subject: [Medick-svn] r395 - trunk/libs/action/view
+Message-ID: <200604161634.k3GGYSJx001942@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-04-16 18:34:20 +0200 (Sun, 16 Apr 2006)
+New Revision: 395
+
+Modified:
+   trunk/libs/action/view/HTML.php
+Log:
+ -- added FormHelper::password_field
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-04-16 08:58:44 UTC (rev 394)
++++ trunk/libs/action/view/HTML.php	2006-04-16 16:34:20 UTC (rev 395)
+@@ -133,6 +133,35 @@
+         return $buff;
+     }
+ 
++    public static function password_field(ActiveRecord $object, $method, $options = array()) {
++        if (!$field= $object->getRow()->getFieldByName($method)) {
++            return; // ex?
++        }
++        $id   = strtolower(get_class($object)) . '_'.$method;
++        $name = strtolower(get_class($object)).'['.$method.']';
++        $buff = '';
++        $errors= FALSE;
++        if($field->hasErrors()) {
++            $buff .= '<div class="fieldWithErrors">';
++            $errors= TRUE;
++        }
++
++        $buff .= '<input type="password" id="' . $id . '" ';
++        $buff .= 'name="'.$name . '" ';
++        $buff .= 'value="'.$object->$method.'" ';
++        foreach ($options as $key=>$value) {
++            $buff .= $key . '="'.$value.'" ';
++        }
++        $buff .= ' />';
++        if ($errors) {
++            $buff .= '</div>';
++        }
++        return $buff;
++    }
++
++
++    
++
+     public static function text_area(ActiveRecord $object, $method, $options=array()) {
+         if (!$field= $object->getRow()->getFieldByName($method)) {
+             return; // ex?
+
+
+

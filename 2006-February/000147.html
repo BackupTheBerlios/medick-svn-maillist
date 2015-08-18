@@ -1,0 +1,171 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r356 - in trunk: . libs/action/controller libs/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r356%20-%20in%20trunk%3A%20.%20libs/action/controller%20libs/medick&In-Reply-To=%3C200602242001.k1OK1rUw009083%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000146.html">
+   <LINK REL="Next"  HREF="000148.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r356 - in trunk: . libs/action/controller libs/medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r356%20-%20in%20trunk%3A%20.%20libs/action/controller%20libs/medick&In-Reply-To=%3C200602242001.k1OK1rUw009083%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r356 - in trunk: . libs/action/controller libs/medick">aurelian at berlios.de
+       </A><BR>
+    <I>Fri Feb 24 21:01:53 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000146.html">[Medick-svn] r355 - applications/eltodo/app/views/layouts applications/eltodo/public applications/eltodo/public/stylesheet trunk trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/medick trunk/skel/public
+</A></li>
+        <LI>Next message: <A HREF="000148.html">[Medick-svn] r357 - applications/eltodo/db
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#147">[ date ]</a>
+              <a href="thread.html#147">[ thread ]</a>
+              <a href="subject.html#147">[ subject ]</a>
+              <a href="author.html#147">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-02-24 21:01:48 +0100 (Fri, 24 Feb 2006)
+New Revision: 356
+
+Modified:
+   trunk/boot.php
+   trunk/libs/action/controller/Dispatcher.php
+   trunk/libs/medick/Medick.php
+Log:
+ -- moved some includes
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2006-02-24 19:28:29 UTC (rev 355)
++++ trunk/boot.php	2006-02-24 20:01:48 UTC (rev 356)
+@@ -50,19 +50,11 @@
+ }
+ 
+ // load core classes
+-include_once('medick/Object.php');
+-include_once('medick/Exception.php');
+-include_once('medick/ErrorHandler.php');
++include_once('medick/Medick.php');
+ set_error_handler(array(new ErrorHandler(), 'raiseError'));
+-include_once('medick/util.php');
+-include_once('medick/Registry.php');
+ include_once('action/controller/Dispatcher.php');
+-include_once('medick/Version.php');
+ include_once('configurator/XMLConfigurator.php');
+ include_once('logger/Logger.php');
+-include_once('action/controller/Map.php');
+-include_once('action/controller/Route.php');
+-include_once('action/controller/Routing.php');
+ 
+ $conf_files = $_SERVER['MEDICK_APPLICATION_PATH'] . DIRECTORY_SEPARATOR . 'conf' .
+                         DIRECTORY_SEPARATOR . $_SERVER['MEDICK_APPLICATION_NAME'];
+@@ -72,7 +64,7 @@
+ 
+ $logger= Registry::put(new Logger($configurator), '__logger');
+ 
+-$logger-&gt;debug('Medick $v: ' . Version::getVersion());
++$logger-&gt;debug('Medick $v: ' . Medick::getVersion());
+ $logger-&gt;debug('Config: ' . $conf_files . '.xml');
+ $logger-&gt;debug('Routes: ' . $conf_files . '.routes.php');
+ include_once($conf_files . '.routes.php');
+
+Modified: trunk/libs/action/controller/Dispatcher.php
+===================================================================
+--- trunk/libs/action/controller/Dispatcher.php	2006-02-24 19:28:29 UTC (rev 355)
++++ trunk/libs/action/controller/Dispatcher.php	2006-02-24 20:01:48 UTC (rev 356)
+@@ -32,6 +32,8 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
++include_once('action/controller/Map.php');
++include_once('action/controller/Route.php');
+ include_once('action/controller/Routing.php');
+ include_once('action/controller/Request.php');
+ include_once('action/controller/Response.php');
+@@ -40,7 +42,7 @@
+ /**
+  * It knows how to dispatch a request
+  *
+- * @package locknet7.medick
++ * @package locknet7.action.controller
+  */
+ class Dispatcher extends Object {
+ 
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-02-24 19:28:29 UTC (rev 355)
++++ trunk/libs/medick/Medick.php	2006-02-24 20:01:48 UTC (rev 356)
+@@ -32,23 +32,25 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-/**
+- * Holds the current Medick version
+- * @package locknet7.medick
++// loads main framework dependecies.
++include_once('medick/Object.php');
++include_once('medick/Exception.php');
++include_once('medick/util.php');
++include_once('medick/ErrorHandler.php');
++include_once('medick/Registry.php');
++
++/** 
++ * @package locknet7.medick 
+  */
++class Medick extends Object {
+ 
+-class Version extends Object {
+-
+-    const TINY  = 5;
+-    const MINOR = 0;
+-    const MAJOR = 0;
+-
+     /**
+      * It gets the medick version.
++     * 
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return Version::MAJOR . '.' . Version::MINOR . '.' . Version::TINY . '-svn';
++        return '0.0.5-svn';
+     }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000146.html">[Medick-svn] r355 - applications/eltodo/app/views/layouts applications/eltodo/public applications/eltodo/public/stylesheet trunk trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/medick trunk/skel/public
+</A></li>
+	<LI>Next message: <A HREF="000148.html">[Medick-svn] r357 - applications/eltodo/db
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#147">[ date ]</a>
+              <a href="thread.html#147">[ thread ]</a>
+              <a href="subject.html#147">[ subject ]</a>
+              <a href="author.html#147">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

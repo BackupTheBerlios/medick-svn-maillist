@@ -1,0 +1,491 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r397 - in trunk: . libs/action/controller libs/action/controller/http libs/action/controller/templates libs/action/view libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-May/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r397%20-%20in%20trunk%3A%20.%20libs/action/controller%20libs/action/controller/http%20libs/action/controller/templates%20libs/action/view%20libs/active/record&In-Reply-To=%3C200605221731.k4MHVVx7008767%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000179.html">
+   <LINK REL="Next"  HREF="000181.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r397 - in trunk: . libs/action/controller libs/action/controller/http libs/action/controller/templates libs/action/view libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r397%20-%20in%20trunk%3A%20.%20libs/action/controller%20libs/action/controller/http%20libs/action/controller/templates%20libs/action/view%20libs/active/record&In-Reply-To=%3C200605221731.k4MHVVx7008767%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r397 - in trunk: . libs/action/controller libs/action/controller/http libs/action/controller/templates libs/action/view libs/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Mon May 22 19:31:31 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000179.html">[Medick-svn] r396 - in trunk/test: . test
+</A></li>
+        <LI>Next message: <A HREF="000181.html">[Medick-svn] r398 - in trunk: . libs/active/record libs/configurator skel/scripts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#180">[ date ]</a>
+              <a href="thread.html#180">[ thread ]</a>
+              <a href="subject.html#180">[ subject ]</a>
+              <a href="author.html#180">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-05-22 19:31:17 +0200 (Mon, 22 May 2006)
+New Revision: 397
+
+Modified:
+   trunk/CHANGELOG
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Response.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+   trunk/libs/action/controller/templates/error.phtml
+   trunk/libs/action/view/HTML.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Field.php
+Log:
+ -- see CHANGELOG form this commit
+
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/CHANGELOG	2006-05-22 17:31:17 UTC (rev 397)
+@@ -1,6 +1,17 @@
+ $Id$
+ (*) SVN version
+ 
++0.2.3(*)
++    - ActiveRecord: class open by removing some final declarations
++    - ActiveRecord: is not an abstract class anymore (awaiting php 5.2 changes on abstract static)  
++    - ActiveRecord: new methods ActiveRecord::isValid
++    - ActiveRecord: some API docs
++    - ActiveRecord::Field added toString and length methods
++    - HTTPRequest added new methods to get the current HTTPRequest method: getMethod, isPost, isGet
++    - ActionController ``beautiful&quot;(TM) error template
++    - ActionController will throw a medick exception when trying to load an unexistent before_filter  
++    - FormHelper minor code clean-ups and added password_field method
++      
+ 0.2.2(08.Apr.2006)
+     - Testor::Application more code samples for medick
+     - Implemented Route Requirements
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/action/controller/Base.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -156,11 +156,15 @@
+                                                    Request $request,
+                                                    Response $response,
+                                                    Exception $exception) {
++        $body = $response-&gt;getContent();
+         if(ob_get_length()) {
+             ob_end_clean();
+         }
+         $template = ActionView::factory('php');
+-        $template-&gt;error= $exception;
++        $template-&gt;assign('error', $exception);
++        $template-&gt;assign('request', $request);
++        $template-&gt;assign('response', $response);
++        $template-&gt;assign('body', $body);
+         $text= $template-&gt;render_file(MEDICK_PATH . '/libs/action/controller/templates/error.phtml');
+         $response-&gt;setStatus(HTTPResponse::SC_INTERNAL_SERVER_ERROR);
+         $response-&gt;setContent($text);
+@@ -506,14 +510,13 @@
+     private function add_before_filters() {
+         if (!is_array($this-&gt;before_filter)) {
+             throw new MedickException(
+-                $this-&gt;getClassName() . '-&gt;\$before_filter should be an array
+-                    of strings, each string representing a method name');
++                $this-&gt;getClassName() . '-&gt;$before_filter should be an array
++                    of strings, each string representing a protected method name');
+         }
+         foreach($this-&gt;before_filter as $filter_name) {
+             if (!$filter= $this-&gt;createMethod($filter_name)) {
+-                $this-&gt;logger-&gt;info(
+-                    'Could not create filter: ``'.$filter_name.'&quot;, skipping...');
+-                continue;
++                throw new MedickException('Cannot load filter: ' . $this-&gt;getClassName() . '::' . $filter_name . 
++                                    ' Call to undefined method: ' .$this-&gt;getClassName() . '::' . $filter_name);
+             }
+             // a filter should be declared as protected.
+             if (!$filter-&gt;isProtected()) {
+
+Modified: trunk/libs/action/controller/Response.php
+===================================================================
+--- trunk/libs/action/controller/Response.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/action/controller/Response.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -93,4 +93,3 @@
+     }
+ 
+ }
+-
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -44,6 +44,8 @@
+  */
+ class HTTPRequest extends Request {
+ 
++    private $method;
++    
+     /** @var Session */
+     private $session;
+ 
+@@ -67,6 +69,7 @@
+      * @todo a Cookie class should be written.
+      */
+     public function HTTPRequest() {
++        $this-&gt;method= isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
+         foreach (array_merge($_GET,$_POST) as $key=&gt;$value) {
+             $this-&gt;setParameter($key, $value);
+         }
+@@ -92,6 +95,18 @@
+         $this-&gt;headers = HTTPRequest::getAllHeaders();
+     }
+ 
++    public function getMethod() {
++        return $this-&gt;method;
++    }
++    
++    public function isPost() {
++        return $this-&gt;method == 'POST';
++    }
++    
++    public function isGet() {
++        return $this-&gt;method == 'GET';
++    }
++    
+     public function getCookies() {
+         return $this-&gt;cookies;
+     }
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -68,9 +68,7 @@
+     const SC_SERVICE_UNAVAILABLE = 503;
+ 
+     /** Constructor */
+-    public function HTTPResponse() {
+-
+-    }
++    public function HTTPResponse() {    }
+     
+     /**
+      * Sets the header $name with $value
+
+Modified: trunk/libs/action/controller/templates/error.phtml
+===================================================================
+--- trunk/libs/action/controller/templates/error.phtml	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/action/controller/templates/error.phtml	2006-05-22 17:31:17 UTC (rev 397)
+@@ -2,16 +2,21 @@
+         &quot;<A HREF="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd</A>&quot;&gt;
+ &lt;html xmlns=&quot;<A HREF="http://www.w3.org/1999/xhtml">http://www.w3.org/1999/xhtml</A>&quot; lang=&quot;en&quot; xml:lang=&quot;en&quot;&gt;
+ &lt;!-- $Id$ --&gt;
+-    &lt;head&gt;
+-        &lt;title&gt;Server Error!&lt;/title&gt;
+-        &lt;style type=&quot;text/css&quot; media=&quot;all&quot;&gt;
+-            body { margin: 3px; padding: 3px; border:1px solid red; font-size: .9em;
+-            font-family: &quot;Lucida Grande&quot;, Helvetica, Tahoma, sans-serif; }
+-            h1 { text-align:center; }
+-            #container { margin: 3px; padding: 3px; }
+-        &lt;/style&gt;
+-    &lt;/head&gt;
+-    &lt;body&gt;
++  &lt;head&gt;
++    &lt;title&gt;Server Error!&lt;/title&gt;
++    &lt;style type=&quot;text/css&quot; media=&quot;all&quot;&gt;
++      html * { padding:0; margin:0; }
++      body * { padding:10px 20px; }
++      body * * { padding:0; }
++      body { font:small sans-serif; }
++      body&gt;div { border-bottom:1px solid #ddd; }
++      h1 { font-weight:normal; }
++      h2 { margin-bottom:.8em; }
++      #container { background: #ffc; }
++      #container h2 { font-weight: normal; color: #666; }
++    &lt;/style&gt;
++  &lt;/head&gt;
++  &lt;body&gt;
+        &lt;div id=&quot;container&quot;&gt;
+        &lt;h1&gt;Cannot process your request!&lt;/h1&gt;
+            &lt;h2&gt;&lt;?=get_class($error);?&gt;&lt;/h2&gt;
+@@ -29,6 +34,8 @@
+            Backtrace:&lt;br /&gt;
+            &lt;pre&gt;&lt;?=$error-&gt;getTraceAsString();?&gt;&lt;/pre&gt;
+            &lt;hr /&gt;
++           &lt;h2&gt;Request Info:&lt;/h2&gt;
++           &lt;?=$request-&gt;toString();?&gt;
+         &lt;/div&gt;
+     &lt;/body&gt;
+ &lt;/html&gt;
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/action/view/HTML.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -107,20 +107,18 @@
+  */
+ class FormHelper extends Object {
+ 
+-    public static function text_field(ActiveRecord $object, $method, $options = array()) {
+-        if (!$field= $object-&gt;getRow()-&gt;getFieldByName($method)) {
++    public static function input_field(ActiveRecord $object, $method, $options= array(), $type='text') {
++        if (!$field= FormHelper::get_field($object, $method)) {
+             return; // ex?
+         }
+-        $id   = strtolower(get_class($object)) . '_'.$method;
+-        $name = strtolower(get_class($object)).'['.$method.']';
++        list($id, $name) = FormHelper::attributes($object, $method);
+         $buff = '';
+         $errors= FALSE;
+         if($field-&gt;hasErrors()) {
+             $buff .= '&lt;div class=&quot;fieldWithErrors&quot;&gt;';
+             $errors= TRUE;
+         }
+-
+-        $buff .= '&lt;input type=&quot;text&quot; id=&quot;' . $id . '&quot; ';
++        $buff .= '&lt;input type=&quot;' . $type . '&quot; id=&quot;' . $id . '&quot; ';
+         $buff .= 'name=&quot;'.$name . '&quot; ';
+         $buff .= 'value=&quot;'.$object-&gt;$method.'&quot; ';
+         foreach ($options as $key=&gt;$value) {
+@@ -132,36 +130,33 @@
+         }
+         return $buff;
+     }
++    
++    public static function text_field(ActiveRecord $object, $method, $options = array()) {
++        return FormHelper::input_field($object, $method, $options);
++    }
+ 
+     public static function password_field(ActiveRecord $object, $method, $options = array()) {
+-        if (!$field= $object-&gt;getRow()-&gt;getFieldByName($method)) {
+-            return; // ex?
+-        }
+-        $id   = strtolower(get_class($object)) . '_'.$method;
+-        $name = strtolower(get_class($object)).'['.$method.']';
+-        $buff = '';
+-        $errors= FALSE;
+-        if($field-&gt;hasErrors()) {
+-            $buff .= '&lt;div class=&quot;fieldWithErrors&quot;&gt;';
+-            $errors= TRUE;
+-        }
+-
+-        $buff .= '&lt;input type=&quot;password&quot; id=&quot;' . $id . '&quot; ';
+-        $buff .= 'name=&quot;'.$name . '&quot; ';
+-        $buff .= 'value=&quot;'.$object-&gt;$method.'&quot; ';
+-        foreach ($options as $key=&gt;$value) {
+-            $buff .= $key . '=&quot;'.$value.'&quot; ';
+-        }
+-        $buff .= ' /&gt;';
+-        if ($errors) {
+-            $buff .= '&lt;/div&gt;';
+-        }
+-        return $buff;
++        return FormHelper::input_field($object, $method, $options, 'password');
+     }
+ 
+-
++    /**
++     * @return medick.active.record.Field
++     */ 
++    protected static function get_field(ActiveRecord $object, $method) {
++        return $object-&gt;getRow()-&gt;getFieldByName($method);
++    }
+     
+-
++    /**
++     * Gets form element attributes
++     * 
++     * @return array
++     */ 
++    protected static function attributes(ActiveRecord $object, $method) {
++        $id   = strtolower($object-&gt;getClassName()) . '_'.$method;
++        $name = strtolower($object-&gt;getClassName()).'['.$method.']';
++        return array($id, $name);
++    }
++    
+     public static function text_area(ActiveRecord $object, $method, $options=array()) {
+         if (!$field= $object-&gt;getRow()-&gt;getFieldByName($method)) {
+             return; // ex?
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/active/record/Base.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -104,7 +104,7 @@
+      * @param array, params, parameters as pair of `field name` =&gt; `value`
+      * @final because there is no reason to overwrite in parent classes, PHP Engine will call this constructor by default.
+      */
+-    public final function ActiveRecord($params = array()) {
++    public function ActiveRecord($params = array()) {
+         ActiveRecord::establish_connection();
+         $this-&gt;class_name = $this-&gt;getClassName();
+         $this-&gt;table_name = Inflector::pluralize(strtolower(Inflector::underscore($this-&gt;class_name)));
+@@ -200,8 +200,6 @@
+      * @param string method name
+      * @param array arguments
+      * @throws ActiveRecordException
+-     */
+-     
+     public function __call($method, $arguments) {
+         if ($method == 'destroy') return $this-&gt;delete();
+         $know_methods = array('save', 'insert', 'update', 'delete');
+@@ -215,7 +213,8 @@
+             $this-&gt;$method($arguments[0]);
+         }
+     }
+-    
++    */    
++
+     /** returns a string representation of this object */
+     public function toString() {
+         $string = '';
+@@ -251,6 +250,13 @@
+         return $this-&gt;row;
+     }
+ 
++    /**
++     * 
++     */ 
++    public function isValid() {
++        return count($this-&gt;row-&gt;collectErrors()) == 0;
++    }
++
+     protected function validates () {
+         return new Validator($this-&gt;row);
+     }
+@@ -344,8 +350,8 @@
+      *      $author-&gt;save(); // performs the update and returns the number of affected rows (1).
+      * &lt;/code&gt;
+      */
+-    public final function save() {
+-        if ( !$this-&gt;before_save() or count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
++    public function save() {
++        if ( !$this-&gt;before_save() || !$this-&gt;isValid()) {
+             return false;
+         }
+         if ($this-&gt;row-&gt;getPrimaryKey()-&gt;isAffected) {
+@@ -371,7 +377,7 @@
+      * @return int next primary key id or, 1 (affected rows).
+      * @throws SQLException
+      */
+-    public final function insert() {
++    public function insert() {
+         if ( !$this-&gt;before_insert() or count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+             return false;
+         }
+@@ -398,7 +404,7 @@
+      * @return int affected rows.
+      * @throws SQLException
+      */
+-    public final function update() {
++    public function update() {
+         if ( !$this-&gt;before_update() or count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+             return false;
+         }
+@@ -406,8 +412,23 @@
+         $this-&gt;after_update();
+         return $af;
+     }
+-
+-    public final function attributes(/*Array*/ $params=array()) {
++    
++    /**
++     * Sets an array af attributes
++     *
++     * &lt;code&gt;
++     *   $author= Author::find(5); // select * from authors where id=5;
++     *   $author-&gt;attributes(array('name'=&gt;'Jon'))-&gt;save(); // update authors set name='Jon' where id=5;
++     * &lt;/code&gt;
++     * This method is also useful when receiving an array of parameters from HTTPRequest (form).
++     * &lt;code&gt;
++     *   // controller
++     *   $user= User::find($request-&gt;getParameter('id'))-&gt;attributes($request-&gt;getParameter('user'))-&gt;save();
++     * &lt;/code&gt;
++     *
++     * @return ActiveRecord
++     */ 
++    public function attributes(/*Array*/ $params=array()) {
+         foreach($params as $name=&gt;$value) {
+             $this-&gt;$name=$value;
+         }
+@@ -432,7 +453,7 @@
+      * @return int affected rows.
+      * @throws SQLException
+      */
+-    public final function delete() {
++    public function delete() {
+         if (!$this-&gt;before_delete() || count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+             return false;
+         }
+@@ -534,7 +555,13 @@
+     }
+     // }}}
+ 
+-    abstract static function find();
++    /**
++     * This method should be overwritten in child classes, 
++     * from php 5.2 you cannot declare a method as abstract and static
++     */
++    static function find() {
++        throw new MedickException('ActiveRecord::find() should be overwritten in child classes!');
++    }
+ 
+     public static function build(QueryBuilder $builder) {
+         $class_name= $builder-&gt;getOwner();
+
+Modified: trunk/libs/active/record/Field.php
+===================================================================
+--- trunk/libs/active/record/Field.php	2006-05-14 14:25:53 UTC (rev 396)
++++ trunk/libs/active/record/Field.php	2006-05-22 17:31:17 UTC (rev 397)
+@@ -152,5 +152,14 @@
+     public function setValue($value) {
+         $this-&gt;value = $value;
+     }
++
++    public function toString() {
++        return $this-&gt;value;
++    }
++
++    public function length() {
++        return strlen($this-&gt;value);
++    }
++    
+ }
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000179.html">[Medick-svn] r396 - in trunk/test: . test
+</A></li>
+	<LI>Next message: <A HREF="000181.html">[Medick-svn] r398 - in trunk: . libs/active/record libs/configurator skel/scripts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#180">[ date ]</a>
+              <a href="thread.html#180">[ thread ]</a>
+              <a href="subject.html#180">[ subject ]</a>
+              <a href="author.html#180">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

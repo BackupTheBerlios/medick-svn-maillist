@@ -1,0 +1,882 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r425 - applications/cookbook/conf	applications/eltodo/conf applications/testor/conf trunk	trunk/bin trunk/libs/active/record trunk/libs/configurator	trunk/skel trunk/skel/app trunk/skel/config trunk/skel/db	trunk/skel/public trunk/skel/public/stylesheet
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-July/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r425%20-%20applications/cookbook/conf%0A%09applications/eltodo/conf%20applications/testor/conf%20trunk%0A%09trunk/bin%20trunk/libs/active/record%20trunk/libs/configurator%0A%09trunk/skel%20trunk/skel/app%20trunk/skel/config%20trunk/skel/db%0A%09trunk/skel/public%20trunk/skel/public/stylesheet&In-Reply-To=%3C200607231220.k6NCKvsX010259%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000203.html">
+   <LINK REL="Next"  HREF="000206.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r425 - applications/cookbook/conf	applications/eltodo/conf applications/testor/conf trunk	trunk/bin trunk/libs/active/record trunk/libs/configurator	trunk/skel trunk/skel/app trunk/skel/config trunk/skel/db	trunk/skel/public trunk/skel/public/stylesheet</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r425%20-%20applications/cookbook/conf%0A%09applications/eltodo/conf%20applications/testor/conf%20trunk%0A%09trunk/bin%20trunk/libs/active/record%20trunk/libs/configurator%0A%09trunk/skel%20trunk/skel/app%20trunk/skel/config%20trunk/skel/db%0A%09trunk/skel/public%20trunk/skel/public/stylesheet&In-Reply-To=%3C200607231220.k6NCKvsX010259%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r425 - applications/cookbook/conf	applications/eltodo/conf applications/testor/conf trunk	trunk/bin trunk/libs/active/record trunk/libs/configurator	trunk/skel trunk/skel/app trunk/skel/config trunk/skel/db	trunk/skel/public trunk/skel/public/stylesheet">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Sun Jul 23 14:20:57 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000203.html">[Medick-svn] r423 - in trunk: . docs/medick.website libs/action/controller libs/active/record libs/medick
+</A></li>
+        <LI>Next message: <A HREF="000206.html">[Medick-svn] r426 - in trunk: . bin libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#205">[ date ]</a>
+              <a href="thread.html#205">[ thread ]</a>
+              <a href="subject.html#205">[ subject ]</a>
+              <a href="author.html#205">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-07-23 14:20:32 +0200 (Sun, 23 Jul 2006)
+New Revision: 425
+
+Added:
+   applications/cookbook/conf/database.ini
+   applications/eltodo/conf/database.ini
+   applications/testor/conf/database.ini
+   trunk/skel/app/
+   trunk/skel/app/app_controller.php
+   trunk/skel/config/database.ini
+   trunk/skel/db/
+   trunk/skel/db/schema.sql
+   trunk/skel/public/index.html
+   trunk/skel/public/stylesheet/medick.css
+Modified:
+   applications/cookbook/conf/cookbook.xml
+   applications/eltodo/conf/eltodo.xml
+   applications/testor/conf/testor.xml
+   trunk/CHANGELOG
+   trunk/bin/medick.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/configurator/IConfigurator.php
+   trunk/libs/configurator/XMLConfigurator.php
+   trunk/skel/config/application.xml
+Log:
+ -- moved database configuration settings from xml file to database.ini file
+ -- updated applications to use the new database configurations
+ -- refactored bin/medick.php
+
+
+Modified: applications/cookbook/conf/cookbook.xml
+===================================================================
+--- applications/cookbook/conf/cookbook.xml	2006-07-15 11:50:01 UTC (rev 424)
++++ applications/cookbook/conf/cookbook.xml	2006-07-23 12:20:32 UTC (rev 425)
+@@ -47,14 +47,6 @@
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
+         &lt;!-- database(s) settings --&gt;
+-        &lt;database default=&quot;one&quot;&gt;
+-            &lt;dsn id = &quot;one&quot;
+-                 phptype  = &quot;mysql&quot;
+-                 hostspec = &quot;localhost&quot;
+-                 database = &quot;cookbook&quot;
+-                 username = &quot;root&quot;
+-                 password = &quot;virus&quot; /&gt;
+-        &lt;/database&gt;
+     &lt;/environment&gt;
+ 
+     &lt;!-- a sample test environment --&gt;
+@@ -83,12 +75,6 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
+-        &lt;!-- database(s) settings --&gt;
+-        &lt;database default=&quot;one&quot;&gt;
+-            &lt;dsn id = &quot;one&quot;
+-                 phptype  = &quot;sqlite&quot;
+-                 database = &quot;/wwwroot/medick/applications/cookbook/db/cookbook-sqlite.db&quot; /&gt;
+-        &lt;/database&gt;
+     &lt;/environment&gt;
+   
+ &lt;/application&gt;
+
+Added: applications/cookbook/conf/database.ini
+===================================================================
+--- applications/cookbook/conf/database.ini	2006-07-15 11:50:01 UTC (rev 424)
++++ applications/cookbook/conf/database.ini	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,34 @@
++;
++; $Id$
++;
++
++; 
++; database.ini format:
++; [section] -&gt; environment name
++; phptype -&gt; database connection driver 
++; database -&gt; database name
++; username -&gt; username
++; password -&gt; password
++; Connection flags:
++; persistent=PERSISTENT to mark the connection as beeing persistent
++;
++
++[localhost]
++phptype=mysql
++hostspec=localhost
++database=cookbook
++username=root
++password=virus
++persistent=PERSISTENT
++
++[live]
++phptype=mysql
++hostspec=localhost
++database=cookbook
++username=cookbook
++password=sarl7jKa
++
++[test]
++phptype=sqlite
++database=db/cookbook.sqilte.db
++
+
+
+Property changes on: applications/cookbook/conf/database.ini
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/eltodo/conf/database.ini
+===================================================================
+--- applications/eltodo/conf/database.ini	2006-07-15 11:50:01 UTC (rev 424)
++++ applications/eltodo/conf/database.ini	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,34 @@
++;
++; $Id$
++;
++
++; 
++; database.ini format:
++; [section] -&gt; environment name
++; phptype -&gt; database connection driver 
++; database -&gt; database name
++; username -&gt; username
++; password -&gt; password
++; Connection flags:
++; persistent=PERSISTENT to mark the connection as beeing persistent
++;
++
++[localhost]
++phptype=mysql
++hostspec=localhost
++database=eltodo
++username=root
++password=virus
++
++[live]
++phptype=mysql
++hostspec=localhost
++database=eltodo
++username=root
++password=sol89aNi
++
++[test]
++phptype=sqlite
++hostspec=localhost
++database=db/eltodo.sqilte.db
++
+
+
+Property changes on: applications/eltodo/conf/database.ini
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/eltodo/conf/eltodo.xml
+===================================================================
+--- applications/eltodo/conf/eltodo.xml	2006-07-15 11:50:01 UTC (rev 424)
++++ applications/eltodo/conf/eltodo.xml	2006-07-23 12:20:32 UTC (rev 425)
+@@ -29,15 +29,6 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
+-        &lt;!-- database(s) settings --&gt;
+-        &lt;database default=&quot;one&quot;&gt;
+-            &lt;dsn id = &quot;one&quot;
+-                 phptype  = &quot;mysql&quot;
+-                 hostspec = &quot;localhost&quot;
+-                 database = &quot;eltodo&quot;
+-                 username = &quot;root&quot;
+-                 password = &quot;virus&quot; /&gt;
+-        &lt;/database&gt;
+     &lt;/environment&gt;
+ 
+     &lt;!-- a sample test environment --&gt;
+@@ -66,12 +57,6 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
+-        &lt;!-- database(s) settings --&gt;
+-        &lt;database default=&quot;one&quot;&gt;
+-            &lt;dsn id = &quot;one&quot;
+-                 phptype  = &quot;sqlite&quot;
+-                 database = &quot;/wwwroot/medick/applications/eltodo/db/eltodo-sqlite.db&quot; /&gt;
+-        &lt;/database&gt;
+     &lt;/environment&gt;
+   
+ &lt;/application&gt;
+
+Added: applications/testor/conf/database.ini
+===================================================================
+--- applications/testor/conf/database.ini	2006-07-15 11:50:01 UTC (rev 424)
++++ applications/testor/conf/database.ini	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,34 @@
++;
++; $Id$
++;
++
++; 
++; database.ini format:
++; [section] -&gt; environment name
++; phptype -&gt; database connection driver 
++; database -&gt; database name
++; username -&gt; username
++; password -&gt; password
++; Connection flags:
++; persistent=PERSISTENT to mark the connection as beeing persistent
++;
++
++[gremlin]
++phptype=mysql
++hostspec=localhost
++database=testor
++username=root
++password=virus
++
++[testor]
++phptype=mysql
++hostspec=localhost
++database=testor
++username=root
++password=sol89aNi
++
++[test]
++phptype=sqlite
++hostspec=localhost
++database=db/testor.sqilte.db
++
+
+
+Property changes on: applications/testor/conf/database.ini
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/testor/conf/testor.xml
+===================================================================
+--- applications/testor/conf/testor.xml	2006-07-15 11:50:01 UTC (rev 424)
++++ applications/testor/conf/testor.xml	2006-07-23 12:20:32 UTC (rev 425)
+@@ -32,15 +32,6 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
+-        &lt;!-- database(s) settings --&gt;
+-        &lt;database default=&quot;one&quot;&gt;
+-            &lt;dsn id = &quot;one&quot;
+-                 phptype  = &quot;mysql&quot;
+-                 hostspec = &quot;localhost&quot;
+-                 database = &quot;testor&quot;
+-                 username = &quot;root&quot;
+-                 password = &quot;sacosica&quot; /&gt;
+-        &lt;/database&gt;
+     &lt;/environment&gt;
+ 
+     &lt;!-- a sample test environment --&gt;
+@@ -69,15 +60,6 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
+-        &lt;!-- database(s) settings --&gt;
+-        &lt;database default=&quot;one&quot;&gt;
+-            &lt;dsn id = &quot;one&quot;
+-                phptype  = &quot;pgsql&quot;
+-                hostspec = &quot;localhost&quot;
+-                username = &quot;albeit&quot;
+-                password = &quot;pri$6g&quot;
+-                database = &quot;testor&quot; /&gt;
+-        &lt;/database&gt;
+     &lt;/environment&gt;
+   
+ &lt;/application&gt;
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/CHANGELOG	2006-07-23 12:20:32 UTC (rev 425)
+@@ -1,6 +1,10 @@
+ $Id$
+ (*) SVN version
+ 
++0.3.0pre2-svn (*)
++    - refactored bin/medick.php
++    - moved database configuration settings from xml configuration file to database.ini  
++
+ 0.3.0pre1 (08.Jul.2006)
+     - Implemented a new validation API
+     - (fixed): Request::toString for multiple level array 
+
+Modified: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/bin/medick.php	2006-07-23 12:20:32 UTC (rev 425)
+@@ -108,12 +108,21 @@
+                               =&gt; 'scripts'. DIRECTORY_SEPARATOR . 'generator.php',
+   'skel' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'application.xml'
+                               =&gt; 'conf'   . DIRECTORY_SEPARATOR . $short_name.'.xml',
++  'skel' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.ini'
++                              =&gt; 'conf'   . DIRECTORY_SEPARATOR . 'database.ini',
++  'skel' . DIRECTORY_SEPARATOR . 'db'     . DIRECTORY_SEPARATOR . 'schema.sql'
++                              =&gt; 'db'     . DIRECTORY_SEPARATOR . 'schema.sql',
++  'skel' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'index.html'
++                              =&gt; 'public' . DIRECTORY_SEPARATOR . 'index.html',
++  'skel' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'stylesheet' . DIRECTORY_SEPARATOR . 'medick.css'
++                              =&gt; 'public' . DIRECTORY_SEPARATOR . 'stylesheet' . DIRECTORY_SEPARATOR . $short_name . '.css',
++  'skel' . DIRECTORY_SEPARATOR . 'app'    . DIRECTORY_SEPARATOR . 'app_controller.php'
++                              =&gt; 'app'    . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR . 'application.php',
+   'skel' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'application.routes.php'
+                               =&gt; 'conf'   . DIRECTORY_SEPARATOR . $short_name.'.routes.php'
+ );
+ 
+ $search= array(
+-            // '${LOG}',
+             '${medick.core}',
+             '${app.path}',
+             '${app.name}',
+@@ -123,7 +132,6 @@
+           );
+ 
+ $replace= array(
+-            // $app_location.DIRECTORY_SEPARATOR.$folders['log'].DIRECTORY_SEPARATOR.$short_name.'.log',
+             $medick_core,
+             $app_location,
+             $short_name,
+@@ -138,75 +146,9 @@
+     write_file($contents, $app_location.DIRECTORY_SEPARATOR.$folders[$to].DIRECTORY_SEPARATOR.$orig);
+ }
+ 
+-// plain files.
++// plain file
+ write_file(' ',$app_location.DIRECTORY_SEPARATOR.$folders['log'].DIRECTORY_SEPARATOR.$short_name.'.log',0777);
+ 
+-$schema_sql=&lt;&lt;&lt;EOSQL
+--- \$Id$
+--- Database Schema for $short_name project
+-
+-EOSQL;
+-
+-$css=&lt;&lt;&lt;EOCSS
+-/* stylesheet for $short_name project */
+-/* \$Id$ */
+-
+-body {
+-    margin: 20px;
+-    padding: 20px;
+-    border: 1px solid black;
+-    font-family:verdana, arial, helvetica, sans-serif;
+-}
+-EOCSS;
+-
+-$index_html=&lt;&lt;&lt;EOHTML
+-&lt;html&gt;
+-  &lt;head&gt;
+-    &lt;!-- \$Id$ --&gt;
+-    &lt;title&gt;Welcome to Medick!&lt;/title&gt;
+-    &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
+-    &lt;style&gt;
+-      body { margin: 20px; padding: 20px; border: 1px solid black; font-family:verdana, arial, helvetica, sans-serif; }
+-    &lt;/style&gt;
+-  &lt;/head&gt;
+-  &lt;body&gt;
+-    &lt;h3&gt;&lt;center&gt;Welcome To Medick&lt;/center&gt;&lt;/h3&gt;
+-    &lt;p&gt;&lt;b&gt;Application:&lt;/b&gt; $short_name&lt;/p&gt;
+-    &lt;p&gt;&lt;b&gt;Develop $short_name on: &lt;/b&gt;$app_location&lt;/p&gt;
+-    &lt;p&gt;Setup the WELCOME route in
+-        &lt;i&gt;$app_location/config/$short_name.routes.php&lt;/i&gt;, &lt;br /&gt;
+-        and remove this file ($app_location/public/index.html).
+-    &lt;/p&gt;
+-    &lt;p&gt;Ask for support on medick &lt;a href=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-devel">https://lists.berlios.de/mailman/listinfo/medick-devel</A>&quot;&gt;development list&lt;/a&gt;.&lt;/p&gt;
+-  &lt;/body&gt;
+-&lt;/html&gt;
+-
+-EOHTML;
+-
+-$application_controller=&lt;&lt;&lt;EOCLASS
+-&lt;?php
+-
+-  /**
+-   * This class is part of $short_name project
+-   *
+-   * Methods added here will be available in all your controllers.
+-   * \$Id$
+-   * @package $app_name.controllers
+-   */
+-  class ApplicationController extends ActionController {
+-
+-  }
+-
+-EOCLASS;
+-
+-write_file($index_html, $app_location.DIRECTORY_SEPARATOR.$folders['public'].DIRECTORY_SEPARATOR.'index.html');
+-
+-write_file($application_controller, $app_location.DIRECTORY_SEPARATOR.$folders['controllers'].DIRECTORY_SEPARATOR.'application.php');
+-
+-write_file($css, $app_location.DIRECTORY_SEPARATOR.$folders['css'].DIRECTORY_SEPARATOR.'medick.css');
+-
+-write_file($schema_sql,$app_location.DIRECTORY_SEPARATOR.$folders['db'].DIRECTORY_SEPARATOR.'schema.sql');
+-
+ echo &quot;\nMedick (\$v: $medick_version) [ DONE ].\n&quot;;
+ 
+ ?&gt;
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/libs/active/record/Base.php	2006-07-23 12:20:32 UTC (rev 425)
+@@ -33,7 +33,6 @@
+ // }}}
+ 
+ // ActiveRecord dependencies.
+-// include_once('active/record/DatabaseRow.php');
+ include_once('active/record/Field.php');
+ include_once('active/record/RowsAggregate.php');
+ include_once('active/record/QueryBuilder.php');
+@@ -45,6 +44,13 @@
+ include_once('creole/Creole.php');
+ include_once('creole/CreoleTypes.php');
+ 
++
++/**
++ * Cached Database table information
++ * 
++ * @package medick.active.record
++ * @author Oancea Aurelian
++ */ 
+ class ActiveRecordTableInfo extends Object {
+     static $instance= NULL;
+     static function getInstance(Connection $conn, $table_name) {
+@@ -312,6 +318,11 @@
+                );
+     }
+     
++    /**
++     * Check if this object has errors
++     *
++     * @return bool TRUE if it has
++     */ 
+     public function hasErrors() {
+         return sizeof($this-&gt;errors) &gt; 0;
+     }
+@@ -321,7 +332,6 @@
+     }
+     
+     public function isValid($force= FALSE) {
+-        // return $this-&gt;collect_errors() === 0;
+         if ($this-&gt;collected) return !$this-&gt;hasErrors();
+         else return $this-&gt;collect_errors($force) === 0;
+     }
+@@ -667,6 +677,7 @@
+ 
+     /**
+      * Merge ResultSet into RowsAggregate
++     *
+      * @return RowsAggregate
+      */ 
+     protected static function fetch_all(ResultSet $rs, ReflectionClass $class) {
+@@ -679,18 +690,13 @@
+     }
+ 
+     /**
+-     * Establish A Database Connection
++     * It gets a Creole Database Connection
+      *
+-     * @return Creole database connection
+-     * @deprecate use ActiveRecord::connection, I want to use short names
+-     */
+-    public static function establish_connection() {
+-        return ActiveRecord::connection();
+-    }
+-
++     * @return Connection 
++     */ 
+     protected static function connection() {
+         if (ActiveRecord::$conn === NULL) {
+-            ActiveRecord::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn());
++            ActiveRecord::$conn = Creole::getConnection(ActiveRecord::parse_dsn());
+         }
+         return ActiveRecord::$conn;
+     }
+@@ -699,8 +705,22 @@
+      * Close the Database Connection
+      */
+     public static function close_connection() {
+-        ActiveRecord::$conn= Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn())-&gt;close();
++        ActiveRecord::$conn= Creole::getConnection(ActiveRecord::parse_dsn())-&gt;close();
+     }
++    
++    /**
++     * Parse database.ini file to get a proper dsn
++     * 
++     * @return array
++     */ 
++    private static function parse_dsn() {
++        $ini_file= Registry::get('__configurator')-&gt;getApplicationPath() . DIRECTORY_SEPARATOR . 'conf' . DIRECTORY_SEPARATOR . 'database.ini';
++        if (!is_file($ini_file)) {
++            throw new ActiveRecordException('Cannot load database settings from: ' . $ini_file . ' No such file or directory!');
++        }
++        $settings= parse_ini_file($ini_file, true);
++        return $settings[Registry::get('__configurator')-&gt;getEnvName()];
++    }
+     // }}}
+ }
+ 
+
+Modified: trunk/libs/configurator/IConfigurator.php
+===================================================================
+--- trunk/libs/configurator/IConfigurator.php	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/libs/configurator/IConfigurator.php	2006-07-23 12:20:32 UTC (rev 425)
+@@ -48,6 +48,8 @@
+  * From medick 0.2, the options will be splitted based on context, and we will
+  * provide web specific configuration section as well as logger and database contextes.
+  * 
++ * From medick 0.3.0 this class and the old configuration methods will be removed
++ * 
+  * @package medick.configurator
+  * @see XMLConfigurator
+  * @see LoggerConfigurator
+@@ -69,31 +71,4 @@
+      */
+     function getLoggerFormatter();
+ 
+-    /**
+-     * Propery parser
+-     *
+-     * @param string the property name
+-     * @return string, the property value
+-     * @throws ConfiguratorException if the property is not found
+-     */
+-    // function getProperty($name);
+-
+-    /**
+-     * Based on id we return the dsn array
+-     *
+-     * &lt;code&gt;
+-     *   // for Creole this dsn format will do the job:
+-     *   $dsn = array(
+-     *           'phptype'=&gt;'mysql',
+-     *           'hostspec'=&gt;'localhost',
+-     *           'username'=&gt;'root',
+-     *           'password'=&gt;'',
+-     *           'database'=&gt;'test');
+-     * &lt;/code&gt;
+-     * @param string the dsn id, if none is specified, we will use the default
+-     * @return array a dsn ready to use with Creole
+-     * @throws ConfiguratorException if the id is not found
+-     */
+-    function getDatabaseDsn($id = FALSE);
+ }
+-
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/libs/configurator/XMLConfigurator.php	2006-07-23 12:20:32 UTC (rev 425)
+@@ -37,6 +37,8 @@
+ /**
+  * XML file-based Configurator
+  * 
++ * From medick 0.3.0 this class will be removed due to the new way of configurating a medick application!
++ *
+  * @package medick.configurator
+  * @author Oancea Aurelian
+  */
+@@ -54,6 +56,8 @@
+         configuration file */
+     protected $config_file;
+     
++    protected $environment;
++    
+     /**
+      * Constructor
+      * 
+@@ -74,22 +78,13 @@
+         }
+         $this-&gt;application_name= $xmlelement['name'];
+         $this-&gt;config_file = $stream;
+-        /*
+-        if (file_exists($xml)) {
+-            if (is_readable($xml)) {
+-                $this-&gt;sxe = simplexml_load_file($xml, 'SimpleXMLIterator');
+-            } else {
+-                throw new IOException(&quot;Cannot read: &quot; . $xml . &quot; Permission deny&quot;);
+-            }
+-        } else {
+-            $this-&gt;sxe = @simplexml_load_string($xml, 'SimpleXMLIterator');
+-        }
+-        if ($this-&gt;sxe === false) {
+-            throw new ConfiguratorException(&quot;Cannot read: &quot; . $xml . &quot; Bad Format!&quot;);
+-        }
+-        */
++        $this-&gt;environment = $env;
+     }
+ 
++    public function getEnvName() {
++        return $this-&gt;environment;
++    }
++    
+     public function getApplicationName() {
+         return $this-&gt;application_name;
+     }
+@@ -107,42 +102,6 @@
+     }
+     
+     /**
+-     * Configuration Example:
+-     * &lt;code&gt;
+-     *   &lt;database default=&quot;foo&quot;&gt;
+-     *     &lt;dsn id=&quot;one&quot;
+-     *          phptype  = &quot;mysql&quot;
+-     *          hostspec = &quot;localhost&quot;
+-     *          database = &quot;baz&quot;
+-     *          username = &quot;root&quot;
+-     *          password = &quot;zzz&quot; /&gt;
+-     *     &lt;dsn id = &quot;foo&quot;
+-     *          phptype  = &quot;pgsql&quot;
+-     *          hostspec = &quot;192.18.1.1&quot;
+-     *          database =&quot;test&quot;
+-     *          username =&quot;antonescu&quot;
+-     *          password =&quot;x-creeme&quot; /&gt;
+-     *   &lt;/database&gt;
+-     * &lt;/code&gt;
+-     * @see IConfigurator::getDatabaseDsn()
+-     */
+-    public function getDatabaseDsn($id = FALSE) {
+-        if (!$id) $id = $this-&gt;sxe-&gt;database['default'];
+-        foreach( $this-&gt;sxe-&gt;database-&gt;dsn as  $dsn ) {
+-            if($dsn['id']==$id){
+-                return array (
+-                    'phptype'  =&gt; (string)trim($dsn['phptype']),
+-                    'hostspec' =&gt; (string)trim($dsn['hostspec']),
+-                    'username' =&gt; (string)trim($dsn['username']),
+-                    'password' =&gt; (string)trim($dsn['password']),
+-                    'database' =&gt; (string)trim($dsn['database'])
+-                );
+-            }
+-        }
+-        throw new ConfiguratorException('Database Id ' . $id . 'not found!');
+-    }
+-
+-    /**
+      * Configuration example:
+      * &lt;code&gt;
+      *   &lt;logger&gt;
+
+Added: trunk/skel/app/app_controller.php
+===================================================================
+--- trunk/skel/app/app_controller.php	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/skel/app/app_controller.php	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,13 @@
++&lt;?php
++
++/**
++ * This class is part of ${app.name} project
++ *
++ * Methods added here will be available in all your controllers.
++ * $Id$
++ * @package ${app.name}.controllers
++ */
++class ApplicationController extends ActionController {
++
++}
++
+
+
+Property changes on: trunk/skel/app/app_controller.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/skel/config/application.xml
+===================================================================
+--- trunk/skel/config/application.xml	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/skel/config/application.xml	2006-07-23 12:20:32 UTC (rev 425)
+@@ -46,15 +46,6 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
+-        &lt;!-- database(s) settings --&gt;
+-        &lt;database default=&quot;one&quot;&gt;
+-            &lt;dsn id = &quot;one&quot;
+-                 phptype  = &quot;mysql&quot;
+-                 hostspec = &quot;localhost&quot;
+-                 database = &quot;${app.name}&quot;
+-                 username = &quot;root&quot;
+-                 password = &quot;&quot; /&gt;
+-        &lt;/database&gt;
+     &lt;/environment&gt;
+ 
+     &lt;!-- a sample test environment --&gt;
+@@ -83,12 +74,6 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
+-        &lt;!-- database(s) settings --&gt;
+-        &lt;database default=&quot;one&quot;&gt;
+-            &lt;dsn id = &quot;one&quot;
+-                 phptype  = &quot;sqlite&quot;
+-                 database = &quot;${app.path}${ds}db${ds}${app.name}-sqlite.db&quot; /&gt;
+-        &lt;/database&gt;
+     &lt;/environment&gt;
+   
+ &lt;/application&gt;
+
+Added: trunk/skel/config/database.ini
+===================================================================
+--- trunk/skel/config/database.ini	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/skel/config/database.ini	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,26 @@
++;
++; $Id$
++;
++
++; 
++; database.ini format:
++; [section] -&gt; environment name
++; phptype -&gt; database connection driver 
++; database -&gt; database name
++; username -&gt; username
++; password -&gt; password
++; Connection flags:
++; persistent=PERSISTENT to mark the connection as beeing persistent
++;
++
++[localhost]
++phptype=mysql
++hostspec=localhost
++database=${app.name}
++username=root
++password=virus
++
++[test]
++phptype=sqlite
++database=db/${app.name}.sqilte.db
++
+
+
+Property changes on: trunk/skel/config/database.ini
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/skel/db/schema.sql
+===================================================================
+--- trunk/skel/db/schema.sql	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/skel/db/schema.sql	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,6 @@
++--
++-- $Id$
++--
++-- Database SQL schema for ${app.name}
++-- 
++
+
+
+Property changes on: trunk/skel/db/schema.sql
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/skel/public/index.html
+===================================================================
+--- trunk/skel/public/index.html	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/skel/public/index.html	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,25 @@
++&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Strict//EN&quot; 
++&quot;<A HREF="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd</A>&quot;&gt;
++&lt;html xmlns=&quot;<A HREF="http://www.w3.org/1999/xhtml">http://www.w3.org/1999/xhtml</A>&quot; lang=&quot;en&quot; xml:lang=&quot;en&quot;&gt;
++  &lt;head&gt;
++    &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
++    &lt;meta name=&quot;Generator&quot;   content=&quot;${medick.version}&quot; /&gt;
++    &lt;meta name=&quot;Keywords&quot;    content=&quot;&quot; /&gt;
++    &lt;meta name=&quot;Description&quot; content=&quot;&quot; /&gt;
++    &lt;meta name=&quot;robots&quot;      content=&quot;&quot; /&gt;
++    &lt;link rel=&quot;stylesheet&quot; href=&quot;stylesheet/${app.name}.css&quot; type=&quot;text/css&quot; media=&quot;all&quot; /&gt;      
++    &lt;title&gt;Welcome to Medick!&lt;/title&gt;
++    &lt;!-- $Id$ --&gt;
++  &lt;/head&gt;
++  &lt;body&gt;
++    &lt;h3 style=&quot;text-align:center&quot;&gt;Welcome To Medick&lt;/h3&gt;
++    &lt;p&gt;&lt;b&gt;Application:&lt;/b&gt; ${app.name}&lt;/p&gt;
++    &lt;p&gt;&lt;b&gt;Develop ${app.name} on: &lt;/b&gt;${app.path}&lt;/p&gt;
++    &lt;p&gt;Setup the WELCOME route in
++    &lt;i&gt;${app.path}/config/${app.name}.routes.php&lt;/i&gt;, &lt;br /&gt;
++        and remove this file (${app.path}/public/index.html).
++    &lt;/p&gt;
++    &lt;p&gt;Ask for support on medick &lt;a href=&quot;<A HREF="http://lists.berlios.de/mailman/listinfo/medick-devel">http://lists.berlios.de/mailman/listinfo/medick-devel</A>&quot;&gt;development list&lt;/a&gt;.&lt;/p&gt;
++  &lt;/body&gt;
++&lt;/html&gt;
++
+
+
+Property changes on: trunk/skel/public/index.html
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/skel/public/stylesheet/medick.css
+===================================================================
+--- trunk/skel/public/stylesheet/medick.css	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/skel/public/stylesheet/medick.css	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,13 @@
++/*
++ * $Id$
++ * 
++ * stylesheet for ${app.name} project
++ */
++
++body {
++  margin: 20px;
++  padding: 20px;
++  border: 1px solid black;
++  font-family:verdana, arial, helvetica, sans-serif;
++}
++
+
+
+Property changes on: trunk/skel/public/stylesheet/medick.css
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000203.html">[Medick-svn] r423 - in trunk: . docs/medick.website libs/action/controller libs/active/record libs/medick
+</A></li>
+	<LI>Next message: <A HREF="000206.html">[Medick-svn] r426 - in trunk: . bin libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#205">[ date ]</a>
+              <a href="thread.html#205">[ thread ]</a>
+              <a href="subject.html#205">[ subject ]</a>
+              <a href="author.html#205">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

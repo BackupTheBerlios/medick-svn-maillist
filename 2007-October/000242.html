@@ -1,0 +1,89 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r462 - trunk/libs/creole
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r462%20-%20trunk/libs/creole&In-Reply-To=%3C200710182130.l9ILUDjO003882%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r462 - trunk/libs/creole</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r462%20-%20trunk/libs/creole&In-Reply-To=%3C200710182130.l9ILUDjO003882%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r462 - trunk/libs/creole">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Thu Oct 18 23:30:13 CEST 2007</I>
+    <P><UL>
+        
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#242">[ date ]</a>
+              <a href="thread.html#242">[ thread ]</a>
+              <a href="subject.html#242">[ subject ]</a>
+              <a href="author.html#242">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-10-18 23:30:12 +0200 (Thu, 18 Oct 2007)
+New Revision: 462
+
+Modified:
+   trunk/libs/creole/Creole.php
+Log:
+ -- fixed php 5.3.0 err with import
+
+Modified: trunk/libs/creole/Creole.php
+===================================================================
+--- trunk/libs/creole/Creole.php	2007-08-31 09:47:09 UTC (rev 461)
++++ trunk/libs/creole/Creole.php	2007-10-18 21:30:12 UTC (rev 462)
+@@ -231,7 +231,7 @@
+ 
+         // may need to make this more complex if we add support
+         // for 'dbsyntax'
+-        $clazz = self::import(self::$driverMap[$type]);
++        $clazz = self::_import(self::$driverMap[$type]);
+         $obj = new $clazz();
+ 
+         if (!($obj instanceof Connection)) {
+@@ -347,7 +347,7 @@
+      * @throws SQLException - if class does not exist and cannot load file
+      *                      - if after loading file class still does not exist
+      */
+-    public static function import($class) {
++    public static function _import($class) {
+         if (!class_exists($class, false)) {
+             $path = strtr($class, '.', DIRECTORY_SEPARATOR) . '.php';
+             $ret = include_once($path);
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#242">[ date ]</a>
+              <a href="thread.html#242">[ thread ]</a>
+              <a href="subject.html#242">[ subject ]</a>
+              <a href="author.html#242">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

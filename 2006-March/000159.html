@@ -1,0 +1,142 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r369 - in branches/release_0.1: bin skel/public
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r369%20-%20in%20branches/release_0.1%3A%20bin%20skel/public&In-Reply-To=%3C200603050951.k259peMW021083%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000158.html">
+   <LINK REL="Next"  HREF="000160.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r369 - in branches/release_0.1: bin skel/public</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r369%20-%20in%20branches/release_0.1%3A%20bin%20skel/public&In-Reply-To=%3C200603050951.k259peMW021083%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r369 - in branches/release_0.1: bin skel/public">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Mar  5 10:51:40 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000158.html">[Medick-svn] r368 - in trunk: bin skel/public
+</A></li>
+        <LI>Next message: <A HREF="000160.html">[Medick-svn] r371 - in trunk/docs/medick.website: . css i
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#159">[ date ]</a>
+              <a href="thread.html#159">[ thread ]</a>
+              <a href="subject.html#159">[ subject ]</a>
+              <a href="author.html#159">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-03-05 10:51:39 +0100 (Sun, 05 Mar 2006)
+New Revision: 369
+
+Modified:
+   branches/release_0.1/bin/medick.php
+   branches/release_0.1/skel/public/default.htaccess
+Log:
+ -- MFH
+
+Modified: branches/release_0.1/bin/medick.php
+===================================================================
+--- branches/release_0.1/bin/medick.php	2006-03-05 09:44:42 UTC (rev 368)
++++ branches/release_0.1/bin/medick.php	2006-03-05 09:51:39 UTC (rev 369)
+@@ -169,7 +169,7 @@
+     &lt;h3&gt;&lt;center&gt;Welcome To Medick&lt;/center&gt;&lt;/h3&gt;
+     &lt;p&gt;&lt;b&gt;Application:&lt;/b&gt; $short_name&lt;/p&gt;
+     &lt;p&gt;&lt;b&gt;Develop $short_name on: &lt;/b&gt;$app_location&lt;/p&gt;
+-    &lt;p&gt;Setup a default controller in
++    &lt;p&gt;Setup the WELCOME route in
+         &lt;i&gt;$app_location/config/$short_name.routes.php&lt;/i&gt;, &lt;br /&gt;
+         and remove this file ($app_location/public/index.html).
+     &lt;/p&gt;
+
+Modified: branches/release_0.1/skel/public/default.htaccess
+===================================================================
+--- branches/release_0.1/skel/public/default.htaccess	2006-03-05 09:44:42 UTC (rev 368)
++++ branches/release_0.1/skel/public/default.htaccess	2006-03-05 09:51:39 UTC (rev 369)
+@@ -2,21 +2,27 @@
+ # $Id$
+ 
+ # Configuration
+-# 1. Medick Related.
++
++# 1. Apache Section.
++DirectoryIndex index.html index.php
++
++# 2. Medick Related.
+ # this will not work for php as cgi
++# and it will be removed in version 0.2
+ SetEnv MEDICK_APPLICATION_PATH ${APP_PATH}
+ SetEnv MEDICK_APPLICATION_NAME ${APP_NAME}
+ 
+-# 2. php options.
+-# this will not work for php as cgi
++# 3. PHP Options.
++# this options will not work for php as cgi
++# and it will be removed in version 0.2
++# HINT: move this one to PHPTemplateView class
+ php_value short_open_tag 1
+ # this should depend on environment.
+ # while we are on &quot;planning&quot;, we will 
+ # keep this to 1
+ php_value display_errors 1
+ 
+-# Rewrite
+-
++# 4. Rewrite
+ RewriteEngine on
+ 
+ # Set 1.
+@@ -25,9 +31,16 @@
+ #RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+ 
+ # Set 2.
+-# RewriteBase /${APP_NAME}
+-RewriteRule ^$ index.php  [L]
++RewriteBase /${APP_NAME}
++
++# Send requests without parameters to index.php
++# -- disabled since we want to show index.html
++# default index page for medick.
++#RewriteRule ^$ index.php  [L]
++# Send requests for files that exist to those files.
+ RewriteCond %{REQUEST_FILENAME} !-f
++# Send requests for directories that exist to those directories.
+ RewriteCond %{REQUEST_FILENAME} !-d
++# Send requests to index.php, appending the query string part.
+ RewriteRule (.*) index.php/$1  [QSA,L]
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000158.html">[Medick-svn] r368 - in trunk: bin skel/public
+</A></li>
+	<LI>Next message: <A HREF="000160.html">[Medick-svn] r371 - in trunk/docs/medick.website: . css i
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#159">[ date ]</a>
+              <a href="thread.html#159">[ thread ]</a>
+              <a href="subject.html#159">[ subject ]</a>
+              <a href="author.html#159">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

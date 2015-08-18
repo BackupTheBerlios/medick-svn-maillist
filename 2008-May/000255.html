@@ -1,0 +1,213 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r475 - in exp/medick2: . app app/controllers public	vendor/medick/lib/action/controller
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2008-May/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r475%20-%20in%20exp/medick2%3A%20.%20app%20app/controllers%20public%0A%09vendor/medick/lib/action/controller&In-Reply-To=%3C200805131658.m4DGw0oO030664%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000254.html">
+   <LINK REL="Next"  HREF="000256.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r475 - in exp/medick2: . app app/controllers public	vendor/medick/lib/action/controller</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r475%20-%20in%20exp/medick2%3A%20.%20app%20app/controllers%20public%0A%09vendor/medick/lib/action/controller&In-Reply-To=%3C200805131658.m4DGw0oO030664%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r475 - in exp/medick2: . app app/controllers public	vendor/medick/lib/action/controller">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Tue May 13 18:58:00 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000254.html">[Medick-svn] r474 - in exp/medick2: config public	vendor/medick/lib/action/controller vendor/medick/lib/context	vendor/medick/lib/plugin
+</A></li>
+        <LI>Next message: <A HREF="000256.html">[Medick-svn] r476 - in exp/medick2/app: . controllers views	views/foo views/layouts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#255">[ date ]</a>
+              <a href="thread.html#255">[ thread ]</a>
+              <a href="subject.html#255">[ subject ]</a>
+              <a href="author.html#255">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2008-05-13 18:57:59 +0200 (Tue, 13 May 2008)
+New Revision: 475
+
+Added:
+   exp/medick2/app/
+   exp/medick2/app/controllers/
+   exp/medick2/app/controllers/foo_controller.php
+   exp/medick2/public/favicon.ico
+   exp/medick2/vendor/medick/lib/action/controller/Base.php
+Log:
+ -- test controller
+
+Added: exp/medick2/app/controllers/foo_controller.php
+===================================================================
+--- exp/medick2/app/controllers/foo_controller.php	2008-05-13 16:56:17 UTC (rev 474)
++++ exp/medick2/app/controllers/foo_controller.php	2008-05-13 16:57:59 UTC (rev 475)
+@@ -0,0 +1,9 @@
++&lt;?php
++
++class ApplicationController extends ActionController {
++
++}
++
++class FooController extends ApplicationController {
++
++}
+
+Added: exp/medick2/public/favicon.ico
+===================================================================
+(Binary files differ)
+
+
+Property changes on: exp/medick2/public/favicon.ico
+___________________________________________________________________
+Name: svn:mime-type
+   + application/octet-stream
+
+Added: exp/medick2/vendor/medick/lib/action/controller/Base.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Base.php	2008-05-13 16:56:17 UTC (rev 474)
++++ exp/medick2/vendor/medick/lib/action/controller/Base.php	2008-05-13 16:57:59 UTC (rev 475)
+@@ -0,0 +1,108 @@
++&lt;?php
++
++class ActionChain implements ArrayAccess, Iterator, Countable {
++
++  private $chain;
++
++  private $index;
++
++  public function __construct(/*ActionController $action_controller*/) {
++    $this-&gt;chain= array();
++    $this-&gt;index= 0;
++  }
++
++  public function push( $value ) {
++    $this[sizeof($this)]= $value;
++  }
++
++  public function prepend( $value ) {
++    array_unshift($this-&gt;chain, $value);
++  }
++
++  public function offsetExists($offset) {
++    return isset( $this-&gt;chain[$offset] );
++  }
++
++  public function offsetGet($offset) {
++    return $this-&gt;chain[$offset];
++  }
++
++  public function offsetSet($offset, $value) {
++    // if(false === is_int($offset)) throw new Exception('use only numrical values!');
++    $this-&gt;chain[$offset]= $value;
++  }
++
++  public function offsetUnset($offset) {
++    unset($this-&gt;chain[$offset]);
++  }
++
++  public function current() {
++    // return $this-&gt;chain[$this-&gt;index];
++    return $this[$this-&gt;index];
++  }
++
++  public function next() {
++    $this-&gt;index++;
++    // return $this-&gt;chain[$this-&gt;index];
++    // return $this-&gt;current();
++  }
++
++  public function key() {
++    return $this-&gt;index;
++  }
++
++  public function valid() {
++    return $this[$this-&gt;index];
++  }
++
++  public function rewind() {
++    $this-&gt;index--;
++  }
++
++  public function count() {
++    return sizeof($this-&gt;chain);
++  }
++
++}
++
++class ActionController extends Object {
++
++  // protected $logger;
++  // protected $config;
++
++  protected $request;
++
++  protected $response;
++
++  protected $context;
++
++  private $chain;
++
++  final public function __construct(ContextManager $context) {
++    $this-&gt;context= $context;
++    // $this-&gt;logger= $context-&gt;logger();
++    // $this-&gt;config= $context-&gt;config();
++    $this-&gt;chain= new ActionChain();
++  }
++
++  // should return ActionView
++  final public function process(Request $request, Response $response) {
++    $this-&gt;request= $request;
++    $this-&gt;response= $response;
++
++    $this-&gt;chain-&gt;push( 'foo' );
++    $this-&gt;chain-&gt;push( 'bar' );
++
++    $this-&gt;chain-&gt;prepend( 'baz' );
++
++    Medick::dump( $this-&gt;chain );
++
++    // xxx: before.
++
++    // xxx: after.
++
++    Medick::dump($request);
++  }
++
++}
++
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000254.html">[Medick-svn] r474 - in exp/medick2: config public	vendor/medick/lib/action/controller vendor/medick/lib/context	vendor/medick/lib/plugin
+</A></li>
+	<LI>Next message: <A HREF="000256.html">[Medick-svn] r476 - in exp/medick2/app: . controllers views	views/foo views/layouts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#255">[ date ]</a>
+              <a href="thread.html#255">[ thread ]</a>
+              <a href="subject.html#255">[ subject ]</a>
+              <a href="author.html#255">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

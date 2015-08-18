@@ -1,0 +1,105 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r308 - applications/eltodo/conf
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r308%20-%20applications/eltodo/conf&In-Reply-To=%3C200512261559.jBQFxBaG031144%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000103.html">
+   <LINK REL="Next"  HREF="000106.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r308 - applications/eltodo/conf</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r308%20-%20applications/eltodo/conf&In-Reply-To=%3C200512261559.jBQFxBaG031144%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r308 - applications/eltodo/conf">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Dec 26 16:59:11 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000103.html">[Medick-svn] r307 - applications/eltodo/public
+</A></li>
+        <LI>Next message: <A HREF="000106.html">[Medick-svn] r309 - trunk/bin
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#104">[ date ]</a>
+              <a href="thread.html#104">[ thread ]</a>
+              <a href="subject.html#104">[ subject ]</a>
+              <a href="author.html#104">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-12-26 16:59:11 +0100 (Mon, 26 Dec 2005)
+New Revision: 308
+
+Modified:
+   applications/eltodo/conf/eltodo.routes.php
+Log:
+ -- using the new routing system in eltodo sample application
+
+Modified: applications/eltodo/conf/eltodo.routes.php
+===================================================================
+--- applications/eltodo/conf/eltodo.routes.php	2005-12-26 15:52:38 UTC (rev 307)
++++ applications/eltodo/conf/eltodo.routes.php	2005-12-26 15:59:11 UTC (rev 308)
+@@ -2,26 +2,7 @@
+ // eltodo.routes.php
+ // $Id$
+ 
+-{
+-    { // solves: /, /project.html, /project/index.html
+-        $project= new Route('project');
+-        $project-&gt;setAction('all');
+-        $project-&gt;setName('default');
+-        $map-&gt;add($project);
+-    }
+-    
+-    { // solves /project/create.html
+-        $create_project= new Route('project', 'create');
+-        $create_project-&gt;add(new RouteParam('name'));
+-        $create_project-&gt;setFailure($project);
+-        $map-&gt;add($create_project);
+-    }
+-    
+-    { // solves: /project/delete/{id}.html
+-        $delete_project= new Route('project', 'delete');
+-        $delete_project-&gt;add(new RouteParam('id'));
+-        $delete_project-&gt;setFailure($project);
+-        $map-&gt;add($delete_project);
+-    }
+-}
++$map= Map::getInstance();
++$map-&gt;add(new Route(':controller/:action/:id'));
++
+ ?&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000103.html">[Medick-svn] r307 - applications/eltodo/public
+</A></li>
+	<LI>Next message: <A HREF="000106.html">[Medick-svn] r309 - trunk/bin
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#104">[ date ]</a>
+              <a href="thread.html#104">[ thread ]</a>
+              <a href="subject.html#104">[ subject ]</a>
+              <a href="author.html#104">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

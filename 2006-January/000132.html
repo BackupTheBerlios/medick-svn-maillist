@@ -1,0 +1,644 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r340 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/db applications/eltodo/public/images applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record trunk/libs/active/support
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r340%20-%20applications/eltodo/app/controllers%20applications/eltodo/app/models%20applications/eltodo/app/views/layouts%20applications/eltodo/app/views/project%20applications/eltodo/db%20applications/eltodo/public/images%20applications/eltodo/public/stylesheet%20trunk/libs/action/view%20trunk/libs/active/record%20trunk/libs/active/support&In-Reply-To=%3C200601211737.k0LHbI78004880%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000131.html">
+   <LINK REL="Next"  HREF="000133.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r340 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/db applications/eltodo/public/images applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record trunk/libs/active/support</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r340%20-%20applications/eltodo/app/controllers%20applications/eltodo/app/models%20applications/eltodo/app/views/layouts%20applications/eltodo/app/views/project%20applications/eltodo/db%20applications/eltodo/public/images%20applications/eltodo/public/stylesheet%20trunk/libs/action/view%20trunk/libs/active/record%20trunk/libs/active/support&In-Reply-To=%3C200601211737.k0LHbI78004880%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r340 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/db applications/eltodo/public/images applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record trunk/libs/active/support">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Jan 21 18:37:18 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000131.html">[Medick-svn] r339 - trunk/libs/action/controller
+</A></li>
+        <LI>Next message: <A HREF="000133.html">[Medick-svn] r341 - trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#132">[ date ]</a>
+              <a href="thread.html#132">[ thread ]</a>
+              <a href="subject.html#132">[ subject ]</a>
+              <a href="author.html#132">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-21 18:37:08 +0100 (Sat, 21 Jan 2006)
+New Revision: 340
+
+Modified:
+   applications/eltodo/app/controllers/project_controller.php
+   applications/eltodo/app/models/project.php
+   applications/eltodo/app/views/layouts/eltodo.phtml
+   applications/eltodo/app/views/project/add.phtml
+   applications/eltodo/app/views/project/all.phtml
+   applications/eltodo/db/schema.sql
+   applications/eltodo/public/images/delete.png
+   applications/eltodo/public/stylesheet/eltodo.v0.2.css
+   trunk/libs/action/view/HTML.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Field.php
+   trunk/libs/active/record/Validator.php
+   trunk/libs/active/support/Inflector.php
+Log:
+ -- added Inflector::humanize method (based on cake),
+ -- ARBase, ARField, formatted name was moved to ARField,
+ -- added Validator::uniqueness_of() method
+ -- more layout in AVFormHelper
+ -- more on elTodo sample application
+
+
+Modified: applications/eltodo/app/controllers/project_controller.php
+===================================================================
+--- applications/eltodo/app/controllers/project_controller.php	2006-01-21 10:09:18 UTC (rev 339)
++++ applications/eltodo/app/controllers/project_controller.php	2006-01-21 17:37:08 UTC (rev 340)
+@@ -15,7 +15,7 @@
+     protected $use_layout= 'eltodo';
+ 
+     public function edit() {
+-      $project= Project::find($this-&gt;request-&gt;getParameter('id'));
++      $project= Project::find($this-&gt;params['id']);
+       $project-&gt;name= $this-&gt;request-&gt;getParameter('name');
+       // try {
+       $project-&gt;save();
+@@ -25,7 +25,7 @@
+     
+     /** Creates a new Project */
+     public function create() {
+-        $this-&gt;template-&gt;project= new Project(array('name'=&gt;$this-&gt;request-&gt;getParameter('name')));
++        $this-&gt;template-&gt;project= new Project(isset($this-&gt;params['project']) ? $this-&gt;params['project'] : array());
+         try {
+             $this-&gt;template-&gt;project-&gt;save();
+             $this-&gt;flash('notice', 'Project ' . $this-&gt;template-&gt;project-&gt;name . ' added!');
+@@ -38,7 +38,7 @@
+ 
+     /** Removes a project */
+     public function delete() {
+-        $project= new Project (array('id'=&gt;$this-&gt;params['id']));
++        $project= Project::find($this-&gt;params['id']);
+         try {
+             $project-&gt;delete();
+             $this-&gt;flash('notice', 'Project ' . $project-&gt;name . ' removed!');
+@@ -57,7 +57,7 @@
+     /** List all projects, this is the default Route. */
+     public function all() {
+         try {
+-            $this-&gt;template-&gt;projects= Project::find();
++          $this-&gt;template-&gt;projects= Project::find('all', array('order'=&gt;'created_at DESC'));
+         } catch (RecordNotFoundException $rnfEx) {
+             $this-&gt;template-&gt;projects= array();
+         }
+
+Modified: applications/eltodo/app/models/project.php
+===================================================================
+--- applications/eltodo/app/models/project.php	2006-01-21 10:09:18 UTC (rev 339)
++++ applications/eltodo/app/models/project.php	2006-01-21 17:37:08 UTC (rev 340)
+@@ -9,11 +9,13 @@
+ class Project extends ActiveRecordBase {
+ 
+     public function before_insert() {
+-        $this-&gt;validates()-&gt;presence_of('name');
++        $this-&gt;created_at= time();
++        $this-&gt;validates()-&gt;presence_of('name', 'description');
++        $this-&gt;validates()-&gt;uniqueness_of('name');
+     }
+ 
+     public function before_update() {
+-        $this-&gt;validates()-&gt;presence_of('name');
++        $this-&gt;validates()-&gt;presence_of('name', 'description');
+     }
+ 
+     public static function find() {
+
+Modified: applications/eltodo/app/views/layouts/eltodo.phtml
+===================================================================
+--- applications/eltodo/app/views/layouts/eltodo.phtml	2006-01-21 10:09:18 UTC (rev 339)
++++ applications/eltodo/app/views/layouts/eltodo.phtml	2006-01-21 17:37:08 UTC (rev 340)
+@@ -9,7 +9,7 @@
+         &lt;link rel=&quot;stylesheet&quot; href=&quot;stylesheet/eltodo.v0.2.css&quot; /&gt;
+         &lt;script src=&quot;javascript/prototype.js&quot; type=&quot;text/javascript&quot;&gt;&lt;/script&gt;
+         &lt;script src=&quot;javascript/scriptaculous.js&quot; type=&quot;text/javascript&quot;&gt;&lt;/script&gt;
+-        &lt;title&gt;&lt;?=@$title;?&gt;&lt;/title&gt;
++        &lt;title&gt;&lt;?=$title;?&gt;&lt;/title&gt;
+     &lt;/head&gt;
+ 
+     &lt;body&gt;
+@@ -21,14 +21,14 @@
+             &lt;div id=&quot;sidebar&quot;&gt;
+                 &lt;h1&gt;sidebar&lt;/h1&gt;
+                 &lt;ul&gt;
+-                    &lt;li&gt;link one&lt;/li&gt;
+-                    &lt;li&gt;link two&lt;/li&gt;
++                    &lt;li&gt;My Projects&lt;/li&gt;
++                    &lt;li&gt;Add Project&lt;/li&gt;
+                 &lt;/ul&gt;
+             &lt;/div&gt;
+ 
+             &lt;div id=&quot;content&quot;&gt;&lt;?=$content_for_layout;?&gt;&lt;/div&gt;
+ 
+-            &lt;div id=&quot;footer&quot;&gt;Footer - | |- Footer &lt;/div&gt;
++            &lt;div id=&quot;footer&quot;&gt;elTodo :: powered by medick.&lt;/div&gt;
+ 
+         &lt;/div&gt;
+ 
+
+Modified: applications/eltodo/app/views/project/add.phtml
+===================================================================
+--- applications/eltodo/app/views/project/add.phtml	2006-01-21 10:09:18 UTC (rev 339)
++++ applications/eltodo/app/views/project/add.phtml	2006-01-21 17:37:08 UTC (rev 340)
+@@ -1,11 +1,13 @@
+-&lt;h2&gt;Add Project&lt;/h2&gt;
++&lt;h2&gt;New Project&lt;/h2&gt;
+ &lt;!-- $Id: all.phtml 300 2005-12-12 19:51:31Z aurelian $ --&gt;
+-&lt;?=ActiveRecordHelper::error_messages_for($project);?&gt;
+ &lt;form action=&quot;&lt;?=URL::create('project','create');?&gt;&quot; method=&quot;post&quot;&gt;
+-    &lt;div&gt;
+-        &lt;label&gt;Create a new Project:&lt;/label&gt;
+-        &lt;?=FormHelper::text_field($project, 'name', array('maxlength'=&gt;255,'size'=&gt;45)); ?&gt;
+-        &lt;?=Form::submit('submit', 'Submit') ?&gt;
+-    &lt;/div&gt;
++    &lt;fieldset&gt;
++        &lt;legend&gt;Create a new Project&lt;/legend&gt;
++        &lt;?=ActiveRecordHelper::error_messages_for($project);?&gt;
++        &lt;?=FormHelper::text_field($project, 'name', array('maxlength'=&gt;255,'size'=&gt;35)); ?&gt;
++        &lt;br /&gt;
++        &lt;?=FormHelper::text_area($project, 'description', array('cols'=&gt;40,'rows'=&gt;20)); ?&gt;
++        &lt;?=Form::submit('submit', 'Submit', array('class'=&gt;'submit-button')) ?&gt;
++    &lt;/fieldset&gt;
+ &lt;/form&gt;
+ 
+
+Modified: applications/eltodo/app/views/project/all.phtml
+===================================================================
+--- applications/eltodo/app/views/project/all.phtml	2006-01-21 10:09:18 UTC (rev 339)
++++ applications/eltodo/app/views/project/all.phtml	2006-01-21 17:37:08 UTC (rev 340)
+@@ -11,25 +11,35 @@
+ &lt;form action=&quot;&lt;?=URL::create('project','create');?&gt;&quot; method=&quot;post&quot;&gt;
+     &lt;div&gt;
+         &lt;label&gt;Create a new Project:&lt;/label&gt;
+-        &lt;?=Form::text('name', NULL, array('maxlength'=&gt;255,'size'=&gt;45)); ?&gt;
++        &lt;?=Form::text('project[name]', NULL, array('maxlength'=&gt;255,'size'=&gt;45)); ?&gt;
+         &lt;?=Form::submit('submit', 'Submit') ?&gt;
+     &lt;/div&gt;
+ &lt;/form&gt;
+ 
+ &lt;hr /&gt;
+ 
+-&lt;? foreach($projects as $project): ?&gt;
+-    &lt;div id=&quot;e_&lt;?=$project-&gt;id;?&gt;&quot;&gt;&lt;?=$project-&gt;name;?&gt;&lt;/div&gt;
+-    &lt;script language=&quot;JavaScript&quot;&gt;
+-        new Ajax.InPlaceEditor('e_&lt;?=$project-&gt;id;?&gt;', '/eltodo/project/edit',
+-          { callback: function(form, value) { return 'id=&lt;?=$project-&gt;id;?&gt;&amp;name=' + value }});
+-     &lt;/script&gt;
+-    &lt;a 
+-      href=&quot;&lt;?= URL::create('project', 'delete', array('id'=&gt;$project-&gt;id));?&gt;&quot; 
+-      onclick=&quot;return confirm('Are you sure you want to delete the project &lt;?=$project-&gt;name;?&gt;');&quot;&gt;
+-      &lt;img src=&quot;images/delete.png&quot; border=&quot;0&quot;&gt;
+-   &lt;/a&gt;
+-&lt;? endforeach;?&gt;
++&lt;table id=&quot;projectlist&quot;&gt;
++  &lt;tbody&gt;
++    &lt;? foreach($projects as $row=&gt;$project): ?&gt;
++      &lt;tr class=&quot;&lt;?=$row%2?'even':'odd';?&gt;&quot;&gt;
++        &lt;td&gt;
++          &lt;a
++            href=&quot;&lt;?= URL::create('project', 'delete', array('id'=&gt;$project-&gt;id));?&gt;&quot;
++            onclick=&quot;return confirm('Are you sure you want to delete the project &lt;?=$project-&gt;name;?&gt;');&quot;&gt;
++            &lt;img src=&quot;images/delete.png&quot; border=&quot;0&quot;&gt;
++          &lt;/a&gt;
++        &lt;/td&gt;
++        &lt;td width=&quot;100%&quot;&gt;
++          &lt;p id=&quot;e_&lt;?=$project-&gt;id;?&gt;&quot;&gt;&lt;?=$project-&gt;name;?&gt;&lt;/p&gt;
++          &lt;script language=&quot;JavaScript&quot;&gt;
++              new Ajax.InPlaceEditor('e_&lt;?=$project-&gt;id;?&gt;', '/eltodo/project/edit',
++              { callback: function(form, value) { return 'id=&lt;?=$project-&gt;id;?&gt;&amp;name=' + value }});
++          &lt;/script&gt;
++        &lt;/td&gt;
++      &lt;/tr&gt;
++    &lt;? endforeach;?&gt;
++  &lt;/tbody&gt;
++&lt;/table&gt;
+ 
+ &lt;? if(!count($projects)):?&gt;
+     No projects found.
+
+Modified: applications/eltodo/db/schema.sql
+===================================================================
+--- applications/eltodo/db/schema.sql	2006-01-21 10:09:18 UTC (rev 339)
++++ applications/eltodo/db/schema.sql	2006-01-21 17:37:08 UTC (rev 340)
+@@ -13,10 +13,13 @@
+ -- projects table
+ 
+ CREATE TABLE projects (
+-    id      INT(11)       NOT NULL auto_increment,
+-    name    VARCHAR(255)  NOT NULL,
++    id          INT(11)       NOT NULL auto_increment,
++    name        VARCHAR(255)  NOT NULL,
++    description TEXT          NOT NULL,
++    created_at  DATETIME      NOT NULL,
+     PRIMARY KEY (id)
+ ) Engine=InnoDB;
+ 
+ 
+ COMMIT;
++
+
+Modified: applications/eltodo/public/images/delete.png
+===================================================================
+(Binary files differ)
+
+Modified: applications/eltodo/public/stylesheet/eltodo.v0.2.css
+===================================================================
+--- applications/eltodo/public/stylesheet/eltodo.v0.2.css	2006-01-21 10:09:18 UTC (rev 339)
++++ applications/eltodo/public/stylesheet/eltodo.v0.2.css	2006-01-21 17:37:08 UTC (rev 340)
+@@ -15,7 +15,7 @@
+ 
+ #content {
+     float:left;
+-    width:67%;
++    width:80%;
+     margin:1em 0 0 4%;
+     overflow:hidden;
+     padding-bottom:1em;
+@@ -26,14 +26,14 @@
+     font-size:0.94em;
+     line-height:1.3em;
+     float:right;
+-    /*width:-67%;*/
++    width:-20%;
+     margin:0 2% 0 0;
+     }
+ 
+ #header {
+     background:#003163;
+     color: #fff;
+-    height:120px;
++    height:100px;
+     }
+ 
+ #footer {
+@@ -53,13 +53,57 @@
+     padding: 0;
+     font-family:verdana, arial, helvetica, sans-serif;
+     color:#333;
+-    background-image: url(<A HREF="http://localhost/eltodo/images/bg.gif">http://localhost/eltodo/images/bg.gif</A>);
++    /* background-image: url(<A HREF="http://localhost/eltodo/images/bg.gif">http://localhost/eltodo/images/bg.gif</A>); */
+ }
+ 
++h2 {
++    font-size: 160%;
++    text-align: center;
++    color: #555;
++    padding: 0 0 0.5em;
++    margin: 0.75em 0 0;
++}
++
++/* *******
++ * forms
++ * ******/
++fieldset {
++    font:80%/1 sans-serif;
++    border: 1px solid #26a;
++    margin: 1em 0em 1em 0em;
++    padding: 0em 1em 1em 1em;
++    line-height: 1.5em;
++}
++
++legend {
++    font-weight: bold;
++    padding: 0.5em;
++    font-size:115%;
++}
++
++label {
++    margin:0;
++    padding:0.2em;
++    margin-top:0.3em;
++    font-weight:bold;
++}
++
++fieldset&gt;input.submit-button {
++    margin-left:5em;
++    margin-top:1em;
++    clear:both;
++}
++
++/* *******************
++ * Medick style
++ * ******************/
++
+ div.flash_notice {
+-    background-color: green;
+-    color: white;
++    border: 2px solid red;
+     padding: 1em;
++    margin-bottom: 2em;
++    background-color: #f0f0f0;
++    font: bold smaller sans-serif;
+ }
+ 
+ div.flash_error {
+@@ -67,3 +111,70 @@
+     color: white;
+     padding: 1em;
+ }
++
++div.fieldWithErrors {
++    background-color: red;
++    display: table;
++    padding: 2px;
++}
++
++#medickFormErrors {
++    border: 2px solid 'red';
++    padding-bottom: 12px;
++    margin-bottom: 20px;
++    background-color: #f0f0f0;
++}
++
++#medickFormErrors h2 {
++    text-align: left;
++    font-weight: bold;
++    padding: 5px 5px 5px 15px;
++    font-size: 95%;
++    background-color: #c00;
++    color: #fff;
++}
++
++#medickFormErrors p {
++    padding:1em;
++    font-size:95%;
++    margin-bottom:0;
++    font-weight:bold;
++}
++
++#medickFormErrors ul li {
++    font-size:95%;
++}
++
++#projectlist tbody tr.even td {
++  background-color: #eee;
++}
++
++#projectlist tbody tr.odd  td {
++  background-color: #fff;
++}
++
++
++/* **************
++ In place editor
++ * **************/
++
++form.inplaceeditor-form { /* The form */
++  /* background-color:red; */
++}
++
++form.inplaceeditor-form input[type=&quot;text&quot;] { /* Input box */
++}
++
++form.inplaceeditor-form textarea { /* Textarea, if multiple columns */
++}
++
++form.inplaceeditor-form input[type=&quot;submit&quot;] { /* The submit button */
++  /* margin-left:1em;*/
++  /* color:red;*/
++}
++
++form.inplaceeditor-form a { /* The cancel link */
++  /* margin-left:1em; */
++}
++
++
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-01-21 10:09:18 UTC (rev 339)
++++ trunk/libs/action/view/HTML.php	2006-01-21 17:37:08 UTC (rev 340)
+@@ -37,7 +37,7 @@
+ 
+     public static function error_messages_for(ActiveRecordBase $object, $options=array()) {
+         $css_class= isset($options['css_class']) ? $options['css_class'] : 'formErrors';
+-        $heading  = isset($options['heading']) &amp;&amp; (int)$options['heading'] &gt; 0 &amp;&amp; (int)$options['heading'] &lt; 6 ? $options['heading'] : 4;
++        $heading  = isset($options['heading']) &amp;&amp; (int)$options['heading'] &gt; 0 &amp;&amp; (int)$options['heading'] &lt; 6 ? $options['heading'] : 2;
+         $buffer= '&lt;div id=&quot;medickFormErrors&quot; class=&quot;' . $css_class . '&quot;&gt;';
+         $errors= 0;
+         $part = '';
+@@ -65,38 +65,68 @@
+ 
+     public static function error_message_on(ActiveRecordBase $object, $method, $options=array()) {
+         // $prepend_text = isset($options['prepend']) ? $options['prepend'] : &quot;&quot;;
+-        // $append_text  = isset($options['append']) ? $options['append'] : &quot;&quot;; 
++        // $append_text  = isset($options['append']) ? $options['append'] : &quot;&quot;;
+         // $css_class    = isset($options['css_class']) ? $options['css_class'] : &quot;formError&quot;;
+ 
+     }
+-    
++
+ }
+ 
+ /** @see <A HREF="http://api.rubyonrails.com/classes/ActionView/Helpers/FormHelper.html">http://api.rubyonrails.com/classes/ActionView/Helpers/FormHelper.html</A> */
+ 
+ class FormHelper extends Object {
+ 
+-    public static function text_field(Object $object, $method, $options = array()) {
+-        $buff = '&lt;input type=&quot;text&quot; id=&quot;' . strtolower(get_class($object)) . '_'.$method.'&quot; ';
+-        $buff .= 'name=&quot;'.strtolower(get_class($object)).'['.$method.']&quot; ';
++    public static function text_field(ActiveRecordBase $object, $method, $options = array()) {
++        if (!$field= $object-&gt;getRow()-&gt;getFieldByName($method)) {
++            return; // ex?
++        }
++
++        $id   = strtolower(get_class($object)) . '_'.$method;
++        $name = strtolower(get_class($object)).'['.$method.']';
++        $buff = &quot;&lt;div class=\&quot;formRow\&quot;&gt;\n&lt;label for=\&quot;&quot; . $id . &quot;\&quot;&gt;&quot; . $field-&gt;getFormattedName() . &quot;&lt;/label&gt; \n&quot;;
++
++        $errors= FALSE;
++        if($field-&gt;hasErrors()) {
++            $buff .= '&lt;div class=&quot;fieldWithErrors&quot;&gt;';
++            $errors= TRUE;
++        }
++
++        $buff .= '&lt;input type=&quot;text&quot; id=&quot;' . $id . '&quot; ';
++        $buff .= 'name=&quot;'.$name . '&quot; ';
+         $buff .= 'value=&quot;'.$object-&gt;$method.'&quot; ';
+         foreach ($options as $key=&gt;$value) {
+             $buff .= $key . '=&quot;'.$value.'&quot; ';
+         }
+-        return $buff . ' /&gt;';
++        $buff .= ' /&gt;';
++        if ($errors) {
++            $buff .= '&lt;/div&gt;';
++        }
++        return $buff . &quot;&lt;/div&gt;&quot;;
+     }
+ 
+-    public static function text_area(Object $object, $method, $options=array()) {
+-        $buff = '&lt;textarea ';
+-        $buff .= 'id=&quot;' . strtolower(get_class($object)) . '_'.$method.'&quot; ';
+-        $buff .= 'name=&quot;'.strtolower(get_class($object)).'['.$method.']&quot; ';
++    public static function text_area(ActiveRecordBase $object, $method, $options=array()) {
++        if (!$field= $object-&gt;getRow()-&gt;getFieldByName($method)) {
++            return; // ex?
++        }
++        $id   = strtolower(get_class($object)) . '_'.$method;
++        $name = strtolower(get_class($object)).'['.$method.']';
++        $buff = &quot;&lt;div class=\&quot;formRow\&quot;&gt;\n&lt;label for=\&quot;&quot; . $id . &quot;\&quot;&gt;&quot; . $field-&gt;getFormattedName() . &quot;&lt;/label&gt; \n&quot;;
++        $errors= FALSE;
++        if($field-&gt;hasErrors()) {
++            $buff .= '&lt;div class=&quot;fieldWithErrors&quot;&gt;';
++            $errors= TRUE;
++        }
++        $buff .= '&lt;textarea id=&quot;' . $id.'&quot; name=&quot;'.$name .'&quot;';
+         foreach ($options as $key=&gt;$value) {
+             $buff .= $key . '=&quot;'.$value.'&quot; ';
+         }
+         $buff .= '&gt;';
+         $buff .= $object-&gt;$method;
+         $buff .= '&lt;/textarea&gt;';
+-        return $buff;
++        if ($errors) {
++            $buff .= '&lt;/div&gt;';
++        }
++        return $buff . &quot;&lt;/div&gt;&quot;;
+     }
+ 
+     public static function check_box(
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-01-21 10:09:18 UTC (rev 339)
++++ trunk/libs/active/record/Base.php	2006-01-21 17:37:08 UTC (rev 340)
+@@ -108,10 +108,11 @@
+             $field = new Field( $col-&gt;getName() );
+             // $field-&gt;size = $col-&gt;getSize();
+             $field-&gt;type = CreoleTypes::getCreoleName( $col-&gt;getType() ) ;
+-            $field-&gt;formattedName =  str_replace( '_', ' ', $col-&gt;getName() );
+             // set is_nullable
+             // $field-&gt;isNullable = (bool)$col-&gt;isNullable;
+-            if ($this-&gt;pk == $col-&gt;getName() ) $field-&gt;isPk = TRUE;
++            if ($this-&gt;pk == $col-&gt;getName() ) {
++                $field-&gt;isPk = TRUE;
++            }
+             // set the is_fk and fk_table
+             $pattern = '/^(.*)_id$/';
+             if ( preg_match($pattern, $col-&gt;getName(), $matches) ) {
+
+Modified: trunk/libs/active/record/Field.php
+===================================================================
+--- trunk/libs/active/record/Field.php	2006-01-21 10:09:18 UTC (rev 339)
++++ trunk/libs/active/record/Field.php	2006-01-21 17:37:08 UTC (rev 340)
+@@ -48,7 +48,7 @@
+      * @var string
+      * @since Rev. 272
+      */
+-    public $formattedName;
++    private $formattedName;
+ 
+     /** @var
+         mixed value of the field */
+@@ -86,8 +86,17 @@
+     public function Field($name) {
+         $this-&gt;name = $name;
+         $this-&gt;errors= array();
++        $this-&gt;formattedName= Inflector::humanize($name);
+     }
+ 
++    public function getFormattedName() {
++        return $this-&gt;formattedName;
++    }
++
++    public function setFormattedName($formattedName) {
++        $this-&gt;formattedName= $formattedName;
++    }
++
+     /**
+      * Adds an error to this field
+      *
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2006-01-21 10:09:18 UTC (rev 339)
++++ trunk/libs/active/record/Validator.php	2006-01-21 17:37:08 UTC (rev 340)
+@@ -31,8 +31,25 @@
+     }
+ 
+     public function uniqueness_of() {
+-
++        $args= func_get_args();
++        $has_errors= FALSE;
++        foreach ($args as $argument) {
++            if ($field = $this-&gt;row-&gt;getFieldByName($argument)) {
++                try {
++                    ActiveRecordBase::__find(array(
++                        array('condition'=&gt;$field-&gt;getName() .'=\''.$field-&gt;getValue().'\'')));
++                    $field-&gt;addError('is not unique');
++                    $has_errors= TRUE;
++                } catch (RecordNotFoundException $rnfEx) {
++                    continue;
++                }
++            }
++        }
++        if ($has_errors) {
++            throw new ValidationException('Validation failed!');
++        } else {
++            return TRUE;
++        }
+     }
+ 
+-
+ }
+
+Modified: trunk/libs/active/support/Inflector.php
+===================================================================
+--- trunk/libs/active/support/Inflector.php	2006-01-21 10:09:18 UTC (rev 339)
++++ trunk/libs/active/support/Inflector.php	2006-01-21 17:37:08 UTC (rev 340)
+@@ -122,6 +122,11 @@
+         $word = preg_replace('/([A-Z]+)([A-Z])/','\1_\2', $word);
+         return strtolower(preg_replace('/([a-z])([A-Z])/','\1_\2', $word));
+     }
++
++   function humanize($lower_case_and_underscored_word) {
++      return ucwords(str_replace(&quot;_&quot;,&quot; &quot;,$lower_case_and_underscored_word));
++   }
++
+     // }}}
+ 
+     public static function sanitize($word) {
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000131.html">[Medick-svn] r339 - trunk/libs/action/controller
+</A></li>
+	<LI>Next message: <A HREF="000133.html">[Medick-svn] r341 - trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#132">[ date ]</a>
+              <a href="thread.html#132">[ thread ]</a>
+              <a href="subject.html#132">[ subject ]</a>
+              <a href="author.html#132">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

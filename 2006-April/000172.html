@@ -1,0 +1,445 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r388 - applications/testor/app/controllers applications/testor/conf applications/testor/db trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/action/controller/session trunk/skel/config
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-April/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r388%20-%20applications/testor/app/controllers%20applications/testor/conf%20applications/testor/db%20trunk/libs/action/controller%20trunk/libs/action/controller/http%20trunk/libs/action/controller/session%20trunk/skel/config&In-Reply-To=%3C200604031829.k33IT4li028977%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000173.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r388 - applications/testor/app/controllers applications/testor/conf applications/testor/db trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/action/controller/session trunk/skel/config</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r388%20-%20applications/testor/app/controllers%20applications/testor/conf%20applications/testor/db%20trunk/libs/action/controller%20trunk/libs/action/controller/http%20trunk/libs/action/controller/session%20trunk/skel/config&In-Reply-To=%3C200604031829.k33IT4li028977%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r388 - applications/testor/app/controllers applications/testor/conf applications/testor/db trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/action/controller/session trunk/skel/config">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Apr  3 20:29:04 CEST 2006</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000173.html">[Medick-svn] r389 - applications/testor/app/controllers applications/testor/app/views applications/testor/app/views/cookie applications/testor/app/views/project applications/testor/conf applications/testor/db trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/action/controller/session trunk/libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#172">[ date ]</a>
+              <a href="thread.html#172">[ thread ]</a>
+              <a href="subject.html#172">[ subject ]</a>
+              <a href="author.html#172">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-04-03 20:28:25 +0200 (Mon, 03 Apr 2006)
+New Revision: 388
+
+Modified:
+   applications/testor/app/controllers/main_controller.php
+   applications/testor/conf/testor.xml
+   applications/testor/db/schema.sql
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+   trunk/libs/action/controller/session/ISessionContainer.php
+   trunk/libs/action/controller/session/Session.php
+   trunk/skel/config/application.xml
+Log:
+ -- configurable session container via app.xml
+ -- can set a cookie now with $http_response-&gt;setCookie($cookie);
+ -- can get a cookie or the list of cookies from HTTPRequest
+ -- minor changes to testor sample
+
+
+Modified: applications/testor/app/controllers/main_controller.php
+===================================================================
+--- applications/testor/app/controllers/main_controller.php	2006-03-28 18:40:11 UTC (rev 387)
++++ applications/testor/app/controllers/main_controller.php	2006-04-03 18:28:25 UTC (rev 388)
+@@ -15,23 +15,17 @@
+   public function index() {
+     $ctrl= array();
+     foreach (glob(dirname(__FILE__) . DIRECTORY_SEPARATOR . &quot;*_controller.php&quot;) as $key=&gt;$filename) {
+-        $this-&gt;logger-&gt;debug('Classes:' . $filename);
++        // $this-&gt;logger-&gt;debug('Classes:' . $filename);
+         include_once($filename);
+-        $c= explode(DIRECTORY_SEPARATOR, $filename);
+-        $cend= end($c);
+-        $f= explode('_', $cend);
+-        $class_name= ucfirst($f[0]) . 'Controller';
++        $c= explode(DIRECTORY_SEPARATOR, $filename); // ==&gt; main_controller.php
++        $f= explode('_', end($c)); // ==&gt; main
++        $class_name= ucfirst($f[0]) . 'Controller'; // ==&gt; MainController
+         $class= new ReflectionClass($class_name);
+         if ($class-&gt;isSubclassOf(new ReflectionClass('ApplicationController'))) {
+-          // $this-&gt;logger-&gt;debug($class);
+           $ctrl[$key] = $class;
+-          // $this-&gt;logger-&gt;debug($ctrl[$key]);
+         }
+     }
+-    // $this-&gt;logger-&gt;debug($ctrl);
+-    $this-&gt;ctrl= $ctrl;
+-    
++    $this-&gt;template-&gt;assign('ctrl',$ctrl);
+   }
+-  
+ }
+ 
+
+Modified: applications/testor/conf/testor.xml
+===================================================================
+--- applications/testor/conf/testor.xml	2006-03-28 18:40:11 UTC (rev 387)
++++ applications/testor/conf/testor.xml	2006-04-03 18:28:25 UTC (rev 388)
+@@ -14,6 +14,9 @@
+             &lt;server_name&gt;<A HREF="http://localhost:8091&lt;/server_name">http://localhost:8091&lt;/server_name</A>&gt;
+             &lt;document_root&gt;/testor&lt;/document_root&gt;
+             &lt;rewrite&gt;on&lt;/rewrite&gt;
++            &lt;session&gt;
++                &lt;container&gt;action.controller.session.CreoleSessionContainer&lt;/container&gt;
++            &lt;/session&gt;
+         &lt;/web&gt;
+         &lt;!-- logger system --&gt;
+         &lt;logger&gt;
+@@ -71,8 +74,8 @@
+             &lt;dsn id = &quot;one&quot;
+                 phptype  = &quot;pgsql&quot;
+                 hostspec = &quot;localhost&quot;
+-                username = &quot;andro&quot;
+-                password = &quot;su^lor*&quot;
++                username = &quot;albeit&quot;
++                password = &quot;pri$6g&quot;
+                 database = &quot;testor&quot; /&gt;
+         &lt;/database&gt;
+     &lt;/environment&gt;
+
+Modified: applications/testor/db/schema.sql
+===================================================================
+--- applications/testor/db/schema.sql	2006-03-28 18:40:11 UTC (rev 387)
++++ applications/testor/db/schema.sql	2006-04-03 18:28:25 UTC (rev 388)
+@@ -18,8 +18,9 @@
+ 
+ INSERT INTO `strones` (`id`,`inc`) VALUES (1,0);
+ 
+-CREATE TABLE c_session (
++CREATE TABLE c_sessions (
+ 	`session_id` VARCHAR (255) PRIMARY KEY,
+ 	`session_data` TEXT,
+ 	`session_lastmodified` DATETIME
+ ) ENGINE=InnoDB;
++
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-03-28 18:40:11 UTC (rev 387)
++++ trunk/libs/action/controller/Base.php	2006-04-03 18:28:25 UTC (rev 388)
+@@ -325,26 +325,42 @@
+      * @param Response response, the response
+      */
+     private function instantiate(Request $request, Response $response) {
++        // class memebers
+         $this-&gt;request  = $request;
+         $this-&gt;response = $response;
+-        $this-&gt;session  = $request-&gt;getSession();
+         $this-&gt;params   = $request-&gt;getParameters();
+-
+         $this-&gt;logger   = Registry::get('__logger');
+         $this-&gt;injector = Registry::get('__injector');
+         $this-&gt;config   = Registry::get('__configurator');
+-
+-        $this-&gt;app_path      = $this-&gt;injector-&gt;getPath('__base');
++        $this-&gt;session  = $request-&gt;getSession();
++        $this-&gt;app_path = $this-&gt;injector-&gt;getPath('__base');
+         $this-&gt;template_root = $this-&gt;injector-&gt;getPath('views') . $this-&gt;params['controller'] . DIRECTORY_SEPARATOR;
+-
+         $this-&gt;template = ActionView::factory('php');
++         
++        // register session container if any
++        // TODO: this should be moved elsewhere
++        if ($this-&gt;config-&gt;getWebContext()-&gt;session !== NULL &amp;&amp; 
++            $this-&gt;config-&gt;getWebContext()-&gt;session-&gt;container !== NULL
++        ) {
++            // container location.
++            $c_location= str_replace('.', DIRECTORY_SEPARATOR, 
++                  (string)$this-&gt;config-&gt;getWebContext()-&gt;session-&gt;container) . '.php';
++            include_once($c_location);
++            // container class name.
++            $e= explode('.',(string)$this-&gt;config-&gt;getWebContext()-&gt;session-&gt;container);
++            // reflect on container.
++            $container= new ReflectionClass(end($e));
++            if ($container-&gt;implementsInterface('ISessionContainer')) {
++                $this-&gt;session-&gt;setContainer($container-&gt;newInstance());
++            }
++        }
++       
+         // predefined variables:
+         // TODO: check if we have a / at the end, if not, add one
+-        
+-        $this-&gt;template-&gt;assign('__base', (string)$this-&gt;config-&gt;getWebContext()-&gt;document_root);
+-        $this-&gt;template-&gt;assign('__server', (string)$this-&gt;config-&gt;getWebContext()-&gt;server_name);
++        $this-&gt;template-&gt;assign('__base',       (string)$this-&gt;config-&gt;getWebContext()-&gt;document_root);
++        $this-&gt;template-&gt;assign('__server',     (string)$this-&gt;config-&gt;getWebContext()-&gt;server_name);
+         $this-&gt;template-&gt;assign('__controller', $this-&gt;params['controller']);
+-        $this-&gt;template-&gt;assign('__version', Medick::getVersion());
++        $this-&gt;template-&gt;assign('__version',    Medick::getVersion());
+         
+         $this-&gt;logger-&gt;debug($this-&gt;request-&gt;toString());
+     }
+@@ -353,6 +369,9 @@
+      * Shortcut for template assigns
+      */
+     public function __set($name, $value) {
++        // if (in_array($name, array_keys(get_object_vars($this)))) {
++        //     throw new MedickException('Cannot set ' . $name . ' as template variable');
++        // }
+         $this-&gt;template-&gt;assign($name, $value);
+     }
+ 
+@@ -360,11 +379,10 @@
+         return $this-&gt;template-&gt;$name;
+     }
+ 
+-    // XXX: not-done!
+     protected function sendFile($location, $options = array()) {
+-        if(!is_file($location)) {
+-            throw new MedickException('File not found...');
+-        }
++        // if(!is_file($location)) {
++            throw new MedickException('Method ' . __METHOD__ . ' Not Implemented!');
++        // }
+         // $options['length'] =   File::size($location);
+         // $options['filename'] = File::basename($location);
+     }
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-03-28 18:40:11 UTC (rev 387)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-04-03 18:28:25 UTC (rev 388)
+@@ -54,18 +54,24 @@
+         the list of headers associated with this HTTPRequest */
+     private $headers= array();
+ 
++    /** @var array
++        cookies list */
++    private $cookies= array();
++    
+     /**
+      * Constructor.
+      * It builds the HTTPRequest object
+      *
+      * @todo a URI Helper should be written.
+-     * @todo $_COOKIES are not merged anymore!!!
++     * @todo a Cookie class should be written.
+      */
+     public function HTTPRequest() {
+         foreach (array_merge($_GET,$_POST) as $key=&gt;$value) {
+             $this-&gt;setParameter($key, $value);
+         }
+-
++        
++        $this-&gt;cookies= $_COOKIE;
++        
+         unset($_REQUEST); unset($_GET); unset($_POST);
+ 
+         if (array_key_exists('PATH_INFO', $_SERVER) &amp;&amp; $_SERVER['PATH_INFO']!='' ) {
+@@ -74,7 +80,7 @@
+         // TODO:
+         //      -&gt; this is for php as cgi, or where PATH_INFO is not available
+         //      -&gt; ORIG_PATH_INFO should also work
+-        //      -&gt; should substract the documnet root
++        //      -&gt; should substract only the documnet root
+         elseif (array_key_exists('REQUEST_URI', $_SERVER)) {
+             $this-&gt;requestUri= substr($_SERVER['REQUEST_URI'],7);
+         }
+@@ -83,6 +89,18 @@
+         $this-&gt;headers = HTTPRequest::getAllHeaders();
+     }
+ 
++    public function getCookies() {
++        return $this-&gt;cookies;
++    }
++
++    public function hasCookie($name) {
++        return isset($this-&gt;cookies[$name]);
++    }
++
++    public function getCookie($name) {
++        return $this-&gt;hasCookie($name) ? $this-&gt;cookies[$name] : FALSE;
++    }
++    
+     public function getHeaders() {
+         return $this-&gt;headers;
+     }
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2006-03-28 18:40:11 UTC (rev 387)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2006-04-03 18:28:25 UTC (rev 388)
+@@ -75,28 +75,33 @@
+     /**
+      * Sets the header $name with $value
+      *
+-     * @param string, name the name of the header
+-     * @param mixed, value, the value of this header
++     * @param string the name of the header
++     * @param mixed  the value of this header
+      */
+     public function setHeader($name,$value) {
+         header($name . &quot;: &quot; . $value);
+     }
+ 
+     /**
+-     * Sets the content type header
++     * Sets the content-type header
+      *
+-     * @param strign type, the content type
++     * @param string the content type
+      */
+     public function setContentType($type) {
+-        return $this-&gt;setHeader('Content-type',$type);
++        return $this-&gt;setHeader('Content-type', $type);
+     }
+ 
++
++    public function setCookie($cookie) {
++        $this-&gt;setHeader('Set-Cookie', $cookie);
++    }
++    
+     /**
+      * Sets the status of this response
+      *
+-     * @todo should choose between HTTP/1.1 and HTTP/1.0
+-     * @todo more cases in the switch
+-     * @param HTTPResponse::SC_*, status, the status of this response
++     * @todo should choose between HTTP/1.1 and HTTP/1.0?
++     * @todo add more cases in the switch
++     * @param HTTPResponse::SC_* the status of this response
+      */
+     public function setStatus($status) {
+         switch($status){
+
+Modified: trunk/libs/action/controller/session/ISessionContainer.php
+===================================================================
+--- trunk/libs/action/controller/session/ISessionContainer.php	2006-03-28 18:40:11 UTC (rev 387)
++++ trunk/libs/action/controller/session/ISessionContainer.php	2006-04-03 18:28:25 UTC (rev 388)
+@@ -33,7 +33,26 @@
+ // }}}
+ 
+ /**
++ * This interface defines methods for user session handler
+  * 
++ * This container is added automatically in ActionController::instantiate() method
++ *
++ * You must declare this container application.xml file:
++ * &lt;code&gt;
++ * &lt;session&gt;
++ *  &lt;container&gt;action.controller.session.CreoleSessionContainer&lt;/container&gt;
++ * &lt;/session&gt;
++ * &lt;/code&gt;
++ * If you add a container, &lt;em&gt;MyFileSessionContainer&lt;/em&gt; 
++ * in &lt;em&gt;_your_application_/libs/session/MyFileSessionContainer.php&lt;/em&gt;,
++ * your definition should be:
++ * &lt;code&gt;
++ *  session.MyFileSessionContainer
++ * &lt;/code&gt;
++ * since the &lt;em&gt;_your_application_/libs&lt;/em&gt; folder is under &lt;em&gt;include path&lt;/em&gt;
++ * @see <A HREF="http://php.net/manual/en/function.session-set-save-handler.php">http://php.net/manual/en/function.session-set-save-handler.php</A>
++ * @see Session
++ * @see ActionController
+  * @package medick.action.controller
+  * @subpackage session
+  * @author Oancea Aurelian
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2006-03-28 18:40:11 UTC (rev 387)
++++ trunk/libs/action/controller/session/Session.php	2006-04-03 18:28:25 UTC (rev 388)
+@@ -49,7 +49,7 @@
+ 
+     /** @var ISessionContainer
+         the session container */
+-    private $container;
++    private $container = NULL;
+ 
+     /**
+      * Constructor, creates a new session object
+@@ -76,15 +76,15 @@
+         
+         // TODO: more settings
+         // session_cache_limiter(&quot;nocache&quot;);
+-        // session_write_close();
+-        // $container= new CreoleSessionContainer();
+-   		// session_set_save_handler(array($container, 'open'),
+-        //                     array($container, 'close'),
+-        //                     array($container, 'read'),
+-        //                     array($container, 'write'),
+-        //                     array($container, 'destroy'),
+-        //                     array($container, 'gc'));
+-                
++        if ($this-&gt;container!==NULL) {
++            session_set_save_handler(
++                array($this-&gt;container, 'open'),
++                array($this-&gt;container, 'close'),
++                array($this-&gt;container, 'read'),
++                array($this-&gt;container, 'write'),
++                array($this-&gt;container, 'destroy'),
++                array($this-&gt;container, 'gc'));
++        }
+         session_start();
+         //session_regenerate_id(TRUE);
+         $this-&gt;isStarted= TRUE;
+
+Modified: trunk/skel/config/application.xml
+===================================================================
+--- trunk/skel/config/application.xml	2006-03-28 18:40:11 UTC (rev 387)
++++ trunk/skel/config/application.xml	2006-04-03 18:28:25 UTC (rev 388)
+@@ -14,6 +14,23 @@
+             &lt;server_name&gt;<A HREF="http://localhost&lt;/server_name">http://localhost&lt;/server_name</A>&gt;
+             &lt;document_root&gt;/${app.name}&lt;/document_root&gt;
+             &lt;rewrite&gt;on&lt;/rewrite&gt;
++            &lt;!-- Session Container
++            Only CreoleSessionContainer is available.
++            It needs a database table:
++            === start ===
++            create table c_sessions (
++                `session_id`   VARCHAR (255) PRIMARY KEY,
++                `session_data` TEXT,
++                `session_lastmodified` DATETIME
++            );
++            ===  end  ===
++            NOTE: this was tested only on mysql driver
++            NOTE: to implement your own session container (handler), see ISessionContainer inteface
++            === end comment here ===
++            &lt;session&gt;
++                &lt;container&gt;action.controller.session.CreoleSessionContainer&lt;/container&gt;
++            &lt;/session&gt;
++            --&gt;
+         &lt;/web&gt;
+         &lt;!-- logger system --&gt;
+         &lt;logger&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000173.html">[Medick-svn] r389 - applications/testor/app/controllers applications/testor/app/views applications/testor/app/views/cookie applications/testor/app/views/project applications/testor/conf applications/testor/db trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/action/controller/session trunk/libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#172">[ date ]</a>
+              <a href="thread.html#172">[ thread ]</a>
+              <a href="subject.html#172">[ subject ]</a>
+              <a href="author.html#172">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

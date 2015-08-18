@@ -1,0 +1,139 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r350 - in trunk/test: . test/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r350%20-%20in%20trunk/test%3A%20.%20test/active/record&In-Reply-To=%3C200602112154.k1BLsP5w020940%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000140.html">
+   <LINK REL="Next"  HREF="000142.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r350 - in trunk/test: . test/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r350%20-%20in%20trunk/test%3A%20.%20test/active/record&In-Reply-To=%3C200602112154.k1BLsP5w020940%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r350 - in trunk/test: . test/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Feb 11 22:54:25 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000140.html">[Medick-svn] r349 - trunk/scripts
+</A></li>
+        <LI>Next message: <A HREF="000142.html">[Medick-svn] r351 - in trunk: . libs/action/view libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#141">[ date ]</a>
+              <a href="thread.html#141">[ thread ]</a>
+              <a href="subject.html#141">[ subject ]</a>
+              <a href="author.html#141">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-02-11 22:54:24 +0100 (Sat, 11 Feb 2006)
+New Revision: 350
+
+Modified:
+   trunk/test/runner.php
+   trunk/test/test/active/record/ValidatorTest.php
+Log:
+ -- ValidatorTest: we should not depend on the order that we run the tests.
+ -- runner: more debugging infos
+
+
+Modified: trunk/test/runner.php
+===================================================================
+--- trunk/test/runner.php	2006-02-11 21:29:41 UTC (rev 349)
++++ trunk/test/runner.php	2006-02-11 21:54:24 UTC (rev 350)
+@@ -24,16 +24,17 @@
+ include_once('medick/util.php');
+ include_once('medick/io/Folder.php');
+ 
+-
+ // include_once('simpletest/web_tester.php');
+ include_once('simpletest/unit_tester.php');
+ include_once('simpletest/reporter.php');
+ 
+ 
+-$test= new GroupTest('====== Medick Framework Unit Tests =====');
++$test= new GroupTest(&quot; &quot;);
++echo &quot; === Medick Framework Unit Tests ===\n&quot;;
+ 
+ $test_files = Folder::recursiveFindRelative('.', 'test', 'Test.php');
+ foreach($test_files as $file) {
++    echo &quot;&gt;&gt;&gt; Adding file: $file\n&quot;;
+     $test-&gt;addTestFile($file);
+ }
+ 
+
+Modified: trunk/test/test/active/record/ValidatorTest.php
+===================================================================
+--- trunk/test/test/active/record/ValidatorTest.php	2006-02-11 21:29:41 UTC (rev 349)
++++ trunk/test/test/active/record/ValidatorTest.php	2006-02-11 21:54:24 UTC (rev 350)
+@@ -14,6 +14,10 @@
+      */
+     public function ValidatorTest() {
+         @unlink(TMP . 'test.db');
++        parent::UnitTestCase();
++    }
++
++    private function createDatabase() {
+         $query='
+             CREATE TABLE news (
+                 id INTEGER PRIMARY KEY,
+@@ -22,11 +26,15 @@
+             );
+         ';
+         sqlite_query(sqlite_open(TMP . 'test.db'), $query);
+-        parent::UnitTestCase();
+     }
+ 
++    private function removeDatabase() {
++        unlink(TMP.'test.db');
++    }
++    
+     /** set up */
+     public function setUp() {
++        $this-&gt;createDatabase();
+         Registry::put(new MockConfigurator(), '__configurator');
+         Registry::put(new Logger(), '__logger');
+         ActiveRecord::close_connection();
+@@ -35,6 +43,7 @@
+     /** tearDown */
+     public function tearDown() {
+         Registry::close();
++        $this-&gt;removeDatabase();
+     }
+ 
+     public function testEmpty() {
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000140.html">[Medick-svn] r349 - trunk/scripts
+</A></li>
+	<LI>Next message: <A HREF="000142.html">[Medick-svn] r351 - in trunk: . libs/action/view libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#141">[ date ]</a>
+              <a href="thread.html#141">[ thread ]</a>
+              <a href="subject.html#141">[ subject ]</a>
+              <a href="author.html#141">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

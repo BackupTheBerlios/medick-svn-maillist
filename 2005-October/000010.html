@@ -1,0 +1,185 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r206 - trunk/libs/action/controller
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r206%20-%20trunk/libs/action/controller&In-Reply-To=%3C200510151208.j9FC80Es003713%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000009.html">
+   <LINK REL="Next"  HREF="000011.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r206 - trunk/libs/action/controller</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r206%20-%20trunk/libs/action/controller&In-Reply-To=%3C200510151208.j9FC80Es003713%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r206 - trunk/libs/action/controller">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Oct 15 14:08:00 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000009.html">[Medick-svn] r205 - trunk/docs/patches
+</A></li>
+        <LI>Next message: <A HREF="000011.html">[Medick-svn] r207 - trunk/libs/configurator
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#10">[ date ]</a>
+              <a href="thread.html#10">[ thread ]</a>
+              <a href="subject.html#10">[ subject ]</a>
+              <a href="author.html#10">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-15 14:07:52 +0200 (Sat, 15 Oct 2005)
+New Revision: 206
+
+Modified:
+   trunk/libs/action/controller/Base.php
+Log:
+ - [ ACBase ] provide magick  variable to templates
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-10-14 19:14:43 UTC (rev 205)
++++ trunk/libs/action/controller/Base.php	2005-10-15 12:07:52 UTC (rev 206)
+@@ -74,15 +74,15 @@
+     
+     /** @var string 
+         Default location for template files*/
+-	protected $template_root;
++    protected $template_root;
+     
+-	/** @var string 
++    /** @var string
+         application path*/
+-	protected $app_path;
++    protected $app_path;
+     
+     /** @var ActiveViewBase 
+         Template Engine */
+-	protected $template;
++    protected $template;
+     
+     /** @var bool 
+         Flag to indicate that the current action was performed.*/
+@@ -106,7 +106,7 @@
+         return $response;
+     }
+ 
+-	// {{{ renders.
++    // {{{ renders.
+ 
+     /**
+      * It renders the template name witch can be the name of the curent action.
+@@ -126,10 +126,10 @@
+      * @return void
+      */
+     protected function render($template_name = NULL, $status = NULL) {
+-		if (is_null($template_name)) $template_name = $this-&gt;params['action'];
+-		$this-&gt;render_file($this-&gt;template_root . $template_name . '.phtml', $status);
+-	}
+-	
++        if (is_null($template_name)) $template_name = $this-&gt;params['action'];
++        $this-&gt;render_file($this-&gt;template_root . $template_name . '.phtml', $status);
++    }
++    
+     /**
+      * It renders the template file.
+      * 
+@@ -168,10 +168,10 @@
+                 $this-&gt;params['controller'] . DIRECTORY_SEPARATOR . $this-&gt;params['action'] . '.phtml';
+             $this-&gt;render_text($this-&gt;template-&gt;render_file($_layout), $status);
+         } else {
+-    	   $this-&gt;render_text($this-&gt;template-&gt;render_file($template_file), $status);
++           $this-&gt;render_text($this-&gt;template-&gt;render_file($template_file), $status);
+         }
+-	}
+-	
++    }
++    
+     /**
+      * Will render some text.
+      * Is the _base_ method for render_file
+@@ -189,12 +189,12 @@
+             return;
+         }
+         if (is_null($status)) $status = Response::SC_OK;
+-		$this-&gt;response-&gt;setStatus($status);
++        $this-&gt;response-&gt;setStatus($status);
+         $this-&gt;response-&gt;setContent($text);
+         $this-&gt;action_performed = TRUE;
+-	}
+-	
+-	// }}}
++    }
++    
++    // }}}
+ 
+     /**
+      * Act as an internal constructor.
+@@ -212,7 +212,8 @@
+         $this-&gt;app_path = $this-&gt;config-&gt;getProperty('application_path') . DIRECTORY_SEPARATOR;
+         $this-&gt;template_root = 
+             $this-&gt;app_path . 'views' . DIRECTORY_SEPARATOR . $this-&gt;params['controller'] . DIRECTORY_SEPARATOR;
+-		$this-&gt;template = ActionViewBase::factory();
++        $this-&gt;template = ActionViewBase::factory();
++        $this-&gt;template-&gt;__base= $this-&gt;config-&gt;getProperty('document_root');
+     }
+ 
+     // XXX: not-done!
+@@ -320,11 +321,11 @@
+         }
+     }
+ 
+-	/**
+-	 * Injects model names into ActiveRecordBase by using the ModelInjector.
+-	 * TODO: table inheritance ?
++    /**
++     * Injects model names into ActiveRecordBase by using the ModelInjector.
++     * TODO: table inheritance ?
+      * TODO: can we hook a Registry here?
+-	 */
++     */
+     private function add_models() {
+         if (isset($this-&gt;model)) {
+             $this-&gt;logger-&gt;debug(&quot;We have Models...&quot;);
+@@ -344,7 +345,7 @@
+      * and also when we perform the action
+      * TODO: can we move this to the Object class?
+      * @param string method_name, the method.
+-     * 							  NOTE: We force the name to be on lower case.
++     *                            NOTE: We force the name to be on lower case.
+      * @return RelfectionMethod or FALSE in case of failure. 
+      */ 
+     private function createMethod($method_name) {
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000009.html">[Medick-svn] r205 - trunk/docs/patches
+</A></li>
+	<LI>Next message: <A HREF="000011.html">[Medick-svn] r207 - trunk/libs/configurator
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#10">[ date ]</a>
+              <a href="thread.html#10">[ thread ]</a>
+              <a href="subject.html#10">[ subject ]</a>
+              <a href="author.html#10">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,837 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r311 - in trunk: . libs/action/controller libs/action/controller/http libs/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r311%20-%20in%20trunk%3A%20.%20libs/action/controller%20libs/action/controller/http%20libs/medick&In-Reply-To=%3C200512261613.jBQGDEhH032648%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000105.html">
+   <LINK REL="Next"  HREF="000107.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r311 - in trunk: . libs/action/controller libs/action/controller/http libs/medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r311%20-%20in%20trunk%3A%20.%20libs/action/controller%20libs/action/controller/http%20libs/medick&In-Reply-To=%3C200512261613.jBQGDEhH032648%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r311 - in trunk: . libs/action/controller libs/action/controller/http libs/medick">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Dec 26 17:13:14 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000105.html">[Medick-svn] r310 - trunk/config
+</A></li>
+        <LI>Next message: <A HREF="000107.html">[Medick-svn] r312 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#108">[ date ]</a>
+              <a href="thread.html#108">[ thread ]</a>
+              <a href="subject.html#108">[ subject ]</a>
+              <a href="author.html#108">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-12-26 17:13:13 +0100 (Mon, 26 Dec 2005)
+New Revision: 311
+
+Removed:
+   trunk/libs/action/controller/route/
+Modified:
+   trunk/boot.php
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Map.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/Routing.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/medick/util.php
+Log:
+ -- rewrite the Routing system.
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/boot.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -51,21 +51,21 @@
+ include_once('medick/Exception.php');
+ include_once('medick/ErrorHandler.php');
+ set_error_handler(array(new ErrorHandler(), 'raiseError'));
++include_once('medick/util.php');
+ include_once('medick/Registry.php');
+ include_once('medick/Dispatcher.php');
+ include_once('medick/Version.php');
+-include_once('medick/util.php');
+ include_once('configurator/XMLConfigurator.php');
+ include_once('logger/Logger.php');
+ include_once('action/controller/Map.php');
++include_once('action/controller/Route.php');
++include_once('action/controller/Routing.php');
+ 
+ $conf_files = $_SERVER['MEDICK_APPLICATION_PATH'] . DIRECTORY_SEPARATOR . 'conf' .
+                         DIRECTORY_SEPARATOR . $_SERVER['MEDICK_APPLICATION_NAME'];
+ 
+ Registry::put(new XMLConfigurator($conf_files . '.xml'), '__configurator');
+ 
+-$map= Registry::put(new Map(), '__map');
+-
+ $logger= Registry::put(new Logger(), '__logger');
+ 
+ $logger-&gt;debug('Core Loaded...');
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/action/controller/Base.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -142,7 +142,7 @@
+         $this-&gt;instantiate($request, $response);
+         $this-&gt;add_models();
+         $this-&gt;add_before_filters();
+-        $this-&gt;perform_action($request-&gt;getParam('action'));
++        $this-&gt;perform_action($request-&gt;getParameter('action'));
+         return $response;
+     }
+ 
+@@ -270,7 +270,7 @@
+         $this-&gt;response = $response;
+         $this-&gt;session  = $request-&gt;getSession();
+         $this-&gt;session-&gt;start();
+-        $this-&gt;params   = $request-&gt;getParams();
++        $this-&gt;params   = $request-&gt;getParameters();
+ 
+         $this-&gt;logger   = Registry::get('__logger');
+         $this-&gt;injector = Registry::get('__injector');
+
+Modified: trunk/libs/action/controller/Map.php
+===================================================================
+--- trunk/libs/action/controller/Map.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/action/controller/Map.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -32,77 +32,21 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-include_once('action/controller/Route.php');
+-include_once('action/controller/route/RouteParam.php');
+-
+ /**
+  * @package locknet7.action.controller
+  */
++class Map extends AbstractCollection {
+ 
+-class Map extends Object {
++    private static $instance= NULL;
+ 
+-    /** 
+-     * @var array, routes, container for Routes
+-     */
+-    private $routes = array();
+-
+-    /**
+-     * @var Route the current running route
+-     */ 
+-    private $curent_route;
+-    
+-    /**
+-     * Sets the current Route
+-     * @param Route route
+-     */ 
+-    public function setCurrentRoute(Route $route) {
+-        $this-&gt;curent_route= $route;
++    protected function Map() {
++        parent::AbstractCollection(array());
+     }
+-    
+-    /**
+-     * Gets the current route
+-     * @return Route
+-     */ 
+-    public function getCurrentRoute() {
+-        return $this-&gt;curent_route;
+-    }
+ 
+-    /**
+-     * Adds a route to this map
+-     * @param Route route
+-     */
+-    public function add(Route $route) {
+-        if ($this-&gt;contains($route)) return;
+-        $this-&gt;routes[]=$route;
+-    }
+-
+-    /**
+-     * It gets a route by his name
+-     * @param string the name of the route to look for.
+-     * @throw RouteException
+-     */
+-    public function getRouteByName($name) {
+-        foreach ($this-&gt;routes as $route) {
+-            if ($route-&gt;getName()==$name) {
+-                return $route;
+-            }
++    public static function getInstance() {
++        if (Map::$instance===NULL) {
++            Map::$instance= new Map();
+         }
+-        throw new RouteException('Cannot find a route with this name: `' . $name . '` !');
++        return Map::$instance;
+     }
+-
+-    /**
+-     * Check if the current Map contains the given route
+-     * If so, we return-it, otherwise we return false
+-     * @param Route route
+-     * @return Route or FALSE if this map don`t contain this route.
+-     */
+-    public function contains(Route $route) {
+-        foreach ($this-&gt;routes as $_route) {
+-            if ($_route-&gt;getId() == $route-&gt;getId()) {
+-                return $_route;
+-            }
+-        }
+-        return FALSE;
+-    }
+ }
+-
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/action/controller/Request.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -48,8 +48,8 @@
+      * @param mixed, param, the paremeter name
+      * @return the param value of NULL if this param was not passed with this Resuest
+      */
+-    public function getParam($param) {
+-        return isset($this-&gt;params[$param]) ? $this-&gt;params[$param] : NULL;
++    public function getParameter($param) {
++        return $this-&gt;hasParameter($param) ? $this-&gt;params[$param] : NULL;
+     }
+ 
+     /**
+@@ -57,7 +57,7 @@
+      * @param string param_name the parameter name
+      * @return bool TRUE if the parameter_name is included in this request, FALSE otherwise
+      */
+-    public function hasParam($param_name) {
++    public function hasParameter($param_name) {
+         return isset($this-&gt;params[$param_name]);
+     }
+ 
+@@ -65,7 +65,7 @@
+      * It gets all the parameters of this Request
+      * @return array this request parameters.
+      */
+-    public function getParams() {
++    public function getParameters() {
+         return $this-&gt;params;
+     }
+ 
+@@ -75,7 +75,7 @@
+      * @param mixed, value, value of the param
+      * @return void
+      */
+-    public function setParam($name, $value) {
++    public function setParameter($name, $value) {
+         $this-&gt;params[$name] = $value;
+     }
+ }
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/action/controller/Route.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -35,164 +35,160 @@
+ /**
+  * @package locknet7.action.controller.route
+  */
+-class Route extends Object {
+ 
+-    /** @var string
+-        this route name */
+-    private $name = '';
+-    
+-    /** @var string
+-        route controller name */
+-    private $controller;
+-    
+-    /** @var string
+-        route action name */
+-    private $action;
+-    
+-    /** @var string 
+-        unique route identifier. */
+-    private $id;
+-    
+-    /** @var array RouteParam[]
+-        route parameters. */
+-    private $params;
+-    
+-    /** @var mixed
+-        route access level.*/
+-    private $access;
+-    
+-    /** @var array
+-        distinctive route headers*/
+-    private $headers;
+-    
+-    /** @var string 
+-        name of the failure Route.*/
+-    private $failure;
++/**
++ * A Collection with Components
++ */
++class Components extends AbstractCollection {   }
+ 
+-    /**
+-     * Constructor.
+-     * @param string controller name
+-     * @param string action name
+-     */
+-    public function __construct($controller, $action= '') {
+-        $this-&gt;controller= $controller;
+-        $this-&gt;action= $action;
+-        $this-&gt;id= md5($this-&gt;controller . $this-&gt;action);
+-        $this-&gt;params= array();
++/**
++ * A Route Component
++ */
++class Component extends Object {
++
++    private $name;
++
++    private $dymanic;
++
++    private $position;
++
++    public function Component($name) {
++        $this-&gt;name= $name;
+     }
+-    
+-    /**
+-     * Set the failure Route name
+-     * @param string name, the name of the failure route.
+-     */
+-    public function setFailure(Route $route) {
+-        $this-&gt;failure = $route;
++
++    public function getName() {
++        return $this-&gt;name;
+     }
+ 
+-    /**
+-     * Gets the failure Route name
+-     * @return string
+-     */
+-    public function getFailure() {
+-        return $this-&gt;failure;
++    public function setDynamic($dynamic) {
++        $this-&gt;dynamic= (bool)$dynamic;
+     }
+ 
+-    /**
+-     * It gets this route id,
+-     * a md5`ed concat`ed string between controller+action
+-     * @return string
+-     */
+-    public function getId() {
+-        return $this-&gt;id;
++    public function isDynamic() {
++        return $this-&gt;isDynamic;
+     }
+ 
+-    /**
+-     * Sets the name of this route.
+-     * @param string name
+-     */
+-    public function setName($name) {
++    public function setPosition($position) {
++        $this-&gt;position= (int)$position;
++    }
++
++}
++
++/**
++ * Route class.
++ */
++class Route extends Object {
++
++    /** @var string
++        incoming Route Definition list. */
++    private $route_list;
++
++    private $defaults;
++
++    private $name;
++
++    private $components;
++
++
++    public function Route($route_list, $name = '', Array $defaults = array(), Array $requirements = array()) {
++
++        $this-&gt;components= new Components();
++
++        $this-&gt;route_list= $route_list;
++        $this-&gt;defaults= $defaults;
++
+         $this-&gt;name= $name;
++
++        $parts= explode('/', trim($this-&gt;route_list, '/'));
++
++        foreach ($parts as $key=&gt;$element) {
++
++            if (preg_match('/:[a-z0-9_\-]+/',$element, $match)) {
++                $c= new Component(substr(trim($match[0]), 1));
++                $c-&gt;setDynamic(TRUE);
++
++            } else {
++                $c= new Component($element);
++                $c-&gt;setDynamic(FALSE);
++            }
++            $c-&gt;setPosition($key);
++            $this-&gt;components-&gt;add($c);
++        }
++
+     }
+ 
+     /**
+-     * Gets the name of this route.
+-     * @return string name of this route.
++     * It gets the name of this Route.
++     *
++     * @return string name.
+      */
+     public function getName() {
+-        return $this-&gt;name == '' ? $this-&gt;controller . '/' . $this-&gt;action : $this-&gt;name;
++        return $this-&gt;name;
+     }
+ 
+     /**
+-     * It sets the action for this route.
+-     * @param string action action name
++     * It sets the name of this Route.
++     *
++     * @param string name, the name of this Route.
+      */
+-    public function setAction($action) {
+-        $this-&gt;action= $action;
+-        $this-&gt;id= md5($this-&gt;controller . $this-&gt;action);
++    public function setName($name) {
++        $this-&gt;name= (string)$name;
+     }
+ 
+     /**
+-     * It gets the action.
+-     * @return string action
++     * Sets defaults for this Route.
++     *
++     * @param array an array witch holds defaults values for this Route.
+      */
+-    public function getAction() {
+-        return $this-&gt;action;
++    public function setDefaults(Array $defaults) {
++        $this-&gt;defaults= $defaults;
+     }
+ 
+-    /**
+-     * It get the controller
+-     * @return string controller, like 'todo'
+-     */
+-    public function getController() {
+-        return $this-&gt;controller;
+-    }
++    // match the current Route against incoming URL.
++    // @TODO: refactor.
++    // @return bool
++    public function match(Request $request) {
++        $parts= $request-&gt;getPathInfoParts();
+ 
+-    /**
+-     * It sets the access level.
+-     * @param AccessLevel access
+-     */
+-    public function setAccess($access) {
+-        $this-&gt;access= $access;
+-    }
++        // if / was requested, just skip this part.
++        if (count($parts) !=0 ) {
++            $it= $this-&gt;components-&gt;iterator();
++            while($it-&gt;hasNext()) {
++                $name= $it-&gt;next()-&gt;getName();
+ 
+-    /**
+-     * Adds a new Parameter on this route or a Header.
+-     * @param Object argument
+-     */
+-    public function add($argument) {
+-        if ($argument instanceof RouteParam) {
+-            $this-&gt;params[]  = $argument;
+-        } elseif ($argument instanceof RouteHeader) {
+-            $this-&gt;headers[] = $argument;
+-        } else {
+-            throw new RouteException('Wrong Argument Type in ' . __METHOD__ . ', Argument should be one of RouteParam or RouteHeader objects!');
++                if (isset($parts[$it-&gt;key()])) {
++
++                    if (FALSE===strpos($parts[$it-&gt;key()], '.html')) {
++                        $part= $parts[$it-&gt;key()];
++                    } else {
++                        list($part)= explode('.', $parts[$it-&gt;key()]);
++                    }
++                    $request-&gt;setParameter($name, $part);
++                }
++
++            }
+         }
+-        return $argument;
+-    }
+ 
+-    public function addFromArray($params) {
+-        foreach($params as $param) {
+-            $this-&gt;add($param);   
++        // more to be done.
++
++        // check if we have a controller.
++        if (!$request-&gt;hasParameter('controller')) {
++            if (array_key_exists('controller', $this-&gt;defaults)) {
++                $request-&gt;setParameter('controller', $this-&gt;defaults['controller']);
++            } else { // we don`t have a controller for this route (?), exit.
++                return FALSE;
++            }
+         }
+-    }
+ 
+-    /**
+-     * Gets the list with the attached params
+-     * @return array RouteParam[]
+-     */
+-    public function getParams() {
+-        return $this-&gt;params;
++        // check for a default action
++        if (!$request-&gt;hasParameter('action')) {
++            if (array_key_exists('action', $this-&gt;defaults)) {
++                $request-&gt;setParameter('action', $this-&gt;defaults['action']);
++            } else {
++                $request-&gt;setParameter('action','index');
++            }
++        }
++        return TRUE;
+     }
+ 
+-    /** 
+-     * It gets the list of headers
+-     * @return array RouteHeaders
+-     */
+-    public function getHeaders() {
+-        return $this-&gt;headers;
+-    }
+-    
+-    public function toString() {
+-        return sprintf('Route Controller/Action {Id}: %s/%s {%s}', $this-&gt;controller,$this-&gt;action, $this-&gt;id);
+-    }
+ }
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/action/controller/Routing.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -37,46 +37,35 @@
+ /**
+  * @package locknet7.action.controller.route
+  */
++
+ class ActionControllerRouting extends Object {
+ 
++    // @return Route.
++    // @throws RoutingException
++    private function findRoute(Request $request) {
++        $it= Map::getInstance()-&gt;iterator();
++        while($it-&gt;hasNext()) {
++            if ($it-&gt;next()-&gt;match($request)) return $it-&gt;current();
++        }
++        throw new RoutingException('Cannot find a Route for this hash: ' . $request-&gt;getPathInfo());
++    }
++
++    private function createControllerInstance($controller) {
++        return Registry::put(new Injector(), '__injector')-&gt;inject('controller', $controller);
++    }
++
+     /**
+-     * Check if the application Map contains the current Route.
+-     *
+-     * If so, we add the route parameters into the current request.
+-     *
+-     * @param locknet7.action.controller.Request
+-     * @return locknet7.action.controller.Base
++     * Recognize a Route Based on the Request.
+      */
+     public static function recognize(Request $request) {
+-        $map   = Registry::get('__map');
+-        $logger= Registry::get('__logger');
+-        // do we know this route?
+-        if ($route= $map-&gt;contains(
+-                                new Route(
+-                                    $request-&gt;getParam('controller'), 
+-                                    $request-&gt;getParam('action')))
+-                                  )
+-        {
+-            $logger-&gt;debug('Route Recognized: ' . $route-&gt;getName());
+-            $params= $route-&gt;getParams();
+-            foreach ($params as $key=&gt;$param) {
+-                if ($request-&gt;hasParam($param-&gt;getName())) continue;
+-                $request-&gt;setParam($param-&gt;getName(), $request-&gt;getPathInfo($key));
+-            }
+-        } else {
+-            $logger-&gt;debug('Unknown Route! {' . 
+-                            $request-&gt;getParam('controller') . 
+-                            '/'. $request-&gt;getParam('action') . 
+-                            '} Loading default...');
+-            $route= $map-&gt;getRouteByName('default');
+-            $request-&gt;setParam('controller', $route-&gt;getController());
+-            $request-&gt;setParam('action', $route-&gt;getAction());
+-        }
+-        $logger-&gt;debug(
+-            'Running on Route: ' . $route-&gt;getName() .
+-            ' ctrller: ' . $route-&gt;getController() .
+-            ' act: ' . $route-&gt;getAction());
+-        $map-&gt;setCurrentRoute($route);
+-        return Registry::put(new Injector(), '__injector')-&gt;inject('controller', $route-&gt;getController());
++        $r= new ActionControllerRouting($request);
++        // try {
++        $route = $r-&gt;findRoute($request);
++        return   $r-&gt;createControllerInstance($request-&gt;getParameter('controller'));
++        // } catch (RoutingException $rEx) {
++            // load 404 route, if fails too try the default route, this are named routes.
++        //    echo $rEx;
++        // }
+     }
+ }
++
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -42,9 +42,9 @@
+     /** @var Session */
+     private $session;
+ 
+-    /** @var array
++    /** @var string
+         path_info_parts */
+-    private $path_info= array();
++    private $path_info= NULL;
+ 
+     /**
+      * Constructor.
+@@ -52,25 +52,13 @@
+      */
+     public function __construct() {
+         foreach ($_REQUEST as $key=&gt;$value) {
+-            $this-&gt;setParam($key, $value);
++            $this-&gt;setParameter($key, $value);
+         }
+         
+         unset($_REQUEST); unset($_GET); unset($_POST);
+         
+         if (array_key_exists('PATH_INFO', $_SERVER)) {
+-            $parts= explode('/', trim($_SERVER['PATH_INFO'], '/'));
+-            foreach ($parts as $key=&gt;$part) {
+-                if ($key == 0) {
+-                    list($controller)= explode('.', $part, 2);
+-                    $this-&gt;setParam('controller', $controller);
+-                } elseif ($key == 1) {
+-                    list($action)= explode('.', $part, 2);
+-                    $this-&gt;setParam('action', $action);
+-                } else {
+-                    list($param)= explode('.', $part,2);
+-                    $this-&gt;path_info[] = $param;
+-                }
+-            }
++            $this-&gt;path_info= $_SERVER['PATH_INFO'];
+         }
+         $this-&gt;session = new Session();
+     }
+@@ -80,10 +68,15 @@
+      * @param int, key, the part index
+      * @return value of this part or NULL if this part is not defined
+      */
+-    public function getPathInfo($key) {
+-        return isset($this-&gt;path_info[$key]) ? $this-&gt;path_info[$key] : NULL;
++    public function getPathInfo() {
++        return $this-&gt;path_info;
+     }
+ 
++    public function getPathInfoParts() {
++        if (is_null($this-&gt;path_info)) return array();
++        return explode('/', trim($this-&gt;path_info,'/'));
++    }
++
+     /**
+      * It gets the Session
+      * @return Session, the curent Session
+
+Modified: trunk/libs/medick/util.php
+===================================================================
+--- trunk/libs/medick/util.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/medick/util.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -55,13 +55,13 @@
+      * @param medick.Object the Object we want to remove
+      * @return Object, the Object just removed
+      */ 
+-    function remove(Object $o);
++    // function remove(Object $o);
+     
+     /**
+      * Removes all the objects stored in this Collection
+      * @return void
+      */
+-    function clear();
++    // function clear();
+     
+     /**
+      * Indicates the size of this Collection
+@@ -91,7 +91,7 @@
+      * Returns true if this collection contains the specified element
+      * @return bool
+      */
+-    function contains(Object $o);
++    // function contains(Object $o);
+     
+ }
+ // }}}
+@@ -105,7 +105,8 @@
+ interface IIterator {
+ 
+     /**
+-     * Check if this Iterator has more elements
++     * Check if this Collection has more elements
++     *
+      * @return TRUE if this Iterator has a next element, 
+      *         FALSE if we are at the last element
+      */
+@@ -113,10 +114,97 @@
+ 
+     /**
+      * It gets the current element
++     *
+      * @return medick.Object
+      */
+     function next();
+     
++    /**
++     * It gets the current element.
++     * 
++     * @return medick.Object
++     */
++    function current();
++
++    /**
++     * It gets the current element key
++     *
++     * @return int
++     */
++    function key();
++    
+ }
+ // }}}
+ 
++
++// {{{ AbstractCollection
++abstract class AbstractCollection extends Object implements ICollection {
++
++    private $elements;
++
++    public function AbstractCollection(Array $elements=array()) {
++        $this-&gt;elements= $elements;
++    }
++
++    public function iterator() {
++        return new MedickIterator($this);
++    }
++
++    public function add(Object $object) {
++        $this-&gt;elements[]= $object;
++    }
++
++    public function size() {
++        return count($this-&gt;elements);
++    }
++
++    public function isEmpty() {
++        return $this-&gt;size() == 0;
++    }
++
++    public function get($idx) {
++        return $this-&gt;elements[(int)$idx];
++    }
++
++    public function toArray() {
++        return $this-&gt;elements;
++    }
++
++}
++// }}}
++
++// {{{ MedickIterator
++class MedickIterator implements IIterator {
++
++    private $collection;
++
++    // private $elements;
++
++    private $idx=0;
++
++    public function MedickIterator(ICollection $collection) {
++        $this-&gt;collection = $collection;
++        // $this-&gt;elements   = $collection-&gt;toArray();
++        // reset($this-&gt;elements);
++    }
++
++    public function hasNext() {
++        return $this-&gt;collection-&gt;size() &gt; $this-&gt;idx;
++    }
++
++    public function next() {
++        // return $this-&gt;elements[$this-&gt;idx++];
++        return $this-&gt;collection-&gt;get($this-&gt;idx++);
++    }
++
++    public function current() {
++        // return $this-&gt;elements[(int)($this-&gt;idx - 1)];
++        return $this-&gt;collection-&gt;get((int)($this-&gt;idx - 1));
++    }
++
++    public function key() {
++        return (int)($this-&gt;idx-1);
++    }
++
++}
++// }}}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000105.html">[Medick-svn] r310 - trunk/config
+</A></li>
+	<LI>Next message: <A HREF="000107.html">[Medick-svn] r312 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#108">[ date ]</a>
+              <a href="thread.html#108">[ thread ]</a>
+              <a href="subject.html#108">[ subject ]</a>
+              <a href="author.html#108">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

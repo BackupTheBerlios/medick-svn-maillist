@@ -1,0 +1,404 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r412 - / exp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-July/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r412%20-%20/%20exp&In-Reply-To=%3C200607011016.k61AG70F026079%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000196.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r412 - / exp</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r412%20-%20/%20exp&In-Reply-To=%3C200607011016.k61AG70F026079%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r412 - / exp">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Jul  1 12:16:07 CEST 2006</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000196.html">[Medick-svn] r413 - exp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#195">[ date ]</a>
+              <a href="thread.html#195">[ thread ]</a>
+              <a href="subject.html#195">[ subject ]</a>
+              <a href="author.html#195">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-07-01 12:16:07 +0200 (Sat, 01 Jul 2006)
+New Revision: 412
+
+Added:
+   exp/
+   exp/validator_api.php
+Log:
+ -- new validator API
+
+Added: exp/validator_api.php
+===================================================================
+--- exp/validator_api.php	2006-06-24 18:16:34 UTC (rev 411)
++++ exp/validator_api.php	2006-07-01 10:16:07 UTC (rev 412)
+@@ -0,0 +1,323 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005, 2006 Oancea Aurelian &lt;aurelian[at]locknet[dot]ro&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * Medick ActiveRecord Validation API
++ */
++
++error_reporting(E_STRICT|E_ALL);
++ini_set('display_errors', 1);
++
++class MedickClass extends ReflectionClass { }
++
++class Object {
++
++    public function getClass() {
++        return new MedickClass($this-&gt;getClassName());
++    }
++
++    public function getClassName() {
++        return get_class($this);
++    }
++
++    public function __toString() {
++        return $this-&gt;toString();
++    }
++
++    public function toString() {
++        return $this-&gt;getClassName();
++    }
++
++}
++
++class FieldError extends Object {
++
++    private $message;
++
++    public function FieldError($message) {
++        $this-&gt;message= $message;
++    }
++
++    public function getMessage() {
++        return $this-&gt;message;
++    }
++
++    public function toString() {
++        return $this-&gt;message;
++    }
++
++}
++
++class Field extends Object {
++
++    private $name;
++
++    private $value;
++
++    private $errors= array();
++
++    public function Field($name) {
++        $this-&gt;name= $name;
++    }
++
++    public function setValue($value) {
++        $this-&gt;value= $value;
++    }
++
++    public function getValue() {
++        return $this-&gt;value;
++    }
++
++    public function getName() {
++        return $this-&gt;name;
++    }
++
++    public function addError(FieldError $error) {
++        $this-&gt;errors[]= $error;
++    }
++
++    public function getErrors() {
++        return $this-&gt;errors;
++    }
++
++    public function hasErrors() {
++        return sizeof($this-&gt;errors) &gt; 0;
++    }
++
++    public function toString() {
++        return $this-&gt;value;
++    }
++
++}
++
++abstract class Validator extends Object {
++
++    protected $fields;
++
++    protected $message;
++
++    public function message($message) {
++        $this-&gt;message= $message;
++        return $this;
++    }
++
++    public function fields(Array $fields=array()) {
++        $this-&gt;fields= $fields;
++    }
++
++    public function validate_each(ActiveRecord $record) {
++        foreach($this-&gt;fields as $field) {
++            $this-&gt;validate($record-&gt;getField($field));
++        }
++    }
++
++    abstract public function validate(Field $field);
++
++}
++
++class PresenceOfValidator extends Validator {
++
++    protected $message= '%s is empty';
++
++    public function validate(Field $field) {
++        if ($field-&gt;getValue() == '') { 
++            $field-&gt;addError(new FieldError(sprintf($this-&gt;message, $field-&gt;getName())));
++        }
++    }
++
++}
++
++class NumericalityOfValidator extends Validator {
++
++    protected $message= '%s is not a number!';
++
++    public function validate(Field $field) {
++        $v=$field-&gt;getValue();
++        if(!((is_numeric($v)) &amp;&amp; (intval(0+$v)==$v))) { 
++            $field-&gt;addError(new FieldError(sprintf($this-&gt;message, $field-&gt;getName())));
++        }
++    }
++
++}
++
++class LengthOfValidator extends Validator {
++
++    protected $too_short= '%s is too short, min is %d';
++    protected $too_long = '%s is too long, max is %d';
++    protected $min;
++    protected $max;
++
++    public function in($min, $max) {
++        if ( $max &lt;= $min ) { 
++            throw new Exception('Doh, you are too smart!');
++        }
++        $this-&gt;min= (int)$min;
++        $this-&gt;max= (int)$max;
++        return $this;
++    }
++
++    public function max($max) {
++        $this-&gt;max= $max;
++        return $this;
++    }
++
++    public function min($min) {
++        $this-&gt;min= $min;
++        return $this;
++    }
++
++    public function too_short($message) {
++        $this-&gt;too_short= $message;
++        return $this;
++    }
++    
++    public function too_long($message) {
++        $this-&gt;too_long= $message;
++        return $this;
++    }
++
++    public function validate(Field $field) {
++        $l= strlen($field-&gt;getValue());
++        if ($l &lt; $this-&gt;min) { 
++            return $field-&gt;addError(new FieldError(sprintf($this-&gt;too_short, $field-&gt;getName(), $this-&gt;min)));
++        } elseif ($l &gt; $this-&gt;max) { 
++            return $field-&gt;addError(new FieldError(sprintf($this-&gt;too_long, $field-&gt;getName(), $this-&gt;max)));
++        }
++    }
++
++}
++
++class ActiveRecord extends Object {
++
++    private $validators= array();
++
++    protected $fields= array();
++
++    public function addValidator(Validator $v) {
++        $this-&gt;validators[]= $v;
++    }
++
++    public function hasField($name) {
++        return in_array($name, array_keys($this-&gt;fields));
++    }
++
++    public function getFields() {
++        return $this-&gt;fields;
++    }
++
++    public function getField($name) {
++        return $this-&gt;fields[$name];
++    }
++
++    public function __set($name, $value) {
++        if ($this-&gt;hasField($name)) $this-&gt;getField($name)-&gt;setValue($value);
++        else throw new Exception('No such Filed: ' . $name);
++    }
++
++    public function __get($name) {
++        if ($this-&gt;hasField($name)) return $this-&gt;getField($name)-&gt;getValue();
++        else throw new Exception('No such Filed: ' . $name);
++    }
++
++    public function __call($method, $args) {
++        if (substr($method,0,10)== 'validates_') { 
++            $cname= str_replace(&quot; &quot;, &quot;&quot;, ucwords(str_replace(&quot;_&quot;, &quot; &quot;, substr($method, 10)))) . &quot;Validator&quot;;
++            $validator= new $cname;
++            $validator-&gt;fields($args);
++            $this-&gt;validators[]= $validator;
++            return $validator;
++        }
++        if (substr($method,0,7) == 'before_') {
++            if ($this-&gt;getClass()-&gt;hasMethod($method)) return $this-&gt;getClass()-&gt;getMethod($method)-&gt;invoke($this);
++            else return true;
++        }
++        if (substr($method,0,6) == 'after_') {
++            if ($this-&gt;getClass()-&gt;hasMethod($method)) return $this-&gt;getClass()-&gt;getMethod($method)-&gt;invoke($this);
++            return;
++        }
++    }
++
++    protected function collect_errors() {
++        foreach ($this-&gt;validators as $v) {
++            $v-&gt;validate_each($this);
++        }
++        foreach ($this-&gt;fields as $field) {
++            if ($field-&gt;hasErrors()) return 1;
++        }
++        return 0;
++    }
++
++    public function save() {
++        if ($this-&gt;before_save() &amp;&amp; $this-&gt;collect_errors() === 0) {
++            return true;
++        }
++        return false;
++    }
++
++}
++
++class Person extends ActiveRecord {
++
++    public function Person() {
++        $this-&gt;fields['name']    = new Field('name');
++        $this-&gt;fields['address'] = new Field('address');
++        $this-&gt;fields['phone']   = new Field('phone');
++    }
++
++    protected function before_save() {
++        $this-&gt;validates_presence_of('name', 'address')-&gt;message('%s should be filled!');
++        $this-&gt;validates_length_of('name')-&gt;in(1,5)-&gt;too_short('Too short: %s [min: %d]')-&gt;too_long('Too long: %s, [max: %d]');
++        $this-&gt;validates_length_of('address')-&gt;max(5)-&gt;too_long('%s is too long, maximum is %d charachters');
++        $this-&gt;validates_numericality_of('phone');
++        return true;
++    }
++
++}
++
++function error_messages_for(ActiveRecord $record) {
++    foreach ($record-&gt;getFields() as $field) {
++        foreach ($field-&gt;getErrors() as $error) {
++            echo $error-&gt;getMessage() . &quot;\n&quot;;
++        }
++    }
++}
++
++$p= new Person();
++$p-&gt;phone= 'a';
++$p-&gt;name= 'Marel';
++$p-&gt;address= 'Andro';
++var_dump($p-&gt;save());
++
++error_messages_for($p);
++
+
+
+Property changes on: exp/validator_api.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000196.html">[Medick-svn] r413 - exp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#195">[ date ]</a>
+              <a href="thread.html#195">[ thread ]</a>
+              <a href="subject.html#195">[ subject ]</a>
+              <a href="author.html#195">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

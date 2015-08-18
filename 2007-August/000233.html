@@ -1,0 +1,384 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r453 - in exp: . ar5
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-August/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r453%20-%20in%20exp%3A%20.%20ar5&In-Reply-To=%3C200708171420.l7HEKxkC032670%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000232.html">
+   <LINK REL="Next"  HREF="000234.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r453 - in exp: . ar5</H1>
+    <B>aurelian at mail.berlios.de</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r453%20-%20in%20exp%3A%20.%20ar5&In-Reply-To=%3C200708171420.l7HEKxkC032670%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r453 - in exp: . ar5">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Fri Aug 17 16:20:59 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000232.html">[Medick-svn] r452 - in trunk: . libs/action/controller	libs/action/view libs/active/record libs/context/configurator	libs/creole/drivers/sqlite libs/medick
+</A></li>
+        <LI>Next message: <A HREF="000234.html">[Medick-svn] r454 - in exp/ar5: . db libs libs/active	libs/active/record libs/active/record/drivers	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite libs/active/support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#233">[ date ]</a>
+              <a href="thread.html#233">[ thread ]</a>
+              <a href="subject.html#233">[ subject ]</a>
+              <a href="author.html#233">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-08-17 16:20:56 +0200 (Fri, 17 Aug 2007)
+New Revision: 453
+
+Added:
+   exp/ar5/
+   exp/ar5/README
+   exp/ar5/ar5.php
+   exp/ar5/ar5_base.php
+   exp/ar5/ar5_sql.php
+Modified:
+   exp/README
+Log:
+ -- initial experiment on future ActiveRecord
+
+Modified: exp/README
+===================================================================
+--- exp/README	2007-08-15 08:06:49 UTC (rev 452)
++++ exp/README	2007-08-17 14:20:56 UTC (rev 453)
+@@ -3,5 +3,6 @@
+ medick/exp holds medick experiments
+ 
+ Contents:
+-    -&gt; validator API (validator_api.php)
++    -&gt; ActiveRecord5 (ar5/README) started 16.08.2007
++    -&gt; validator API (validator_api.php) merged to trunk
+ 
+
+Added: exp/ar5/README
+===================================================================
+--- exp/ar5/README	2007-08-15 08:06:49 UTC (rev 452)
++++ exp/ar5/README	2007-08-17 14:20:56 UTC (rev 453)
+@@ -0,0 +1,5 @@
++// $Id$
++
++This is an experiment to create a faster&amp;better ActiveRecord
++It will also replace creole from medick.
++
+
+
+Property changes on: exp/ar5/README
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/ar5/ar5.php
+===================================================================
+--- exp/ar5/ar5.php	2007-08-15 08:06:49 UTC (rev 452)
++++ exp/ar5/ar5.php	2007-08-17 14:20:56 UTC (rev 453)
+@@ -0,0 +1,47 @@
++&lt;?php
++// $Id$
++
++include_once('ar5_base.php');
++include_once('ar5_sql.php');
++include_once('libs/active/support/Inflector.php');
++
++class ActiveRecord extends Object {
++
++  protected $__class_name;
++
++  protected $__table_name;
++
++  protected $__fields;
++
++  public function ActiveRecord(  ) {
++    $this-&gt;__class_name= $this-&gt;getClassName();
++    $this-&gt;__table_name= Inflector::tabelize( $this-&gt;__class_name );
++    $this-&gt;__fields    = ActiveRecord::connection()-&gt;getTableInfo( $this-&gt;__table_name )-&gt;getFields();
++  }
++
++
++  protected static $__table_info = null;
++
++  protected static $__connection = null;
++
++  public static function connection() {
++    if(self::$__connection===null) {
++      self::$__connection= new SQLiteConnection();
++      self::$__connection-&gt;connect();
++    }
++    return self::$__connection;
++  }
++
++}
++
++class User extends ActiveRecord { 
++
++}
++
++$u = new User();
++$u-&gt;firstname= 'aurelian';
++$u-&gt;insert();
++
++// $ar= ActiveRecord::connection()-&gt;execute('select * from users');
++
++?&gt;
+
+
+Property changes on: exp/ar5/ar5.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/ar5/ar5_base.php
+===================================================================
+--- exp/ar5/ar5_base.php	2007-08-15 08:06:49 UTC (rev 452)
++++ exp/ar5/ar5_base.php	2007-08-17 14:20:56 UTC (rev 453)
+@@ -0,0 +1,49 @@
++&lt;?php
++// $Id$
++
++error_reporting(E_ALL);
++
++class Object {
++  
++  public function __toString() {
++    return $this-&gt;toString();
++  }
++
++  public function toString() {
++    return $this-&gt;getClassName();
++  }
++
++  public function getClassName() {
++    return get_class($this);
++  }
++
++}
++
++class MedickException extends Exception { }
++
++class Error extends MedickException {
++
++  public function __construct($message, $code, $file, $line, $trace) {
++    parent::__construct($message);
++    $this-&gt;code  = $code;
++    $this-&gt;file  = $file;
++    $this-&gt;line  = $line;
++    $this-&gt;trace = $trace;
++  }
++}
++class ErrorHandler extends Object {
++  public function ErrorHandler() {  }
++  public function raise($errno, $errstr, $errfile, $errline) {
++    $errRep = error_reporting();
++    if( ($errno &amp; $errRep) != $errno) {
++      return;
++    }
++    $trace = debug_backtrace();
++    array_shift($trace);
++    throw new Error( $errstr, $errno, $errfile, $errline, $trace );
++  }
++}
++set_error_handler( array(new ErrorHandler(), 'raise') );
++
++
++
+
+
+Property changes on: exp/ar5/ar5_base.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/ar5/ar5_sql.php
+===================================================================
+--- exp/ar5/ar5_sql.php	2007-08-15 08:06:49 UTC (rev 452)
++++ exp/ar5/ar5_sql.php	2007-08-17 14:20:56 UTC (rev 453)
+@@ -0,0 +1,146 @@
++&lt;?php
++// $Id$
++
++class SQLException extends MedickException {  }
++
++class Field extends Object {
++
++  private $name, $value, $pk, $type;
++
++  public function Field($name, $pk=0, $type='int', $value=null) {
++    $this-&gt;name= $name;
++    $this-&gt;value=$value;
++    $this-&gt;pk= $pk;
++    $this-&gt;type=$type;
++  }
++
++  public function getName() { return $this-&gt;name; }
++  public function getValue() { return $this-&gt;value; }
++  public function isPk() { return (bool)$this-&gt;pk; }
++  public function getType() { return $this-&gt;type; }
++
++}
++
++abstract class SQLConnection extends Object {
++
++  protected $resource, $database, $lastQuery;
++
++  public function getDatabase() { return $this-&gt;database; }
++  public function setDatabase( $database ) { $this-&gt;database=$database;}
++  public function getResource() { return $this-&gt;resource; }
++  public function setResource( $resource ) { $this-&gt;resource= $resource; }
++  public function getLastQuery() { return $this-&gt;lastQuery; }
++
++  abstract public function connect();
++
++  abstract public function close(); 
++
++  abstract public function execute($sql);
++
++  abstract protected function getLastErrorMessage();
++
++  abstract public function getTableInfo($name);
++
++}
++
++abstract class SQLResultSet extends Object {
++
++  protected $result, $connection;
++  protected $row= array();
++
++  public function SQLResultSet($result, SQLConnection $connection) {
++    $this-&gt;result= $result;
++    $this-&gt;connection  = $connection;
++  }
++
++  public abstract function next();
++
++  public function getRow() { return $this-&gt;row; }
++
++  public function __get($name) {
++    if(isset($this-&gt;row[$name])) return $this-&gt;row[$name];
++    throw new SQLException('Cannot get the value of &quot;' . $name . '&quot; no such field!');
++  }
++
++}
++
++class SQLiteResultSet extends SQLResultSet {
++
++  public function next() {
++    $this-&gt;row= sqlite_fetch_array( $this-&gt;result );
++    return $this-&gt;row ? true : false;
++  }
++
++}
++
++abstract class SQLTableInfo extends Object {
++
++  protected $fields, $name, $connection;
++
++  public function SQLTableInfo($name, SQLConnection $connection) {
++    $this-&gt;name= $name;
++    $this-&gt;connection= $connection;
++    $this-&gt;fields= array();
++  }
++
++  public function getFields() { return $this-&gt;fields; }
++
++  abstract public function initFields( );
++
++}
++
++class SQLiteTableInfo extends SQLTableInfo {
++
++  public function initFields() {
++    $sql= 'PRAGMA table_info('.$this-&gt;name.')';
++    $rs= $this-&gt;connection-&gt;execute( $sql );
++    while( $rs-&gt;next() ) {
++      // xxx: type.
++      $f= new Field( $rs-&gt;name, $rs-&gt;pk, $rs-&gt;type );
++    }
++  }
++
++}
++
++class SQLiteConnection extends SQLConnection {
++
++  public function SQLiteConnection() {
++    $this-&gt;database= 'db/aymo.sqlite';
++  }
++
++  public function connect() {
++    try {
++      $this-&gt;resource= sqlite_open( $this-&gt;database );
++    } catch (Error $err) {
++      throw new SQLException( $err-&gt;getMessage() );
++    }
++  }
++
++  public function execute($sql) {
++    $this-&gt;lasQuery= $sql;
++    try {
++      $result= sqlite_query( $this-&gt;resource, $sql, SQLITE_ASSOC );
++    } catch (Error $err) {
++      throw new SQLException( $err-&gt;getMessage() );
++    }
++    return new SQLiteResultSet($result, $this);
++  }
++
++  public function close() {
++    sqlite_close( $this-&gt;resource );
++  }
++
++  public function getLastErrorMessage() {
++    return sqlite_error_string( sqlite_last_error($this-&gt;resource) );
++  }
++  
++  // xxx. cache.
++  public function getTableInfo( $name ) {
++    $table_info= new SQLiteTableInfo( $name, $this );
++    $table_info-&gt;initFields();
++  }
++
++}
++
++
++
+
+
+Property changes on: exp/ar5/ar5_sql.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000232.html">[Medick-svn] r452 - in trunk: . libs/action/controller	libs/action/view libs/active/record libs/context/configurator	libs/creole/drivers/sqlite libs/medick
+</A></li>
+	<LI>Next message: <A HREF="000234.html">[Medick-svn] r454 - in exp/ar5: . db libs libs/active	libs/active/record libs/active/record/drivers	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite libs/active/support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#233">[ date ]</a>
+              <a href="thread.html#233">[ thread ]</a>
+              <a href="subject.html#233">[ subject ]</a>
+              <a href="author.html#233">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

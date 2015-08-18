@@ -1,0 +1,103 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r416 - in trunk/libs: action/controller active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-July/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r416%20-%20in%20trunk/libs%3A%20action/controller%20active/record&In-Reply-To=%3C200607022006.k62K6Zlo028069%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000198.html">
+   <LINK REL="Next"  HREF="000200.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r416 - in trunk/libs: action/controller active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r416%20-%20in%20trunk/libs%3A%20action/controller%20active/record&In-Reply-To=%3C200607022006.k62K6Zlo028069%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r416 - in trunk/libs: action/controller active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Jul  2 22:06:35 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000198.html">[Medick-svn] r415 - in trunk/docs/medick.website: . css
+</A></li>
+        <LI>Next message: <A HREF="000200.html">[Medick-svn] r417 - in trunk: . libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#199">[ date ]</a>
+              <a href="thread.html#199">[ thread ]</a>
+              <a href="subject.html#199">[ subject ]</a>
+              <a href="author.html#199">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-07-02 22:06:34 +0200 (Sun, 02 Jul 2006)
+New Revision: 416
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/active/record/RowsAggregate.php
+Log:
+ -- added RowsAggregate::first method + implemented ActionController::redirect_to_path method
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-07-02 16:39:34 UTC (rev 415)
++++ trunk/libs/action/controller/Base.php	2006-07-02 20:06:34 UTC (rev 416)
+@@ -430,7 +430,9 @@
+     // XXX: not done.
+     // redirects to a know path (eg. /images/pic.jpg)
+     protected function redirect_to_path($path) {
+-        throw new MedickException('Method: ' . __METHOD__ . ' not implemented!');
++        $this-&gt;logger-&gt;debug('Redirecting to: ' . $path);
++        $this-&gt;response-&gt;redirect($this-&gt;config-&gt;getWebContext()-&gt;server_name . $this-&gt;config-&gt;getWebContext()-&gt;document_root . '/' . $path);
++        $this-&gt;action_performed = TRUE;
+     }
+ 
+     // XXX: not done.
+
+Modified: trunk/libs/active/record/RowsAggregate.php
+===================================================================
+--- trunk/libs/active/record/RowsAggregate.php	2006-07-02 16:39:34 UTC (rev 415)
++++ trunk/libs/active/record/RowsAggregate.php	2006-07-02 20:06:34 UTC (rev 416)
+@@ -62,6 +62,10 @@
+         return $row;
+     }
+ 
++    public function first() {
++      return $this-&gt;container[0];
++    }
++
+     /**
+      * It gets the iterator
+      * @return Iterator
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000198.html">[Medick-svn] r415 - in trunk/docs/medick.website: . css
+</A></li>
+	<LI>Next message: <A HREF="000200.html">[Medick-svn] r417 - in trunk: . libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#199">[ date ]</a>
+              <a href="thread.html#199">[ thread ]</a>
+              <a href="subject.html#199">[ subject ]</a>
+              <a href="author.html#199">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

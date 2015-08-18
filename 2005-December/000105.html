@@ -1,0 +1,88 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r310 - trunk/config
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r310%20-%20trunk/config&In-Reply-To=%3C200512261603.jBQG3txV031790%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000106.html">
+   <LINK REL="Next"  HREF="000108.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r310 - trunk/config</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r310%20-%20trunk/config&In-Reply-To=%3C200512261603.jBQG3txV031790%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r310 - trunk/config">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Dec 26 17:03:55 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000106.html">[Medick-svn] r309 - trunk/bin
+</A></li>
+        <LI>Next message: <A HREF="000108.html">[Medick-svn] r311 - in trunk: . libs/action/controller libs/action/controller/http libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#105">[ date ]</a>
+              <a href="thread.html#105">[ thread ]</a>
+              <a href="subject.html#105">[ subject ]</a>
+              <a href="author.html#105">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-12-26 17:03:54 +0100 (Mon, 26 Dec 2005)
+New Revision: 310
+
+Modified:
+   trunk/config/application.routes.php
+Log:
+ -- using the new Routing system.
+
+Modified: trunk/config/application.routes.php
+===================================================================
+--- trunk/config/application.routes.php	2005-12-26 16:03:24 UTC (rev 309)
++++ trunk/config/application.routes.php	2005-12-26 16:03:54 UTC (rev 310)
+@@ -3,10 +3,6 @@
+ // $Id$
+ // @TODO: write some documentation about this file
+ 
+-{
+-    {
+-
+-    }
+-}
+-
++$map= Map::getInstance();
++$map-&gt;add(new Route(':controller/:action/:id'));
+ ?&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000106.html">[Medick-svn] r309 - trunk/bin
+</A></li>
+	<LI>Next message: <A HREF="000108.html">[Medick-svn] r311 - in trunk: . libs/action/controller libs/action/controller/http libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#105">[ date ]</a>
+              <a href="thread.html#105">[ thread ]</a>
+              <a href="subject.html#105">[ subject ]</a>
+              <a href="author.html#105">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

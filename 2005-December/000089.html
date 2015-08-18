@@ -1,0 +1,85 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r293 - trunk/libs/logger/outputter
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r293%20-%20trunk/libs/logger/outputter&In-Reply-To=%3C200512111419.jBBEJnoh004252%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000088.html">
+   <LINK REL="Next"  HREF="000090.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r293 - trunk/libs/logger/outputter</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r293%20-%20trunk/libs/logger/outputter&In-Reply-To=%3C200512111419.jBBEJnoh004252%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r293 - trunk/libs/logger/outputter">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Dec 11 15:19:49 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000088.html">[Medick-svn] r292 - in trunk/libs/action: controller view
+</A></li>
+        <LI>Next message: <A HREF="000090.html">[Medick-svn] r294 - trunk/libs/action/controller/templates
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#89">[ date ]</a>
+              <a href="thread.html#89">[ thread ]</a>
+              <a href="subject.html#89">[ subject ]</a>
+              <a href="author.html#89">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-12-11 15:19:47 +0100 (Sun, 11 Dec 2005)
+New Revision: 293
+
+Modified:
+   trunk/libs/logger/outputter/FileOutputter.php
+Log:
+ -- try to create the file before opening
+
+Modified: trunk/libs/logger/outputter/FileOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/FileOutputter.php	2005-12-11 13:49:43 UTC (rev 292)
++++ trunk/libs/logger/outputter/FileOutputter.php	2005-12-11 14:19:47 UTC (rev 293)
+@@ -48,6 +48,9 @@
+      * @param string the file to write on
+      */
+     public function __construct($level, $file) {
++        if (!is_file($file)) {
++            touch($file);
++        }
+         $this-&gt;handler = fopen($file, 'a');
+         $this-&gt;level = $level;
+     }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000088.html">[Medick-svn] r292 - in trunk/libs/action: controller view
+</A></li>
+	<LI>Next message: <A HREF="000090.html">[Medick-svn] r294 - trunk/libs/action/controller/templates
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#89">[ date ]</a>
+              <a href="thread.html#89">[ thread ]</a>
+              <a href="subject.html#89">[ subject ]</a>
+              <a href="author.html#89">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

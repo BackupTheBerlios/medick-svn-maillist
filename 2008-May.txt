@@ -1,0 +1,2967 @@
+From aurelian at mail.berlios.de  Tue May 13 18:56:18 2008
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Tue, 13 May 2008 18:56:18 +0200
+Subject: [Medick-svn] r474 - in exp/medick2: config public
+	vendor/medick/lib/action/controller vendor/medick/lib/context
+	vendor/medick/lib/plugin
+Message-ID: <200805131656.m4DGuIcs029280@sheep.berlios.de>
+
+Author: aurelian
+Date: 2008-05-13 18:56:17 +0200 (Tue, 13 May 2008)
+New Revision: 474
+
+Modified:
+   exp/medick2/config/cfields.xml
+   exp/medick2/public/.htaccess
+   exp/medick2/public/index.php
+   exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+   exp/medick2/vendor/medick/lib/action/controller/Map.php
+   exp/medick2/vendor/medick/lib/action/controller/Route.php
+   exp/medick2/vendor/medick/lib/action/controller/Router.php
+   exp/medick2/vendor/medick/lib/context/AbstractConfigurator.php
+   exp/medick2/vendor/medick/lib/context/ContextManager.php
+   exp/medick2/vendor/medick/lib/context/IConfigurator.php
+   exp/medick2/vendor/medick/lib/plugin/Plugins.php
+Log:
+ -- loading controllers now
+
+Modified: exp/medick2/config/cfields.xml
+===================================================================
+--- exp/medick2/config/cfields.xml	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/config/cfields.xml	2008-05-13 16:56:17 UTC (rev 474)
+@@ -4,10 +4,8 @@
+ 
+   <properties>
+     <property name="load.paths" value="" />
+-
+     <property name="plugin.autodiscovery" value="true" />
+     <property name="plugin.path"          value="vendor/plugins" />
+-
+   </properties>
+ 
+   <plugins>
+
+Modified: exp/medick2/public/.htaccess
+===================================================================
+--- exp/medick2/public/.htaccess	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/public/.htaccess	2008-05-13 16:56:17 UTC (rev 474)
+@@ -25,7 +25,7 @@
+ #RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+ 
+ # Set 2.
+-RewriteBase /medick2
++RewriteBase /
+ 
+ # Send requests without parameters to index.php
+ # -- disabled since we want to show index.html
+
+Modified: exp/medick2/public/index.php
+===================================================================
+--- exp/medick2/public/index.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/public/index.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -7,13 +7,13 @@
+ // 
+ 
+ // complete path to medick boot.php file.
+-include_once('/W/Devel/medick/exp/medick2/boot.php');
++include_once('/home/aurelian/Code/medick/exp/medick2/boot.php');
+ 
+ // complete path to cFields.xml
+ // and environment to load
+ $d= new Dispatcher(
+           ContextManager::load(
+-            '/W/Devel/medick/exp/medick2/config/cfields.xml',
++            '/home/aurelian/Code/medick/exp/medick2/config/cfields.xml',
+             'localhost')
+         );
+ $d->dispatch();
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -29,8 +29,8 @@
+       sprintf('medick v.$%s ready to dispatch (took %.3f sec. to boot)', Medick::version(), $this->context->timer()->tick()));
+ 
+     try {
+-      Router::recognize( $request, $this->context );
+-      // ->process( $request, $response )->dump();
++      Router::recognize( $request, $this->context )->process( $request, $response );
++      // ->dump();
+     } catch(Exception $ex) {
+       echo sprintf('Exception: %s with message: %s', get_class($ex), $ex->getMessage());
+     }
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Map.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Map.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/action/controller/Map.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -43,11 +43,15 @@
+     $config_routes= $this->context->config()->routes();
+     foreach( $config_routes as $r ) {
+       // xxx. requirements
+-      $this->routes[]= new Route( (string)trim($r['name']), (string)trim($r['value']), $this->context->config()->route_defaults($r) );
++      $this->routes[]= new Route( 
++        (string)trim($r['name']),  // name
++        (string)trim($r['value']), // definition
++        $this->context->config()->route_defaults($r) // array with defaults
++      );
+     }
+     // 2. plugins routes
+ 
+-    // xxx: throw exception if 0 routes
++    // xxx: throw exception if 0 routes?
+   }
+ 
+ }
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Route.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Route.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/action/controller/Route.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -1,5 +1,7 @@
+ <?php
+ 
++// $Id: $
++
+ // XXX: Route Segment
+ class __Segment extends Object {
+ 
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Router.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Router.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/action/controller/Router.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -18,8 +18,38 @@
+   // should return a Controller Instance
+   public function create_controller( $request ) {
+ 
+-    Medick::dump( $request );
++    // xxx: should call plugins special __before_controller methods?
+ 
++    // XXX: should load additional paths from plugins?
++
++    // 1. class name -> request->parameter('controller') . 'Controller'
++    // 2. file name  -> request->parameter('controller') . '_controller.php'
++
++    $path= APP_PATH; // -> this is going to be a list of paths
++
++    $controller_file = $path . '/app/controllers/' . $request->parameter('controller') . '_controller.php';
++    $controller_class= ucfirst($request->parameter('controller')) . 'Controller';
++
++    if( false === file_exists($controller_file) ) {
++      throw new Exception('Cannot load `'.$controller_file.'`, no such file or directory!'); // -> this is going to be replaced with continue in loop
++    }
++
++    require( $controller_file );
++
++    if( false === class_exists($controller_class) ) {
++      throw new Exception('Cannot use `'.$controller_class.'`, no such class!'); // -> this is going to be replaced with continue in loop
++    }
++
++    $rclass= new ReflectionClass($controller_class);
++
++    if( false === ($rclass->getParentClass() || $rclass->getParentClass() == 'ApplicationController' || $rclass->getParentClass() == 'ActionController')) {
++      throw new Exception('Wrong defintion of class: ' . $controller_class);
++    }
++
++    $this->context->logger()->debug(str_replace(APP_PATH, '${'.$this->context->config()->application_name().'}', $controller_file) . ' --> ' . $controller_class);
++
++    return $rclass->newInstance( $this->context );
++
+   }
+ 
+   /*
+
+Modified: exp/medick2/vendor/medick/lib/context/AbstractConfigurator.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/AbstractConfigurator.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/context/AbstractConfigurator.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -23,4 +23,12 @@
+     $this->environment= $environment;
+   }
+ 
++  public function file() {
++    return $this->file;
++  }
++
++  public function environment() {
++    return $this->environment;
++  }
++
+ }
+
+Modified: exp/medick2/vendor/medick/lib/context/ContextManager.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/ContextManager.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/context/ContextManager.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -29,18 +29,21 @@
+   // the config parser/loaded, to have access to configuration options
+   private $config;
+ 
+-  // a Map, you get access to Routes like this
++  // a Map, you get access to Routes using this
+   private $map;
+ 
+   private $timer;
+ 
+-  public function __construct( Iconfigurator $config ) {
++  private function __construct( Iconfigurator $config ) {
+     $this->config= $config;
+     // configure the logger
+     $this->logger= new Logger();
+     $this->logger->setFormatter( Logger::formatter($this->config) );
+     $this->logger->attachOutputters( Logger::outputters($this->config) );
+-    // create a Map
++    // ready?
++    $this->logger->debug("\t[".time() . "] `" . $this->config->environment() . "` env. from " . 
++      str_replace(APP_PATH, '${'.$this->config->application_name().'}/', $this->config->file()) . " loaded for \${ip}");
++    // create a Map for routes.
+     $this->map= new Map( $this );
+   }
+ 
+
+Modified: exp/medick2/vendor/medick/lib/context/IConfigurator.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/IConfigurator.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/context/IConfigurator.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -4,6 +4,10 @@
+ 
+   public function __construct($file, $environment);
+ 
++  public function environment();
++
++  public function file();
++
+   // return Array
+   public function logger_outputters();
+ 
+
+Modified: exp/medick2/vendor/medick/lib/plugin/Plugins.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/plugin/Plugins.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/plugin/Plugins.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -25,9 +25,11 @@
+ 
+   // should return IPlugin[]
+   public static function discover( ContextManager $context ) {
++    
++    if($context->config()->property( 'plugin.autodiscovery' ) === false) return;
+ 
+-    if($context->config()->property( 'plugin.autodiscovery') === false) return;
+-    
++    $context->logger()->debug( strtolower(__METHOD__) . ' [hint: set `plugin.autodiscovery` to false to disable plugins]');
++
+     //
+     // XXX.
+     // -> plugin.path
+
+
+
+From aurelian at mail.berlios.de  Tue May 13 18:58:00 2008
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Tue, 13 May 2008 18:58:00 +0200
+Subject: [Medick-svn] r475 - in exp/medick2: . app app/controllers public
+	vendor/medick/lib/action/controller
+Message-ID: <200805131658.m4DGw0oO030664@sheep.berlios.de>
+
+Author: aurelian
+Date: 2008-05-13 18:57:59 +0200 (Tue, 13 May 2008)
+New Revision: 475
+
+Added:
+   exp/medick2/app/
+   exp/medick2/app/controllers/
+   exp/medick2/app/controllers/foo_controller.php
+   exp/medick2/public/favicon.ico
+   exp/medick2/vendor/medick/lib/action/controller/Base.php
+Log:
+ -- test controller
+
+Added: exp/medick2/app/controllers/foo_controller.php
+===================================================================
+--- exp/medick2/app/controllers/foo_controller.php	2008-05-13 16:56:17 UTC (rev 474)
++++ exp/medick2/app/controllers/foo_controller.php	2008-05-13 16:57:59 UTC (rev 475)
+@@ -0,0 +1,9 @@
++<?php
++
++class ApplicationController extends ActionController {
++
++}
++
++class FooController extends ApplicationController {
++
++}
+
+Added: exp/medick2/public/favicon.ico
+===================================================================
+(Binary files differ)
+
+
+Property changes on: exp/medick2/public/favicon.ico
+___________________________________________________________________
+Name: svn:mime-type
+   + application/octet-stream
+
+Added: exp/medick2/vendor/medick/lib/action/controller/Base.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Base.php	2008-05-13 16:56:17 UTC (rev 474)
++++ exp/medick2/vendor/medick/lib/action/controller/Base.php	2008-05-13 16:57:59 UTC (rev 475)
+@@ -0,0 +1,108 @@
++<?php
++
++class ActionChain implements ArrayAccess, Iterator, Countable {
++
++  private $chain;
++
++  private $index;
++
++  public function __construct(/*ActionController $action_controller*/) {
++    $this->chain= array();
++    $this->index= 0;
++  }
++
++  public function push( $value ) {
++    $this[sizeof($this)]= $value;
++  }
++
++  public function prepend( $value ) {
++    array_unshift($this->chain, $value);
++  }
++
++  public function offsetExists($offset) {
++    return isset( $this->chain[$offset] );
++  }
++
++  public function offsetGet($offset) {
++    return $this->chain[$offset];
++  }
++
++  public function offsetSet($offset, $value) {
++    // if(false === is_int($offset)) throw new Exception('use only numrical values!');
++    $this->chain[$offset]= $value;
++  }
++
++  public function offsetUnset($offset) {
++    unset($this->chain[$offset]);
++  }
++
++  public function current() {
++    // return $this->chain[$this->index];
++    return $this[$this->index];
++  }
++
++  public function next() {
++    $this->index++;
++    // return $this->chain[$this->index];
++    // return $this->current();
++  }
++
++  public function key() {
++    return $this->index;
++  }
++
++  public function valid() {
++    return $this[$this->index];
++  }
++
++  public function rewind() {
++    $this->index--;
++  }
++
++  public function count() {
++    return sizeof($this->chain);
++  }
++
++}
++
++class ActionController extends Object {
++
++  // protected $logger;
++  // protected $config;
++
++  protected $request;
++
++  protected $response;
++
++  protected $context;
++
++  private $chain;
++
++  final public function __construct(ContextManager $context) {
++    $this->context= $context;
++    // $this->logger= $context->logger();
++    // $this->config= $context->config();
++    $this->chain= new ActionChain();
++  }
++
++  // should return ActionView
++  final public function process(Request $request, Response $response) {
++    $this->request= $request;
++    $this->response= $response;
++
++    $this->chain->push( 'foo' );
++    $this->chain->push( 'bar' );
++
++    $this->chain->prepend( 'baz' );
++
++    Medick::dump( $this->chain );
++
++    // xxx: before.
++
++    // xxx: after.
++
++    Medick::dump($request);
++  }
++
++}
++
+
+
+
+From aurelian at mail.berlios.de  Mon May 19 10:10:11 2008
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Mon, 19 May 2008 10:10:11 +0200
+Subject: [Medick-svn] r476 - in exp/medick2/app: . controllers views
+	views/foo views/layouts
+Message-ID: <200805190810.m4J8ABGA027954@sheep.berlios.de>
+
+Author: aurelian
+Date: 2008-05-19 10:10:10 +0200 (Mon, 19 May 2008)
+New Revision: 476
+
+Added:
+   exp/medick2/app/controllers/asd_controller.php
+   exp/medick2/app/views/
+   exp/medick2/app/views/foo/
+   exp/medick2/app/views/foo/mur.phtml
+   exp/medick2/app/views/layouts/
+   exp/medick2/app/views/layouts/foo.phtml
+Modified:
+   exp/medick2/app/controllers/foo_controller.php
+Log:
+ -- more on medick2 exp.
+
+Added: exp/medick2/app/controllers/asd_controller.php
+===================================================================
+
+Modified: exp/medick2/app/controllers/foo_controller.php
+===================================================================
+--- exp/medick2/app/controllers/foo_controller.php	2008-05-13 16:57:59 UTC (rev 475)
++++ exp/medick2/app/controllers/foo_controller.php	2008-05-19 08:10:10 UTC (rev 476)
+@@ -6,4 +6,12 @@
+ 
+ class FooController extends ApplicationController {
+ 
++  public function bar($arg1, $arg2, $arg3='bar') {
++    // Medick::dump( $arg3 );
++  }
++
++  public function mur() {
++    $this->template->assign('time', time());
++  }
++
+ }
+
+Added: exp/medick2/app/views/foo/mur.phtml
+===================================================================
+--- exp/medick2/app/views/foo/mur.phtml	2008-05-13 16:57:59 UTC (rev 475)
++++ exp/medick2/app/views/foo/mur.phtml	2008-05-19 08:10:10 UTC (rev 476)
+@@ -0,0 +1,2 @@
++hello template, it's <?= date("d-M, H:i:s", $time); ?>!
++
+
+Added: exp/medick2/app/views/layouts/foo.phtml
+===================================================================
+--- exp/medick2/app/views/layouts/foo.phtml	2008-05-13 16:57:59 UTC (rev 475)
++++ exp/medick2/app/views/layouts/foo.phtml	2008-05-19 08:10:10 UTC (rev 476)
+@@ -0,0 +1,10 @@
++<html>
++
++<head>
++  <title><?=$__controller;?> / <?=$__action;?></title>
++</head>
++<body>
++  <?= $content_for_layout; ?>
++</body>
++
++</html>
+
+
+
+From aurelian at mail.berlios.de  Mon May 19 10:11:24 2008
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Mon, 19 May 2008 10:11:24 +0200
+Subject: [Medick-svn] r478 - exp/medick2
+Message-ID: <200805190811.m4J8BOOi028608@sheep.berlios.de>
+
+Author: aurelian
+Date: 2008-05-19 10:11:24 +0200 (Mon, 19 May 2008)
+New Revision: 478
+
+Modified:
+   exp/medick2/AUTOLOAD
+   exp/medick2/boot.php
+   exp/medick2/test.php
+Log:
+ -- more on medick2 exp.
+
+Modified: exp/medick2/AUTOLOAD
+===================================================================
+--- exp/medick2/AUTOLOAD	2008-05-19 08:10:31 UTC (rev 477)
++++ exp/medick2/AUTOLOAD	2008-05-19 08:11:24 UTC (rev 478)
+@@ -2,7 +2,7 @@
+ 
+ h3. About
+ 
+-* Mecanism nou de "incarcare" a claselor in Medick 0.5.
++* Mecanism nou de "incarcare" a claselor in Medick 2.
+ * Se realizeaza prin divizarea Medick in framework-uri.
+ * Fiecare Framework contine un fisier init.php prin care se adauga o functie __autoload pentru descoperirea automata a claselor necesare.
+ 
+@@ -40,5 +40,7 @@
+ h4. frameworks:
+ * context
+ * logger
++* plugin
+ * action_controller
++* action_view
+ 
+
+Modified: exp/medick2/boot.php
+===================================================================
+--- exp/medick2/boot.php	2008-05-19 08:10:31 UTC (rev 477)
++++ exp/medick2/boot.php	2008-05-19 08:11:24 UTC (rev 478)
+@@ -26,7 +26,7 @@
+     date_default_timezone_set('Europe/Madrid');
+ }
+ 
+-// load core classes
++// load core
+ require 'medick/Medick.php';
+ 
+ Medick::prepare_application();
+
+Modified: exp/medick2/test.php
+===================================================================
+--- exp/medick2/test.php	2008-05-19 08:10:31 UTC (rev 477)
++++ exp/medick2/test.php	2008-05-19 08:11:24 UTC (rev 478)
+@@ -1,13 +1,9 @@
+ <?php
+ 
+-include_once('boot.php');
++// $Id: $
+ 
+-// complete path to cFields.xml
+-// and environment to load
+-$d= new Dispatcher(
+-          ContextManager::load(
+-            '/home/aurelian/Code/medick/exp/medick2/config/cfields.xml',
+-            'test')
+-        );
++// load the framework
++include_once('boot.php');
++// dispatch with complete path to cFields.xml and the environment to load
++$d= new Dispatcher( ContextManager::load('config/cfields.xml','test') );
+ $d->dispatch();
+-
+
+
+
+From aurelian at mail.berlios.de  Mon May 19 10:10:32 2008
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Mon, 19 May 2008 10:10:32 +0200
+Subject: [Medick-svn] r477 - in exp/medick2/vendor/medick: . lib lib/action
+	lib/action/controller lib/action/controller/cli
+	lib/action/controller/http lib/action/view lib/context
+	lib/eltest lib/medick lib/plugin test test/context
+Message-ID: <200805190810.m4J8AWJf028081@sheep.berlios.de>
+
+Author: aurelian
+Date: 2008-05-19 10:10:31 +0200 (Mon, 19 May 2008)
+New Revision: 477
+
+Added:
+   exp/medick2/vendor/medick/lib/action/controller/ExecutionChain.php
+   exp/medick2/vendor/medick/lib/action/view/
+   exp/medick2/vendor/medick/lib/action/view/AbstractTemplateEngine.php
+   exp/medick2/vendor/medick/lib/action/view/Base.php
+   exp/medick2/vendor/medick/lib/action/view/ITemplateEngine.php
+   exp/medick2/vendor/medick/lib/action/view/PHPTemplateEngine.php
+   exp/medick2/vendor/medick/lib/action/view/init.php
+   exp/medick2/vendor/medick/lib/eltest/
+   exp/medick2/vendor/medick/lib/eltest/TestRunner.php
+   exp/medick2/vendor/medick/lib/eltest/UnitTest.php
+   exp/medick2/vendor/medick/lib/eltest/init.php
+   exp/medick2/vendor/medick/test/
+   exp/medick2/vendor/medick/test/context/
+   exp/medick2/vendor/medick/test/context/ContextManagerTest.php
+   exp/medick2/vendor/medick/test/context/XMLConfiguratorTest.php
+   exp/medick2/vendor/medick/test/mock_object.php
+   exp/medick2/vendor/medick/test/runner.php
+   exp/medick2/vendor/medick/test/unit_test.php
+Modified:
+   exp/medick2/vendor/medick/lib/action/controller/Base.php
+   exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+   exp/medick2/vendor/medick/lib/action/controller/Response.php
+   exp/medick2/vendor/medick/lib/action/controller/Router.php
+   exp/medick2/vendor/medick/lib/action/controller/cli/CLIRequest.php
+   exp/medick2/vendor/medick/lib/action/controller/http/HTTPCookie.php
+   exp/medick2/vendor/medick/lib/action/controller/http/HTTPRequest.php
+   exp/medick2/vendor/medick/lib/action/controller/http/HTTPResponse.php
+   exp/medick2/vendor/medick/lib/action/controller/http/HTTPSession.php
+   exp/medick2/vendor/medick/lib/context/ContextManager.php
+   exp/medick2/vendor/medick/lib/context/XMLConfigurator.php
+   exp/medick2/vendor/medick/lib/medick/Medick.php
+   exp/medick2/vendor/medick/lib/plugin/Plugins.php
+Log:
+ -- more on medick2 exp.
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Base.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Base.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/controller/Base.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -1,108 +1,184 @@
+ <?php
+ 
+-class ActionChain implements ArrayAccess, Iterator, Countable {
++// $Id: $
+ 
+-  private $chain;
++class ChainError extends Exception {  }
+ 
+-  private $index;
++class ActionController extends Object {
+ 
+-  public function __construct(/*ActionController $action_controller*/) {
+-    $this->chain= array();
+-    $this->index= 0;
+-  }
++  public $action;
+ 
+-  public function push( $value ) {
+-    $this[sizeof($this)]= $value;
+-  }
++  public $controller;
+ 
+-  public function prepend( $value ) {
+-    array_unshift($this->chain, $value);
+-  }
++  protected $logger;
+ 
+-  public function offsetExists($offset) {
+-    return isset( $this->chain[$offset] );
+-  }
++  protected $config;
+ 
+-  public function offsetGet($offset) {
+-    return $this->chain[$offset];
+-  }
++  protected $request;
+ 
+-  public function offsetSet($offset, $value) {
+-    // if(false === is_int($offset)) throw new Exception('use only numrical values!');
+-    $this->chain[$offset]= $value;
+-  }
++  protected $response;
+ 
+-  public function offsetUnset($offset) {
+-    unset($this->chain[$offset]);
+-  }
++  protected $session = null;
+ 
+-  public function current() {
+-    // return $this->chain[$this->index];
+-    return $this[$this->index];
+-  }
++  protected $before_filters= '';
+ 
+-  public function next() {
+-    $this->index++;
+-    // return $this->chain[$this->index];
+-    // return $this->current();
+-  }
++  protected $after_filters = '';
+ 
+-  public function key() {
+-    return $this->index;
+-  }
++  protected $use_session = true;
+ 
+-  public function valid() {
+-    return $this[$this->index];
+-  }
++  protected $use_layout  = true;
+ 
+-  public function rewind() {
+-    $this->index--;
++  // protected $use_etag    = false;
++
++  protected $template = null;
++
++  private $execution_chain = null;
++
++  private $context;
++
++  // XXX: throw an error if multiple render/redirects where called / execution_chain
++  private $action_performed = false;
++
++  // ---
++  // final
++  // ---
++
++  final public function __construct( ContextManager $context ) {
++    $this->context= $context;
++    $this->logger= $context->logger();
++    $this->config= $context->config();
+   }
+ 
+-  public function count() {
+-    return sizeof($this->chain);
++  // should return ActionView
++  final public function process(Request $request, Response $response) {
++    // create instance variables needed
++    $this->__initialize($request, $response);
++
++    // validate the action
++    $this->__validate_action();
++
++    // collect before filters now
++
++    // execute those filters
++
++    // execute the action
++    $this->__execute_action();
++
++    // render if we didn't do it yet
++    if(false === $this->action_performed)
++      $this->render();
++
++    // collect after filters
++
++    // execute after filters
++
++    // Medick::dump( $request );
++    return $response;
+   }
+ 
+-}
++  // ---
++  // magick
++  // ---
+ 
+-class ActionController extends Object {
++  // public function __set($name, $value) {
++  //   $this->template->assign($name, $value);
++  // }
+ 
+-  // protected $logger;
+-  // protected $config;
++  // ---
++  // protected --> renders
++  // ---
+ 
+-  protected $request;
++  protected function render($template_location= null, $status= null) {
++    if(null === $template_location) {
++      $template_location= $this->request->parameter('controller') . DIRECTORY_SEPARATOR . $this->request->parameter('action') . '.phtml';
++    }
++    return $this->render_file( $template_location, $status );
++  }
+ 
+-  protected $response;
++  protected function render_file( $template_file, $status= null ) {
++    
++    // XXX: register flash
+ 
+-  protected $context;
++    if($this->use_layout) {
++      // XXX: check view paths
++      $layout= APP_PATH . 'app/views/layouts/' . $this->request->parameter('controller') . '.phtml';
++      if(false === file_exists($layout)) {
++        $this->logger->debug('will render without layout since cannot load `'.$layout.'`, no such file!');
++        return $this->render_without_layout($template_file, $status);
++      } else {
++        // parse the template file first and create content_for_layout variable
++        $this->template->assign('content_for_layout', $this->template->render( APP_PATH . 'app/views/' . $template_file));
++        // continue to render the layout
++        return $this->render_text($this->template->render($layout), $status);
++      }
++    } else {
++      $this->logger->debug('rendering without layout.');
++      return $this->render_without_layout($template_file, $status);
++    }
++  }
+ 
+-  private $chain;
++  protected function render_without_layout($file, $status) {
++    return $this->render_text( $this->template->render( APP_PATH . 'app/views/' . $file), $status);
++  }
+ 
+-  final public function __construct(ContextManager $context) {
+-    $this->context= $context;
+-    // $this->logger= $context->logger();
+-    // $this->config= $context->config();
+-    $this->chain= new ActionChain();
++  protected function render_text( $text, $status= null) {
++    if( $this->action_performed ) 
++      throw new Exception('Cannot render, action already performed.');
++    
++    // XXX: etag
++
++    $this->response->content= $text;
++    $this->response->setStatus($status);
++    $this->action_performed= true;
++
++    // XXX: remove flash
+   }
+ 
+-  // should return ActionView
+-  final public function process(Request $request, Response $response) {
+-    $this->request= $request;
++  // ---
++  // private
++  // ---
++
++  /* make assignments */
++  private function __initialize(Request $request, Response $response) {
++    // instance variables
++    $this->request = $request;
+     $this->response= $response;
+ 
+-    $this->chain->push( 'foo' );
+-    $this->chain->push( 'bar' );
++    $this->execution_chain= new ExecutionChain( $this, $this->context );
+ 
+-    $this->chain->prepend( 'baz' );
++    // do we need to register and start a session?
++    $this->__register_session();
+ 
+-    Medick::dump( $this->chain );
++    // create the template now.
++    $this->template= ActionView::load( $this->context, $this );
+ 
+-    // xxx: before.
++    // assign basic template variables.
++    $this->template->assign('__controller', $this->request->parameter('controller'));
++    $this->template->assign('__action', $this->request->parameter('action'));
++    return true;
++  }
+ 
+-    // xxx: after.
++  private function __register_session() {
++    if($this->use_session === false || $this->config->property('web.session') === false) 
++      return;
++    // XXX: session container code should be written here
++    if($session_container_class= $this->config->property('web.session.container')) {  }
++    // then start the session
++    $this->session= $this->request->session()->start();
++  }
+ 
+-    Medick::dump($request);
++  private function __validate_action() {
++    try {
++      $this->execution_chain->validate_action( $this->request );
++      return true;
++    } catch(ChainError $err) {
++      throw $err;
++    }
+   }
+ 
++  private function __execute_action() {
++    $this->execution_chain->exec_action();
++  }
++
+ }
+ 
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -1,15 +1,11 @@
+ <?php
+ 
+-//
+ // $Id: $
+-//
+ 
+ class Dispatcher extends Object {
+ 
+   private $context;
+ 
+-  private $logger;
+-
+   private $plugins;
+ 
+   public function __construct(ContextManager $context) {
+@@ -29,10 +25,15 @@
+       sprintf('medick v.$%s ready to dispatch (took %.3f sec. to boot)', Medick::version(), $this->context->timer()->tick()));
+ 
+     try {
+-      Router::recognize( $request, $this->context )->process( $request, $response );
+-      // ->dump();
++      Router::recognize( $request, $this->context )->process( $request, $response )->dump();
++      $this->context->logger()->debug(sprintf( "\t[%s] done in %.3f sec.", time(), $this->context->timer()->tick(true)));
+     } catch(Exception $ex) {
+-      echo sprintf('Exception: %s with message: %s', get_class($ex), $ex->getMessage());
++      $message= sprintf( '[%s] --> %s in %s line %s', get_class($ex), $ex->getMessage(), $ex->getFile(), $ex->getLine() );
++      $this->context->logger()->warn( sprintf('Request processing failed after %.3f seconds', $this->context->timer()->tick()) );
++      $this->context->logger()->warn( $message );
++      // try to process with exception
++      echo php_sapi_name()=='cli'? $message : '<pre>'.$message.'</pre>';
++      echo php_sapi_name()=='cli'? $ex->getTraceAsString(): '<pre style="font-size:85%">' . $ex->getTraceAsString() . '</pre>';
+     }
+   }
+ 
+
+Added: exp/medick2/vendor/medick/lib/action/controller/ExecutionChain.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/ExecutionChain.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/controller/ExecutionChain.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,114 @@
++<?php
++
++// $Id$
++
++class ExecutionChain extends Object {
++
++  private $chain;
++
++  private $controller = null;
++
++  private $context;
++
++  public function __construct( ActionController $controller, ContextManager $context ) {
++    // create the basic structure
++    $this->chain = array(
++      'before' => array(),
++      'action' => array(), /* [0]-> ReflectionMethod, [1]-> array(Method Arguments) */
++      'after'  => array()
++    );
++
++    $this->controller= $controller;
++    $this->context= $context;
++  }
++
++  // adds something to this chain, to be used in plugins?
++  // XXX: maybe add at position should also help?
++  public function add($type, $value) {
++    if( false === ($type == 'before' || $type == 'after'))
++      throw new ChainError('Cannot add ' . $type . ' to ExecutionChain, only `before` or `after` are allowed');
++    $this->chain[$type][]= $value;
++  }
++
++  /*
++   * 1. figure-out the action
++   * 2. collect parameters and assign
++   * 3. invoke the action
++   */ 
++  public function validate_action(Request $request) {
++    try {
++      $rmethod= new ReflectionMethod( $this->controller, $request->parameter('action') );
++    } catch(ReflectionException $rfEx) {
++      throw new ChainError($rfEx->getMessage());
++    }
++
++    if( !$rmethod->isPublic() || $rmethod->isStatic() ) {
++      throw new ChainError( 
++        'Method `'.$rmethod->getName().'` should be declared as public on class instance `'.get_class($this->controller).'`' );
++    }
++
++    $rparams= $rmethod->getParameters();
++    $action_args= array();
++
++    foreach($rparams as $arg) {
++      $arg_name = $arg->getName();
++      $arg_value= $request->parameter( $arg_name );
++
++      // XXX: detect behavior on Merb / Django
++      if(null === $arg_value) {
++        if($arg->isOptional())
++          continue;
++        else
++          throw new ChainError('Mandatory agrument `' . $arg_name . '` for action `'.$rmethod->getName().'` not in request!');
++      }
++      $action_args[$arg_name]= $arg_value;
++    }
++
++    // ready to fire this action later
++    $this->chain['action']= array($rmethod, $action_args);
++    // return true for now
++    return true;
++
++  }
++
++  private function debug_action_parameters($args) {
++    $buff = array();
++    foreach($args as $name=>$value) {
++      $buff[]= sprintf( '%s: "%s"', $name, $value );
++    }
++    return '{'.join(',', $buff) . '}';
++  }
++
++  public function exec_before() {
++    foreach($this->chain['before'] as $filter) {
++      // 1. try to execute filter as a method
++
++      // 2. try to create a class instance and call execute on it
++
++      // 3. if the filter render an action or redirected, halt the execution chain
++      // if($this->controller->action_performed === true) {
++      //   $this->context->logger()->info( 'Execution chain halted by `' . $filter . '`' );
++      // }
++    }
++  }
++
++  public function exec_action() {
++    
++    $this->context->logger()->debug(sprintf('ready to invoke action `%s` with arguments `%s` (+ %.3f sec.)',
++      $this->chain['action'][0]->getName(), $this->debug_action_parameters($this->chain['action'][1]), $this->context->timer()->tick()
++    ));
++
++    return $this->chain['action'][0]->invokeArgs( $this->controller, $this->chain['action'][1] );
++  }
++
++  public function exec_after() {
++    foreach($this->chain['after'] as $filter) {
++      // 1. try to execute filter as a method
++
++      // 2. try to create a class instance and call execute on it
++
++      // 3. the return value is not important, go to the next one
++    }
++  }
++
++}
+
+
+Property changes on: exp/medick2/vendor/medick/lib/action/controller/ExecutionChain.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Response.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Response.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/controller/Response.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -1,37 +1,7 @@
+ <?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice,
+-//   this list of conditions and the following disclaimer.
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation
+-//   and/or other materials provided with the distribution.
+-//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+-//   be used to endorse or promote products derived from this software without
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-//
+-// $Id: Response.php 447 2007-07-23 17:44:43Z aurelian $
+-//
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+ 
++// $Id: $
++
+ /**
+  * It is a Response that a medick application will always try to build.
+  * 
+@@ -41,53 +11,17 @@
+  * @author Aurelian Oancea
+  */
+ class Response extends Object {
+-    
+-    /** @var string
+-        response content */
+-    protected $content;
++  
++  /** @var string
++    response content */
++  public $content;
+ 
+-    /**
+-     * Hidden Constructor
+-     *
+-     * This class is not meant to be instanciated,
+-     * insteard use inheritance to extend and build more specialized Responses
+-     *
+-     * @see HTTPResponse
+-     */
+-    protected function Response(){  }
++  /** 
++   * Echos the content (buffer)
++   */
++  public function dump() {
++    echo $this->content;
++  }
+ 
+-    /**
+-     * Set the content
+-     * Will discard all the changes made on the buffer so far
+-     * 
+-     * @param mixed content, the content
+-     */
+-    public function setContent($content) {
+-        $this->content = $content;
+-    }
+-
+-    /** 
+-     * Add content on the buffer
+-     *
+-     * @param mixed content
+-     */
+-    public function append($content) {
+-        $this->content .= $content;
+-    }
+-
+-    /** 
+-     * It gets the content
+-     * @return string the content that we push so far on to this Response
+-     */
+-    public function getContent() {
+-        return $this->content;
+-    }
+-
+-    /** 
+-     * Echos the content (buffer)
+-     */
+-    public function dump() {
+-        echo $this->content;
+-    }
+-
+ }
++
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Router.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Router.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/controller/Router.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -1,6 +1,6 @@
+ <?php
+ 
+-// $Id: $
++// $Id$
+ 
+ class Router extends Object {
+ 
+@@ -20,30 +20,28 @@
+ 
+     // xxx: should call plugins special __before_controller methods?
+ 
+-    // XXX: should load additional paths from plugins?
+-
+     // 1. class name -> request->parameter('controller') . 'Controller'
+     // 2. file name  -> request->parameter('controller') . '_controller.php'
+ 
+     $path= APP_PATH; // -> this is going to be a list of paths
+ 
+-    $controller_file = $path . '/app/controllers/' . $request->parameter('controller') . '_controller.php';
++    $controller_file = $path . 'app/controllers/' . $request->parameter('controller') . '_controller.php';
+     $controller_class= ucfirst($request->parameter('controller')) . 'Controller';
+ 
+     if( false === file_exists($controller_file) ) {
+-      throw new Exception('Cannot load `'.$controller_file.'`, no such file or directory!'); // -> this is going to be replaced with continue in loop
++      throw new Exception('Cannot load `' . $controller_file . '`, no such file or directory!'); // -> this is going to be replaced with continue in loop
+     }
+ 
+     require( $controller_file );
+ 
+     if( false === class_exists($controller_class) ) {
+-      throw new Exception('Cannot use `'.$controller_class.'`, no such class!'); // -> this is going to be replaced with continue in loop
++      throw new Exception('Expected `' . $controller_file . '` to define `'.$controller_class.'`'); // -> this is going to be replaced with continue in loop
+     }
+ 
+     $rclass= new ReflectionClass($controller_class);
+ 
+     if( false === ($rclass->getParentClass() || $rclass->getParentClass() == 'ApplicationController' || $rclass->getParentClass() == 'ActionController')) {
+-      throw new Exception('Wrong defintion of class: ' . $controller_class);
++      throw new Exception('Expected `' . $controller_class . '` to extend ApplicationController(recommended) or ActionControler');
+     }
+ 
+     $this->context->logger()->debug(str_replace(APP_PATH, '${'.$this->context->config()->application_name().'}', $controller_file) . ' --> ' . $controller_class);
+@@ -56,16 +54,12 @@
+    * Should return a controller instance
+    */ 
+   public static function recognize(Request $request, ContextManager $context ) {
+-    // create a Map of loaded Routes
+-    // $map= new Map( $context );
+-    // save it to the current context
+-    // $context->map( $map );
++    // XXX: request URI hack, for medick installation in subfolders (e.g. `medick2` as base)
++    // XXX: test with other servers and other types of PHP installations
++    // $request->uri= substr($request->uri, strlen($context->config()->property('base', true)));
+ 
+     $router= new Router( $context->map()->find_route( $request ), $context);
+     return $router->create_controller( $request );
+-    
+-    // $route= $map->find_route( $request );
+-    // return $route->create_controller();
+   }
+ 
+ }
+
+
+Property changes on: exp/medick2/vendor/medick/lib/action/controller/Router.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/cli/CLIRequest.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/cli/CLIRequest.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/controller/cli/CLIRequest.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -1,7 +1,15 @@
+ <?php
+ 
+-// $Id: $
++// $Id$
+ 
++class CLISession extends Object {
++  
++  public function start() {
++
++  }
++
++}
++
+ //
+ // xxx. should be able to handle:
+ //  
+@@ -13,10 +21,18 @@
+ 
+   public $uri= "";
+ 
++  private $session= null;
++
+   public function __construct() {
+     $this->uri= '/' . join('/', array_slice($_SERVER['argv'], 1, $_SERVER['argc']));
++
++    $this->session= new CLISession();
+   }
+ 
++  public function session() {
++    return $this->session;
++  }
++
+   public function toString() {
+     return sprintf('cli: %s', $this->uri);
+   }
+
+
+Property changes on: exp/medick2/vendor/medick/lib/action/controller/cli/CLIRequest.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/http/HTTPCookie.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/http/HTTPCookie.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/controller/http/HTTPCookie.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -37,78 +37,44 @@
+         Cookie secure */ 
+     private $secure;
+     
+-    /**
+-     * Creates A new Cookie
+-     *
+-     * @param string Cookie name
+-     * @param string Cookie value
+-     * @param int 
+-     * @param string Cookie path
+-     * @param string Cookie domain
+-     * @param bool    
+-     */ 
+-    public function Cookie($name, $value = '', $expire = 0, $path = '/', $domain = '', $secure = FALSE) {
+-        $this->name   = $name;
+-        $this->value  = $value;
+-        $this->expire = $expire;
+-        $this->path   = $path;
+-        $this->domain = $domain;
+-        $this->secure = $secure;
+-    }
++  /**
++   * Creates A new Cookie
++   *
++   * XXX: fix path and domain somehow for eg. Medick installation not in root folder or on subdomains
++   *
++   * @param string Cookie name
++   * @param string Cookie value
++   * @param int 
++   * @param string Cookie path
++   * @param string Cookie domain
++   * @param bool    
++   */ 
++  public function __construct($name, $value = '', $expire = 0, $path = '/', $domain = '', $secure = false) {
++    $this->name   = $name;
++    $this->value  = $value;
++    $this->expire = $expire;
++    $this->path   = $path;
++    $this->domain = $domain;
++    $this->secure = $secure;
++  }
+ 
+-    public function getName() {
+-        return $this->name;
+-    }
++  public function name() {
++    return $this->name;
++  }
+ 
+-    public function getValue() {
+-        return $this->value;
+-    }
++  public function value() {
++    return $this->value;
++  }
+ 
+-    public function setValue($value) {
+-        $this->value= $value;
+-    }
+-
+-    public function getExpire() {
+-        return $this->expire;
+-    }
+-
+-    public function setExpire($expire) {
+-        $this->expire = $expire;
+-    }
+-    
+-    public function getPath() {
+-        return $this->path;
+-    }
+-
+-    public function setPath($path) {
+-        $this->path= $path;
+-    }
+-    
+-    public function getDomain() {
+-        return $this->domain;
+-    }
+-
+-    public function setDomain($domain) {
+-        $this->domain = $domain;
+-    }
+-    
+-    public function getSecure() {
+-        return (bool)$this->secure;
+-    }
+-
+-    public function setSecure($secure) {
+-        $this->secure= (bool)$secure;
+-    }
+-    
+-    public function toString() {
+-      return (
+-        $this->name . '=' . 
+-        ($this->value === '' ? 'deleted' : $this->value).
+-        ($this->expire !== 0 ? '; expires=' . gmdate('D, d-M-Y H:i:s \G\M\T', $this->expire) : '').
+-        ($this->path !== '' ? '; path=' . $this->path : '').
+-        ($this->domain !== '' ? '; domain=' . $this->domain : '').
+-        ($this->secure ? '; secure' : '')
+-      );
+-    }
++  public function toString() {
++    return (
++      $this->name . '=' . 
++      ($this->value === '' ? 'deleted' : $this->value).
++      ($this->expire !== 0 ? '; expires=' . gmdate('D, d-M-Y H:i:s \G\M\T', $this->expire) : '').
++      ($this->path !== '' ? '; path=' . $this->path : '').
++      ($this->domain !== '' ? '; domain=' . $this->domain : '').
++      ($this->secure ? '; secure' : '')
++    );
++  }
+ }
+ 
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/http/HTTPRequest.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/http/HTTPRequest.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/controller/http/HTTPRequest.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -50,10 +50,14 @@
+     }
+     // do the undoable
+     unset($_REQUEST); unset($_GET); unset($_POST);
++
+     // setup requestUri
+     if (array_key_exists('PATH_INFO', $_SERVER) && $_SERVER['PATH_INFO'] != '' ) {
+       $this->uri= $_SERVER['PATH_INFO'];
++    } else {
++      $this->uri= '/';
+     }
++    /*
+     // this is for php as cgi where PATH_INFO is not available
+     elseif (array_key_exists('ORIG_PATH_INFO', $_SERVER)) {
+       // todo: it should be also tested for non root locations eg:
+@@ -64,11 +68,12 @@
+     } else {
+       // fallback to REQUEST_URI
+       $this->uri= $_SERVER['REQUEST_URI'];
+-      // $this->uri= substr($_SERVER['REQUEST_URI'],7);
++      // $this->uri= substr($_SERVER['REQUEST_URI'], 8);
+     }
++    */
+     // setup session and headers
+     $this->session = new HTTPSession();
+-    $this->headers = HTTPRequest::getAllHeaders();
++    $this->headers = getallheaders();
+   }
+ 
+   public function toString() {
+@@ -163,8 +168,8 @@
+    *
+    * @return array
+    */
+-  protected static function getAllHeaders() {
+-    return getallheaders();
+-  }
++  // protected static function getAllHeaders() {
++  //   return getallheaders();
++  // }
+ }
+ 
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/http/HTTPResponse.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/http/HTTPResponse.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/controller/http/HTTPResponse.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -1,37 +1,7 @@
+ <?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice,
+-//   this list of conditions and the following disclaimer.
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation
+-//   and/or other materials provided with the distribution.
+-//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+-//   be used to endorse or promote products derived from this software without
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-//
+-// $Id: HTTPResponse.php 451 2007-08-01 14:57:17Z aurelian $
+-//
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+ 
++// $Id: $
++
+ /**
+  * HTTP Response Object 
+  *
+@@ -49,147 +19,155 @@
+  */
+ class HTTPResponse extends Response {
+ 
+-    /** Status code (200) indicating the request succeeded normally. */
+-    const SC_OK = 200;
++  /** Status code (200) indicating the request succeeded normally. */
++  const SC_OK = 200;
+ 
+-    /** Status code (304) indicating that a conditional GET
+-        operation found that the resource was available and not modified. */
+-    const SC_NOT_MODIFIED = 304;
++  /** Status code (304) indicating that a conditional GET
++    operation found that the resource was available and not modified. */
++  const SC_NOT_MODIFIED = 304;
+ 
+-    /** Status code (400) indicating the request sent by the
+-        client was syntactically incorrect. */
+-    const SC_BAD_REQUEST = 400;
++  /** Status code (400) indicating the request sent by the
++    client was syntactically incorrect. */
++  const SC_BAD_REQUEST = 400;
+ 
+-    /** Status code (403) indicating the server
+-        understood the request but refused to fulfill it. */
+-    const SC_FORBIDDEN = 403;
++  /** Status code (403) indicating the server
++    understood the request but refused to fulfill it. */
++  const SC_FORBIDDEN = 403;
+ 
+-    /** Status code (404) indicating that the requested
+-        resource is not available. */
+-    const SC_NOT_FOUND = 404;
++  /** Status code (404) indicating that the requested
++    resource is not available. */
++  const SC_NOT_FOUND = 404;
+ 
+-    /** Status code (500) indicating an error inside
+-        the HTTP server which prevented it from fulfilling the request. */
+-    const SC_INTERNAL_SERVER_ERROR = 500;
++  /** Status code (500) indicating an error inside
++    the HTTP server which prevented it from fulfilling the request. */
++  const SC_INTERNAL_SERVER_ERROR = 500;
+ 
+-    /** Status code (503) indicating that the HTTP server
+-        is temporarily overloaded, and unable to handle the request. */
+-    const SC_SERVICE_UNAVAILABLE = 503;
++  /** Status code (503) indicating that the HTTP server
++    is temporarily overloaded, and unable to handle the request. */
++  const SC_SERVICE_UNAVAILABLE = 503;
+ 
+-    /** Constructor */
+-    public function HTTPResponse() {  }
+-    
+-    /**
+-     * Sets the header $name with $value
+-     *
+-     * Caution: this method makes use of PHP function header() directly, meaning that 
+-     * there is no instance variable to keep a list of all the headers that are build 
+-     * during a Response sequence.
+-     *
+-     * <code>
+-     *  $response->setHeader("X-Foo", "Bar");// <==> header("X-Foo: Bar");
+-     * </code>
+-     *
+-     * @param string the name of the header
+-     * @param mixed  the value of this header
+-     */
+-    public function setHeader($name, $value) {
+-        header($name . ": " . $value);
+-    }
++  /** Constructor */
++  public function HTTPResponse() {  }
+ 
+-    /**
+-     * It gets the Response headers
+-     *
+-     * It gets only the headers that have been already sent, 
+-     * eg. Content-Type header will not be on the list
+-     *
+-     * Caution: this method is not cachable, meaning that multiple calls on it
+-     * will fetch the list of headers each time. There is no $headers instance 
+-     * variable to keep a list that will be later sent with the Response.
+-     *
+-     * Caution: names and values are trimmed!
+-     *
+-     * <code>
+-     * $response->setHeader("X-Foo", "Bar");
+-     * $response->setHeader("X-Framework", "Medick "); // notice the space at the end
+-     * $response->getHeaders(); // array("X-Foo"=>"Bar", "X-Framework"=>"Medick");
+-     * </code>
+-     */ 
+-    public function getHeaders() {
+-      $headers= array();
+-      foreach(headers_list() as $header) {
+-        list($name, $value) = explode(':', $header);
+-        $headers[trim($name)]= trim($value);
+-      }
+-      return $headers;
+-    }
++  // public function dump() {
++    // send headers
++  // }
+ 
+-    public function getHeader( $name ) {
+-      $headers= $this->getHeaders();
+-      return isset($headers[trim($name)]) ? trim($headers[trim($name)]) : false;
++  /**
++   * Sets the header $name with $value
++   *
++   * Caution: this method makes use of PHP function header() directly, meaning that 
++   * there is no instance variable to keep a list of all the headers that are build 
++   * during a Response sequence.
++   *
++   * <code>
++   *  $response->setHeader("X-Foo", "Bar");// <==> header("X-Foo: Bar");
++   * </code>
++   *
++   * @param string the name of the header
++   * @param mixed  the value of this header
++   */
++  public function setHeader($name, $value) {
++    header($name . ": " . $value);
++  }
++
++  /**
++   * It gets the Response headers
++   *
++   * It gets only the headers that have been already sent, 
++   * eg. Content-Type header will not be on the list
++   *
++   * Caution: this method is not cachable, meaning that multiple calls on it
++   * will fetch the list of headers each time. There is no $headers instance 
++   * variable to keep a list that will be later sent with the Response.
++   *
++   * Caution: names and values are trimmed!
++   *
++   * <code>
++   * $response->setHeader("X-Foo", "Bar");
++   * $response->setHeader("X-Framework", "Medick "); // notice the space at the end
++   * $response->getHeaders(); // array("X-Foo"=>"Bar", "X-Framework"=>"Medick");
++   * </code>
++   */ 
++  public function getHeaders() {
++    $headers= array();
++    foreach(headers_list() as $header) {
++    list($name, $value) = explode(':', $header);
++    $headers[trim($name)]= trim($value);
+     }
+-    
+-    // bleah.
+-    public function hasHeader( $name ) {
+-      return in_array(trim($name), array_keys($this->getHeaders()));
+-    }
++    return $headers;
++  }
+ 
+-    /**
+-     * Sets the content-type header
+-     *
+-     * @param string the content type
+-     */
+-    public function setContentType($type) {
+-        return $this->setHeader('Content-type', $type);
++  public function getHeader( $name ) {
++    $headers= $this->getHeaders();
++    return isset($headers[trim($name)]) ? trim($headers[trim($name)]) : false;
++  }
++  
++  // bleah.
++  public function hasHeader( $name ) {
++    return in_array(trim($name), array_keys($this->getHeaders()));
++  }
++
++  /**
++   * Sets the content-type header
++   *
++   * @param string the content type
++   */
++  public function setContentType($type) {
++    return $this->setHeader('Content-type', $type);
++  }
++  
++  /**
++   * Sets a Cookie.
++   * 
++   * <code>
++   *  $response->setCookie(new Cookie("Foo", "Bar"));
++   * </code>
++   *
++   * @param Cookie Cookie
++   * @see Cookie
++   */ 
++  public function setCookie(Cookie $cookie) {
++    $this->setHeader('Set-Cookie', $cookie->toString());
++  }
++  
++  /**
++   * Sets the status of this response
++   *
++   * @param HTTPResponse::SC_* the status of this response
++   */
++  public function setStatus( $status ) {
++    if(null === $status) {
++      $status = HTTPResponse::SC_OK;
+     }
+-    
+-    /**
+-     * Sets a Cookie.
+-     * 
+-     * <code>
+-     *  $response->setCookie(new Cookie("Foo", "Bar"));
+-     * </code>
+-     *
+-     * @param Cookie Cookie
+-     * @see Cookie
+-     */ 
+-    public function setCookie(Cookie $cookie) {
+-        $this->setHeader('Set-Cookie', $cookie->toString());
+-    }
+-    
+-    /**
+-     * Sets the status of this response
+-     *
+-     * @param HTTPResponse::SC_* the status of this response
+-     */
+-    public function setStatus( $status ) {
+-        switch($status){
+-            case HTTPResponse::SC_OK: // 200
+-                $message = 'OK';
+-                break;
+-            case HTTPResponse::SC_NOT_MODIFIED: // 304
+-                $message = 'Not Modified';
+-                break;
+-            case HTTPResponse::SC_NOT_FOUND: // 404
+-                $message = 'Not Found';
+-                break;
+-            case HTTPResponse::SC_INTERNAL_SERVER_ERROR: // 500
+-                $message = 'Internal Server Error';
+-                break;
+-            default:
+-                return;
+-        }
+-        header("HTTP/1.1 " . $status . $message, TRUE, $status);
+-    }
+ 
+-    /**
+-     * Perform a HTTP redirect
+-     *
+-     * @param string location, location to redirect to
+-     */
+-    public function redirect( $location ) {
+-        $this->setHeader('Location', $location);
+-        $this->content = '<html><body>You are being <a href="'.$location.'">redirected</a>.</body></html>';
++    switch($status){
++      case HTTPResponse::SC_OK: // 200
++        $message = 'OK';
++        break;
++      case HTTPResponse::SC_NOT_MODIFIED: // 304
++        $message = 'Not Modified';
++        break;
++      case HTTPResponse::SC_NOT_FOUND: // 404
++        $message = 'Not Found';
++        break;
++      case HTTPResponse::SC_INTERNAL_SERVER_ERROR: // 500
++        $message = 'Internal Server Error';
++        break;
++      default:
++        return;
+     }
++    header("HTTP/1.1 " . $status . $message, true, $status);
++  }
++
++  /**
++   * Perform a HTTP redirect
++   *
++   * @param string location, location to redirect to
++   */
++  public function redirect( $location ) {
++    $this->setHeader('Location', $location);
++    $this->content = '<html><body>You are being <a href="'.$location.'">redirected</a>.</body></html>';
++  }
+ }
+ 
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/http/HTTPSession.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/http/HTTPSession.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/controller/http/HTTPSession.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -12,171 +12,132 @@
+  */
+ class HTTPSession extends Object {
+ 
+-    /** @var bool
+-        started flag */
+-    private $isStarted = FALSE;
++  /** @var bool
++     started flag */
++  private $isStarted = false;
+ 
+-    /** @var ISessionContainer
+-        the session container */
+-    private $container = NULL;
++  /** @var ISessionContainer
++      the session container */
++  private $container = null;
+   
+-    /** @var string
+-        Session name */
+-    private $name = 'MSESSID';
++  /** @var string
++      Session name */
++  public $name = 'msessid';
+     
+-    /**
+-     * Constructor, creates a new session object
+-     *
+-     * @throws IllegalStateException if the session is started
+-     */
+-    public function Session () {
+-        if ($this->isStarted) {
+-            throw new IllegalStateException('Session already Started!');
+-        }
+-    }
++  /**
++   * Constructor, creates a new session object
++   *
++   * @throws IllegalStateException if the session is started
++   */
++  public function __construct() {
++    if ($this->isStarted) throw new IllegalStateException('Session already Started!');
++  }
+ 
+-    /**
+-     * Starts a new Session
+-     *
+-     * Also, it setup our session preferences
+-     * @return void
+-     * @throws IllegalStateException if the session is already started
+-     */
+-    public function start() {
+-        if ($this->isStarted) {
+-            throw new IllegalStateException('Session already Started!');
+-        }
+-        
+-        // TODO: more settings
+-        // session_cache_limiter("nocache");
+-        session_name($this->name);
+-        if ($this->container!==NULL) {
+-            session_set_save_handler(
+-                array($this->container, 'open'),
+-                array($this->container, 'close'),
+-                array($this->container, 'read'),
+-                array($this->container, 'write'),
+-                array($this->container, 'destroy'),
+-                array($this->container, 'gc'));
+-        }
+-        session_start();
+-        //session_regenerate_id(TRUE);
+-        $this->isStarted= TRUE;
+-    }
+-
+-    /**
+-     * It sets the Session Name.
+-     * 
+-     * Medick uses MSESSID as a session name identifier, overwritting PHPSESSID
+-     * @param string the session name
+-     */
+-    public function setName($name) {
+-        $this->name = $name;
+-    }
++  /**
++   * Starts a new Session
++   *
++   * Also, it setup our session preferences
++   * @return Session
++   * @throws IllegalStateException if the session is already started
++   */
++  public function start() {
++    if ($this->isStarted) throw new IllegalStateException('Session already Started!');
+     
+-    /**
+-     * It gets this Session name
+-     *
+-     * @return string the Session Name
+-     */
+-    public function getName() {
+-        return $this->name;
++    // XXX: more settings from xml config file
++    // session_cache_limiter("nocache");
++    // XXX: allow name to be passed in xml config file as web.session.name
++    session_name($this->name);
++    if ($this->container !== null) {
++      session_set_save_handler(
++        array($this->container, 'open'),
++        array($this->container, 'close'),
++        array($this->container, 'read'),
++        array($this->container, 'write'),
++        array($this->container, 'destroy'),
++        array($this->container, 'gc'));
+     }
+-    /**
+-     * Sets a session variable
+-     *
+-     * @param string name, the name of the session variable
+-     * @param mixed value, the value of the variable to set
+-     * @return void
+-     */
+-    public function putValue($name, $value) {
+-        $this->checkState();
+-        $_SESSION[$name] = $value;
+-    }
++    session_start();
++    $this->isStarted= true;
++    return $this;
++  }
+ 
+-    /**
+-     * Gets a session variable value
+-     *
+-     * @param string name, the name of the session variable
+-     * @return NULL if the variable is not set, or mixed, the variable value
+-     */
+-    public function getValue($name) {
+-        return $this->hasValue($name) ? $_SESSION[$name] : NULL;
+-    }
++  /**
++   * Sets a session variable
++   *
++   * @param string name, the name of the session variable
++   * @param mixed value, the value of the variable to set
++   * @return void
++   */
++  public function put($name, $value) {
++    $this->checkState();
++    $_SESSION[$name] = $value;
++  }
+ 
+-    /**
+-     * Check if this session has a variable with the given name
+-     *
+-     * @param string name, the name of the session variable
+-     * @return bool, TRUE if it has
+-     */
+-    public function hasValue($name) {
+-        $this->checkState();
+-        return isset($_SESSION[$name]);
+-    }
++  /**
++   * Gets a session variable value
++   *
++   * @param string name, the name of the session variable
++   * @return null if the variable is not set, or mixed, the variable value
++   */
++  public function get($name) {
++    $this->checkState();
++    return isset($_SESSION[$name])? $_SESSION[$name] : null;
++  }
+ 
+-    /**
+-     * Remove the session value with the given name
+-     *
+-     * @param string name, the name of the session variable
+-     * @return void
+-     */
+-    public function removeValue($name) {
+-        $this->checkState();
+-        // unset($_SESSION[$name]);
+-        session_unregister($name);
+-    }
++  /**
++   * Remove the session value with the given name
++   *
++   * @param string name, the name of the session variable
++   * @return void
++   */
++  public function remove($name) {
++    $this->checkState();
++    // unset($_SESSION[$name]);
++    session_unregister($name);
++  }
+ 
+-    /**
+-     * It gets the session id
+-     *
+-     * @return mixed, the session id
+-     */
+-    public function getId(){
+-        $this->checkState();
+-        return session_id();
+-    }
++  /**
++   * It gets the session id
++   *
++   * @return mixed, the session id
++   */
++  public function id(){
++    $this->checkState();
++    return session_id();
++  }
+ 
+-    /**
+-     * It sets the session container
+-     *
+-     * @param ISessionContainer container to set
+-     * @return void
+-     */
+-    public function setContainer(ISessionContainer $container) {
+-        $this->container= $container;
+-    }
++  /**
++   * It sets the session container
++   *
++   * @param ISessionContainer container to set
++   * @return void
++   */
++  public function container(ISessionContainer $container) {
++    $this->container= $container;
++    return $this;
++  }
+ 
+-    /**
+-     * It dumps the session
+-     *
+-     * @return array
+-     */
+-    public function dump() {
+-        $this->checkState();
+-        return $_SESSION;
+-    }
++  /**
++   * It dumps the session
++   *
++   * @return array
++   */
++  public function toArray() {
++    $this->checkState();
++    return $_SESSION;
++  }
+ 
+-    /**
+-     * Alias for Session::dump()
+-     *
+-     * @see Session::dump
+-     */ 
+-    public function getValues() {
+-        return $this->dump();
+-    }
+-    
+-    /**
+-     * It checks the session state
+-     *
+-     * This method is called internally to ensure that the session is started before using it.
+-     * @return TRUE if the session is started
+-     */
+-    protected function checkState() {
+-        if (!$this->isStarted) {
+-            $this->start();
+-        }
+-        return TRUE;
+-    }
+-      
++  /**
++   * It checks the session state
++   *
++   * This method is called internally to ensure that the session is started before using it.
++   * @return TRUE if the session is started
++   */
++  protected function checkState() {
++    // XXX: review!, I plan to pass a context to start so it will know how to setup it's internal state, then this will throw an exception!
++    // XXX: the session should be started only from the ActionController
++    if ($this->isStarted === false) $this->start();
++    return true;
++  }
+ }
++
+
+Added: exp/medick2/vendor/medick/lib/action/view/AbstractTemplateEngine.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/view/AbstractTemplateEngine.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/view/AbstractTemplateEngine.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,24 @@
++<?php
++
++// $Id$
++
++abstract class AbstractTemplateEngine extends Object implements ITemplateEngine {
++
++  protected $vars;
++
++  protected $context;
++
++  protected $controller;
++
++  public function __construct(ContextManager $context, ActionController $controller) {
++    $this->context= $context;
++    $this->controller= $controller;
++    $this->vars= array();
++  }
++
++  public function assign($name, $value) {
++    $this->vars[$name]= $value;
++  }
++
++}
++
+
+
+Property changes on: exp/medick2/vendor/medick/lib/action/view/AbstractTemplateEngine.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/medick2/vendor/medick/lib/action/view/Base.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/view/Base.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/view/Base.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,13 @@
++<?php
++
++// $Id$
++
++class ActionView extends Object {
++
++  public static function load( ContextManager $context, ActionController $controller ) {
++    // XXX: context will know view paths + the template engine to use
++    return new PHPTemplateEngine( $context, $controller );
++  }
++
++}
++
+
+
+Property changes on: exp/medick2/vendor/medick/lib/action/view/Base.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/medick2/vendor/medick/lib/action/view/ITemplateEngine.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/view/ITemplateEngine.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/view/ITemplateEngine.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,14 @@
++<?php
++
++// $Id$
++
++interface ITemplateEngine {
++
++  public function partial($partial);
++
++  public function render($file);
++
++  public function assign($name, $value);
++
++}
++
+
+
+Property changes on: exp/medick2/vendor/medick/lib/action/view/ITemplateEngine.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/medick2/vendor/medick/lib/action/view/PHPTemplateEngine.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/view/PHPTemplateEngine.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/view/PHPTemplateEngine.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,35 @@
++<?php
++
++// $Id$
++
++class PHPTemplateEngine extends AbstractTemplateEngine {
++
++  public function partial($partial) {
++
++  }
++
++  public function render( $file ) {
++
++    // XXX: loop view paths
++    if (false === file_exists( $file )) {
++      throw new Exception( 'Cannot render template: `' . $file . '`, no such file!' );
++    }
++
++    // XXX: load helper['s]
++
++    if (sizeof($this->vars) > 0) {
++      extract($this->vars,EXTR_SKIP);
++    }
++
++    $this->context->logger()->debug(sprintf('ready to render `%s` (+ %.3f sec.)', $file, $this->context->timer()->tick()));
++
++    ob_start();
++    include_once( $file );
++    $c = ob_get_contents();
++    ob_end_clean();
++    $this->context->logger()->debug(sprintf('template parsed (+ %.3f sec.)', $this->context->timer()->tick()));
++    return $c;
++  }
++
++}
++
+
+
+Property changes on: exp/medick2/vendor/medick/lib/action/view/PHPTemplateEngine.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/medick2/vendor/medick/lib/action/view/init.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/view/init.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/action/view/init.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,32 @@
++<?php
++
++//  ActionView Framework Autoload Definition
++
++function __action_view_autoload($class) {
++
++  // special case
++  if($class == 'ActionView') {
++    return require 'action/view/Base.php';
++  }
++
++  // $base= dirname(__FILE__) . DIRECTORY_SEPARATOR;
++
++  // action/controller/http
++  // if(strpos(strtolower($class), 'http') !== false && is_file($base.'http'.DIRECTORY_SEPARATOR.$class.'.php') ) {
++  //   return require 'action'.DIRECTORY_SEPARATOR.'controller'.DIRECTORY_SEPARATOR.'http'.DIRECTORY_SEPARATOR.$class.'.php';
++  // }
++
++  // action/controller/cli
++  // if(strpos(strtolower($class), 'cli') !== false && is_file($base.'cli'.DIRECTORY_SEPARATOR.$class.'.php') ) {
++  //   return require 'action'.DIRECTORY_SEPARATOR.'controller'.DIRECTORY_SEPARATOR.'cli'.DIRECTORY_SEPARATOR.$class.'.php';
++  // }
++
++  // the rest
++  $file= 'action'.DIRECTORY_SEPARATOR.'view'.DIRECTORY_SEPARATOR.$class.'.php';
++  if(is_file( dirname(__FILE__) . DIRECTORY_SEPARATOR . $class . '.php' )) {
++    return require $file;
++  }
++}
++
++spl_autoload_register('__action_view_autoload');
++
+
+
+Property changes on: exp/medick2/vendor/medick/lib/action/view/init.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/medick2/vendor/medick/lib/context/ContextManager.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/ContextManager.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/context/ContextManager.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -1,18 +1,20 @@
+ <?php
+ 
+ class Timer extends Object {
+-  
++
++  private $init;
+   private $start;
+   private $end;
+ 
+-  public function __construct($start) {
++  public function __construct( $start ) {
++    $this->init = $start;
+     $this->start= $start;
+     $this->end= null;
+   }
+ 
+-  public function tick() {
++  public function tick($from_init= false) {
+     $this->end= microtime(true);
+-    $r= (float)$this->end - (float)$this->start;
++    $r= $from_init? (float)$this->end-(float)$this->init : (float)$this->end - (float)$this->start;
+     $this->start= $this->end;
+     return $r;
+   }
+@@ -29,20 +31,22 @@
+   // the config parser/loaded, to have access to configuration options
+   private $config;
+ 
+-  // a Map, you get access to Routes using this
++  // a Map, you get access to Routes using this!
+   private $map;
+-
++  
++  // a Timer to benchmark critical points
+   private $timer;
+ 
+-  private function __construct( Iconfigurator $config ) {
++  private function __construct( IConfigurator $config ) {
+     $this->config= $config;
+     // configure the logger
+     $this->logger= new Logger();
+     $this->logger->setFormatter( Logger::formatter($this->config) );
+     $this->logger->attachOutputters( Logger::outputters($this->config) );
+     // ready?
++    $ip= (array_key_exists('REMOTE_ADDR',$_SERVER))? $_SERVER['REMOTE_ADDR']: '0.0.0.0';
+     $this->logger->debug("\t[".time() . "] `" . $this->config->environment() . "` env. from " . 
+-      str_replace(APP_PATH, '${'.$this->config->application_name().'}/', $this->config->file()) . " loaded for \${ip}");
++      str_replace(APP_PATH, '${'.$this->config->application_name().'}/', $this->config->file()) . " loaded for `${ip}`");
+     // create a Map for routes.
+     $this->map= new Map( $this );
+   }
+
+Modified: exp/medick2/vendor/medick/lib/context/XMLConfigurator.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/XMLConfigurator.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/context/XMLConfigurator.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -65,6 +65,10 @@
+     foreach($this->sxe->properties->property as $prop) {
+       $this->properties['__global_env'][(string)trim($prop['name'])]= $this->parse_prop_value($prop['value']);
+     }
++    if( 0 == sizeof($this->env->properties) ) return;
++    foreach($this->env->properties->property as $prop) {
++      $this->properties[(string)$this->env['name']][(string)trim($prop['name'])]= $this->parse_prop_value($prop['value']);
++    }
+   }
+ 
+   private function parse_prop_value($val) {
+
+Added: exp/medick2/vendor/medick/lib/eltest/TestRunner.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/eltest/TestRunner.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/eltest/TestRunner.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,69 @@
++<?php
++
++// $Id$
++
++class RunnerError extends Exception { }
++
++class TestRunner extends Object {
++
++  private $folder;
++
++  private $cases;
++
++  private $buffer;
++
++  public function __construct($folder) {
++    $this->folder= $folder;
++    $this->cases = array();
++    $this->buffer= '';
++  }
++
++  public function run() {
++    $this->load_tests( new RecursiveDirectoryIterator($this->folder) );
++    
++    shuffle($this->cases);
++
++    foreach( $this->cases as $rclass ) {
++      $klass= $rclass->newInstance();
++      $rclass->getMethod('setup')->invoke($klass);
++      $rmethods= $rclass->getMethods();
++      try {
++        foreach($rmethods as $method) {
++          if($method->isPublic() && preg_match("/^test_/", $method->getName())) {
++            try {
++              $method->invoke($klass);
++            } catch(AssertionError $aErr) {
++              echo sprintf("[%s::%s] --> %s\n", $klass->class_name(), $method->getName(), $aErr->getMessage());
++            }
++          }
++        } // foreach
++      } catch(ReflectionException $rfEx) {
++        echo $rfEx->getMessage() . "\n";
++      }
++      $rclass->getMethod('tear_down')->invoke($klass);
++    } // foreach
++
++  }
++
++  private function load_tests( RecursiveDirectoryIterator $dir ) {
++    while($dir->valid()) {
++      $current= $dir->current();
++      if( $dir->isFile() && preg_match("/(.)Test\.php$/", $current->getFilename(), $matches) ) {
++        // XXX: handle errors
++        include $current->getPathname();
++        $x= explode('.', $current->getFilename());
++        $class = $x[0];
++        $rclass= new ReflectionClass($class);
++        if($rclass->getParentClass()->getName() == 'UnitTest') {
++          $this->cases[]= $rclass;
++        }
++      } elseif( $dir->hasChildren() && preg_match("/^\./", $current->getFilename(), $matches) == 0 ) {
++        $this->load_tests( $dir->getChildren() );
++      }
++      $dir->next();
++    }
++
++  }
++
++}
++
+
+
+Property changes on: exp/medick2/vendor/medick/lib/eltest/TestRunner.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/medick2/vendor/medick/lib/eltest/UnitTest.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/eltest/UnitTest.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/eltest/UnitTest.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,32 @@
++<?php
++
++// $Id$
++
++class AssertionError extends Exception {  }
++
++class UnitTest extends Object {
++
++  private $__assertions = 0;
++
++  protected function assert( $condition, $expected= 'true', $message= '' ) {
++    $this->__assertions++;
++    if($condition === false) {
++      throw new AssertionError( $message === ''? 'Assertion failed expected: '.$expected.', got: false': $message );
++    }
++  }
++
++  public function setup() { }
++
++  public function tear_down() {  }
++
++  public function assertions() {
++    return $this->__assertions;
++  }
++
++  public function toString() {
++    return sprintf( 'Assertions: %d', $this->__assertions );
++  }
++
++}
++
++
+
+
+Property changes on: exp/medick2/vendor/medick/lib/eltest/UnitTest.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/medick2/vendor/medick/lib/eltest/init.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/eltest/init.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/eltest/init.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,18 @@
++<?php
++
++//
++// $Id$
++//
++
++//  elTest, Medick UnitTest Framework
++
++function __eltest_autoload( $class ) {
++  $base= dirname(__FILE__) . DIRECTORY_SEPARATOR;
++  $file= 'eltest'.DIRECTORY_SEPARATOR.$class.'.php';
++  if(is_file( $base . $class . '.php')) {
++    return require $file;
++  }
++}
++
++spl_autoload_register('__eltest_autoload');
++
+
+
+Property changes on: exp/medick2/vendor/medick/lib/eltest/init.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/medick2/vendor/medick/lib/medick/Medick.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/medick/Medick.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/medick/Medick.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -1,8 +1,13 @@
+ <?php
+ 
++// $Id: $
++
+ require 'medick/Object.php';
+ require 'medick/ErrorHandler.php';
+ 
++//
++// Create a way to unload frameworks?
++//
+ class Medick extends Object {
+ 
+   private static $frameworks = array();
+@@ -15,29 +20,57 @@
+     Medick::load_framework('logger');
+     Medick::load_framework('plugin');
+     Medick::load_framework('action_controller');
++    Medick::load_framework('action_view');
+ 
+     // Medick::load_framework('active_record');
+ 
+   }
+ 
++  //
++  // XXX-> define autoload function inline?
++  // XXX-> register autoload function here?
++  // XXX-> check for the existence of autoload function?
++  //
+   public static function load_framework( $name ) {
++    // avoid loading the same framework twice
+     if(in_array($name, Medick::$frameworks)) return;
+-    // XXX: check the path
+-    // require la fisierul init din eg. active/record/init.php
+-    require str_replace( '_' , DIRECTORY_SEPARATOR, $name ) . DIRECTORY_SEPARATOR . 'init.php';
++
++    // if(function_exists('__'.$name.'_autoload')) {
++    //   spl_autoload_register( '__'.$name.'_autoload' );
++    // } else {
++      // require la fisierul init din eg. active/record/init.php
++      $init_file= MEDICK_PATH . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR . 
++        str_replace( '_' , DIRECTORY_SEPARATOR, $name ) . DIRECTORY_SEPARATOR . 'init.php';
++      if(false === file_exists($init_file))
++        throw new Exception('Cannot load framework `'.$name.'` from `'.$init_file.'`, no such file.');
++      require $init_file;
++    //}
++
+     Medick::$frameworks[]= $name;
+   }
+ 
++  public static function reload_framework($name) {
++    if(self::framework_loaded($name))
++      spl_autoload_register('__'.$name.'_autoload');
++    else
++      self::load_framework($name);
++  }
++
++  public static function unload_framework($name) {
++    if(self::framework_loaded($name)) 
++      spl_autoload_unregister('__'.$name.'_autoload');
++  }
++
+   public static function framework_loaded($name) {
+     return isset(Medick::$frameworks[$name]);
+   }
+ 
+   public static function version() {
+-    return '2.0.5';
++    return '2.0.10';
+   }
+ 
+   public static function dump($o) {
+-    echo "<pre>";var_dump($o);echo "</pre>";
++    echo "<pre>\n";var_dump($o);echo "\n</pre>";
+     die();
+   }
+ 
+
+Modified: exp/medick2/vendor/medick/lib/plugin/Plugins.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/plugin/Plugins.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/lib/plugin/Plugins.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -1,6 +1,6 @@
+ <?php
+ 
+-// $Id: $
++// $Id$
+ 
+ class Plugins extends Object {
+ 
+@@ -14,29 +14,14 @@
+     Plugins::$registry[$plugin->name()]= $plugin;
+   }
+ 
+-  //
+-  // XXX: 
+-  // -> foo_bar should be FooBar
+-  //
+-  private static function plugin_class_name(DirectoryIterator $plugin_path) {
+-    $plugin_name= $plugin_path->getFilename();
+-    return  ucfirst($plugin_name) . 'Plugin';
+-  }
+-
+   // should return IPlugin[]
+   public static function discover( ContextManager $context ) {
+-    
++    // XXX: try to load plugins from <plugins> section
+     if($context->config()->property( 'plugin.autodiscovery' ) === false) return;
+ 
+     $context->logger()->debug( strtolower(__METHOD__) . ' [hint: set `plugin.autodiscovery` to false to disable plugins]');
+ 
+-    //
+-    // XXX.
+-    // -> plugin.path
+-    // -> multiple paths?
+-    // -> <plugin> section
+-    //
+-
++    // XXX: plugins.path then fail to default
+     foreach(new DirectoryIterator( MEDICK_PATH . '/../../vendor/plugins' ) as $plugin_path) {
+       $plugin_load_file = $plugin_path->getPathname() . DIRECTORY_SEPARATOR . 'init.php';
+       if( $plugin_path->isDir() && is_file($plugin_load_file) && require($plugin_load_file)) {
+@@ -48,5 +33,11 @@
+ 
+   }
+ 
++  // XXX: foo_bar should be FooBar
++  private static function plugin_class_name(DirectoryIterator $plugin_path) {
++    $plugin_name= $plugin_path->getFilename();
++    return ucfirst($plugin_name) . 'Plugin';
++  }
++
+ }
+ 
+
+
+Property changes on: exp/medick2/vendor/medick/lib/plugin/Plugins.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/medick2/vendor/medick/test/context/ContextManagerTest.php
+===================================================================
+--- exp/medick2/vendor/medick/test/context/ContextManagerTest.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/test/context/ContextManagerTest.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,6 @@
++<?php
++
++class ContextManagerTest extends UnitTest {
++
++}
++  
+
+Added: exp/medick2/vendor/medick/test/context/XMLConfiguratorTest.php
+===================================================================
+--- exp/medick2/vendor/medick/test/context/XMLConfiguratorTest.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/test/context/XMLConfiguratorTest.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,14 @@
++<?php
++
++class XMLConfiguratorTest extends UnitTest {
++
++  public function setup() {
++    Medick::load_framework('context');
++  }
++
++  public function test_framework_loaded() {
++    $this->assert( class_exists('XMLConfigurator') );
++  }
++
++}
++
+
+Added: exp/medick2/vendor/medick/test/mock_object.php
+===================================================================
+--- exp/medick2/vendor/medick/test/mock_object.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/test/mock_object.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,63 @@
++<?php
++
++error_reporting(E_ALL);
++
++// Mocking Framework
++
++//
++// Product.expects(:find).with(1).returns(product)
++//
++// $o= new MockObject('Product');
++// $o->expects('find')->with(1)->returns(new Product());
++//
++
++class MockObject {
++
++  private $rclass;
++
++  private $klass;
++
++  private $rmethods;
++
++  private $methods;
++
++  public function __construct( $name, $args= null ) {
++
++    $this->rclass = new ReflectionClass($name);
++    $this->klass = $this->rclass->newInstance();
++
++    $this->rmethods= $this->rclass->getMethods();
++
++    $this->methods = array();
++
++    foreach($this->rmethods as $method) {
++      if($method->isPublic() && !$method->isStatic() && !$method->isConstructor()) {
++        $this->methods[$method->getName()] = $method;
++      }
++    }
++
++  }
++
++  public function __call($method, $args) {
++
++    if(in_array($method, array_keys($this->methods))) {
++      return $this->methods[$method]->invoke($this->klass);
++    }
++
++  }
++
++}
++
++class Complex {
++
++  public function behave() {
++    echo "shit!\n";
++  }
++
++}
++
++$complex= new MockObject('Complex');
++$complex->behave();
++
++die();
++
+
+Added: exp/medick2/vendor/medick/test/runner.php
+===================================================================
+--- exp/medick2/vendor/medick/test/runner.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/test/runner.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,47 @@
++<?php
++
++// $Id: $
++/*
++$pattern = "/(.)Test.php$/";
++$str = "FooTest.php";
++var_dump(preg_match( $pattern, $str, $matches ));
++# var_dump($matches);
++exit;
++*/
++
++define( 'RUNNER_VERSION', '0.1/20080518' );
++
++function usage() {
++  return sprintf("Usage: %s [folder]\n\nMedick Unit Test Runner, \$v. %s\nReport bugs to aurelian at locknet.ro\n",
++    $_SERVER['argv'][0],
++    RUNNER_VERSION
++  );
++}
++
++function main() {
++  if( $_SERVER['argc'] <= 1 || false === is_dir($_SERVER['argv'][1])) {
++    echo usage();
++    exit(-1);
++  } else {
++    setup();
++    init( $_SERVER['argv'][1]);
++  }
++}
++
++function setup() {
++  error_reporting( E_ALL | E_STRICT | E_RECOVERABLE_ERROR );
++  define( 'MEDICK_PATH', realpath(dirname(__FILE__) . DIRECTORY_SEPARATOR . '..'));
++  set_include_path(MEDICK_PATH . DIRECTORY_SEPARATOR . 'lib' . DIRECTORY_SEPARATOR);
++  error_reporting( E_ALL | E_STRICT | E_RECOVERABLE_ERROR );
++  require 'medick/Medick.php';
++  set_error_handler( array(new ErrorHandler(), 'raiseError') );
++  Medick::load_framework('eltest');
++}
++
++function init( $folder ) {
++  $runner= new TestRunner( $folder );
++  $runner->run();
++}
++
++main();
++
+
+Added: exp/medick2/vendor/medick/test/unit_test.php
+===================================================================
+--- exp/medick2/vendor/medick/test/unit_test.php	2008-05-19 08:10:10 UTC (rev 476)
++++ exp/medick2/vendor/medick/test/unit_test.php	2008-05-19 08:10:31 UTC (rev 477)
+@@ -0,0 +1,82 @@
++<?php
++
++error_reporting(E_ALL);
++
++// UnitTest Framework
++
++class AssertionError extends Exception {  }
++
++class UnitTest {
++
++  private $__assertions = 0;
++
++  private $__failues    = 0;
++
++  protected function assert( $condition, $expected= 'true', $message= '' ) {
++    $this->__assertions++;
++    if($condition === false) {
++      // $this->__failures++;
++      throw new AssertionError( $message === ''? 'Assertion failed expected: '.$expected.', got: false': $message );
++    }
++  }
++
++  public function assertions() {
++    return $this->__assertions;
++  }
++
++  public function report() {
++    return sprintf( 'Assertions: %d, Failures: %d', $this->__assertions, $this->__failures );
++  }
++
++}
++
++class TestRunner {
++
++  public static function run(UnitTest $test) {
++
++    $failures = 0;
++    $errors   = 0;
++    $tests    = 0;
++
++    $rclass= new ReflectionClass($test);
++    $rmethods= $rclass->getMethods();
++    
++    try {
++      foreach($rmethods as $rmethod) {
++        if($rmethod->isPublic() && preg_match("/^test_/", $rmethod->getName())) {
++          try {
++            $tests++;
++            $rmethod->invoke($test);
++          } catch(AssertionError $aerr) {
++            $failures++;
++            echo "--> [" . $rclass->getName() . "::" . $rmethod->getName() . "] " . $aerr->getMessage() . "\n";
++          }
++        }
++      }
++    } catch(Exception $ex) {
++      $errors++;
++    }
++
++    echo sprintf("[%s/%d] assertions: %d, failures: %d, errors: %d\n",
++      $rclass->getName(), $tests, $test->assertions(), $failures, $errors);
++
++  }
++
++}
++
++class FooTest extends UnitTest {
++
++  public function test_one() {
++    $this->assert(false);
++    $this->assert(true);
++  }
++
++  public function test_two() {
++    $this->assert(true);
++    $this->assert(true);
++  }
++
++}
++
++
++TestRunner::run( new FooTest() );
+
+
+
+From aurelian at mail.berlios.de  Thu May 22 18:26:42 2008
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Thu, 22 May 2008 18:26:42 +0200
+Subject: [Medick-svn] r479 - in exp/medick2/vendor/medick: . __remove_me
+	__remove_me/runkit
+Message-ID: <200805221626.m4MGQgll003613@sheep.berlios.de>
+
+Author: aurelian
+Date: 2008-05-22 18:26:42 +0200 (Thu, 22 May 2008)
+New Revision: 479
+
+Added:
+   exp/medick2/vendor/medick/__remove_me/
+   exp/medick2/vendor/medick/__remove_me/runkit/
+   exp/medick2/vendor/medick/__remove_me/runkit/foo.php
+   exp/medick2/vendor/medick/__remove_me/runkit/runkit.php
+Log:
+ -- runkit sample
+
+Added: exp/medick2/vendor/medick/__remove_me/runkit/foo.php
+===================================================================
+--- exp/medick2/vendor/medick/__remove_me/runkit/foo.php	2008-05-19 08:11:24 UTC (rev 478)
++++ exp/medick2/vendor/medick/__remove_me/runkit/foo.php	2008-05-22 16:26:42 UTC (rev 479)
+@@ -0,0 +1,9 @@
++<?php
++
++class Foo {
++  public static $baz = 0;
++  public static function bar(){
++    self::$baz= 1;
++  }
++}
++
+
+Added: exp/medick2/vendor/medick/__remove_me/runkit/runkit.php
+===================================================================
+--- exp/medick2/vendor/medick/__remove_me/runkit/runkit.php	2008-05-19 08:11:24 UTC (rev 478)
++++ exp/medick2/vendor/medick/__remove_me/runkit/runkit.php	2008-05-22 16:26:42 UTC (rev 479)
+@@ -0,0 +1,22 @@
++<?php
++
++function my_func() {
++    return __FUNCTION__;
++}
++
++include_once('foo.php');
++
++$php1= new Runkit_Sandbox();
++$php1->eval( "include_once('foo.php');Foo::bar();" );
++
++echo "Global Scope: " . Foo::$baz . "--->0\n";
++
++$php2= new Runkit_Sandbox();
++$php2['parent_call'] = true;
++$php2->eval('include_once("foo.php");');
++$php2->eval('Foo::bar();');
++$php2->eval('echo "PHP2 Scope: " . Foo::$baz . " --->1\n";');
++
++$php2->eval('echo my_func();');
++
++
+
+
+
+From aurelian at mail.berlios.de  Mon May 26 19:07:39 2008
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Mon, 26 May 2008 19:07:39 +0200
+Subject: [Medick-svn] r480 - exp/medick2/vendor/medick/__remove_me/runkit
+Message-ID: <200805261707.m4QH7d3G012101@sheep.berlios.de>
+
+Author: aurelian
+Date: 2008-05-26 19:07:39 +0200 (Mon, 26 May 2008)
+New Revision: 480
+
+Modified:
+   exp/medick2/vendor/medick/__remove_me/runkit/runkit.php
+Log:
+ -- I haz karma
+
+Modified: exp/medick2/vendor/medick/__remove_me/runkit/runkit.php
+===================================================================
+--- exp/medick2/vendor/medick/__remove_me/runkit/runkit.php	2008-05-22 16:26:42 UTC (rev 479)
++++ exp/medick2/vendor/medick/__remove_me/runkit/runkit.php	2008-05-26 17:07:39 UTC (rev 480)
+@@ -9,14 +9,19 @@
+ $php1= new Runkit_Sandbox();
+ $php1->eval( "include_once('foo.php');Foo::bar();" );
+ 
+-echo "Global Scope: " . Foo::$baz . "--->0\n";
++echo "Global Scope: [" . Foo::$baz . "] ---> 0\n";
+ 
+ $php2= new Runkit_Sandbox();
+-$php2['parent_call'] = true;
++
+ $php2->eval('include_once("foo.php");');
++$php2->eval('$karma = 15;');
+ $php2->eval('Foo::bar();');
+-$php2->eval('echo "PHP2 Scope: " . Foo::$baz . " --->1\n";');
++$php2->eval('echo "PHP2 Scope: [" . Foo::$baz . "] ---> 1\n";');
+ 
+-$php2->eval('echo my_func();');
++echo "Getting karma out: [" . $php2->karma . "] ---> 15\n";
++$php2->eval('$karma++;');
++$php2->eval('echo "increased karma: [". $karma ."] ---> 16\n";');
+ 
++// $php2->eval('echo my_func();');
+ 
++
+
+
+

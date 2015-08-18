@@ -1,0 +1,1357 @@
+From aurelian at mail.berlios.de  Sun Jun  1 16:26:19 2008
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Sun, 1 Jun 2008 16:26:19 +0200
+Subject: [Medick-svn] r481 - in exp/medick2/vendor/medick: . doc
+	lib/action/controller lib/context lib/medick lib/plugin
+Message-ID: <200806011426.m51EQJSZ021700@sheep.berlios.de>
+
+Author: aurelian
+Date: 2008-06-01 16:26:18 +0200 (Sun, 01 Jun 2008)
+New Revision: 481
+
+Added:
+   exp/medick2/vendor/medick/doc/
+   exp/medick2/vendor/medick/doc/AUTOLOAD
+   exp/medick2/vendor/medick/doc/CONCEPTS
+   exp/medick2/vendor/medick/doc/PLUGINS
+   exp/medick2/vendor/medick/lib/plugin/AbstractPlugin.php
+   exp/medick2/vendor/medick/lib/plugin/ILoadPathPlugin.php
+   exp/medick2/vendor/medick/lib/plugin/IRoutesPlugin.php
+Modified:
+   exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+   exp/medick2/vendor/medick/lib/action/controller/Map.php
+   exp/medick2/vendor/medick/lib/action/controller/Router.php
+   exp/medick2/vendor/medick/lib/context/ContextManager.php
+   exp/medick2/vendor/medick/lib/context/XMLConfigurator.php
+   exp/medick2/vendor/medick/lib/medick/Medick.php
+   exp/medick2/vendor/medick/lib/plugin/IPlugin.php
+   exp/medick2/vendor/medick/lib/plugin/Plugins.php
+Log:
+ -- one can alter load_paths and routes from a Plugin
+
+Copied: exp/medick2/vendor/medick/doc/AUTOLOAD (from rev 478, exp/medick2/AUTOLOAD)
+
+Copied: exp/medick2/vendor/medick/doc/CONCEPTS (from rev 475, exp/medick2/CONCEPTS)
+
+Copied: exp/medick2/vendor/medick/doc/PLUGINS (from rev 475, exp/medick2/PLUGINS)
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2008-05-26 17:07:39 UTC (rev 480)
++++ exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2008-06-01 14:26:18 UTC (rev 481)
+@@ -1,6 +1,6 @@
+ <?php
+ 
+-// $Id: $
++// $Id$
+ 
+ class Dispatcher extends Object {
+ 
+@@ -13,7 +13,7 @@
+     $this->context= $context;
+ 
+     // plugins
+-    $this->plugins= Plugins::discover( $this->context );
++    // $this->plugins= Plugins::discover( $this->context );
+ 
+   }
+ 
+
+
+Property changes on: exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Map.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Map.php	2008-05-26 17:07:39 UTC (rev 480)
++++ exp/medick2/vendor/medick/lib/action/controller/Map.php	2008-06-01 14:26:18 UTC (rev 481)
+@@ -22,8 +22,9 @@
+   /*
+    * Finds a Route
+    */
+-  public function find_route(Request $request) {
++  public function find_route( Request $request ) {
+     $this->context->logger()->debug( 'processing Request ' . $request );
++
+     if(empty($this->routes)) $this->load_routes();
+ 
+     foreach($this->routes as $route) {
+@@ -39,8 +40,20 @@
+    * Collects routes from Context->Configurator and then from plugins
+    */ 
+   private function load_routes() {
+-    // 1. config.xml routes
++
++    // 1. plugins routes
++    foreach($this->context->plugins() as $plugin) {
++      
++      if(false === $plugin->is_type('IRoutesPlugin')) continue;
++
++      foreach($plugin->routes() as $route_value) {
++        $this->routes[]= $route_value;
++      }
++    }
++
++    // 2. config.xml routes
+     $config_routes= $this->context->config()->routes();
++    // XXX: review, maybe Route[] should be returned by configurator?
+     foreach( $config_routes as $r ) {
+       // xxx. requirements
+       $this->routes[]= new Route( 
+@@ -49,8 +62,9 @@
+         $this->context->config()->route_defaults($r) // array with defaults
+       );
+     }
+-    // 2. plugins routes
+ 
++    // Medick::dump($this->routes);
++
+     // xxx: throw exception if 0 routes?
+   }
+ 
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Router.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Router.php	2008-05-26 17:07:39 UTC (rev 480)
++++ exp/medick2/vendor/medick/lib/action/controller/Router.php	2008-06-01 14:26:18 UTC (rev 481)
+@@ -15,36 +15,56 @@
+     $this->context= $context;
+   }
+ 
++  private function load_controller($controller, $path) {
++    $controller_file = $path . 'app/controllers/' . $controller . '_controller.php';
++    $controller_class= ucfirst($controller) . 'Controller';
++    if(file_exists($controller_file)) {
++      return array($controller_file, $controller_class);
++    } else {
++      return false;
++    }
++  }
++
+   // should return a Controller Instance
+   public function create_controller( $request ) {
++    $loaded= false;
++    foreach($this->context->load_paths() as $path) {
++      if(list($controller_file, $controller_class)= $this->load_controller($request->parameter('controller'), $path)) {
++        $loaded= true;
++        break;
++      }
++    }
+ 
+-    // xxx: should call plugins special __before_controller methods?
++    if($loaded === false) {
++      throw new Exception('Cannot load controller `' . $request->parameter('controller') . 
++        '`, searched in `'.join(', ', $this->context->load_paths()).'`');
++    }
+ 
+-    // 1. class name -> request->parameter('controller') . 'Controller'
+-    // 2. file name  -> request->parameter('controller') . '_controller.php'
+-
+-    $path= APP_PATH; // -> this is going to be a list of paths
+-
+-    $controller_file = $path . 'app/controllers/' . $request->parameter('controller') . '_controller.php';
+-    $controller_class= ucfirst($request->parameter('controller')) . 'Controller';
+-
+-    if( false === file_exists($controller_file) ) {
+-      throw new Exception('Cannot load `' . $controller_file . '`, no such file or directory!'); // -> this is going to be replaced with continue in loop
++    // load ApplicationController if any.
++    foreach($this->context->load_paths() as $load_path) {
++      if(file_exists($load_path.'app/controllers/application.php')) {
++        require $load_path.'app/controllers/application.php';
++        if(class_exists('ApplicationController')) break;
++      }
+     }
+ 
+     require( $controller_file );
+ 
+     if( false === class_exists($controller_class) ) {
+-      throw new Exception('Expected `' . $controller_file . '` to define `'.$controller_class.'`'); // -> this is going to be replaced with continue in loop
++      throw new Exception('Expected `' . $controller_file . '` to define `'.$controller_class.'`');
+     }
+ 
+     $rclass= new ReflectionClass($controller_class);
+ 
+-    if( false === ($rclass->getParentClass() || $rclass->getParentClass() == 'ApplicationController' || $rclass->getParentClass() == 'ActionController')) {
++    if( false === ($rclass->getParentClass() || $rclass->getParentClass() == 'ApplicationController' 
++      || $rclass->getParentClass() == 'ActionController')
++    ) {
+       throw new Exception('Expected `' . $controller_class . '` to extend ApplicationController(recommended) or ActionControler');
+     }
+ 
+-    $this->context->logger()->debug(str_replace(APP_PATH, '${'.$this->context->config()->application_name().'}', $controller_file) . ' --> ' . $controller_class);
++    $this->context->logger()->debug(str_replace(APP_PATH, 
++      '${'.$this->context->config()->application_name().'}', $controller_file) . ' --> ' . $controller_class
++    );
+ 
+     return $rclass->newInstance( $this->context );
+ 
+
+Modified: exp/medick2/vendor/medick/lib/context/ContextManager.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/ContextManager.php	2008-05-26 17:07:39 UTC (rev 480)
++++ exp/medick2/vendor/medick/lib/context/ContextManager.php	2008-06-01 14:26:18 UTC (rev 481)
+@@ -21,7 +21,7 @@
+ 
+ }
+ 
+-// $Id: $
++// $Id$
+ 
+ class ContextManager extends Object {
+ 
+@@ -36,7 +36,13 @@
+   
+   // a Timer to benchmark critical points
+   private $timer;
++  
++  // IPlugin[]
++  private $plugins;
+ 
++  // load_paths[]
++  private $load_paths= array();
++
+   private function __construct( IConfigurator $config ) {
+     $this->config= $config;
+     // configure the logger
+@@ -47,10 +53,28 @@
+     $ip= (array_key_exists('REMOTE_ADDR',$_SERVER))? $_SERVER['REMOTE_ADDR']: '0.0.0.0';
+     $this->logger->debug("\t[".time() . "] `" . $this->config->environment() . "` env. from " . 
+       str_replace(APP_PATH, '${'.$this->config->application_name().'}/', $this->config->file()) . " loaded for `${ip}`");
++    
+     // create a Map for routes.
+     $this->map= new Map( $this );
++
++    // load plugins
++    $this->plugins = Plugins::discover( $this );
+   }
+ 
++  public function load_paths() {
++    if(sizeof($this->load_paths) == 0) {
++      foreach( $this->plugins as $plugin ) {
++        if($plugin->is_type('ILoadPathPlugin')) $this->load_paths[]= $plugin->load_path();
++      }
++      $this->load_paths[]= APP_PATH;
++    }
++    return $this->load_paths;
++  }
++
++  public function plugins() {
++    return $this->plugins;
++  }
++
+   public function logger() {
+     return $this->logger;
+   }
+
+
+Property changes on: exp/medick2/vendor/medick/lib/context/ContextManager.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/medick2/vendor/medick/lib/context/XMLConfigurator.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/XMLConfigurator.php	2008-05-26 17:07:39 UTC (rev 480)
++++ exp/medick2/vendor/medick/lib/context/XMLConfigurator.php	2008-06-01 14:26:18 UTC (rev 481)
+@@ -1,11 +1,13 @@
+ <?php
+ 
++// $Id$
++
+ class XMLConfigurator extends AbstractConfigurator {
+ 
+   // SimpleXML
+   private $sxe;
+   
+-  // Environment as SimpleXML
++  // Environment, as SimpleXML
+   private $env = null;
+ 
+   private $properties = array();
+@@ -71,6 +73,9 @@
+     }
+   }
+ 
++  //
++  // transforms "true", "on" or "1" to (bool)true, "false", "off" or "0" to (bool)false
++  //
+   private function parse_prop_value($val) {
+     $value= (string)trim($val);
+     if(in_array($value, array('true', 'on', '1'))) return true;
+@@ -78,6 +83,9 @@
+     else return $value;
+   }
+ 
++  //
++  // gets the routes as SXE objects
++  //
+   public function routes() {
+     return $this->sxe->routes->route;
+   }
+
+
+Property changes on: exp/medick2/vendor/medick/lib/context/XMLConfigurator.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/medick2/vendor/medick/lib/medick/Medick.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/medick/Medick.php	2008-05-26 17:07:39 UTC (rev 480)
++++ exp/medick2/vendor/medick/lib/medick/Medick.php	2008-06-01 14:26:18 UTC (rev 481)
+@@ -1,6 +1,6 @@
+ <?php
+ 
+-// $Id: $
++// $Id$
+ 
+ require 'medick/Object.php';
+ require 'medick/ErrorHandler.php';
+@@ -49,6 +49,7 @@
+     Medick::$frameworks[]= $name;
+   }
+ 
++  // XXX: to be removed
+   public static function reload_framework($name) {
+     if(self::framework_loaded($name))
+       spl_autoload_register('__'.$name.'_autoload');
+@@ -56,17 +57,19 @@
+       self::load_framework($name);
+   }
+ 
++  // XXX: to be removed
+   public static function unload_framework($name) {
+     if(self::framework_loaded($name)) 
+       spl_autoload_unregister('__'.$name.'_autoload');
+   }
+ 
++  // XXX: to be removed
+   public static function framework_loaded($name) {
+     return isset(Medick::$frameworks[$name]);
+   }
+ 
+   public static function version() {
+-    return '2.0.10';
++    return '2.0.11';
+   }
+ 
+   public static function dump($o) {
+
+
+Property changes on: exp/medick2/vendor/medick/lib/medick/Medick.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/medick2/vendor/medick/lib/plugin/AbstractPlugin.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/plugin/AbstractPlugin.php	2008-05-26 17:07:39 UTC (rev 480)
++++ exp/medick2/vendor/medick/lib/plugin/AbstractPlugin.php	2008-06-01 14:26:18 UTC (rev 481)
+@@ -0,0 +1,26 @@
++<?php
++
++// $Id$
++
++abstract class AbstractPlugin extends Object implements IPlugin {
++
++  protected $context;
++
++  protected $metadata;
++
++  public function __construct( ContextManager $context ) {
++    $this->context= $context;
++  }
++
++  public function is_type( $name ) {
++    try {
++      $k = new ReflectionClass($this->name());
++      return $k->implementsInterface($name);
++    } catch(ReflectionException $rfEx) {
++      $this->context->logger()->debug('will skip plugin '.$this->name().', failed to check type `'.$name.'`: '.$rfEx->getMessage());
++      return false;
++    }
++  }
++
++}
++
+
+
+Property changes on: exp/medick2/vendor/medick/lib/plugin/AbstractPlugin.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/medick2/vendor/medick/lib/plugin/ILoadPathPlugin.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/plugin/ILoadPathPlugin.php	2008-05-26 17:07:39 UTC (rev 480)
++++ exp/medick2/vendor/medick/lib/plugin/ILoadPathPlugin.php	2008-06-01 14:26:18 UTC (rev 481)
+@@ -0,0 +1,12 @@
++<?php
++
++// $Id$
++
++interface ILoadPathPlugin {
++
++  /*
++   * Should return a load path for app
++   */ 
++  public function load_path();
++}
++
+
+
+Property changes on: exp/medick2/vendor/medick/lib/plugin/ILoadPathPlugin.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/medick2/vendor/medick/lib/plugin/IPlugin.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/plugin/IPlugin.php	2008-05-26 17:07:39 UTC (rev 480)
++++ exp/medick2/vendor/medick/lib/plugin/IPlugin.php	2008-06-01 14:26:18 UTC (rev 481)
+@@ -2,9 +2,6 @@
+ 
+ interface IPlugin {
+ 
+-  /*
+-   * Should create a new Instance
+-   */ 
+   public function __construct( ContextManager $context );
+ 
+   /*
+@@ -12,9 +9,9 @@
+    */
+   public function metadata();
+ 
+-  /**
+-   * Should return the plugin name from metadata array
+-   */ 
+   public function name();
+ 
++  public function is_type($name);
++
+ }
++
+
+Added: exp/medick2/vendor/medick/lib/plugin/IRoutesPlugin.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/plugin/IRoutesPlugin.php	2008-05-26 17:07:39 UTC (rev 480)
++++ exp/medick2/vendor/medick/lib/plugin/IRoutesPlugin.php	2008-06-01 14:26:18 UTC (rev 481)
+@@ -0,0 +1,15 @@
++<?php
++
++// $Id$
++
++interface IRoutesPlugin {
++
++  /*
++   * Should return an array of Routes
++   */ 
++  public function routes();
++
++}
++
++
++
+
+
+Property changes on: exp/medick2/vendor/medick/lib/plugin/IRoutesPlugin.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/medick2/vendor/medick/lib/plugin/Plugins.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/plugin/Plugins.php	2008-05-26 17:07:39 UTC (rev 480)
++++ exp/medick2/vendor/medick/lib/plugin/Plugins.php	2008-06-01 14:26:18 UTC (rev 481)
+@@ -14,29 +14,43 @@
+     Plugins::$registry[$plugin->name()]= $plugin;
+   }
+ 
++
+   // should return IPlugin[]
+   public static function discover( ContextManager $context ) {
+     // XXX: try to load plugins from <plugins> section
+-    if($context->config()->property( 'plugin.autodiscovery' ) === false) return;
++    if($context->config()->property( 'plugin.autodiscovery' ) === false) return array();
+ 
+     $context->logger()->debug( strtolower(__METHOD__) . ' [hint: set `plugin.autodiscovery` to false to disable plugins]');
+ 
+-    // XXX: plugins.path then fail to default
+-    foreach(new DirectoryIterator( MEDICK_PATH . '/../../vendor/plugins' ) as $plugin_path) {
+-      $plugin_load_file = $plugin_path->getPathname() . DIRECTORY_SEPARATOR . 'init.php';
+-      if( $plugin_path->isDir() && is_file($plugin_load_file) && require($plugin_load_file)) {
+-        $class= Plugins::plugin_class_name($plugin_path);
+-        Plugins::add( new $class($context) );
+-        $context->logger()->debugf('%s --> %s', str_replace(MEDICK_PATH, '${'.$context->config()->application_name().'}', $plugin_load_file), $class );
++    // plugins.path then fall to default
++    $plugins_path= $context->config()->property( 'plugin.path' )? 
++      $context->config()->property('plugin.path') : MEDICK_PATH . '/../../vendor/plugins';
++
++    foreach(new DirectoryIterator( $plugins_path ) as $plugin_path) {
++      Plugins::load_plugin($context, $plugin_path);
++    }
++    return Plugins::$registry;
++  }
++
++  private static function load_plugin(ContextManager $context, DirectoryIterator $plugin_path) {
++    $plugin_load_file = $plugin_path->getPathname() . DIRECTORY_SEPARATOR . 'init.php';
++    if( $plugin_path->isDir() && is_file($plugin_load_file) && require($plugin_load_file)) {
++      $class= Plugins::plugin_class_name( $plugin_path );
++      try {
++        $klass = new ReflectionClass($class);
++        Plugins::add( $klass->newInstance($context) );
++        $context->logger()->debugf('%s --> %s', 
++            str_replace(MEDICK_PATH, '${'.$context->config()->application_name().'}', $plugin_load_file), $class );
++       } catch(ReflectionException $rfEx) {
++         $context->logger()->warn('failed to load plugin `' . $plugin_path->getFilename() . '`: ' . $rfEx->getMessage());
+       }
+     }
+-
+   }
+ 
+-  // XXX: foo_bar should be FooBar
++  // XXX: to be moved to Utils future framework (Inflector)
+   private static function plugin_class_name(DirectoryIterator $plugin_path) {
+     $plugin_name= $plugin_path->getFilename();
+-    return ucfirst($plugin_name) . 'Plugin';
++    return str_replace(" ", "", ucwords(str_replace("_", " ", $plugin_name))) . 'Plugin';
+   }
+ 
+ }
+
+
+
+From aurelian at mail.berlios.de  Sun Jun  1 22:03:51 2008
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Sun, 1 Jun 2008 22:03:51 +0200
+Subject: [Medick-svn] r482 - in exp/medick2/vendor/medick/lib: .
+	action/controller action/view active active/record medick plugin
+Message-ID: <200806012003.m51K3pSG009620@sheep.berlios.de>
+
+Author: aurelian
+Date: 2008-06-01 22:03:50 +0200 (Sun, 01 Jun 2008)
+New Revision: 482
+
+Added:
+   exp/medick2/vendor/medick/lib/active/
+   exp/medick2/vendor/medick/lib/active/record/
+   exp/medick2/vendor/medick/lib/active/record/Base.php
+   exp/medick2/vendor/medick/lib/active/record/init.php
+Modified:
+   exp/medick2/vendor/medick/lib/action/controller/Base.php
+   exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+   exp/medick2/vendor/medick/lib/action/controller/Map.php
+   exp/medick2/vendor/medick/lib/action/controller/Route.php
+   exp/medick2/vendor/medick/lib/action/controller/Router.php
+   exp/medick2/vendor/medick/lib/action/view/PHPTemplateEngine.php
+   exp/medick2/vendor/medick/lib/medick/Medick.php
+   exp/medick2/vendor/medick/lib/plugin/IPlugin.php
+Log:
+ -- various fixes. almost at ActiveRecord
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Base.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Base.php	2008-06-01 14:26:18 UTC (rev 481)
++++ exp/medick2/vendor/medick/lib/action/controller/Base.php	2008-06-01 20:03:50 UTC (rev 482)
+@@ -1,6 +1,6 @@
+ <?php
+ 
+-// $Id: $
++// $Id$
+ 
+ class ChainError extends Exception {  }
+ 
+@@ -89,9 +89,11 @@
+   // ---
+ 
+   protected function render($template_location= null, $status= null) {
++
+     if(null === $template_location) {
+       $template_location= $this->request->parameter('controller') . DIRECTORY_SEPARATOR . $this->request->parameter('action') . '.phtml';
+     }
++
+     return $this->render_file( $template_location, $status );
+   }
+ 
+@@ -100,25 +102,44 @@
+     // XXX: register flash
+ 
+     if($this->use_layout) {
+-      // XXX: check view paths
+-      $layout= APP_PATH . 'app/views/layouts/' . $this->request->parameter('controller') . '.phtml';
+-      if(false === file_exists($layout)) {
+-        $this->logger->debug('will render without layout since cannot load `'.$layout.'`, no such file!');
+-        return $this->render_without_layout($template_file, $status);
+-      } else {
+-        // parse the template file first and create content_for_layout variable
+-        $this->template->assign('content_for_layout', $this->template->render( APP_PATH . 'app/views/' . $template_file));
+-        // continue to render the layout
+-        return $this->render_text($this->template->render($layout), $status);
+-      }
++      $this->render_with_layout( $template_file, $status);
+     } else {
+       $this->logger->debug('rendering without layout.');
+       return $this->render_without_layout($template_file, $status);
+     }
+   }
+ 
++  protected function render_with_layout( $template_file, $status ) {
++
++    if(is_string($this->use_layout)) {
++      $layout= 'app/views/layouts/'.$this->use_layout.'.phtml';
++      foreach($this->context->load_paths() as $path) {
++        if(file_exists($path.$layout)) {
++          // parse the template file first and create content_for_layout variable
++          $this->template->assign('content_for_layout', $this->template->render( $template_file ));
++          return $this->render_text( $this->template->render_template_file($path.$layout), $status);
++        }
++      }
++    }
++
++    $layout= 'app/views/layouts/'.$this->controller.'.phtml';
++    foreach($this->context->load_paths() as $path) {
++      if(file_exists($path.$layout)) {
++        // parse the template file first and create content_for_layout variable
++        $this->template->assign('content_for_layout', $this->template->render( $template_file ));
++        return $this->render_text( $this->template->render_template_file($path.$layout), $status);
++      }
++    }
++
++    // XXX: maybe layouts/application.phtml?
++
++    // fallback and render without layout
++    $this->logger->debug('will render without layout');
++    return $this->render_without_layout($template_file, $status);
++  }
++
+   protected function render_without_layout($file, $status) {
+-    return $this->render_text( $this->template->render( APP_PATH . 'app/views/' . $file), $status);
++    return $this->render_text( $this->template->render($file), $status);
+   }
+ 
+   protected function render_text( $text, $status= null) {
+@@ -149,11 +170,13 @@
+     // do we need to register and start a session?
+     $this->__register_session();
+ 
++    $this->controller= $this->request->parameter('controller');
++
+     // create the template now.
+     $this->template= ActionView::load( $this->context, $this );
+ 
+     // assign basic template variables.
+-    $this->template->assign('__controller', $this->request->parameter('controller'));
++    $this->template->assign('__controller', $this->controller);
+     $this->template->assign('__action', $this->request->parameter('action'));
+     return true;
+   }
+
+
+Property changes on: exp/medick2/vendor/medick/lib/action/controller/Base.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2008-06-01 14:26:18 UTC (rev 481)
++++ exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2008-06-01 20:03:50 UTC (rev 482)
+@@ -9,12 +9,7 @@
+   private $plugins;
+ 
+   public function __construct(ContextManager $context) {
+-    // context
+     $this->context= $context;
+-
+-    // plugins
+-    // $this->plugins= Plugins::discover( $this->context );
+-
+   }
+ 
+   public function dispatch() {
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Map.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Map.php	2008-06-01 14:26:18 UTC (rev 481)
++++ exp/medick2/vendor/medick/lib/action/controller/Map.php	2008-06-01 20:03:50 UTC (rev 482)
+@@ -19,6 +19,10 @@
+     $this->routes= array();
+   }
+ 
++  public function routes() {
++    return $this->routes;
++  }
++
+   /*
+    * Finds a Route
+    */
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Route.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Route.php	2008-06-01 14:26:18 UTC (rev 481)
++++ exp/medick2/vendor/medick/lib/action/controller/Route.php	2008-06-01 20:03:50 UTC (rev 482)
+@@ -1,6 +1,6 @@
+ <?php
+ 
+-// $Id: $
++// $Id$
+ 
+ // XXX: Route Segment
+ class __Segment extends Object {
+@@ -60,6 +60,10 @@
+     return $this->name;
+   }
+ 
++  public function definition() {
++    return $this->definition;
++  }
++
+   public function toString() {
+     return sprintf('(%s:%s)-> %s', $this->name, $this->id, $this->definition);
+   }
+
+
+Property changes on: exp/medick2/vendor/medick/lib/action/controller/Route.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Router.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Router.php	2008-06-01 14:26:18 UTC (rev 481)
++++ exp/medick2/vendor/medick/lib/action/controller/Router.php	2008-06-01 20:03:50 UTC (rev 482)
+@@ -61,9 +61,10 @@
+     ) {
+       throw new Exception('Expected `' . $controller_class . '` to extend ApplicationController(recommended) or ActionControler');
+     }
+-
+-    $this->context->logger()->debug(str_replace(APP_PATH, 
+-      '${'.$this->context->config()->application_name().'}', $controller_file) . ' --> ' . $controller_class
++    
++    // XXX: the $path
++    $this->context->logger()->debug(str_replace($path, 
++      '${'.$this->context->config()->application_name().'}/', $controller_file) . ' --> ' . $controller_class
+     );
+ 
+     return $rclass->newInstance( $this->context );
+
+Modified: exp/medick2/vendor/medick/lib/action/view/PHPTemplateEngine.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/view/PHPTemplateEngine.php	2008-06-01 14:26:18 UTC (rev 481)
++++ exp/medick2/vendor/medick/lib/action/view/PHPTemplateEngine.php	2008-06-01 20:03:50 UTC (rev 482)
+@@ -1,28 +1,39 @@
+ <?php
+ 
++class TemplateNotFoundError extends Exception {
++
++}
++
+ // $Id$
+ 
+ class PHPTemplateEngine extends AbstractTemplateEngine {
+ 
++  private $route_helpers= false;
++
+   public function partial($partial) {
+ 
+   }
+ 
+-  public function render( $file ) {
+-
+-    // XXX: loop view paths
+-    if (false === file_exists( $file )) {
+-      throw new Exception( 'Cannot render template: `' . $file . '`, no such file!' );
++  // $template-> path to file is searched trought load_paths
++  public function render( $template ) {
++    foreach($this->context->load_paths() as $path) {
++      if(file_exists($path.'app/views/'.$template)) return $this->render_template_file($path.'app/views/'.$template);
+     }
++    throw new TemplateNotfoundError( 'Cannot render `'.$template.'` searched in ' . join(', ', $this->context->load_paths()) );
++  }
+ 
++  // $file -> complete path to a template file, ignoring load_paths
++  public function render_template_file( $file ) {
+     // XXX: load helper['s]
+-
+     if (sizeof($this->vars) > 0) {
+       extract($this->vars,EXTR_SKIP);
+     }
+ 
+-    $this->context->logger()->debug(sprintf('ready to render `%s` (+ %.3f sec.)', $file, $this->context->timer()->tick()));
++    if($this->route_helpers === false) {
++      $this->create_route_helpers();
++    }
+ 
++    $this->context->logger()->debug(sprintf('render `%s` (+ %.3f sec.)', $file, $this->context->timer()->tick()));
+     ob_start();
+     include_once( $file );
+     $c = ob_get_contents();
+@@ -31,5 +42,14 @@
+     return $c;
+   }
+ 
++  private function create_route_helpers() {
++    $buff = "";
++    foreach($this->context->map()->routes() as $route) {
++      $buff .= "function {$route->name()}_path() {return '/{$this->context->config()->property('base', true)}{$route->definition()}';}";
++    }
++    eval($buff);
++    $this->route_helpers= true;
++  }
++
+ }
+ 
+
+Added: exp/medick2/vendor/medick/lib/active/record/Base.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/active/record/Base.php	2008-06-01 14:26:18 UTC (rev 481)
++++ exp/medick2/vendor/medick/lib/active/record/Base.php	2008-06-01 20:03:50 UTC (rev 482)
+@@ -0,0 +1,9 @@
++<?php
++
++// $Id: $
++
++class ActiveRecord extends Base {
++
++
++}
++
+
+Added: exp/medick2/vendor/medick/lib/active/record/init.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/active/record/init.php	2008-06-01 14:26:18 UTC (rev 481)
++++ exp/medick2/vendor/medick/lib/active/record/init.php	2008-06-01 20:03:50 UTC (rev 482)
+@@ -0,0 +1,18 @@
++<?php
++
++// $Id: $
++
++//  ActionController Framework Autoload Definition
++function __active_record_autoload($class) {
++
++  // special case
++  if($class == 'ActiveRecord') {
++    return require 'active/record/Base.php';
++  }
++
++  $base= dirname(__FILE__) . DIRECTORY_SEPARATOR;
++
++}
++
++spl_autoload_register('__active_record_autoload');
++
+
+Modified: exp/medick2/vendor/medick/lib/medick/Medick.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/medick/Medick.php	2008-06-01 14:26:18 UTC (rev 481)
++++ exp/medick2/vendor/medick/lib/medick/Medick.php	2008-06-01 20:03:50 UTC (rev 482)
+@@ -21,9 +21,7 @@
+     Medick::load_framework('plugin');
+     Medick::load_framework('action_controller');
+     Medick::load_framework('action_view');
+-
+-    // Medick::load_framework('active_record');
+-
++    Medick::load_framework('active_record');
+   }
+ 
+   //
+@@ -49,27 +47,12 @@
+     Medick::$frameworks[]= $name;
+   }
+ 
+-  // XXX: to be removed
+-  public static function reload_framework($name) {
+-    if(self::framework_loaded($name))
+-      spl_autoload_register('__'.$name.'_autoload');
+-    else
+-      self::load_framework($name);
+-  }
+-
+-  // XXX: to be removed
+-  public static function unload_framework($name) {
+-    if(self::framework_loaded($name)) 
+-      spl_autoload_unregister('__'.$name.'_autoload');
+-  }
+-
+-  // XXX: to be removed
+   public static function framework_loaded($name) {
+     return isset(Medick::$frameworks[$name]);
+   }
+ 
+   public static function version() {
+-    return '2.0.11';
++    return '2.0.12';
+   }
+ 
+   public static function dump($o) {
+
+Modified: exp/medick2/vendor/medick/lib/plugin/IPlugin.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/plugin/IPlugin.php	2008-06-01 14:26:18 UTC (rev 481)
++++ exp/medick2/vendor/medick/lib/plugin/IPlugin.php	2008-06-01 20:03:50 UTC (rev 482)
+@@ -1,5 +1,7 @@
+ <?php
+ 
++// $Id$
++
+ interface IPlugin {
+ 
+   public function __construct( ContextManager $context );
+
+
+Property changes on: exp/medick2/vendor/medick/lib/plugin/IPlugin.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at mail.berlios.de  Sun Jun  1 22:05:04 2008
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Sun, 1 Jun 2008 22:05:04 +0200
+Subject: [Medick-svn] r483 - in exp/medick2/vendor/plugins: .
+	authentication_system authentication_system/app
+	authentication_system/app/controllers
+	authentication_system/app/views
+	authentication_system/app/views/account
+	authentication_system/lib foo/lib
+Message-ID: <200806012005.m51K54Rf009700@sheep.berlios.de>
+
+Author: aurelian
+Date: 2008-06-01 22:05:03 +0200 (Sun, 01 Jun 2008)
+New Revision: 483
+
+Added:
+   exp/medick2/vendor/plugins/authentication_system/
+   exp/medick2/vendor/plugins/authentication_system/app/
+   exp/medick2/vendor/plugins/authentication_system/app/controllers/
+   exp/medick2/vendor/plugins/authentication_system/app/controllers/account_controller.php
+   exp/medick2/vendor/plugins/authentication_system/app/models/
+   exp/medick2/vendor/plugins/authentication_system/app/views/
+   exp/medick2/vendor/plugins/authentication_system/app/views/account/
+   exp/medick2/vendor/plugins/authentication_system/app/views/account/login.phtml
+   exp/medick2/vendor/plugins/authentication_system/init.php
+   exp/medick2/vendor/plugins/authentication_system/lib/
+   exp/medick2/vendor/plugins/authentication_system/lib/AuthenticationSystemPlugin.php
+Modified:
+   exp/medick2/vendor/plugins/foo/lib/FooPlugin.php
+Log:
+ -- first try on a serious medick2 plugin
+
+Added: exp/medick2/vendor/plugins/authentication_system/app/controllers/account_controller.php
+===================================================================
+--- exp/medick2/vendor/plugins/authentication_system/app/controllers/account_controller.php	2008-06-01 20:03:50 UTC (rev 482)
++++ exp/medick2/vendor/plugins/authentication_system/app/controllers/account_controller.php	2008-06-01 20:05:03 UTC (rev 483)
+@@ -0,0 +1,17 @@
++<?php
++
++// $Id: $
++
++class AccountController extends ApplicationController {
++
++  public function login($username= null, $password= null) {
++    if($this->request->is_get()) return;
++    if($user= User::authenticate($username, $password)) {
++      $this->session->put('user', $user);
++      $this->flash('notice', $user->name . ' authenticated');
++      return $this->redirect_to('/');
++    }
++  }
++
++}
++
+
+Added: exp/medick2/vendor/plugins/authentication_system/app/views/account/login.phtml
+===================================================================
+--- exp/medick2/vendor/plugins/authentication_system/app/views/account/login.phtml	2008-06-01 20:03:50 UTC (rev 482)
++++ exp/medick2/vendor/plugins/authentication_system/app/views/account/login.phtml	2008-06-01 20:05:03 UTC (rev 483)
+@@ -0,0 +1,14 @@
++<form action="<?=__login_path();?>" method="post">
++
++  <fieldset>
++
++    <legend>Autentificare</legend>
++
++    <div><label for="username">Username: </label>
++    <input type="text" name="username" id="username" /></div>
++    <div><label for="password">Password: </label>
++    <input type="password" name="password" id="password" /></div>
++    <div><input type="submit" name="submit" value="login" /></div>
++  </fieldset>
++
++</form>
+
+Added: exp/medick2/vendor/plugins/authentication_system/init.php
+===================================================================
+--- exp/medick2/vendor/plugins/authentication_system/init.php	2008-06-01 20:03:50 UTC (rev 482)
++++ exp/medick2/vendor/plugins/authentication_system/init.php	2008-06-01 20:05:03 UTC (rev 483)
+@@ -0,0 +1,16 @@
++<?php
++
++// $Id: $
++
++require 'lib'.DIRECTORY_SEPARATOR.'AuthenticationSystemPlugin.php';
++
++// AuthenticationSystem Plugin loadder
++// function __foo_plugin_autoload($class) {
++//   $file= 'lib'.DIRECTORY_SEPARATOR.$class.'.php';
++//   if(is_file( dirname(__FILE__) . DIRECTORY_SEPARATOR . $file )) {
++//     return require $file;
++//   }
++// }
++
++// spl_autoload_register('__foo_plugin_autoload');
++
+
+Added: exp/medick2/vendor/plugins/authentication_system/lib/AuthenticationSystemPlugin.php
+===================================================================
+--- exp/medick2/vendor/plugins/authentication_system/lib/AuthenticationSystemPlugin.php	2008-06-01 20:03:50 UTC (rev 482)
++++ exp/medick2/vendor/plugins/authentication_system/lib/AuthenticationSystemPlugin.php	2008-06-01 20:05:03 UTC (rev 483)
+@@ -0,0 +1,53 @@
++<?php
++
++// $Id: $
++
++class AuthenticationSystemPlugin extends AbstractPlugin 
++  implements IRoutesPlugin, ILoadPathPlugin {
++
++  private $routes;
++
++  private $load_path;
++
++  public function __construct(ContextManager $context) {
++
++    $this->metadata= array(
++      'name'   => $this->class_name(),
++      'author' => 'Aurelian Oancea',
++      'version'=> 0.1,
++      'url'    => 'http://example.com/foo_plugin'
++    );
++   
++    $this->routes= array(
++      new Route('__login', '/login', array('controller'=>'account', 'action'=>'login')),
++      new Route('__logout', '/logout', array('controller'=>'account', 'action'=>'logout'))
++    );
++
++    $this->load_path= dirname(__FILE__) . '/../';
++
++    parent::__construct( $context );
++
++  }
++
++  /* ILoadPathPlugin */
++  public function load_path() {
++    return $this->load_path;
++  }
++
++  /* IRoutesPlugin */
++  public function routes() {
++    return $this->routes;
++  }
++
++  /* IPlugin */
++  public function metadata() {
++    return $this->metadata;
++  }
++  
++  /* IPlugin */
++  public function name() {
++    return $this->metadata['name'];
++  }
++
++}
++
+
+Modified: exp/medick2/vendor/plugins/foo/lib/FooPlugin.php
+===================================================================
+--- exp/medick2/vendor/plugins/foo/lib/FooPlugin.php	2008-06-01 20:03:50 UTC (rev 482)
++++ exp/medick2/vendor/plugins/foo/lib/FooPlugin.php	2008-06-01 20:05:03 UTC (rev 483)
+@@ -2,7 +2,7 @@
+ 
+ // $Id: $
+ 
+-class FooPlugin extends Object implements IPlugin {
++class FooPlugin extends AbstractPlugin implements IPlugin {
+ 
+   public $metadata;
+ 
+@@ -14,6 +14,8 @@
+       'url'    => 'http://example.com/foo_plugin'
+     );
+     $context->logger()->debugf( "Plugin %s loaded", $this->name() );
++
++    parent::__construct( $context );
+   }
+  
+   public function metadata() {
+
+
+
+From aurelian at mail.berlios.de  Sun Jun  1 22:07:25 2008
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Sun, 1 Jun 2008 22:07:25 +0200
+Subject: [Medick-svn] r484 - in exp/medick2: . app/controllers config
+Message-ID: <200806012007.m51K7PUn009990@sheep.berlios.de>
+
+Author: aurelian
+Date: 2008-06-01 22:07:25 +0200 (Sun, 01 Jun 2008)
+New Revision: 484
+
+Added:
+   exp/medick2/app/controllers/application.php
+Removed:
+   exp/medick2/AUTOLOAD
+   exp/medick2/CONCEPTS
+   exp/medick2/PLUGINS
+Modified:
+   exp/medick2/app/controllers/foo_controller.php
+   exp/medick2/config/cfields.xml
+Log:
+ -- some cleanup
+
+Deleted: exp/medick2/AUTOLOAD
+===================================================================
+--- exp/medick2/AUTOLOAD	2008-06-01 20:05:03 UTC (rev 483)
++++ exp/medick2/AUTOLOAD	2008-06-01 20:07:25 UTC (rev 484)
+@@ -1,46 +0,0 @@
+-h2. Autoload
+-
+-h3. About
+-
+-* Mecanism nou de "incarcare" a claselor in Medick 2.
+-* Se realizeaza prin divizarea Medick in framework-uri.
+-* Fiecare Framework contine un fisier init.php prin care se adauga o functie __autoload pentru descoperirea automata a claselor necesare.
+-
+-h3. Exemple:
+-
+-context/init.php
+-
+-function __context_autoload($class) {
+-  $file= 'context'.DIRECTORY_SEPARATOR.$class.'.php';
+-  if(is_file( dirname(__FILE__) . DIRECTORY_SEPARATOR . $class . '.php' )) {
+-    return require $file;
+-  }
+-}
+-
+-spl_autoload_register('__context_autoload');
+-
+-h3. Core Details
+-
+-h4. include_path:
+-
+-* vendor/medick/lib
+-
+-h4. loading a framework
+-
+-Medick::load_framework('foo_bar');
+-
+-loads: MEDICK_PATH/lib/foo/bar/init.php
+-
+-h4. core classes:
+-
+-* medick/Object.php
+-* medick/Medick.php
+-* medick/ErrorHandler.php
+-
+-h4. frameworks:
+-* context
+-* logger
+-* plugin
+-* action_controller
+-* action_view
+-
+
+Deleted: exp/medick2/CONCEPTS
+===================================================================
+--- exp/medick2/CONCEPTS	2008-06-01 20:05:03 UTC (rev 483)
++++ exp/medick2/CONCEPTS	2008-06-01 20:07:25 UTC (rev 484)
+@@ -1,51 +0,0 @@
+-h2. Style
+-
+-* no more get/set: use a public property if needed!
+-* no camelCase but under_score
+-
+-h2. Definitions
+-  
+-  MEDICK_PATH -> path to Medick Framework.
+-  APP_PATH    -> path to boot.php file
+-
+-h2. Importance of ContextManager
+-
+-
+-
+-h2. TODOs
+-  Move $uri/$method to Request class (25.04)
+-  Rename ContextManager to Context (25.04)
+-
+-h2. DONE
+-  Create a Context Object with config and logger, inject this one then (25.03 - 25.04)
+-
+-h2. Structure
+-
+-APP_PATH
+-  boot.php
+-  app/
+-  config/
+-  log/
+-  tmp/
+-  script/
+-  vendor/medick ( MEDICK_PATH )
+-  vendor/plugins
+-
+-h2. Medick Initialization (TBD-> review)
+-
+-  index.php 
+-  | boot.php
+-  |   Medick.prepare_application()
+-  |     error_handler
+-  |     load_frameworks
+-  |       context
+-  |       logger
+-  |       plugins
+-  |       action_controller
+-  | $d= new Dispatcher ( IConfigurator )
+-  |   setup_logger
+-  |   load_plugins
+-  |
+-  | $d->dispatch()
+-  |   route_recognision
+-
+
+Deleted: exp/medick2/PLUGINS
+===================================================================
+--- exp/medick2/PLUGINS	2008-06-01 20:05:03 UTC (rev 483)
++++ exp/medick2/PLUGINS	2008-06-01 20:07:25 UTC (rev 484)
+@@ -1,44 +0,0 @@
+-h2. Plugins
+-
+-h3. About
+-
+-* A plugin is a new API to add new functionalities to medick applications
+-* Allow access to Medick Framework core components
+-* Enhance existing applications
+-
+-h3. Plugin Framework
+-
+-* A plugin is a folder with php files and other resources located in:
+-  -> vendor/plugins
+-  -> user specified location in config.xml file
+-
+-* Eg. Foo is a Medick plugin if the folder foo exists and in has a init.php file on it.
+-
+-h3. init.php file
+-
+-* declare plugin load (include) path
+-* one can use a init.php similar to ones provided by medick frameworks
+-* one can use and alter include_path settings
+-* one can require/include all the files
+-* $context is available in init.php
+-
+-h3. Options
+-
+-* By default Medick loads all the plugins from declared locations.
+-* The load order is not guaranteed
+-* "Auto-discovery" can be turned off in config.xml
+-* Load order can be altered in config.xml
+-
+-h3. API
+-
+-* defined in Plugin Framework IPlugin interface
+-* Plugin Framework is loaded after the Logger Framework
+-* Plugin Framework is initialized and configured in Dispatcher after the logger is up
+-
+-inheritance:
+-
+-(interface)IPlugin < (abstract_class)TYPE_1_Plugin < USER_Plugin
+-                   < (abstract_class)TYPE_2_Plugin < USER_Plugin
+-
+-
+-
+
+Added: exp/medick2/app/controllers/application.php
+===================================================================
+--- exp/medick2/app/controllers/application.php	2008-06-01 20:05:03 UTC (rev 483)
++++ exp/medick2/app/controllers/application.php	2008-06-01 20:07:25 UTC (rev 484)
+@@ -0,0 +1,7 @@
++<?php
++
++// $Id: $
++
++class ApplicationController extends ActionController {
++
++}
+
+Modified: exp/medick2/app/controllers/foo_controller.php
+===================================================================
+--- exp/medick2/app/controllers/foo_controller.php	2008-06-01 20:05:03 UTC (rev 483)
++++ exp/medick2/app/controllers/foo_controller.php	2008-06-01 20:07:25 UTC (rev 484)
+@@ -1,9 +1,5 @@
+ <?php
+ 
+-class ApplicationController extends ActionController {
+-
+-}
+-
+ class FooController extends ApplicationController {
+ 
+   public function bar($arg1, $arg2, $arg3='bar') {
+
+Modified: exp/medick2/config/cfields.xml
+===================================================================
+--- exp/medick2/config/cfields.xml	2008-06-01 20:05:03 UTC (rev 483)
++++ exp/medick2/config/cfields.xml	2008-06-01 20:07:25 UTC (rev 484)
+@@ -3,32 +3,43 @@
+ <application name="cfields">
+ 
+   <properties>
+-    <property name="load.paths" value="" />
++    <property name="web.session" value="true" />
+     <property name="plugin.autodiscovery" value="true" />
+-    <property name="plugin.path"          value="vendor/plugins" />
++    <!-- 
++      change the path to plugins here. complete path with / at the end
++      <property name="plugin.path"          value="vendor/plugins/" />
++    -->
+   </properties>
+ 
++  <!-- XXX: not used, and it will be read only if plugin.autodiscovery= false -->
+   <plugins>
+     <plugin name="foo" path="" />
+     <plugin name="bar" path="" />
+   </plugins>
+-
++  
++  <!-- umm, the default routes -->
+   <routes>
++    <!-- / => foo/bar -->
+     <route name="__root"    value="/">
+       <default name="controller" value="foo" />
+       <default name="action"     value="bar" />
+     </route>
++    <!-- /* => /:controller/:action/:id -->
+     <route name="__default" value=":controller/:action/:id" />
+   </routes>
+ 
++  <!-- environment specific settings -->
+   <environments>
+     <environment name="localhost">
++      <properties>
++        <property name="base" value="medick2" />
++      </properties>
+       <logger>
+         <formatter>default</formatter>
+         <outputters>
+           <!-- <outputter name="stdout" level="0" /> -->
+           <outputter name="file" level="0">
+-            <property name="path" value="/home/aurelian/Code/medick/exp/medick2/log/localhost.log" />
++            <property name="path" value="/W/Devel/medick/exp/medick2/log/localhost.log" />
+           </outputter>
+         </outputters>
+       </logger> <!-- /logger -->
+
+
+

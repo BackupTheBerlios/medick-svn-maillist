@@ -1,0 +1,384 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r342 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r342%20-%20applications/eltodo/app/controllers%20applications/eltodo/app/models%20applications/eltodo/public/stylesheet%20trunk/libs/action/view%20trunk/libs/active/record&In-Reply-To=%3C200601281516.k0SFGuYh018185%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000133.html">
+   <LINK REL="Next"  HREF="000135.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r342 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r342%20-%20applications/eltodo/app/controllers%20applications/eltodo/app/models%20applications/eltodo/public/stylesheet%20trunk/libs/action/view%20trunk/libs/active/record&In-Reply-To=%3C200601281516.k0SFGuYh018185%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r342 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Jan 28 16:16:56 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000133.html">[Medick-svn] r341 - trunk/libs/active/record
+</A></li>
+        <LI>Next message: <A HREF="000135.html">[Medick-svn] r343 - trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#134">[ date ]</a>
+              <a href="thread.html#134">[ thread ]</a>
+              <a href="subject.html#134">[ subject ]</a>
+              <a href="author.html#134">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-28 16:16:55 +0100 (Sat, 28 Jan 2006)
+New Revision: 342
+
+Modified:
+   applications/eltodo/app/controllers/project_controller.php
+   applications/eltodo/app/models/project.php
+   applications/eltodo/public/stylesheet/eltodo.v0.2.css
+   trunk/libs/action/view/HTML.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/DatabaseRow.php
+   trunk/libs/active/record/Validator.php
+Log:
+ -- do not perfom an action on an object witch failed on filters or its validation failed.
+
+Modified: applications/eltodo/app/controllers/project_controller.php
+===================================================================
+--- applications/eltodo/app/controllers/project_controller.php	2006-01-22 08:53:07 UTC (rev 341)
++++ applications/eltodo/app/controllers/project_controller.php	2006-01-28 15:16:55 UTC (rev 342)
+@@ -10,7 +10,7 @@
+ 
+     /** nedded models */
+     protected $models = array('project');
+-    
++
+     /** layout to use for this controller */
+     protected $use_layout= 'eltodo';
+ 
+@@ -20,15 +20,18 @@
+       // try {
+       $project-&gt;save();
+       $this-&gt;render_text($project-&gt;name);
+-      // } 
++      // }
+     }
+-    
++
+     /** Creates a new Project */
+     public function create() {
+         $this-&gt;template-&gt;project= new Project(isset($this-&gt;params['project']) ? $this-&gt;params['project'] : array());
+         try {
+-            $this-&gt;template-&gt;project-&gt;save();
+-            $this-&gt;flash('notice', 'Project ' . $this-&gt;template-&gt;project-&gt;name . ' added!');
++            if ( !$this-&gt;template-&gt;project-&gt;save() ) {
++                $this-&gt;logger-&gt;debug('Cannot save.');
++                return $this-&gt;render('add');
++            }
++            $this-&gt;flash('notice', 'Project &lt;i&gt;' . $this-&gt;template-&gt;project-&gt;name . '&lt;/i&gt; added!');
+             $this-&gt;redirect_to('all');
+         } catch (Exception $ex) {
+             $this-&gt;render('add');
+@@ -48,12 +51,12 @@
+         }
+         $this-&gt;redirect_to('all');
+     }
+-    
++
+     /** prints the for for creating a new project */
+     public function add() {
+         $this-&gt;template-&gt;project= new Project();
+     }
+-    
++
+     /** List all projects, this is the default Route. */
+     public function all() {
+         try {
+
+Modified: applications/eltodo/app/models/project.php
+===================================================================
+--- applications/eltodo/app/models/project.php	2006-01-22 08:53:07 UTC (rev 341)
++++ applications/eltodo/app/models/project.php	2006-01-28 15:16:55 UTC (rev 342)
+@@ -10,12 +10,14 @@
+ 
+     public function before_insert() {
+         $this-&gt;created_at= time();
+-        $this-&gt;validates()-&gt;presence_of('name', 'description');
+-        $this-&gt;validates()-&gt;uniqueness_of('name');
++        return TRUE;
+     }
+ 
+-    public function before_update() {
++
++    public function before_save() {
++        $this-&gt;validates()-&gt;uniqueness_of('name');
+         $this-&gt;validates()-&gt;presence_of('name', 'description');
++        return TRUE;
+     }
+ 
+     public static function find() {
+
+Modified: applications/eltodo/public/stylesheet/eltodo.v0.2.css
+===================================================================
+--- applications/eltodo/public/stylesheet/eltodo.v0.2.css	2006-01-22 08:53:07 UTC (rev 341)
++++ applications/eltodo/public/stylesheet/eltodo.v0.2.css	2006-01-28 15:16:55 UTC (rev 342)
+@@ -81,6 +81,7 @@
+     font-size:115%;
+ }
+ 
++
+ label {
+     margin:0;
+     padding:0.2em;
+@@ -88,6 +89,7 @@
+     font-weight:bold;
+ }
+ 
++
+ fieldset&gt;input.submit-button {
+     margin-left:5em;
+     margin-top:1em;
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-01-22 08:53:07 UTC (rev 341)
++++ trunk/libs/action/view/HTML.php	2006-01-28 15:16:55 UTC (rev 342)
+@@ -83,7 +83,7 @@
+ 
+         $id   = strtolower(get_class($object)) . '_'.$method;
+         $name = strtolower(get_class($object)).'['.$method.']';
+-        $buff = &quot;&lt;div class=\&quot;formRow\&quot;&gt;\n&lt;label for=\&quot;&quot; . $id . &quot;\&quot;&gt;&quot; . $field-&gt;getFormattedName() . &quot;&lt;/label&gt; \n&quot;;
++        $buff = &quot;&lt;div class=\&quot;formRow\&quot;&gt;\n&lt;label for=\&quot;&quot; . $id . &quot;\&quot;&gt;&quot; . $field-&gt;getFormattedName() . &quot;&lt;/label&gt;&lt;br /&gt;\n&quot;;
+ 
+         $errors= FALSE;
+         if($field-&gt;hasErrors()) {
+@@ -110,7 +110,7 @@
+         }
+         $id   = strtolower(get_class($object)) . '_'.$method;
+         $name = strtolower(get_class($object)).'['.$method.']';
+-        $buff = &quot;&lt;div class=\&quot;formRow\&quot;&gt;\n&lt;label for=\&quot;&quot; . $id . &quot;\&quot;&gt;&quot; . $field-&gt;getFormattedName() . &quot;&lt;/label&gt; \n&quot;;
++        $buff = &quot;&lt;div class=\&quot;formRow\&quot;&gt;\n&lt;label for=\&quot;&quot; . $id . &quot;\&quot;&gt;&quot; . $field-&gt;getFormattedName() . &quot;&lt;/label&gt;&lt;br /&gt;\n&quot;;
+         $errors= FALSE;
+         if($field-&gt;hasErrors()) {
+             $buff .= '&lt;div class=&quot;fieldWithErrors&quot;&gt;';
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-01-22 08:53:07 UTC (rev 341)
++++ trunk/libs/active/record/Base.php	2006-01-28 15:16:55 UTC (rev 342)
+@@ -227,6 +227,11 @@
+ 
+     // }}}
+ 
++    /**
++     * It gets the current database row
++     *
++     * @return DatabaseRow
++     */
+     public final function getRow() {
+         return $this-&gt;row;
+     }
+@@ -241,32 +246,42 @@
+      *
+      * This filter is executed before running an sql insert.
+      * You should overwrite this method in your models.
+-     * @return void
++     * @return bool
+      * @since Rev.272
+      */
+-    protected function before_insert() {    }
++    protected function before_insert() { return TRUE; }
+ 
+     /**
+      * Before Update Filter.
+      *
+      * This filter is executed before running an sql update.
+      * You should overwrite this method in your models.
+-     * @return void
++     * @return bool
+      * @since Rev.272
+      */
+-    protected function before_update() {    }
++    protected function before_update() { return TRUE; }
+ 
+     /**
+      * Before Delete Filter.
+      *
+      * This filter is executed before running an sql delete.
+      * You should overwrite this method in your models.
+-     * @return void
++     * @return bool
+      * @since Rev.272
+      */
+-    protected function before_delete() {    }
++    protected function before_delete() { return TRUE; }
+ 
+     /**
++     * Before Save Filter.
++     *
++     * This filter is executed before running an sql insert or update
++     * You should overwrite this method in your models.
++     * @return bool
++     * @since Rev.342
++     */
++    protected function before_save() { return TRUE; }
++
++    /**
+      * After Insert Filter.
+      *
+      * This filter is executed after running the sql insert.
+@@ -315,6 +330,9 @@
+      * &lt;/code&gt;
+      */
+     public final function save() {
++        if ( !$this-&gt;before_save() || count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
++            return FALSE;
++        }
+         if ($this-&gt;row-&gt;getPrimaryKey()-&gt;isAffected) {
+             return $this-&gt;update();
+         } else {
+@@ -339,7 +357,9 @@
+      * @throws SQLException
+      */
+     public final function insert() {
+-        $this-&gt;before_insert();
++        if (!$this-&gt;before_insert() || count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
++            return FALSE;
++        }
+         $af_rows = $this-&gt;performQuery($this-&gt;getInsertSql());
+         $id = $this-&gt;getNextId();
+         $this-&gt;after_insert();
+@@ -364,7 +384,9 @@
+      * @throws SQLException
+      */
+     public final function update() {
+-        $this-&gt;before_update();
++        if (!$this-&gt;before_update() || count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
++            return FALSE;
++        }
+         $af= $this-&gt;performQuery($this-&gt;getUpdateSql());
+         $this-&gt;after_update();
+         return $af;
+@@ -388,7 +410,9 @@
+      * @throws SQLException
+      */
+     public final function delete() {
+-        $this-&gt;before_delete();
++        if (!$this-&gt;before_delete() || count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
++            return FALSE;
++        }
+         $whereClause = array();
+         foreach ($this-&gt;row-&gt;getAffectedFields() as $col) {
+             $whereClause[] = $col-&gt;getName() . ' = ? ';
+
+Modified: trunk/libs/active/record/DatabaseRow.php
+===================================================================
+--- trunk/libs/active/record/DatabaseRow.php	2006-01-22 08:53:07 UTC (rev 341)
++++ trunk/libs/active/record/DatabaseRow.php	2006-01-28 15:16:55 UTC (rev 342)
+@@ -108,6 +108,18 @@
+         return FALSE;
+     }
+ 
++    public function collectErrors() {
++        $errors= array();
++        $it = $this-&gt;iterator();
++        while($it-&gt;hasNext()) {
++            $current= $it-&gt;next();
++            if ($current-&gt;hasErrors()) {
++                $errors[]= $current-&gt;getErrors();
++            }
++        }
++        return $errors;
++    }
++
+     public function updateStatus(Field $field, $value) {
+         $field-&gt;setValue($value);
+         $field-&gt;isAffected = TRUE;
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2006-01-22 08:53:07 UTC (rev 341)
++++ trunk/libs/active/record/Validator.php	2006-01-28 15:16:55 UTC (rev 342)
+@@ -32,8 +32,6 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-class ValidationException extends MedickException {     }
+-
+ class Validator extends Object {
+ 
+     /** @var DatabaseRow
+@@ -50,13 +48,12 @@
+     }
+ 
+     public function __call ($method, $args) {
+-        $has_errors= FALSE;
+         foreach ($args as $argument) {
+             if ($field = $this-&gt;row-&gt;getFieldByName($argument)) {
+                 if ($method == &quot;presence_of&quot;) {
+-                    $has_errors = $this-&gt;notEmpty($field);
++                    $this-&gt;isEmpty($field);
+                 } elseif ($method == &quot;uniqueness_of&quot; ) {
+-                    $has_errors = $this-&gt;notUnique($field);
++                    $this-&gt;isNotUnique($field);
+                 } else {
+                     trigger_error('No such method validation method:' . $method, E_USER_ERROR);
+                 }
+@@ -64,21 +61,18 @@
+                 trigger_error('No such field to validate:' . $argument, E_USER_ERROR);
+             }
+         }
+-        if ($has_errors) {
+-            throw new ValidationException('Validation failed!');
+-        } else {
+-            return TRUE;
+-        }
+     }
+ 
+-    private function notEmpty(Field $field) {
++    private function isEmpty(Field $field) {
+         if ($field-&gt;getValue() == '') {
+             $field-&gt;addError('is empty');
+             return TRUE;
++        } else {
++            return FALSE;
+         }
+     }
+ 
+-    private function notUnique (Field $field) {
++    private function isNotUnique(Field $field) {
+         try {
+             ActiveRecordBase::__find(array(
+                 array('condition'=&gt;$field-&gt;getName() .'=\''.$field-&gt;getValue().'\'')));
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000133.html">[Medick-svn] r341 - trunk/libs/active/record
+</A></li>
+	<LI>Next message: <A HREF="000135.html">[Medick-svn] r343 - trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#134">[ date ]</a>
+              <a href="thread.html#134">[ thread ]</a>
+              <a href="subject.html#134">[ subject ]</a>
+              <a href="author.html#134">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

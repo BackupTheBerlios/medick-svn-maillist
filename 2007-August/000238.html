@@ -1,0 +1,1052 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r458 - in exp/ar5: . conf db libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite libs/context/configurator	test test/libs test/mock
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-August/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r458%20-%20in%20exp/ar5%3A%20.%20conf%20db%20libs/active/record%0A%09libs/active/record/drivers/abstract%0A%09libs/active/record/drivers/sqlite%20libs/context/configurator%0A%09test%20test/libs%20test/mock&In-Reply-To=%3C200708261858.l7QIw9LD009960%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000237.html">
+   <LINK REL="Next"  HREF="000239.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r458 - in exp/ar5: . conf db libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite libs/context/configurator	test test/libs test/mock</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r458%20-%20in%20exp/ar5%3A%20.%20conf%20db%20libs/active/record%0A%09libs/active/record/drivers/abstract%0A%09libs/active/record/drivers/sqlite%20libs/context/configurator%0A%09test%20test/libs%20test/mock&In-Reply-To=%3C200708261858.l7QIw9LD009960%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r458 - in exp/ar5: . conf db libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite libs/context/configurator	test test/libs test/mock">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Sun Aug 26 20:58:09 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000237.html">[Medick-svn] r457 - in exp/ar5: . conf	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite
+</A></li>
+        <LI>Next message: <A HREF="000239.html">[Medick-svn] r459 - exp/ar5
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#238">[ date ]</a>
+              <a href="thread.html#238">[ thread ]</a>
+              <a href="subject.html#238">[ subject ]</a>
+              <a href="author.html#238">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-08-26 20:58:03 +0200 (Sun, 26 Aug 2007)
+New Revision: 458
+
+Added:
+   exp/ar5/LICENSE
+   exp/ar5/db/import.php
+   exp/ar5/libs/active/record/Base.php
+   exp/ar5/libs/active/record/SQLType.php
+   exp/ar5/test/
+   exp/ar5/test/libs/
+   exp/ar5/test/libs/st-1.0.1beta2.tar.bz2
+   exp/ar5/test/mock/
+   exp/ar5/test/mock/configurator.php
+   exp/ar5/test/mock/driver.php
+   exp/ar5/test/runner.php
+Removed:
+   exp/ar5/ar5_sql.php
+Modified:
+   exp/ar5/README
+   exp/ar5/ar5.php
+   exp/ar5/ar5_base.php
+   exp/ar5/conf/aymo.xml
+   exp/ar5/libs/active/record/QueryBuilder.php
+   exp/ar5/libs/active/record/SQLBuilder.php
+   exp/ar5/libs/active/record/SQLCommand.php
+   exp/ar5/libs/active/record/SQLField.php
+   exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php
+   exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php
+   exp/ar5/libs/active/record/drivers/abstract/SQLResultSet.php
+   exp/ar5/libs/active/record/drivers/abstract/SQLTableInfo.php
+   exp/ar5/libs/active/record/drivers/sqlite/sqlite.php
+   exp/ar5/libs/context/configurator/IConfigurator.php
+   exp/ar5/libs/context/configurator/XMLConfigurator.php
+Log:
+ -- org. stuff
+
+Added: exp/ar5/LICENSE
+===================================================================
+--- exp/ar5/LICENSE	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/LICENSE	2007-08-26 18:58:03 UTC (rev 458)
+@@ -0,0 +1,25 @@
++Copyright (c) 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are met:
++
++    * Redistributions of source code must retain the above copyright notice,
++    this list of conditions and the following disclaimer.
++    * Redistributions in binary form must reproduce the above copyright notice,
++    this list of conditions and the following disclaimer in the documentation
++    and/or other materials provided with the distribution.
++    * Neither the name of Aurelian Oancea nor the names of his contributors may
++    be used to endorse or promote products derived from this software without
++    specific prior written permission.
++
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++
+
+Modified: exp/ar5/README
+===================================================================
+--- exp/ar5/README	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/README	2007-08-26 18:58:03 UTC (rev 458)
+@@ -1,5 +1,35 @@
+ // $Id$
+ 
+-This is an experiment to create a faster&amp;better ActiveRecord
+-It will also replace creole from medick.
++This is an experiment to create a faster / better and feature rich ActiveRecord
++It will also replace Creole from Medick.
+ 
++This Medick experiment is licensed under BSD Licence, see LICENSE for details.
++
++Status:
++  -&gt; removed Creole
++  -&gt; SQLConnection -&gt; database connection class
++  -&gt; SQLTableInfo -&gt; metadata for database tables
++  -&gt; SQLResultSet -&gt; fetch data from database
++  -&gt; SQLPreparedStatement -&gt; executes prepared statements on the database
++  -&gt; SQLRecordsIterator -&gt; returns collections of ActiveRecord objects
++  -&gt; SQLite (v.2) driver
++  -&gt; SQLField -&gt; a field from a table
++  -&gt; SQLCommand -&gt; builds SQL Commands
++  -&gt; SQLBuilder -&gt; builds SQLCommands from array
++  -&gt; ActiveRecord: configurations from IConfigurator
++  -&gt; ActiveRecord: base insert/update/save
++  -&gt; ActiveRecord: base find
++
++Todo:
++  -&gt; ActiveRecord: filters
++  -&gt; ActiveRecord: validators
++  -&gt; Driver: MySQL
++  -&gt; Driver: MySQLi
++  -&gt; Driver: PostgreSQL
++  -&gt; Driver: PDOSQLite (v.3)
++
++Unit Tests:
++  -&gt; setup simpletest, a runner
++  -&gt; setup mocks for accessing data
++  -&gt; active record tests.
++
+
+Modified: exp/ar5/ar5.php
+===================================================================
+--- exp/ar5/ar5.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/ar5.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -1,5 +1,6 @@
+ &lt;?php
+ // $Id$
++// This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
+ 
+ set_include_path('libs');
+ 
+@@ -9,156 +10,12 @@
+ include_once('ar5_sql.php');
+ // medick trunk ported classes
+ include_once('context/configurator/XMLConfigurator.php');
+-include_once('active/support/Inflector.php');
+-// active record helpers
+-include_once('active/record/SQLField.php');
+-include_once('active/record/SQLBuilder.php');
+-include_once('active/record/SQLCommand.php');
+-// abstract hooks
+-include_once('active/record/drivers/abstract/SQLConnection.php');
+-include_once('active/record/drivers/abstract/SQLPreparedStatement.php');
+-include_once('active/record/drivers/abstract/SQLResultSet.php');
+-include_once('active/record/drivers/abstract/SQLTableInfo.php');
+-// specific driver
++
++// driver
+ include_once('active/record/drivers/sqlite/sqlite.php');
+ 
++include_once('active/record/Base.php');
+ 
+-class ActiveRecord extends Object {
+-
+-  protected $__class_name;
+-  protected $__table_name;
+-  protected $__fields;
+-  protected $__primary_key;
+-
+-  public function ActiveRecord( $params=array() ) {
+-    $this-&gt;__class_name  = $this-&gt;getClassName();
+-    $this-&gt;__table_name  = Inflector::tabelize( $this-&gt;__class_name );
+-    $this-&gt;__fields      = ActiveRecord::connection()-&gt;getTableInfo( $this-&gt;__table_name )-&gt;getFields();
+-    $this-&gt;__primary_key = current( array_filter( $this-&gt;__fields, array($this,'__pk') ));
+-    foreach($params as $key=&gt;$value) {
+-      $this-&gt;$key= $value;
+-    }
+-  }
+-
+-  // ----------
+-  // magick
+-  // ----------
+-  public function __set($name, $value) {
+-    if( isset($this-&gt;__fields[$name]) ) return $this-&gt;__fields[$name]-&gt;alter( $value );
+-    throw new ActiveRecordException('No such field &quot;' . $name . '&quot;');
+-  }
+-
+-  public function __get($name) {
+-    if( isset($this-&gt;__fields[$name]) ) return $this-&gt;__fields[$name]-&gt;getValue();
+-    throw new ActiveRecordException('No such field &quot;' . $name . '&quot;');
+-  }
+-
+-  // ----------
+-  // convenient public methods
+-  // ----------
+-  public function getPrimaryKey() {
+-    return $this-&gt;__primary_key;
+-  }
+-
+-  // ----------
+-  // alter data
+-  // ----------
+-  public function save() {
+-    return $this-&gt;__primary_key-&gt;isAffected() ? $this-&gt;update() : $this-&gt;insert();
+-  }
+-
+-  public function insert() {
+-    $fields= $this-&gt;getAffectedFields();
+-    $sql= 'insert into ' . $this-&gt;__table_name
+-          . ' (' . implode(',', array_keys($fields)) . ')'
+-          . ' values (' . substr(str_repeat('?,', count($fields)), 0, -1) . ')';
+-    $this-&gt;performQuery($sql, $fields);
+-    $this-&gt;__primary_key-&gt;alter( self::connection()-&gt;nextId() );
+-  }
+-
+-  public function update() {
+-    $fields= $this-&gt;getAffectedFields();
+-    if( sizeof($fields) &lt; 1 ) return 0; // no harm, primary_key will be always affected, otherwise it will be an insert.
+-    $sql= 'update ' . $this-&gt;__table_name . ' set ';
+-    $sql .= implode('=?, ', array_keys($fields)) . '=? ';
+-    $sql .= 'where ' . $this-&gt;__primary_key-&gt;getName() . '=' . $this-&gt;__primary_key-&gt;getValue();
+-    $this-&gt;performQuery($sql, $fields);
+-  }
+-
+-  // ----------
+-  // internal helpers
+-  // ----------
+-  private function performQuery( $sql, $fields ) {
+-    $stmt= self::connection()-&gt;prepare( $sql );
+-    $stmt-&gt;populateValues( $fields );
+-    $r= $stmt-&gt;executeUpdate();
+-    $stmt-&gt;close();
+-    $this-&gt;reset();
+-    return $r;
+-  }
+-
+-  private function getAffectedFields() {
+-    return array_filter( $this-&gt;__fields, array($this, '__affectedField') );
+-  }
+-
+-  private function reset() {
+-    return array_walk( $this-&gt;__fields, array($this,'__notAffected'));
+-  }
+-
+-  // ---------
+-  // internal callbacks
+-  // ---------
+-
+-  // callback for array_filter
+-  private function __affectedField( SQLField $field ) {
+-    return $field-&gt;isAffected();
+-  }
+-  // callback for array_filter
+-  private function __pk( SQLField $field ) {
+-    return $field-&gt;isPk();
+-  }
+-
+-  // callback for array_walk
+-  private function __notAffected( SQLField $field ) {
+-    if( $field-&gt;isAffected() &amp;&amp; !$field-&gt;isPk() ) $field-&gt;setAffected(false);
+-  }
+-
+-  // -----------
+-  // static
+-  // -----------
+-  private static $__connection     = null;
+-  private static $__connection_dsn = array();
+-  private static $__connection_key = '';
+-
+-  protected static $__connection_dsn_id = null;
+-
+-  public static function setConnectionDsn( IConfigurator $config ) {
+-    self::$__connection_dsn= $config-&gt;getDatabaseDsn( self::$__connection_dsn_id );
+-    ksort(self::$__connection_dsn);
+-    self::$__connection_key= crc32(serialize( self::$__connection_dsn ));
+-  }
+-
+-  public static function connection() {
+-    if( !isset( self::$__connection[self::$__connection_key] ) ) {
+-      // todo: load driver connection implementation.
+-      $class = new ReflectionClass( SQLConnection::$__drivers[self::$__connection_dsn['phptype']] . 'Connection' );
+-      self::$__connection[self::$__connection_key] = $class-&gt;newInstance();
+-      self::$__connection[self::$__connection_key]-&gt;connect( self::$__connection_dsn );
+-    }
+-    return self::$__connection[self::$__connection_key];
+-  }
+-
+-  public static function find() {
+-    throw new MedickException('ActiveRecord::find() must be implemented in child class.');
+-  }
+-
+-  public static function build( SQLBuilder $builder ) {
+-    return $builder-&gt;execute();
+-  }
+-
+-}
+-
+-
+ // ----------
+ // tests :)
+ // ----------
+
+Modified: exp/ar5/ar5_base.php
+===================================================================
+--- exp/ar5/ar5_base.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/ar5_base.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -1,5 +1,6 @@
+ &lt;?php
+ // $Id$
++// This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
+ 
+ error_reporting(E_ALL);
+ 
+@@ -21,6 +22,10 @@
+ 
+ class MedickException extends Exception { }
+ 
++class SQLException extends MedickException {  }
++
++class ActiveRecordException extends MedickException { }
++
+ class Error extends MedickException {
+ 
+   public function __construct($message, $code, $file, $line, $trace) {
+@@ -31,6 +36,7 @@
+     $this-&gt;trace = $trace;
+   }
+ }
++
+ class ErrorHandler extends Object {
+   public function ErrorHandler() {  }
+   public function raise($errno, $errstr, $errfile, $errline) {
+@@ -45,4 +51,3 @@
+ }
+ 
+ set_error_handler( array(new ErrorHandler(), 'raise') );
+-
+
+Deleted: exp/ar5/ar5_sql.php
+===================================================================
+--- exp/ar5/ar5_sql.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/ar5_sql.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -1,21 +0,0 @@
+-&lt;?php
+-// $Id$
+-
+-class SQLException extends MedickException {  }
+-
+-class ActiveRecordException extends MedickException { }
+-
+-// xxx.
+-class SQLType extends Object {
+-
+-  // sql type to php type
+-  public static function getPhpType( $type ) {
+-    if( $type == 'integer' || $type == 'int') return 'Integer';
+-    else return 'String';
+-    // elseif( $type == 'varchar' || $type == 'string' || $type == 'text') return 'String';
+-    // elseif( $type == 'timestamp' || $type == 'time' || $type == 'date') return 'Time';
+-    // else throw new SQLException('Unknow type: &quot;' . $type . '&quot;');
+-  }
+-
+-}
+-
+
+Modified: exp/ar5/conf/aymo.xml
+===================================================================
+--- exp/ar5/conf/aymo.xml	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/conf/aymo.xml	2007-08-26 18:58:03 UTC (rev 458)
+@@ -87,7 +87,7 @@
+         &lt;database default=&quot;one&quot;&gt;
+             &lt;dsn id = &quot;one&quot;
+                  phptype  = &quot;sqlite&quot;
+-                 database = &quot;/W/medick/applications/aymo/db/aymo.sqlite&quot; /&gt;
++                 database = &quot;db/aymo.sqlite&quot; /&gt;
+         &lt;/database&gt;
+     &lt;/environment&gt;
+   
+
+Added: exp/ar5/db/import.php
+===================================================================
+--- exp/ar5/db/import.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/db/import.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -0,0 +1,6 @@
++&lt;?php
++// $Id$
++
++$dbh= sqlite_open('db/aymo.sqlite');
++sqlite_query( file_get_contents('db/sqlite.schema'), $dbh );
++  
+
+
+Property changes on: exp/ar5/db/import.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/ar5/libs/active/record/Base.php
+===================================================================
+--- exp/ar5/libs/active/record/Base.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/libs/active/record/Base.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -0,0 +1,144 @@
++&lt;?php
++// $Id$
++// This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
++
++include_once('active/support/Inflector.php');
++include_once('active/record/SQLType.php');
++include_once('active/record/SQLField.php');
++include_once('active/record/SQLBuilder.php');
++include_once('active/record/SQLCommand.php');
++
++class ActiveRecord extends Object {
++
++  protected $__class_name;
++  protected $__table_name;
++  protected $__fields;
++  protected $__primary_key;
++
++  public function ActiveRecord( $params=array() ) {
++    $this-&gt;__class_name  = $this-&gt;getClassName();
++    $this-&gt;__table_name  = Inflector::tabelize( $this-&gt;__class_name );
++    $this-&gt;__fields      = ActiveRecord::connection()-&gt;getTableInfo( $this-&gt;__table_name )-&gt;getFields();
++    $this-&gt;__primary_key = current( array_filter( $this-&gt;__fields, array($this,'__pk') ));
++    foreach($params as $key=&gt;$value) {
++      $this-&gt;$key= $value;
++    }
++  }
++
++  // ----------
++  // magick
++  // ----------
++  public function __set($name, $value) {
++    if( isset($this-&gt;__fields[$name]) ) return $this-&gt;__fields[$name]-&gt;alter( $value );
++    throw new ActiveRecordException('No such field &quot;' . $name . '&quot;');
++  }
++
++  public function __get($name) {
++    if( isset($this-&gt;__fields[$name]) ) return $this-&gt;__fields[$name]-&gt;getValue();
++    throw new ActiveRecordException('No such field &quot;' . $name . '&quot;');
++  }
++
++  // ----------
++  // convenient public methods
++  // ----------
++  public function getPrimaryKey() {
++    return $this-&gt;__primary_key;
++  }
++
++  // ----------
++  // alter data
++  // ----------
++  public function save() {
++    return $this-&gt;__primary_key-&gt;isAffected() ? $this-&gt;update() : $this-&gt;insert();
++  }
++
++  public function insert() {
++    $fields= $this-&gt;getAffectedFields();
++    $sql= 'insert into ' . $this-&gt;__table_name
++          . ' (' . implode(',', array_keys($fields)) . ')'
++          . ' values (' . substr(str_repeat('?,', count($fields)), 0, -1) . ')';
++    $this-&gt;performQuery($sql, $fields);
++    $this-&gt;__primary_key-&gt;alter( self::connection()-&gt;nextId() );
++  }
++
++  public function update() {
++    $fields= $this-&gt;getAffectedFields();
++    if( sizeof($fields) &lt; 1 ) return 0; // no harm, primary_key will be always affected, otherwise it will be an insert.
++    $sql= 'update ' . $this-&gt;__table_name . ' set ';
++    $sql .= implode('=?, ', array_keys($fields)) . '=? ';
++    $sql .= 'where ' . $this-&gt;__primary_key-&gt;getName() . '=' . $this-&gt;__primary_key-&gt;getValue();
++    $this-&gt;performQuery($sql, $fields);
++  }
++
++  // ----------
++  // internal helpers
++  // ----------
++  private function performQuery( $sql, $fields ) {
++    $stmt= self::connection()-&gt;prepare( $sql );
++    $stmt-&gt;populateValues( $fields );
++    $r= $stmt-&gt;executeUpdate();
++    $stmt-&gt;close();
++    $this-&gt;reset();
++    return $r;
++  }
++
++  private function getAffectedFields() {
++    return array_filter( $this-&gt;__fields, array($this, '__affectedField') );
++  }
++
++  private function reset() {
++    return array_walk( $this-&gt;__fields, array($this,'__notAffected'));
++  }
++
++  // ---------
++  // internal callbacks
++  // ---------
++
++  // callback for array_filter
++  private function __affectedField( SQLField $field ) {
++    return $field-&gt;isAffected();
++  }
++  // callback for array_filter
++  private function __pk( SQLField $field ) {
++    return $field-&gt;isPk();
++  }
++
++  // callback for array_walk
++  private function __notAffected( SQLField $field ) {
++    if( $field-&gt;isAffected() &amp;&amp; !$field-&gt;isPk() ) $field-&gt;setAffected(false);
++  }
++
++  // -----------
++  // static
++  // -----------
++  private static $__connection     = null;
++  private static $__connection_dsn = array();
++  private static $__connection_key = '';
++
++  protected static $__connection_dsn_id = null;
++
++  public static function setConnectionDsn( IConfigurator $config ) {
++    self::$__connection_dsn= $config-&gt;getDatabaseDsn( self::$__connection_dsn_id );
++    ksort(self::$__connection_dsn);
++    self::$__connection_key= crc32(serialize( self::$__connection_dsn ));
++  }
++
++  public static function connection() {
++    if( !isset( self::$__connection[self::$__connection_key] ) ) {
++      // todo: load driver connection implementation.
++      $class = new ReflectionClass( SQLConnection::$__drivers[self::$__connection_dsn['phptype']] . 'Connection' );
++      self::$__connection[self::$__connection_key] = $class-&gt;newInstance();
++      self::$__connection[self::$__connection_key]-&gt;connect( self::$__connection_dsn );
++    }
++    return self::$__connection[self::$__connection_key];
++  }
++
++  public static function find() {
++    throw new MedickException('ActiveRecord::find() must be implemented in child class.');
++  }
++
++  public static function build( SQLBuilder $builder ) {
++    return $builder-&gt;execute();
++  }
++
++}
+
+
+Property changes on: exp/ar5/libs/active/record/Base.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/ar5/libs/active/record/QueryBuilder.php
+===================================================================
+--- exp/ar5/libs/active/record/QueryBuilder.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/libs/active/record/QueryBuilder.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -1,5 +1,7 @@
+ &lt;?php
+-
+ // $Id$
++// This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
+ 
++// BC 
+ class QueryBuilder extends SQLBuilder {	}
++
+
+Modified: exp/ar5/libs/active/record/SQLBuilder.php
+===================================================================
+--- exp/ar5/libs/active/record/SQLBuilder.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/libs/active/record/SQLBuilder.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -1,36 +1,6 @@
+ &lt;?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice,
+-//   this list of conditions and the following disclaimer.
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation
+-//   and/or other materials provided with the distribution.
+-//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+-//   be used to endorse or promote products derived from this software without
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-//
+ // $Id$
+-//
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
++// This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
+ 
+ /**
+  * It knows how to create an SQLCommand from an array
+@@ -74,8 +44,6 @@
+  *    4.2. User::find( 'first', array('condition'=&gt;'id &gt; ?'), array(5));
+  *    // select * from users where id &gt; 5 limit 1; 
+  *
+- * @package medick.active.record
+- * @author Aurelian Oancea
+  */
+ class SQLBuilder extends Object {
+ 
+@@ -164,15 +132,6 @@
+     public function getOwner() {
+         return $this-&gt;owner;
+     }
+-    
+-    /**
+-     * It creates an instance of the owner
+-     *
+-     * @return ReflectionClass
+-     */ 
+-    // public function getOwnerClass() {
+-    //     return ActiveRecord::reflect_class( $this-&gt;owner );
+-    // }
+ 
+     /**
+      * It gets the current list of bindings
+@@ -223,18 +182,11 @@
+         return $command;
+     }
+ 
+-
+     public function execute() {
+-      // 1.
++      // 1. create a statement
+       $stmt= ActiveRecord::connection()-&gt;prepare( $this-&gt;compile()-&gt;getQueryString() );
+-
+       // 2. one or more?
+       return $stmt-&gt;getAllRecords( $this-&gt;bindings, new ReflectionClass( $this-&gt;owner ) );
+-
+-      $rs= $stmt-&gt;executeQuery( $this-&gt;bindings );
+-      return $rs;
+-      // 2.
+-      return array();
+     }
+ 
+ }
+
+Modified: exp/ar5/libs/active/record/SQLCommand.php
+===================================================================
+--- exp/ar5/libs/active/record/SQLCommand.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/libs/active/record/SQLCommand.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -1,36 +1,6 @@
+ &lt;?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice,
+-//   this list of conditions and the following disclaimer.
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation
+-//   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
+-//   be used to endorse or promote products derived from this software without
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-//
+ // $Id$
+-//
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
++// This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
+ 
+ /**
+  * It represents an sql command
+@@ -140,3 +110,4 @@
+     }
+ 
+ }
++
+
+Modified: exp/ar5/libs/active/record/SQLField.php
+===================================================================
+--- exp/ar5/libs/active/record/SQLField.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/libs/active/record/SQLField.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -1,6 +1,6 @@
+ &lt;?php
+-
+ // $Id$
++// This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
+ 
+ class SQLField extends Object {
+ 
+
+Added: exp/ar5/libs/active/record/SQLType.php
+===================================================================
+--- exp/ar5/libs/active/record/SQLType.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/libs/active/record/SQLType.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -0,0 +1,17 @@
++&lt;?php
++// $Id$
++// This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
++
++class SQLType extends Object {
++
++  // sql type to php type
++  public static function getPhpType( $type ) {
++    if( $type == 'integer' || $type == 'int') return 'Integer';
++    else return 'String';
++    // elseif( $type == 'varchar' || $type == 'string' || $type == 'text') return 'String';
++    // elseif( $type == 'timestamp' || $type == 'time' || $type == 'date') return 'Time';
++    // else throw new SQLException('Unknow type: &quot;' . $type . '&quot;');
++  }
++
++}
++
+
+
+Property changes on: exp/ar5/libs/active/record/SQLType.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -1,27 +1,47 @@
+ &lt;?php
+ // $Id$
++// This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
+ 
+ abstract class SQLConnection extends Object {
+ 
+-  /** @var array 
+-   */
++  // @var array known drivers
+   public static $__drivers= array('sqlite'=&gt;'SQLite');
++  
++  // @var resource
++  protected $resource; 
+ 
+-  protected $resource; 
+-  
++  // @var string the database
+   protected $database;
+-  
++
++  // @var string the last executed query
+   protected $lastQuery;
+ 
+-  // return int
++  /**
++   * Executes an update
++   *
++   * @param string the sql string to execute
++   *
++   * @return int
++   */ 
+   public function executeUpdate( $sql ) {
+     return $this-&gt;getUpdateCount( $this-&gt;exec( $sql ) );
+   }
+-
++  
++  /**
++   * Gets the database
++   *
++   * @return string string
++   */ 
+   public function getDatabase() { 
+     return $this-&gt;database;
+   }
+-  
++
++  /**
++   * Sets the database
++   * 
++   * @param string database to use
++   * @return void
++   */ 
+   public function setDatabase( $database ) { 
+     $this-&gt;database=$database;
+   }
+@@ -61,5 +81,3 @@
+   
+ }
+ 
+-
+-
+
+Modified: exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -1,5 +1,6 @@
+ &lt;?php
+ // $Id$
++// This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
+ 
+ abstract class SQLPreparedStatement extends Object {
+ 
+
+Modified: exp/ar5/libs/active/record/drivers/abstract/SQLResultSet.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/abstract/SQLResultSet.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/libs/active/record/drivers/abstract/SQLResultSet.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -1,6 +1,6 @@
+ &lt;?php
+-
+ // $Id$
++// This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
+ 
+ abstract class SQLResultSet extends Object implements ArrayAccess {
+ 
+
+Modified: exp/ar5/libs/active/record/drivers/abstract/SQLTableInfo.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/abstract/SQLTableInfo.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/libs/active/record/drivers/abstract/SQLTableInfo.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -1,5 +1,6 @@
+ &lt;?php
+ // $Id$
++// This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
+ 
+ abstract class SQLTableInfo extends Object {
+ 
+
+Modified: exp/ar5/libs/active/record/drivers/sqlite/sqlite.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/sqlite/sqlite.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/libs/active/record/drivers/sqlite/sqlite.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -1,6 +1,13 @@
+ &lt;?php
+ // $Id$
++// This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
+ 
++// abstract hooks
++include_once('active/record/drivers/abstract/SQLConnection.php');
++include_once('active/record/drivers/abstract/SQLPreparedStatement.php');
++include_once('active/record/drivers/abstract/SQLResultSet.php');
++include_once('active/record/drivers/abstract/SQLTableInfo.php');
++
+ class SQLiteRecordsIterator extends Object implements Iterator {
+ 
+   private $result;
+
+Modified: exp/ar5/libs/context/configurator/IConfigurator.php
+===================================================================
+--- exp/ar5/libs/context/configurator/IConfigurator.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/libs/context/configurator/IConfigurator.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -70,5 +70,7 @@
+      * @return string, Logger formatter name eg. FooFormatter.
+      */
+     function getLoggerFormatter();
++    
++    function getDatabaseDsn($id=false);
+ 
+ }
+
+Modified: exp/ar5/libs/context/configurator/XMLConfigurator.php
+===================================================================
+--- exp/ar5/libs/context/configurator/XMLConfigurator.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/libs/context/configurator/XMLConfigurator.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -120,7 +120,7 @@
+      * &lt;/code&gt;
+      * @see IConfigurator::getDatabaseDsn()
+      */
+-    public function getDatabaseDsn($id = FALSE) {
++    public function getDatabaseDsn($id = false) {
+         if (!$id) $id = $this-&gt;sxe-&gt;database['default'];
+         foreach( $this-&gt;sxe-&gt;database-&gt;dsn as  $dsn ) {
+             if( trim($dsn['id']) == trim($id) ){
+
+Added: exp/ar5/test/libs/st-1.0.1beta2.tar.bz2
+===================================================================
+(Binary files differ)
+
+
+Property changes on: exp/ar5/test/libs/st-1.0.1beta2.tar.bz2
+___________________________________________________________________
+Name: svn:mime-type
+   + application/octet-stream
+
+Added: exp/ar5/test/mock/configurator.php
+===================================================================
+--- exp/ar5/test/mock/configurator.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/test/mock/configurator.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -0,0 +1,16 @@
++&lt;?php
++// $Id$
++
++include_once('context/configurator/IConfigurator.php');
++
++class MockConfigurator extends Object implements IConfigurator {  
++  
++  function getLoggerOutputters() { return array(); }
++  
++  function getLoggerFormatter() { return ''; }
++  
++  function getDatabaseDsn($id=false) {
++    return array('phptype'=&gt;'mock');
++  }
++  
++}
+
+
+Property changes on: exp/ar5/test/mock/configurator.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/ar5/test/mock/driver.php
+===================================================================
+--- exp/ar5/test/mock/driver.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/test/mock/driver.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -0,0 +1,28 @@
++&lt;?php
++// $Id$
++
++// abstract hooks
++include_once('active/record/drivers/abstract/SQLConnection.php');
++include_once('active/record/drivers/abstract/SQLPreparedStatement.php');
++include_once('active/record/drivers/abstract/SQLResultSet.php');
++include_once('active/record/drivers/abstract/SQLTableInfo.php');
++
++class MockConnection extends SQLConnection {
++  
++  public function connect(Array $dsn=array()) {
++    return true;
++  }
++  
++  public function close() {
++    return true;
++  }
++  
++  public function nextId() {
++    
++  }
++  
++  public function getLastErrorMessage() {
++    return 'mock.';
++  }
++  
++}
+
+
+Property changes on: exp/ar5/test/mock/driver.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/ar5/test/runner.php
+===================================================================
+--- exp/ar5/test/runner.php	2007-08-24 14:37:39 UTC (rev 457)
++++ exp/ar5/test/runner.php	2007-08-26 18:58:03 UTC (rev 458)
+@@ -0,0 +1,31 @@
++&lt;?php
++// $Id: $
++
++set_include_path('../libs:libs');
++
++include_once('simpletest/unit_tester.php');
++include_once('simpletest/reporter.php');
++
++include_once('../ar5_base.php');
++
++include_once('mock/configurator.php');
++include_once('mock/driver.php');
++
++// include_once('context/configurator/XMLConfigurator.php');
++
++include_once('active/record/drivers/sqlite/sqlite.php');
++
++include_once('active/record/Base.php');
++
++$config= new MockConfigurator();
++
++class TestSetup extends UnitTestCase {
++  
++  function testTrue() {
++    
++  }
++  
++}
++
++$test = new TestSetup();
++$test-&gt;run(new TextReporter());
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000237.html">[Medick-svn] r457 - in exp/ar5: . conf	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite
+</A></li>
+	<LI>Next message: <A HREF="000239.html">[Medick-svn] r459 - exp/ar5
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#238">[ date ]</a>
+              <a href="thread.html#238">[ thread ]</a>
+              <a href="subject.html#238">[ subject ]</a>
+              <a href="author.html#238">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

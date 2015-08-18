@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r476 - in exp/medick2/app: . controllers views	views/foo views/layouts
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2008-May/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r476%20-%20in%20exp/medick2/app%3A%20.%20controllers%20views%0A%09views/foo%20views/layouts&In-Reply-To=%3C200805190810.m4J8ABGA027954%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000255.html">
+   <LINK REL="Next"  HREF="000258.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r476 - in exp/medick2/app: . controllers views	views/foo views/layouts</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r476%20-%20in%20exp/medick2/app%3A%20.%20controllers%20views%0A%09views/foo%20views/layouts&In-Reply-To=%3C200805190810.m4J8ABGA027954%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r476 - in exp/medick2/app: . controllers views	views/foo views/layouts">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Mon May 19 10:10:11 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000255.html">[Medick-svn] r475 - in exp/medick2: . app app/controllers public	vendor/medick/lib/action/controller
+</A></li>
+        <LI>Next message: <A HREF="000258.html">[Medick-svn] r477 - in exp/medick2/vendor/medick: . lib lib/action	lib/action/controller lib/action/controller/cli	lib/action/controller/http lib/action/view lib/context	lib/eltest lib/medick lib/plugin test test/context
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#256">[ date ]</a>
+              <a href="thread.html#256">[ thread ]</a>
+              <a href="subject.html#256">[ subject ]</a>
+              <a href="author.html#256">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2008-05-19 10:10:10 +0200 (Mon, 19 May 2008)
+New Revision: 476
+
+Added:
+   exp/medick2/app/controllers/asd_controller.php
+   exp/medick2/app/views/
+   exp/medick2/app/views/foo/
+   exp/medick2/app/views/foo/mur.phtml
+   exp/medick2/app/views/layouts/
+   exp/medick2/app/views/layouts/foo.phtml
+Modified:
+   exp/medick2/app/controllers/foo_controller.php
+Log:
+ -- more on medick2 exp.
+
+Added: exp/medick2/app/controllers/asd_controller.php
+===================================================================
+
+Modified: exp/medick2/app/controllers/foo_controller.php
+===================================================================
+--- exp/medick2/app/controllers/foo_controller.php	2008-05-13 16:57:59 UTC (rev 475)
++++ exp/medick2/app/controllers/foo_controller.php	2008-05-19 08:10:10 UTC (rev 476)
+@@ -6,4 +6,12 @@
+ 
+ class FooController extends ApplicationController {
+ 
++  public function bar($arg1, $arg2, $arg3='bar') {
++    // Medick::dump( $arg3 );
++  }
++
++  public function mur() {
++    $this-&gt;template-&gt;assign('time', time());
++  }
++
+ }
+
+Added: exp/medick2/app/views/foo/mur.phtml
+===================================================================
+--- exp/medick2/app/views/foo/mur.phtml	2008-05-13 16:57:59 UTC (rev 475)
++++ exp/medick2/app/views/foo/mur.phtml	2008-05-19 08:10:10 UTC (rev 476)
+@@ -0,0 +1,2 @@
++hello template, it's &lt;?= date(&quot;d-M, H:i:s&quot;, $time); ?&gt;!
++
+
+Added: exp/medick2/app/views/layouts/foo.phtml
+===================================================================
+--- exp/medick2/app/views/layouts/foo.phtml	2008-05-13 16:57:59 UTC (rev 475)
++++ exp/medick2/app/views/layouts/foo.phtml	2008-05-19 08:10:10 UTC (rev 476)
+@@ -0,0 +1,10 @@
++&lt;html&gt;
++
++&lt;head&gt;
++  &lt;title&gt;&lt;?=$__controller;?&gt; / &lt;?=$__action;?&gt;&lt;/title&gt;
++&lt;/head&gt;
++&lt;body&gt;
++  &lt;?= $content_for_layout; ?&gt;
++&lt;/body&gt;
++
++&lt;/html&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000255.html">[Medick-svn] r475 - in exp/medick2: . app app/controllers public	vendor/medick/lib/action/controller
+</A></li>
+	<LI>Next message: <A HREF="000258.html">[Medick-svn] r477 - in exp/medick2/vendor/medick: . lib lib/action	lib/action/controller lib/action/controller/cli	lib/action/controller/http lib/action/view lib/context	lib/eltest lib/medick lib/plugin test test/context
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#256">[ date ]</a>
+              <a href="thread.html#256">[ thread ]</a>
+              <a href="subject.html#256">[ subject ]</a>
+              <a href="author.html#256">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

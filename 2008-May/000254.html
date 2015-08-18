@@ -1,0 +1,309 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r474 - in exp/medick2: config public	vendor/medick/lib/action/controller vendor/medick/lib/context	vendor/medick/lib/plugin
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2008-May/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r474%20-%20in%20exp/medick2%3A%20config%20public%0A%09vendor/medick/lib/action/controller%20vendor/medick/lib/context%0A%09vendor/medick/lib/plugin&In-Reply-To=%3C200805131656.m4DGuIcs029280%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000255.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r474 - in exp/medick2: config public	vendor/medick/lib/action/controller vendor/medick/lib/context	vendor/medick/lib/plugin</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r474%20-%20in%20exp/medick2%3A%20config%20public%0A%09vendor/medick/lib/action/controller%20vendor/medick/lib/context%0A%09vendor/medick/lib/plugin&In-Reply-To=%3C200805131656.m4DGuIcs029280%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r474 - in exp/medick2: config public	vendor/medick/lib/action/controller vendor/medick/lib/context	vendor/medick/lib/plugin">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Tue May 13 18:56:18 CEST 2008</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000255.html">[Medick-svn] r475 - in exp/medick2: . app app/controllers public	vendor/medick/lib/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#254">[ date ]</a>
+              <a href="thread.html#254">[ thread ]</a>
+              <a href="subject.html#254">[ subject ]</a>
+              <a href="author.html#254">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2008-05-13 18:56:17 +0200 (Tue, 13 May 2008)
+New Revision: 474
+
+Modified:
+   exp/medick2/config/cfields.xml
+   exp/medick2/public/.htaccess
+   exp/medick2/public/index.php
+   exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+   exp/medick2/vendor/medick/lib/action/controller/Map.php
+   exp/medick2/vendor/medick/lib/action/controller/Route.php
+   exp/medick2/vendor/medick/lib/action/controller/Router.php
+   exp/medick2/vendor/medick/lib/context/AbstractConfigurator.php
+   exp/medick2/vendor/medick/lib/context/ContextManager.php
+   exp/medick2/vendor/medick/lib/context/IConfigurator.php
+   exp/medick2/vendor/medick/lib/plugin/Plugins.php
+Log:
+ -- loading controllers now
+
+Modified: exp/medick2/config/cfields.xml
+===================================================================
+--- exp/medick2/config/cfields.xml	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/config/cfields.xml	2008-05-13 16:56:17 UTC (rev 474)
+@@ -4,10 +4,8 @@
+ 
+   &lt;properties&gt;
+     &lt;property name=&quot;load.paths&quot; value=&quot;&quot; /&gt;
+-
+     &lt;property name=&quot;plugin.autodiscovery&quot; value=&quot;true&quot; /&gt;
+     &lt;property name=&quot;plugin.path&quot;          value=&quot;vendor/plugins&quot; /&gt;
+-
+   &lt;/properties&gt;
+ 
+   &lt;plugins&gt;
+
+Modified: exp/medick2/public/.htaccess
+===================================================================
+--- exp/medick2/public/.htaccess	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/public/.htaccess	2008-05-13 16:56:17 UTC (rev 474)
+@@ -25,7 +25,7 @@
+ #RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+ 
+ # Set 2.
+-RewriteBase /medick2
++RewriteBase /
+ 
+ # Send requests without parameters to index.php
+ # -- disabled since we want to show index.html
+
+Modified: exp/medick2/public/index.php
+===================================================================
+--- exp/medick2/public/index.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/public/index.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -7,13 +7,13 @@
+ // 
+ 
+ // complete path to medick boot.php file.
+-include_once('/W/Devel/medick/exp/medick2/boot.php');
++include_once('/home/aurelian/Code/medick/exp/medick2/boot.php');
+ 
+ // complete path to cFields.xml
+ // and environment to load
+ $d= new Dispatcher(
+           ContextManager::load(
+-            '/W/Devel/medick/exp/medick2/config/cfields.xml',
++            '/home/aurelian/Code/medick/exp/medick2/config/cfields.xml',
+             'localhost')
+         );
+ $d-&gt;dispatch();
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -29,8 +29,8 @@
+       sprintf('medick v.$%s ready to dispatch (took %.3f sec. to boot)', Medick::version(), $this-&gt;context-&gt;timer()-&gt;tick()));
+ 
+     try {
+-      Router::recognize( $request, $this-&gt;context );
+-      // -&gt;process( $request, $response )-&gt;dump();
++      Router::recognize( $request, $this-&gt;context )-&gt;process( $request, $response );
++      // -&gt;dump();
+     } catch(Exception $ex) {
+       echo sprintf('Exception: %s with message: %s', get_class($ex), $ex-&gt;getMessage());
+     }
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Map.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Map.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/action/controller/Map.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -43,11 +43,15 @@
+     $config_routes= $this-&gt;context-&gt;config()-&gt;routes();
+     foreach( $config_routes as $r ) {
+       // xxx. requirements
+-      $this-&gt;routes[]= new Route( (string)trim($r['name']), (string)trim($r['value']), $this-&gt;context-&gt;config()-&gt;route_defaults($r) );
++      $this-&gt;routes[]= new Route( 
++        (string)trim($r['name']),  // name
++        (string)trim($r['value']), // definition
++        $this-&gt;context-&gt;config()-&gt;route_defaults($r) // array with defaults
++      );
+     }
+     // 2. plugins routes
+ 
+-    // xxx: throw exception if 0 routes
++    // xxx: throw exception if 0 routes?
+   }
+ 
+ }
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Route.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Route.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/action/controller/Route.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -1,5 +1,7 @@
+ &lt;?php
+ 
++// $Id: $
++
+ // XXX: Route Segment
+ class __Segment extends Object {
+ 
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Router.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Router.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/action/controller/Router.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -18,8 +18,38 @@
+   // should return a Controller Instance
+   public function create_controller( $request ) {
+ 
+-    Medick::dump( $request );
++    // xxx: should call plugins special __before_controller methods?
+ 
++    // XXX: should load additional paths from plugins?
++
++    // 1. class name -&gt; request-&gt;parameter('controller') . 'Controller'
++    // 2. file name  -&gt; request-&gt;parameter('controller') . '_controller.php'
++
++    $path= APP_PATH; // -&gt; this is going to be a list of paths
++
++    $controller_file = $path . '/app/controllers/' . $request-&gt;parameter('controller') . '_controller.php';
++    $controller_class= ucfirst($request-&gt;parameter('controller')) . 'Controller';
++
++    if( false === file_exists($controller_file) ) {
++      throw new Exception('Cannot load `'.$controller_file.'`, no such file or directory!'); // -&gt; this is going to be replaced with continue in loop
++    }
++
++    require( $controller_file );
++
++    if( false === class_exists($controller_class) ) {
++      throw new Exception('Cannot use `'.$controller_class.'`, no such class!'); // -&gt; this is going to be replaced with continue in loop
++    }
++
++    $rclass= new ReflectionClass($controller_class);
++
++    if( false === ($rclass-&gt;getParentClass() || $rclass-&gt;getParentClass() == 'ApplicationController' || $rclass-&gt;getParentClass() == 'ActionController')) {
++      throw new Exception('Wrong defintion of class: ' . $controller_class);
++    }
++
++    $this-&gt;context-&gt;logger()-&gt;debug(str_replace(APP_PATH, '${'.$this-&gt;context-&gt;config()-&gt;application_name().'}', $controller_file) . ' --&gt; ' . $controller_class);
++
++    return $rclass-&gt;newInstance( $this-&gt;context );
++
+   }
+ 
+   /*
+
+Modified: exp/medick2/vendor/medick/lib/context/AbstractConfigurator.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/AbstractConfigurator.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/context/AbstractConfigurator.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -23,4 +23,12 @@
+     $this-&gt;environment= $environment;
+   }
+ 
++  public function file() {
++    return $this-&gt;file;
++  }
++
++  public function environment() {
++    return $this-&gt;environment;
++  }
++
+ }
+
+Modified: exp/medick2/vendor/medick/lib/context/ContextManager.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/ContextManager.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/context/ContextManager.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -29,18 +29,21 @@
+   // the config parser/loaded, to have access to configuration options
+   private $config;
+ 
+-  // a Map, you get access to Routes like this
++  // a Map, you get access to Routes using this
+   private $map;
+ 
+   private $timer;
+ 
+-  public function __construct( Iconfigurator $config ) {
++  private function __construct( Iconfigurator $config ) {
+     $this-&gt;config= $config;
+     // configure the logger
+     $this-&gt;logger= new Logger();
+     $this-&gt;logger-&gt;setFormatter( Logger::formatter($this-&gt;config) );
+     $this-&gt;logger-&gt;attachOutputters( Logger::outputters($this-&gt;config) );
+-    // create a Map
++    // ready?
++    $this-&gt;logger-&gt;debug(&quot;\t[&quot;.time() . &quot;] `&quot; . $this-&gt;config-&gt;environment() . &quot;` env. from &quot; . 
++      str_replace(APP_PATH, '${'.$this-&gt;config-&gt;application_name().'}/', $this-&gt;config-&gt;file()) . &quot; loaded for \${ip}&quot;);
++    // create a Map for routes.
+     $this-&gt;map= new Map( $this );
+   }
+ 
+
+Modified: exp/medick2/vendor/medick/lib/context/IConfigurator.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/IConfigurator.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/context/IConfigurator.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -4,6 +4,10 @@
+ 
+   public function __construct($file, $environment);
+ 
++  public function environment();
++
++  public function file();
++
+   // return Array
+   public function logger_outputters();
+ 
+
+Modified: exp/medick2/vendor/medick/lib/plugin/Plugins.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/plugin/Plugins.php	2008-04-25 16:40:51 UTC (rev 473)
++++ exp/medick2/vendor/medick/lib/plugin/Plugins.php	2008-05-13 16:56:17 UTC (rev 474)
+@@ -25,9 +25,11 @@
+ 
+   // should return IPlugin[]
+   public static function discover( ContextManager $context ) {
++    
++    if($context-&gt;config()-&gt;property( 'plugin.autodiscovery' ) === false) return;
+ 
+-    if($context-&gt;config()-&gt;property( 'plugin.autodiscovery') === false) return;
+-    
++    $context-&gt;logger()-&gt;debug( strtolower(__METHOD__) . ' [hint: set `plugin.autodiscovery` to false to disable plugins]');
++
+     //
+     // XXX.
+     // -&gt; plugin.path
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000255.html">[Medick-svn] r475 - in exp/medick2: . app app/controllers public	vendor/medick/lib/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#254">[ date ]</a>
+              <a href="thread.html#254">[ thread ]</a>
+              <a href="subject.html#254">[ subject ]</a>
+              <a href="author.html#254">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

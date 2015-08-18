@@ -1,0 +1,482 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r239 - in trunk: config libs/action/controller libs/action/controller/templates libs/action/view libs/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r239%20-%20in%20trunk%3A%20config%20libs/action/controller%20libs/action/controller/templates%20libs/action/view%20libs/medick&In-Reply-To=%3C200510251953.j9PJrSmY000465%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000042.html">
+   <LINK REL="Next"  HREF="000044.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r239 - in trunk: config libs/action/controller libs/action/controller/templates libs/action/view libs/medick</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r239%20-%20in%20trunk%3A%20config%20libs/action/controller%20libs/action/controller/templates%20libs/action/view%20libs/medick&In-Reply-To=%3C200510251953.j9PJrSmY000465%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r239 - in trunk: config libs/action/controller libs/action/controller/templates libs/action/view libs/medick">aurelian at berlios.de
+       </A><BR>
+    <I>Tue Oct 25 21:53:28 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000042.html">[Medick-svn] r238 - trunk/libs/configurator
+</A></li>
+        <LI>Next message: <A HREF="000044.html">[Medick-svn] r240 - in trunk/libs: action/controller/templates active/record medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#43">[ date ]</a>
+              <a href="thread.html#43">[ thread ]</a>
+              <a href="subject.html#43">[ subject ]</a>
+              <a href="author.html#43">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-25 21:53:21 +0200 (Tue, 25 Oct 2005)
+New Revision: 239
+
+Added:
+   trunk/libs/action/controller/templates/
+   trunk/libs/action/controller/templates/error.phtml
+   trunk/libs/medick/Error.php
+   trunk/libs/medick/ErrorHandler.php
+Modified:
+   trunk/config/application.bootstrap.php
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/view/Base.php
+   trunk/libs/medick/Dispatcher.php
+   trunk/libs/medick/Exception.php
+Log:
+ added Error Handler
+
+Modified: trunk/config/application.bootstrap.php
+===================================================================
+--- trunk/config/application.bootstrap.php	2005-10-24 05:08:52 UTC (rev 238)
++++ trunk/config/application.bootstrap.php	2005-10-25 19:53:21 UTC (rev 239)
+@@ -63,9 +63,14 @@
+ // load core classes.
+ include_once('medick/Object.php');
+ include_once('medick/Exception.php');
++include_once('medick/Error.php');
++include_once('medick/ErrorHandler.php');
+ include_once('medick/Registry.php');
+ include_once('medick/Dispatcher.php');
+ 
++// set-up the error handler:
++set_error_handler(array(new ErrorHandler(), 'raiseError'));
++
+ // hook a Configurator into Registry.
+ include_once('configurator/XMLConfigurator.php');
+ Registry::put(new XMLConfigurator(TOP_LOCATION . 'config' . DIRECTORY_SEPARATOR . APP_NAME . '.xml'), '__configurator');
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-10-24 05:08:52 UTC (rev 238)
++++ trunk/libs/action/controller/Base.php	2005-10-25 19:53:21 UTC (rev 239)
+@@ -32,14 +32,11 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-/**
+- * @package locknet7.action.controller
+- */
+-    
+ include_once('action/controller/Injector.php');
+ include_once('action/view/Base.php');
+  
+ /**
++ * @package locknet7.action.controller
+  * Base Class For Our Application Controllers
+  */
+ class ActionControllerBase extends Object {
+@@ -93,6 +90,24 @@
+     private $config;
+     
+     /**
++     * Process this Request
++     *
++     * @param Request $request
++     * @param Response $response
++     * @param Exception $exception
++     * @return Response
++     */
++    public static function process_with_exception(Request $request, Response $response, Exception $exception) {
++        $template = ActionViewBase::factory();
++        $template-&gt;error= $exception;
++        $text= $template-&gt;render_file(TOP_LOCATION . '/libs/action/controller/templates/error.phtml');
++        $status = Response::SC_INTERNAL_SERVER_ERROR;
++        $response-&gt;setStatus($status);
++        $response-&gt;setContent($text);
++        return $response;
++    }
++    
++    /**
+      * Will process the request returning the resulting response
+      * @param Request request, the request
+      * @param Response response, the response
+
+Added: trunk/libs/action/controller/templates/error.phtml
+===================================================================
+--- trunk/libs/action/controller/templates/error.phtml	2005-10-24 05:08:52 UTC (rev 238)
++++ trunk/libs/action/controller/templates/error.phtml	2005-10-25 19:53:21 UTC (rev 239)
+@@ -0,0 +1,111 @@
++&lt;!DOCTYPE html PUBLIC &quot;-//W3C//DTD XHTML 1.0 Strict//EN&quot;
++        &quot;<A HREF="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd</A>&quot;&gt;
++&lt;html xmlns=&quot;<A HREF="http://www.w3.org/1999/xhtml">http://www.w3.org/1999/xhtml</A>&quot; lang=&quot;en&quot; xml:lang=&quot;en&quot;&gt;
++&lt;!-- $Id$ --&gt;
++    &lt;head&gt;
++        &lt;title&gt;Server Error!&lt;/title&gt;
++        
++        &lt;script language=&quot;javascript&quot; type=&quot;text/javascript&quot;&gt;
++        
++        function showSource() {
++            document.getElementById(&quot;source&quot;).style.display = &quot;block&quot;;
++            return FALSE;
++        }
++        
++        function hideSource() {
++            document.getElementById(&quot;source&quot;).style.display = &quot;none&quot;;
++            return FALSE;
++        }        
++        
++        &lt;/script&gt;
++        
++        &lt;style type=&quot;text/css&quot; media=&quot;all&quot;&gt;
++        
++            body {
++              font-size: .9em;
++              font-family: &quot;Lucida Grande&quot;, Helvetica, Tahoma, sans-serif;
++            }        
++        
++            a { text-decoration: none; }
++            
++            h1 {
++                text-align:center;
++            }
++            
++            .container {
++                border:1px solid red;
++            }
++            
++            .source {
++                background-color: #FFFFCC; 
++                color: #666666;
++            }
++            
++        &lt;/style&gt;
++        
++    &lt;/head&gt;
++    
++    &lt;body&gt;
++       &lt;div class=&quot;container&quot;&gt;
++       &lt;h1&gt;Cannot process your request!&lt;/h1&gt;
++           &lt;h2&gt;&lt;strong&gt;Message: &lt;/strong&gt;&lt;?=$error-&gt;getMessage();?&gt;&lt;/h2&gt;
++           &lt;strong&gt;in&lt;/strong&gt; (&lt;?=$error-&gt;getLine();?&gt;)
++           &lt;a href=&quot;javascript:void(0);&quot; onclick=&quot;return showSource();&quot;&gt;&lt;?=$error-&gt;getFile();?&gt;&lt;/a&gt;
++           
++           &lt;hr noshade=&quot;noshade&quot; /&gt;
++           Backtrace:&lt;br /&gt;
++           &lt;pre&gt;&lt;?=$error-&gt;getTraceAsString();?&gt;&lt;/pre&gt;
++           &lt;hr noshade=&quot;noshade&quot; /&gt;
++           
++           &lt;span class=&quot;showOrHideDetailsButton&quot;&gt;(
++               &lt;a href=&quot;javascript:void(0);&quot; onclick=&quot;return showSource();&quot;&gt;show source&lt;/a&gt; |
++               &lt;a href=&quot;javascript:void(0);&quot; onclick=&quot;return hideSource();&quot;&gt;hide source&lt;/a&gt; )
++           &lt;/span&gt;
++           
++           &lt;hr noshade=&quot;noshade&quot; /&gt;
++           
++           &lt;? 
++            $data = highlight_string(file_get_contents($error-&gt;getFile()), TRUE);
++            $data = explode('&lt;br /&gt;', $data);
++            $line = $error-&gt;getLine();
++            $end  = $line+10;
++            $start = $line-10;
++
++            ?&gt;
++            &lt;table cellspacing=&quot;0&quot; cellpadding=&quot;0&quot; id=&quot;source&quot; style=&quot;display:none;&quot;&gt;
++            &lt;tr&gt;&lt;td style=&quot;vertical-align: top;&quot;&gt;
++                &lt;code class=&quot;source&quot;&gt;
++            
++            &lt;? 
++              for ($x = $start; $x &lt;= $end; $x++) {
++                if ($line==$x) {
++                    echo '&lt;span style=&quot;background-color: red; color: white;&quot;&gt;';
++                } else { 
++                    echo ' ';
++                }
++                echo str_repeat('&nbsp;', (strlen($end) - strlen($x)) + 1);
++                echo $x;
++                echo '&nbsp;';
++                if ($line == $x) {
++                    echo '&lt;/span&gt;';
++                } else { 
++                    echo '';
++                }
++                echo '&lt;br /&gt;';
++            }
++            ?&gt;
++            &lt;/code&gt;
++            &lt;/td&gt;&lt;td style=&quot;vertical-align: top;&quot;&gt;&lt;code&gt;
++            
++            &lt;? while ($start &lt;= $end) { ?&gt;
++            &nbsp;&lt;?=$data[$start - 1];?&gt;&lt;br /&gt;
++            &lt;? ++$start; ?&gt;
++            &lt;? } ?&gt;
++            
++            &lt;/code&gt;&lt;/td&gt;
++            &lt;/tr&gt;&lt;/table&gt;        
++
++        &lt;/div&gt;
++    &lt;/body&gt;
++
++&lt;/html&gt;
+
+
+Property changes on: trunk/libs/action/controller/templates/error.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2005-10-24 05:08:52 UTC (rev 238)
++++ trunk/libs/action/view/Base.php	2005-10-25 19:53:21 UTC (rev 239)
+@@ -84,7 +84,7 @@
+      * @throws Exception if the file is wrong.
+      */
+ 	public function render($file) {
+-		if (!is_file($file)) throw new Exception ('Cannot Find Template: ' . $file);
++		if (!is_file($file)) throw new MedickException ('Cannot Find Template: ' . $file);
+ 		if (!empty($this-&gt;vars)) {
+             if(!get_magic_quotes_gpc()) $this-&gt;vars = self::stripslashes_deep($this-&gt;vars);
+             extract($this-&gt;vars,EXTR_SKIP);
+
+Modified: trunk/libs/medick/Dispatcher.php
+===================================================================
+--- trunk/libs/medick/Dispatcher.php	2005-10-24 05:08:52 UTC (rev 238)
++++ trunk/libs/medick/Dispatcher.php	2005-10-25 19:53:21 UTC (rev 239)
+@@ -47,7 +47,6 @@
+      * @return void.
+      */
+     public static function dispatch() {
+-
+         if (php_sapi_name() == 'cli') {
+             $request  = new CLIRequest();
+             $response = new CLIResponse();
+@@ -57,16 +56,9 @@
+         }
+         try {
+             ActionControllerRouting::recognize($request)-&gt;process($request, $response)-&gt;dump();
+-        } catch (MedickException $mEx) {
+-            Registry::get('__logger')-&gt;warn($mEx-&gt;getMessage());
+-            echo '&lt;div style=&quot;border:1px solid red&quot;&gt;&lt;h1 style=&quot;text-align:center&quot;&gt;Cannot process your request due to a MedickException&lt;/h1&gt;';
+-            echo '&lt;span style=&quot;color:red&quot;&gt;' . $mEx-&gt;getMessage() . '&lt;/span&gt;';
+-            echo '&lt;pre&gt;' . $mEx-&gt;getTraceAsString() . '&lt;/pre&gt;&lt;br /&gt;&lt;h3&gt;Exception Type: ' . $mEx-&gt;getType() . '&lt;/h3&gt;&lt;/div&gt;';
+-        } catch (Exception $e) {
+-            Registry::get('__logger')-&gt;warn($e-&gt;getMessage());
+-            echo '&lt;div style=&quot;border:1px solid red&quot;&gt;&lt;h1 style=&quot;text-align:center&quot;&gt;Internal Server Error.&lt;/h1&gt;';
+-            echo '&lt;span style=&quot;color:red&quot;&gt;' . $e-&gt;getMessage() . '&lt;/span&gt;';
+-            echo '&lt;pre&gt;' . $e-&gt;getTraceAsString() . '&lt;/pre&gt;&lt;/div&gt;';
++        } catch (Exception $ex) {
++            ActionControllerBase::process_with_exception($request, $response, $ex)-&gt;dump();
++            Registry::get('__logger')-&gt;warn($ex-&gt;getMessage());
+         }
+     }
+ }
+
+Added: trunk/libs/medick/Error.php
+===================================================================
+--- trunk/libs/medick/Error.php	2005-10-24 05:08:52 UTC (rev 238)
++++ trunk/libs/medick/Error.php	2005-10-25 19:53:21 UTC (rev 239)
+@@ -0,0 +1,48 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice, 
++//   this list of conditions and the following disclaimer. 
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation 
++//   and/or other materials provided with the distribution. 
++//   * Neither the name of locknet.ro nor the names of its contributors may 
++//   be used to endorse or promote products derived from this software without 
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++// 
++// $Id$
++// 
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * Error.
++ * @package locknet7.medick
++ */
++class Error extends MedickException {
++
++    public function __construct($message, $code, $file, $line, $trace) {
++        parent::__construct($message, $code);
++        $this-&gt;file  = $file;
++        $this-&gt;line  = $line;
++        $this-&gt;trace = $trace;
++    }
++
++}
+
+
+Property changes on: trunk/libs/medick/Error.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/libs/medick/ErrorHandler.php
+===================================================================
+--- trunk/libs/medick/ErrorHandler.php	2005-10-24 05:08:52 UTC (rev 238)
++++ trunk/libs/medick/ErrorHandler.php	2005-10-25 19:53:21 UTC (rev 239)
+@@ -0,0 +1,69 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice, 
++//   this list of conditions and the following disclaimer. 
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation 
++//   and/or other materials provided with the distribution. 
++//   * Neither the name of locknet.ro nor the names of its contributors may 
++//   be used to endorse or promote products derived from this software without 
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++// 
++// $Id$
++// 
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * @package locknet7.medick
++ * The Medick Error Handler.
++ */
++class ErrorHandler extends Object {
++
++    /**
++     * Setup this ErrorHandler
++     */
++    public function __construct() {
++        ini_set('docref_root', null);
++        ini_set('docref_ext', null);
++    }
++    
++    /**
++     * @param int $errno
++     * @param string $errstr
++     * @param string $errfile
++     * @param int $errline
++     * @return void
++     * @throw Error
++     */
++    function raiseError($errno, $errstr, $errfile, $errline) {
++        if (0 == error_reporting()) return;
++            $trace = debug_backtrace();
++            array_shift($trace);
++            throw new Error(
++              $errstr,
++              $errno,
++              $errfile,
++              $errline,
++              $trace
++            );
++    }
++}
+
+
+Property changes on: trunk/libs/medick/ErrorHandler.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/libs/medick/Exception.php
+===================================================================
+--- trunk/libs/medick/Exception.php	2005-10-24 05:08:52 UTC (rev 238)
++++ trunk/libs/medick/Exception.php	2005-10-25 19:53:21 UTC (rev 239)
+@@ -34,11 +34,18 @@
+ 
+ 
+ /**
++ * @package locknet7.medick
+  * Our base Exception Class
+- * @package locknet7.medick
+  */
+ class MedickException extends Exception {
+ 
+-    public function getType() { return __CLASS__; }
++    /**
++     * Create a new MedickException
++     * @param string the message.
++     * @param int code.
++     */
++    public function __construct($message, $code = '0') {
++        parent::__construct($message, $code);
++    }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000042.html">[Medick-svn] r238 - trunk/libs/configurator
+</A></li>
+	<LI>Next message: <A HREF="000044.html">[Medick-svn] r240 - in trunk/libs: action/controller/templates active/record medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#43">[ date ]</a>
+              <a href="thread.html#43">[ thread ]</a>
+              <a href="subject.html#43">[ subject ]</a>
+              <a href="author.html#43">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

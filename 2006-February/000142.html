@@ -1,0 +1,359 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r351 - in trunk: . libs/action/view libs/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r351%20-%20in%20trunk%3A%20.%20libs/action/view%20libs/medick&In-Reply-To=%3C200602150623.k1F6NEH7027271%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000141.html">
+   <LINK REL="Next"  HREF="000143.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r351 - in trunk: . libs/action/view libs/medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r351%20-%20in%20trunk%3A%20.%20libs/action/view%20libs/medick&In-Reply-To=%3C200602150623.k1F6NEH7027271%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r351 - in trunk: . libs/action/view libs/medick">aurelian at berlios.de
+       </A><BR>
+    <I>Wed Feb 15 07:23:14 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000141.html">[Medick-svn] r350 - in trunk/test: . test/active/record
+</A></li>
+        <LI>Next message: <A HREF="000143.html">[Medick-svn] r352 - branches trunk/docs/dev trunk/libs/action/view
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#142">[ date ]</a>
+              <a href="thread.html#142">[ thread ]</a>
+              <a href="subject.html#142">[ subject ]</a>
+              <a href="author.html#142">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-02-15 07:23:02 +0100 (Wed, 15 Feb 2006)
+New Revision: 351
+
+Added:
+   trunk/libs/medick/ConsoleOptions.php
+Modified:
+   trunk/CHANGELOG
+   trunk/libs/action/view/HTML.php
+Log:
+ -- action/view/HTML:::URL ==&gt; create method should work with PATH_INFO url`s style.
+ -- medick/ConsoleOptions  ==&gt; initial import
+
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-02-11 21:54:24 UTC (rev 350)
++++ trunk/CHANGELOG	2006-02-15 06:23:02 UTC (rev 351)
+@@ -21,6 +21,7 @@
+     - added 3 new methods on Inflector: sanitize, tabelize() and humanize();
+     - on logger, the full path to application is replaced with the name of the application;
+     - removed some debugging infos;
++    - initilal import of ConsoleOptions;  
+     - more API docs and Unit Tests;
+     - Injector: if SERVER['MEDICK_APPLICATION_PATH'] key is missing, use application_path from Configurator,
+     - bundled prototype (<A HREF="http://prototype.conio.net/">http://prototype.conio.net/</A>) 
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-02-11 21:54:24 UTC (rev 350)
++++ trunk/libs/action/view/HTML.php	2006-02-15 06:23:02 UTC (rev 351)
+@@ -173,22 +173,20 @@
+ }
+ 
+ class URL extends Object {
+-    public static function create($controller, $action='index', $params=array(), $separator='&amp;') {
++  
++    public static function create($controller, $action='index', $params=array(), $ext='html') {
+         $config = Registry::get('__configurator');
+         $base   = $config-&gt;getProperty('document_root');
++        
+         if (!$config-&gt;getProperty('rewrite')) {
+-            $buff = $base . '/index.php?controller=' . $controller . $separator . 'action=' . $action;
+-            foreach ($params AS $key=&gt;$value) {
+-                $buff .= $separator . $key . '=' . $value;
+-            }
+-            return $buff;
+-        } else {
+-            $buff = $base . '/' . $controller . '/' . $action;
+-            foreach ($params AS $key=&gt;$value) {
+-                $buff .= '/' . $value;
+-            }
+-            return $buff . '.html';
++            $base .= '/index.php';
+         }
++        $buff = $base . '/' . $controller . '/' . $action;
++        Registry::get('__logger')-&gt;debug($params);
++        foreach ($params as $key=&gt;$value) {
++            $buff .= '/' . $value;
++        }
++        return $buff . '.' . $ext;
+     }
+ }
+ 
+
+Added: trunk/libs/medick/ConsoleOptions.php
+===================================================================
+--- trunk/libs/medick/ConsoleOptions.php	2006-02-11 21:54:24 UTC (rev 350)
++++ trunk/libs/medick/ConsoleOptions.php	2006-02-15 06:23:02 UTC (rev 351)
+@@ -0,0 +1,221 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005, 2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++  
++/**
++ * Class for reading console options.
++ * @see: <A HREF="http://www.php.net/manual/en/features.commandline.php">http://www.php.net/manual/en/features.commandline.php</A>
++ * &lt;code&gt;
++ *    $c= new ConsoleOptions(isset($argv)?$argv:$_SERVER['argv']); // create a new ConsoleOptions Object, loaded with $argv
++ *    $c-&gt;alias('controller', '-c, --c'); // sets some aliases.
++ *    $c-&gt;alias('methods', '-m, --m, --methods');
++ *    // script runned with php script.php -c invoker --methods &quot;index, foo&quot;
++ *    $c-&gt;has('controller'); // TRUE
++ *    $c-&gt;get(); // invoker
++ *    $c-&gt;has('-c'); // TRUE
++ *    $c-&gt;get(); // invoker
++ *    $c-&gt;get('methods'); // index, foo
++ *    $c-&gt;get('foo'); // NULL
++ * &lt;/code&gt;
++ * 
++ * @package medick.console
++ */
++class ConsoleOptions extends Object {
++    /** @var array
++        Container for Console Options */
++    private $options;
++    /** @var string
++        internal index */
++    private $index;
++    /** @var bool
++        true if the options are loaded */
++    private $isLoaded;
++    /** @var string
++        the current script name */
++    private $scriptName;
++    /** @var array
++        a list of defined aliases */
++    private $aliases;
++    
++    /**
++     * Creates a new ConsoleOptions object
++     *
++     * @param array options, the initial set of unparsed options
++     */
++    public function ConsoleOptions($options= array()) {
++        $this-&gt;isLoaded = false;
++        $this-&gt;options  = array();
++        if (!empty($options)) {
++            $this-&gt;load($options);
++        }
++        $this-&gt;index   = NULL;
++        $this-&gt;aliases = array();
++    }
++    
++    /**
++     * Loads options
++     *
++     * Note: First option passed is discarded from the options list.
++     *       We assume that this is the script name
++     * We pass an array like:
++     * &lt;code&gt;
++     *   array(__SCRIPT__NAME__, param1 param2 param3 param4 param5 &quot;param6 param7&quot;);
++     * &lt;/code&gt;
++     * And we build this set of options:
++     * &lt;code&gt;
++     *   array('param1'=&gt;&quot;param2&quot;,
++     *         'param3'=&gt;&quot;param4&quot;,
++     *         'param5'=&gt;&quot;param6 param7&quot;
++     *         )
++     * &lt;/code&gt;
++     * @param array options
++     * @throw IllegalStateException if it`s already loaded.
++     */
++    public function load($options) {
++        if ($this-&gt;isLoaded) {
++            throw new IllegalStateException('Options already loaded!');
++        }
++        $this-&gt;scriptName= array_shift($options);
++        for($i=0; $i &lt; count($options); $i+=2) {
++          $this-&gt;options[$options[$i]]= isset($options[$i+1]) ? $options[$i+1] : NULL;
++        } 
++        $this-&gt;isLoaded= true;
++    }
++    
++    /**
++     * Check if it has option
++     *
++     * @param string option, the option to check for
++     * @return bool, TRUE if it has.
++     * @throws IllegalStateException if this object not loaded
++     */
++    public function has($option) {
++        if (!$this-&gt;isLoaded) {
++            throw new IllegalStateException('Options should be loaded first!');
++        }
++        if ( array_key_exists($option, $this-&gt;options) &amp;&amp; !is_null($this-&gt;options[$option]) ) {
++          $this-&gt;index= $option;
++          return true;
++        } 
++        return false;
++    }
++    
++    /**
++     * It gets the option
++     *
++     * If the index is not provided, we assume that a we did a previous call to &lt;tt&gt;has&lt;/tt&gt; method
++     * @param string index, default null
++     * @return string, or null, if the option is missing
++     * @throws IllegalStateException
++     */
++    public function get($index= NULL) {
++        if (!$this-&gt;isLoaded) {
++            throw new IllegalStateException('Options should be loaded first!');
++        }
++        if (is_null($index) &amp;&amp; !is_null($this-&gt;index) ) {
++            return $this-&gt;options[$this-&gt;index];
++        } elseif ($this-&gt;has($index)) {
++            return $this-&gt;get();
++        } else {
++            return NULL;
++        }
++    }
++    
++    /**
++     * It sets a console alias.
++     *
++     * @param string for
++     * @param mixed aliases, use a list of values separated by comma 
++     *                       to provide multiple aliases or an array
++     * @retun void
++     * @throws IllegalStateException
++     */
++    public function alias($for, $aliases) {
++        if (!$this-&gt;isLoaded) {
++            throw new IllegalStateException('Options should be loaded first!');
++        }
++        if (is_string($aliases)) {
++            $this-&gt;aliases[$for]= explode(', ', trim($aliases));
++        }
++        $this-&gt;aliases[$for][]=$for;
++        foreach ($this-&gt;aliases[$for] as $value) {
++            if ($this-&gt;has(trim($value))) {
++                $this-&gt;loadAliases(trim($value), $this-&gt;aliases[$for]);
++                break;
++            }
++        }
++    }
++    
++    /**
++     * It gets a list of aliases set for $for
++     *
++     * @param string for, aliases to get
++     * @return array or null if we didnt define any aliasses for this entry
++     */
++    public function getAliasesFor($for) {
++        return isset($this-&gt;aliases[$for])?$this-&gt;aliases[$for]:null;
++    }
++    
++    /**
++     * It gets the current script name
++     *
++     * @return string, the script name
++     */
++    public function getScriptName() {
++        return $this-&gt;scriptName;
++    }
++    
++    /**
++     * It gets the current set of options
++     *
++     * @return array, options
++     */ 
++    public function getOptions() {
++        return $this-&gt;options;
++    }
++    
++    /**
++     * Internal Helper, sets the value of aliases 
++     * to the same value as main option
++     *
++     * @param string value, we found this one
++     * @param array options
++     */
++    private function loadAliases($value, $options) {
++        unset($options[$value]);
++        foreach ($options as $option) {
++            $this-&gt;options[trim($option)]= $this-&gt;options[$value];
++        }
++    }
++}
++
+
+
+Property changes on: trunk/libs/medick/ConsoleOptions.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000141.html">[Medick-svn] r350 - in trunk/test: . test/active/record
+</A></li>
+	<LI>Next message: <A HREF="000143.html">[Medick-svn] r352 - branches trunk/docs/dev trunk/libs/action/view
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#142">[ date ]</a>
+              <a href="thread.html#142">[ thread ]</a>
+              <a href="subject.html#142">[ subject ]</a>
+              <a href="author.html#142">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,531 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r353 - in trunk: . libs/configurator libs/logger libs/logger/formatter libs/medick test test/test/action/controller test/test/active/record test/test/active/record/associations test/test/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-February/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r353%20-%20in%20trunk%3A%20.%20libs/configurator%20libs/logger%20libs/logger/formatter%20libs/medick%20test%20test/test/action/controller%20test/test/active/record%20test/test/active/record/associations%20test/test/medick&In-Reply-To=%3C200602191808.k1JI82Q8012257%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000143.html">
+   <LINK REL="Next"  HREF="000145.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r353 - in trunk: . libs/configurator libs/logger libs/logger/formatter libs/medick test test/test/action/controller test/test/active/record test/test/active/record/associations test/test/medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r353%20-%20in%20trunk%3A%20.%20libs/configurator%20libs/logger%20libs/logger/formatter%20libs/medick%20test%20test/test/action/controller%20test/test/active/record%20test/test/active/record/associations%20test/test/medick&In-Reply-To=%3C200602191808.k1JI82Q8012257%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r353 - in trunk: . libs/configurator libs/logger libs/logger/formatter libs/medick test test/test/action/controller test/test/active/record test/test/active/record/associations test/test/medick">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Feb 19 19:08:02 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000143.html">[Medick-svn] r352 - branches trunk/docs/dev trunk/libs/action/view
+</A></li>
+        <LI>Next message: <A HREF="000145.html">[Medick-svn] r354 - applications/eltodo/public/javascript trunk/skel/public/javascript trunk/test
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#144">[ date ]</a>
+              <a href="thread.html#144">[ thread ]</a>
+              <a href="subject.html#144">[ subject ]</a>
+              <a href="author.html#144">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-02-19 19:07:57 +0100 (Sun, 19 Feb 2006)
+New Revision: 353
+
+Added:
+   trunk/libs/configurator/LoggerConfigurator.php
+   trunk/test/README.tests
+   trunk/test/test/medick/ConsoleOptionsTest.php
+Modified:
+   trunk/boot.php
+   trunk/libs/configurator/XMLConfigurator.php
+   trunk/libs/logger/Logger.php
+   trunk/libs/logger/formatter/Formatter.php
+   trunk/libs/medick/ConsoleOptions.php
+   trunk/test/runner.php
+   trunk/test/test/action/controller/InjectorTest.php
+   trunk/test/test/active/record/DBOperationsTest.php
+   trunk/test/test/active/record/FindTest.php
+   trunk/test/test/active/record/ValidatorTest.php
+   trunk/test/test/active/record/associations/HasOneTest.php
+Log:
+ -- Logger should be more independent:
+    -&gt; Logger takes a Configurator on constructor.
+    -&gt; checking if we have MEDICK_APPLICATION_PATH on _SERVER
+ -- added ConsoleOptions tests.
+ -- added ConsoleOptions::setNoValueFor() method (can be used when passing --debug like arguments)
+ -- added README.tests
+
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/boot.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -66,9 +66,10 @@
+ $conf_files = $_SERVER['MEDICK_APPLICATION_PATH'] . DIRECTORY_SEPARATOR . 'conf' .
+                         DIRECTORY_SEPARATOR . $_SERVER['MEDICK_APPLICATION_NAME'];
+ 
+-Registry::put(new XMLConfigurator($conf_files . '.xml'), '__configurator');
++$configurator= new XMLConfigurator($conf_files . '.xml');                        
++Registry::put($configurator, '__configurator');
+ 
+-$logger= Registry::put(new Logger(), '__logger');
++$logger= Registry::put(new Logger($configurator), '__logger');
+ 
+ $logger-&gt;debug('Medick $v: ' . Version::getVersion());
+ $logger-&gt;debug('Config: ' . $conf_files . '.xml');
+
+Added: trunk/libs/configurator/LoggerConfigurator.php
+===================================================================
+--- trunk/libs/configurator/LoggerConfigurator.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/libs/configurator/LoggerConfigurator.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -0,0 +1,52 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005,2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++include_once('configurator/IConfigurator.php');
++ 
++class LoggerConfigurator extends Object implements IConfigurator {
++ 
++    public function getLoggerOutputters() {
++        return array(array('name' =&gt; 'stdout','level' =&gt; '0'));
++    }
++  
++    public function getLoggerFormatter() {
++        return 'SimpleFormatter';
++    }
++
++    public function getProperty($name) {     }
++
++    public function getDatabaseDsn($id = FALSE) {  }
++    
++}
++
+
+
+Property changes on: trunk/libs/configurator/LoggerConfigurator.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/libs/configurator/XMLConfigurator.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -49,7 +49,7 @@
+      * Constructor.
+      * @param string/file xml
+      */
+-    public function __construct($xml) {
++    public function XMLConfigurator($xml) {
+         if (file_exists($xml)) {
+             if (is_readable($xml)) {
+                 $this-&gt;sxe = simplexml_load_file($xml, 'SimpleXMLIterator');
+
+Modified: trunk/libs/logger/Logger.php
+===================================================================
+--- trunk/libs/logger/Logger.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/libs/logger/Logger.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -72,8 +72,7 @@
+      * Constructor.
+      * It reads the config file and setup the logging system
+      */
+-    public function __construct() {
+-        $configurator = Registry::get('__configurator');
++    public function Logger(IConfigurator $configurator) {
+         $outputters   = $configurator-&gt;getLoggerOutputters();
+         if (sizeof($outputters) != 0) {
+             $this-&gt;load($outputters);
+
+Modified: trunk/libs/logger/formatter/Formatter.php
+===================================================================
+--- trunk/libs/logger/formatter/Formatter.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/libs/logger/formatter/Formatter.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -54,7 +54,9 @@
+      */
+     protected function extractMessage($message) {
+         if(!is_string($message)) $message = print_r($message, TRUE);
+-        $message= str_replace($_SERVER['MEDICK_APPLICATION_PATH'], &quot;{&quot; . strtoupper($_SERVER['MEDICK_APPLICATION_NAME']) . &quot;}&quot;, $message);
++        if (array_key_exists('MEDICK_APPLICATION_PATH', $_SERVER)) {
++            $message= str_replace($_SERVER['MEDICK_APPLICATION_PATH'], &quot;{&quot; . strtoupper($_SERVER['MEDICK_APPLICATION_NAME']) . &quot;}&quot;, $message);
++        }
+         return $message;
+     }
+ }
+
+Modified: trunk/libs/medick/ConsoleOptions.php
+===================================================================
+--- trunk/libs/medick/ConsoleOptions.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/libs/medick/ConsoleOptions.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -66,6 +66,8 @@
+     /** @var array
+         a list of defined aliases */
+     private $aliases;
++
++    private $skipValues;
+     
+     /**
+      * Creates a new ConsoleOptions object
+@@ -75,11 +77,12 @@
+     public function ConsoleOptions($options= array()) {
+         $this-&gt;isLoaded = false;
+         $this-&gt;options  = array();
++        $this-&gt;skipValues= array();
++        $this-&gt;aliases = array();
+         if (!empty($options)) {
+             $this-&gt;load($options);
+         }
+         $this-&gt;index   = NULL;
+-        $this-&gt;aliases = array();
+     }
+     
+     /**
+@@ -106,13 +109,48 @@
+             throw new IllegalStateException('Options already loaded!');
+         }
+         $this-&gt;scriptName= array_shift($options);
+-        for($i=0; $i &lt; count($options); $i+=2) {
+-          $this-&gt;options[$options[$i]]= isset($options[$i+1]) ? $options[$i+1] : NULL;
++        $i=0;
++        while($i&lt;count($options)) {
++            if (in_array($options[$i], $this-&gt;skipValues)) {
++                $this-&gt;options[$options[$i]]= -1;
++                $i++;
++            } else {
++                $this-&gt;options[$options[$i]]= isset($options[$i+1]) ? $options[$i+1] : NULL;
++                $i=$i+2;
++            }
+         } 
+         $this-&gt;isLoaded= true;
+     }
+     
+     /**
++     * Adds an empty value for a list of options
++     *
++     * Options are taken with &lt;tt&gt;func_get_args()&lt;/tt&gt; and a second call to this method will
++     * overwrite the values previously added.
++     * Add aliases too!
++     *
++     * &lt;code&gt;
++     * // script called with php script.php --force --controller invoker
++     * $c= new ConsoleOptions();
++     * $c-&gt;setNoValueFor('debug','force','-f','--force','-d','--debug'); // before loading!
++     * $c-&gt;load($args);
++     * $c-&gt;alias('force', '-f, --force'); // after loading
++     * $c-&gt;alias('debug', '-d, --debug'); // after loading
++     * $c-&gt;has('force'); // returns true
++     * $c-&gt;get(); // returns -1
++     * $c-&gt;has('controller'); // returns true
++     * $c-&gt;get(); // return invoker
++     * &lt;/code&gt;
++     * @throws IllegalStateException if the options are loaded
++     */ 
++    public function setNoValueFor() {
++        if ($this-&gt;isLoaded) {
++            throw new IllegalStateException('Options already loaded, cannot add empty values!');
++        }
++        $this-&gt;skipValues= func_get_args();
++    }
++    
++    /**
+      * Check if it has option
+      *
+      * @param string option, the option to check for
+
+Added: trunk/test/README.tests
+===================================================================
+--- trunk/test/README.tests	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/README.tests	2006-02-19 18:07:57 UTC (rev 353)
+@@ -0,0 +1,18 @@
++$Id$
++
++$MEDICK_HOME is reffered to the folder that contains boot.php file.
++
++Running tests:
++
++1. make sure you have simpletest installed under $MEDICK_HOME/vendor/simpletest.
++To install:
++    1.1 change directory to $MEDICK_HOME:
++        $ cd $MEDICK_HOME
++    1.2 create folder ``vendor&quot; and change to that 
++        $ mkdir vendor &amp;&amp; cd vendor
++    1.3 checkout the simpletest tree from cvs (type ENTER for password):
++        $ cvs -d:pserver:<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">anonymous at cvs.sourceforge.net</A>:/cvsroot/simpletest login
++        $ cvs -z3 -d:pserver:<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">anonymous at cvs.sourceforge.net</A>:/cvsroot/simpletest co -d simpletest -P simpletest/
++2. run the tests (from $MEDICK_HOME/test)
++    $ php runner.php
++    
+
+
+Property changes on: trunk/test/README.tests
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/test/runner.php
+===================================================================
+--- trunk/test/runner.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/runner.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -1,4 +1,3 @@
+-#!/usr/bin/env php
+ &lt;?php
+ 
+ // $Id$
+@@ -23,24 +22,39 @@
+ include_once('medick/Registry.php');
+ include_once('medick/util.php');
+ include_once('medick/io/Folder.php');
++include_once('medick/ConsoleOptions.php');
+ 
+ // include_once('simpletest/web_tester.php');
++
+ include_once('simpletest/unit_tester.php');
+ include_once('simpletest/reporter.php');
+ 
++$options= new ConsoleOptions();
++$options-&gt;setNoValueFor('debug', '-d', '--debug');
++$options-&gt;load(isset($argv)?$argv:$_SERVER['argv']);
++$options-&gt;alias('debug', '-d, --debug');
+ 
+-$test= new GroupTest(&quot; &quot;);
+-echo &quot; === Medick Framework Unit Tests ===\n&quot;;
++include_once('configurator/LoggerConfigurator.php');
++include_once('logger/Logger.php');
+ 
++$logger= new Logger(new LoggerConfigurator());
++
++$test= new GroupTest(&quot;=== Medick Framework Unit Tests ===&quot;);
++
+ $test_files = Folder::recursiveFindRelative('.', 'test', 'Test.php');
+ foreach($test_files as $file) {
+-    echo &quot;&gt;&gt;&gt; Adding file: $file\n&quot;;
++    if ($options-&gt;has('debug')) {
++        $logger-&gt;debug('Adding test file: ' . $file);
++    }
+     $test-&gt;addTestFile($file);
+ }
+ 
+ $test-&gt;run(new TextReporter());
+ 
+-$time_end = microtime(true);
+-echo &quot;Done in &quot; . ($time_end - $time_start) . &quot; seconds\n&quot;;
++if ($options-&gt;has('debug')) {
++    $time_end = microtime(true);
++    $logger-&gt;debug('Done in ' . round($time_end - $time_start,4) . ' seconds');
++}
+ 
+ @unlink(TMP . 'test.db');
++
+
+Modified: trunk/test/test/action/controller/InjectorTest.php
+===================================================================
+--- trunk/test/test/action/controller/InjectorTest.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/test/action/controller/InjectorTest.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -11,8 +11,8 @@
+ 
+     /** set up */
+     public function setUp() {
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
++        Registry::put($configurator= new MockConfigurator(), '__configurator');
++        Registry::put(new Logger($configurator), '__logger');
+         Registry::put(new Injector(FALSE), '__injector');
+     }
+     
+
+Modified: trunk/test/test/active/record/DBOperationsTest.php
+===================================================================
+--- trunk/test/test/active/record/DBOperationsTest.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/test/active/record/DBOperationsTest.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -28,8 +28,8 @@
+ 
+     /** set up */
+     public function setUp() {
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
++        Registry::put($configurator= new MockConfigurator(), '__configurator');
++        Registry::put(new Logger($configurator), '__logger');
+         ActiveRecord::close_connection();
+     }
+     
+
+Modified: trunk/test/test/active/record/FindTest.php
+===================================================================
+--- trunk/test/test/active/record/FindTest.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/test/active/record/FindTest.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -30,8 +30,8 @@
+   
+      /** set up this test case, we insert 3 fileds in DB table */
+      public function setUp() {
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
++        Registry::put($configurator= new MockConfigurator(), '__configurator');
++        Registry::put(new Logger($configurator), '__logger');
+         ActiveRecord::close_connection();
+         $author= new Author();
+         $author-&gt;name= &quot;Andrei Cristescu&quot;;
+
+Modified: trunk/test/test/active/record/ValidatorTest.php
+===================================================================
+--- trunk/test/test/active/record/ValidatorTest.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/test/active/record/ValidatorTest.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -35,8 +35,8 @@
+     /** set up */
+     public function setUp() {
+         $this-&gt;createDatabase();
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
++        Registry::put($configurator= new MockConfigurator(), '__configurator');
++        Registry::put(new Logger($configurator), '__logger');
+         ActiveRecord::close_connection();
+     }
+     
+
+Modified: trunk/test/test/active/record/associations/HasOneTest.php
+===================================================================
+--- trunk/test/test/active/record/associations/HasOneTest.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/test/active/record/associations/HasOneTest.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -35,8 +35,8 @@
+ 
+     /** set up */
+     public function setUp() {
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
++        Registry::put($configurator= new MockConfigurator(), '__configurator');
++        Registry::put(new Logger($configurator), '__logger');
+         ActiveRecord::close_connection();
+         
+         $author= new Author();
+
+Added: trunk/test/test/medick/ConsoleOptionsTest.php
+===================================================================
+--- trunk/test/test/medick/ConsoleOptionsTest.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/test/medick/ConsoleOptionsTest.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -0,0 +1,58 @@
++&lt;?php
++
++// $Id$
++    
++include_once('medick/ConsoleOptions.php');
++
++class ConsoleOptionsTest extends UnitTestCase {
++
++    private $args;
++    
++    function setUp() {
++        $this-&gt;args=  array('__FOO__', '--controller', 'Invoker');
++    }
++    
++    function tearDown() {
++        $this-&gt;args= array();
++    }
++    
++    function testScriptName() {
++        $c= new ConsoleOptions($this-&gt;args);
++        $this-&gt;assertTrue($c-&gt;getScriptName()==$this-&gt;args[0]);
++    }
++
++    function testSimpleAlias() {
++        $c= new ConsoleOptions($this-&gt;args);
++        $c-&gt;alias('controller', '--controller, -c');
++        $this-&gt;assertTrue($c-&gt;has('-c'));
++        $this-&gt;assertEqual($c-&gt;get(), 'Invoker');
++    }
++
++    function testMultipleAliases() {
++        $this-&gt;args[]= '--methods';
++        $this-&gt;args[]= '&quot;index, add&quot;';
++        $c= new ConsoleOptions($this-&gt;args);
++        $c-&gt;alias('controller', '-c, --controller');
++        $c-&gt;alias('methods', '-m, --methods, method');
++        $this-&gt;assertTrue($c-&gt;has('-m'));
++        $this-&gt;assertEqual($c-&gt;get('-c'), 'Invoker');
++    }
++
++    function testNoValueSimple() {
++        $args= array('__FOO__', 'force');
++        $c= new ConsoleOptions();
++        $c-&gt;setNoValueFor('force');
++        $c-&gt;load($args);
++        $this-&gt;assertTrue($c-&gt;has('force'));
++    }
++
++    function testNoValueWithAliases() {
++        $args= array('__FOO__', '-f');
++        $c= new ConsoleOptions();
++        $c-&gt;setNoValueFor('force', '-f', '--force');
++        $c-&gt;load($args);
++        $c-&gt;alias('force', '-f, --force');
++        $this-&gt;assertTrue($c-&gt;has('--force'));
++    }
++
++}
+
+
+Property changes on: trunk/test/test/medick/ConsoleOptionsTest.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000143.html">[Medick-svn] r352 - branches trunk/docs/dev trunk/libs/action/view
+</A></li>
+	<LI>Next message: <A HREF="000145.html">[Medick-svn] r354 - applications/eltodo/public/javascript trunk/skel/public/javascript trunk/test
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#144">[ date ]</a>
+              <a href="thread.html#144">[ thread ]</a>
+              <a href="subject.html#144">[ subject ]</a>
+              <a href="author.html#144">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

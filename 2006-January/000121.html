@@ -1,0 +1,337 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r326 - trunk/libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r326%20-%20trunk/libs/active/record&In-Reply-To=%3C200601071640.k07GeLoF004358%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000120.html">
+   <LINK REL="Next"  HREF="000122.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r326 - trunk/libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r326%20-%20trunk/libs/active/record&In-Reply-To=%3C200601071640.k07GeLoF004358%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r326 - trunk/libs/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Jan  7 17:40:21 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000120.html">[Medick-svn] r325 - in trunk/libs: action/controller medick
+</A></li>
+        <LI>Next message: <A HREF="000122.html">[Medick-svn] r327 - applications/eltodo/app/models
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#121">[ date ]</a>
+              <a href="thread.html#121">[ thread ]</a>
+              <a href="subject.html#121">[ subject ]</a>
+              <a href="author.html#121">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-07 17:40:20 +0100 (Sat, 07 Jan 2006)
+New Revision: 326
+
+Modified:
+   trunk/libs/active/record/Association.php
+   trunk/libs/active/record/Base.php
+Log:
+ -- step 1 in ActiveRecord refactoring:
+^ ActiveRecordBase is now an abstract class.
+^ more methods declared as final.
+^ write static method ActiveRecordBase::initialize($table), will set the table and class_name. This method should be called from users ::find() methods.
+^ users find method should be declared like this:
+    public static function find() {
+        ActiveRecordBase::initialize(__CLASS__);
+        return ActiveRecordBase::__find(func_get_args());
+    }
+^ renamed ActiveRecordBase::close() to ::close_connection()
+^ take care of singular/plural in Associations pre/post execution steps.
+
+
+Modified: trunk/libs/active/record/Association.php
+===================================================================
+--- trunk/libs/active/record/Association.php	2006-01-07 14:29:42 UTC (rev 325)
++++ trunk/libs/active/record/Association.php	2006-01-07 16:40:20 UTC (rev 326)
+@@ -71,14 +71,22 @@
+ 
+     /** */
+     protected function pre_execution() {
+-        ActiveRecordBase::setTable(Inflector::pluralize($this-&gt;class));
++        return $this-&gt;reload($this-&gt;class);
+     }
+ 
+     /** */
+     protected function post_execution() {
+-        ActiveRecordBase::setTable(Inflector::pluralize($this-&gt;owner));
++        return $this-&gt;reload($this-&gt;owner);
+     }
+ 
++    private function reload($what) {
++        if ($this-&gt;getClassName() == 'HasAndBelongsToManyAssociation') {
++            return ActiveRecordBase::initialize(Inflector::singularize($what));
++        } else {
++            return ActiveRecordBase::initialize($what);
++        }
++    }
++
+     /**
+      * Resolves this Association
+      *
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-01-07 14:29:42 UTC (rev 325)
++++ trunk/libs/active/record/Base.php	2006-01-07 16:40:20 UTC (rev 326)
+@@ -44,8 +44,15 @@
+ /**
+  * @package locknet7.active.record
+  */
+-class ActiveRecordBase extends Object {
++abstract class ActiveRecordBase extends Object {
+ 
++    /* class name: Person */
++    static protected $class_name = NULL;
++    /* table mane: persons */
++    static protected $table_name = NULL;
++    /* database connection */
++    static protected $conn       = NULL;
++
+     /** @var FieldsAggregate
+         DB Table Fields */
+     protected $fields;
+@@ -61,31 +68,19 @@
+     protected $has_and_belongs_to_many= array();
+     // }}}
+ 
+-    // {{{ static members
+-
+-    /** @var Connection
+-        database connection*/
+-    protected static $conn;
+-
+-    /** @var string
+-        current table name */
+-    protected static $table_name;
+-
+-    // }}}
+-
+     /**
+      * Establish A Database Connection
+      */
+-    public static function establish_connection () {
++    public static final function establish_connection () {
+         if (self::$conn === NULL) {
+             self::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn());
+         }
+     }
+ 
+     /**
+-     * Force a closing of the database connection
++     * Close the Database Connection
+      */
+-    public static function close() {
++    public static final function close_connection() {
+         self::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn())-&gt;close();
+     }
+ 
+@@ -98,14 +93,12 @@
+      */
+     public final function __construct($params = array()) {
+         self::establish_connection();
++        self::$class_name = $this-&gt;getClassName();
++        self::$table_name = Inflector::pluralize(strtolower(Inflector::underscore(self::$class_name)));
+ 
++        $table_info   = self::$conn-&gt;getDatabaseInfo()-&gt;getTable(self::$table_name);
++        $this-&gt;pk     = $table_info-&gt;getPrimaryKey()-&gt;getName();
+         $this-&gt;fields = new FieldsAggregate();
+-
+-        self::$table_name = Inflector::pluralize(strtolower(Inflector::underscore($this-&gt;getClassName())));
+-
+-        $table_info = self::$conn-&gt;getDatabaseInfo()-&gt;getTable(self::$table_name);
+-        $this-&gt;pk   = $table_info-&gt;getPrimaryKey()-&gt;getName();
+-
+         foreach( $table_info-&gt;getColumns() as $col) {
+             $field = new Field( $col-&gt;getName() );
+             // $field-&gt;size = $col-&gt;getSize();
+@@ -125,10 +118,8 @@
+             $this-&gt;fields-&gt;add( $field );
+         }
+ 
+-        if ( !empty($params) ) {
+-            foreach ($params as $field_name =&gt; $field_value) {
+-                $this-&gt;$field_name = $field_value;
+-            }
++        foreach ($params as $field_name =&gt; $field_value) {
++            $this-&gt;$field_name = $field_value;
+         }
+     }
+ 
+@@ -141,7 +132,6 @@
+      * @throw ActiveRecordException if the field is not found.
+      */
+     public function __set($field_name, $field_value) {
+-        Registry::get('__logger')-&gt;debug('Setting the value of field: ' . $field_name .' to :' . $field_value);
+         for($it = $this-&gt;fields-&gt;getIterator(); $it-&gt;valid(); $it-&gt;next()) {
+             if ($it-&gt;current()-&gt;getName() == $field_name) {
+                 $it-&gt;current()-&gt;setValue($field_value);
+@@ -224,7 +214,7 @@
+ 
+     /** Prepare this Object for serialization */
+     public function __sleep() {
+-        self::close();
++        self::close_connection();
+         return array('fields', 'pk', 'has_one', 'belongs_to', 'has_many', 'has_and_belongs_to_many');
+     }
+ 
+@@ -318,7 +308,7 @@
+      *      $author-&gt;save(); // performs the update and returns the number of affected rows (1).
+      * &lt;/code&gt;
+      */
+-    public function save() {
++    public final function save() {
+         if ($this-&gt;fields-&gt;getPrimaryKey()-&gt;isAffected) {
+             return $this-&gt;update();
+         } else {
+@@ -342,7 +332,7 @@
+      * @return int next primary key id or, 1 (affected rows).
+      * @throws SQLException
+      */
+-    public function insert() {
++    public final function insert() {
+         $this-&gt;before_insert();
+         $af_rows = $this-&gt;performQuery($this-&gt;getInsertSql());
+         $id = $this-&gt;getNextId();
+@@ -367,7 +357,7 @@
+      * @return int affected rows.
+      * @throws SQLException
+      */
+-    public function update() {
++    public final function update() {
+         $this-&gt;before_update();
+         $af= $this-&gt;performQuery($this-&gt;getUpdateSql());
+         $this-&gt;after_update();
+@@ -391,7 +381,7 @@
+      * @return int affected rows.
+      * @throws SQLException
+      */
+-    public function delete() {
++    public final function delete() {
+         $this-&gt;before_delete();
+         $whereClause = array();
+         foreach ($this-&gt;fields-&gt;getAffectedFields() as $col) {
+@@ -487,6 +477,8 @@
+     }
+     // }}}
+ 
++    abstract static function find();
++
+     // {{{ find monster
+     /**
+      *
+@@ -494,21 +486,18 @@
+      * @throws RecordNotFoundException no record responded to this method
+      */
+     public static final function __find($params= array()) {
+-        $numargs = sizeof($params);
+-        if($numargs == 0) return self::__find(array('all'));
++        $numargs = count($params);
++        if($numargs == 0) return ActiveRecordBase::__find(array('all'));
+ 
+-        self::establish_connection();
++        ActiveRecordBase::establish_connection();
+ 
+-        $clazz= Inflector::singularize(ucfirst(self::$table_name));
+-
+         try {
+-            $class = new ReflectionClass($clazz);
++            // prepare the class instance.
++            $class = new ReflectionClass(self::$class_name);
+         } catch (ReflectionException $rEx) {
+-            Registry::get('__logger')-&gt;debug('`'.$clazz . '` probably not included. Trying to inject.
+-                                            [ User Info: ' . $rEx-&gt;getMessage() . ']');
+-            Registry::get('__injector')-&gt;inject('model', strtolower($clazz));
++            Registry::get('__injector')-&gt;inject('model', strtolower(self::$class_name));
+             // retry:
+-            $class = new ReflectionClass($clazz);
++            $class = new ReflectionClass(self::$class_name);
+         }
+         $query = new QuerryBuilder(self::$table_name);
+ 
+@@ -535,7 +524,7 @@
+                 return $class-&gt;newInstance($rs-&gt;getRow());
+             } elseif ($rs-&gt;getRecordCount() == 0) {
+                 throw new RecordNotFoundException(
+-                    'Couldn\'t find a `' . Inflector::singularize(ucfirst(self::$table_name)) . '` with ID=' . $params[0]);
++                    'Couldn\'t find a `' . self::$class_name . '` with ID=' . $params[0]);
+             }
+         } elseif(is_array($params[0])) {
+             $query-&gt;addArray($params[0]);
+@@ -550,28 +539,22 @@
+         $rs = $stmt-&gt;executeQuery();
+         if ($rs-&gt;getRecordCount() == 0) {
+             throw new RecordNotFoundException(
+-                'Couldn\'t find a ' . Inflector::singularize(ucfirst(self::$table_name),
+-                'The Result Set was empty!'));
++                'Couldn\'t find a ' . self::$class_name . ' The Result Set was empty!');
+         }
+-        // build a list with objects of this type
++        // build a list with objects of this type.
+         $results = new RowsAggregate();
+         while ($rs-&gt;next()) {
+             $results-&gt;add($class-&gt;newInstance($rs-&gt;getRow()));
+         }
+-        $rs-&gt;close();
+-        $stmt-&gt;close();
++        // release resources.
++        $rs-&gt;close(); $stmt-&gt;close();
+         Registry::get('__logger')-&gt;debug('Performed sql query: ' . self::$conn-&gt;lastQuery);
+         return $results;
+     }
+     // }}}
+ 
+-    /**
+-     * Sets the current table name.
+-     *
+-     * The name is pluralized and to lower case
+-     * @param string table name
+-     */
+-    public static function setTable($table) {
+-        self::$table_name = Inflector::pluralize(strtolower($table));
++    public static final function initialize($table) {
++        ActiveRecordBase::$table_name= strtolower(Inflector::pluralize($table));
++        ActiveRecordBase::$class_name= ucfirst($table);
+     }
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000120.html">[Medick-svn] r325 - in trunk/libs: action/controller medick
+</A></li>
+	<LI>Next message: <A HREF="000122.html">[Medick-svn] r327 - applications/eltodo/app/models
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#121">[ date ]</a>
+              <a href="thread.html#121">[ thread ]</a>
+              <a href="subject.html#121">[ subject ]</a>
+              <a href="author.html#121">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,419 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r335 - in trunk: bin libs/action/controller libs/action/controller/session libs/active/support
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r335%20-%20in%20trunk%3A%20bin%20libs/action/controller%20libs/action/controller/session%20libs/active/support&In-Reply-To=%3C200601151438.k0FEcAj8032452%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000128.html">
+   <LINK REL="Next"  HREF="000130.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r335 - in trunk: bin libs/action/controller libs/action/controller/session libs/active/support</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r335%20-%20in%20trunk%3A%20bin%20libs/action/controller%20libs/action/controller/session%20libs/active/support&In-Reply-To=%3C200601151438.k0FEcAj8032452%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r335 - in trunk: bin libs/action/controller libs/action/controller/session libs/active/support">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Jan 15 15:38:10 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000128.html">[Medick-svn] r334 - in trunk/libs: creole/drivers/mssql medick
+</A></li>
+        <LI>Next message: <A HREF="000130.html">[Medick-svn] r336 - in trunk/libs: action/view active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#129">[ date ]</a>
+              <a href="thread.html#129">[ thread ]</a>
+              <a href="subject.html#129">[ subject ]</a>
+              <a href="author.html#129">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-15 15:38:09 +0100 (Sun, 15 Jan 2006)
+New Revision: 335
+
+Modified:
+   trunk/bin/medick.php
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Routing.php
+   trunk/libs/action/controller/session/Session.php
+   trunk/libs/active/support/Inflector.php
+Log:
+ -- added scriptaculous/prototype to medick generator (a new function copy_files($from_folder, $to_folder))
+ -- added Inflector::sanitize($word) for clean up strings from unwanted characters ($#%'` *&amp; or HTML code)
+ -- added ActionControllerBase::flash($type, $message) method
+ -- ACBase (fix) typo it is RoutingException not RouteException
+ -- more work on Routing system.
+ -- clean-up ActionController:::Session class ( + API docs)
+
+
+Modified: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2006-01-14 11:39:11 UTC (rev 334)
++++ trunk/bin/medick.php	2006-01-15 14:38:09 UTC (rev 335)
+@@ -32,6 +32,35 @@
+     }
+ }
+ 
++function copy_files($from_folder, $to_folder) {
++
++    if (!is_dir($from_folder)) {
++        exit(&quot;Cannot copy from {$from_folder}, no such file or directory\n&quot;);
++    }
++    if (!is_dir($to_folder)) {
++        exit(&quot;Cannot copy to {$to_folder}, no such file or directory\n&quot;);
++    }
++
++    $d = dir($from_folder);
++    while (false !== ($entry = $d-&gt;read())) {
++        if($entry!='.' &amp;&amp; $entry!='..') {
++            if (is_dir($entry)) continue; // skip folders.
++            $from_file = $from_folder . DIRECTORY_SEPARATOR . $entry;
++            $to_file   = $to_folder . DIRECTORY_SEPARATOR . $entry;
++            if (is_file($to_file)) {
++                echo &quot;\texists {$to_file}\n&quot;;
++                continue;
++            }
++            if (!copy($from_file, $to_file)) {
++                echo &quot;cannot copy: {$from_file} to {$to_file}!\n&quot;;
++                continue;
++            } else {
++                echo &quot;\tcreate {$to_file}\n&quot;;
++            }
++        }
++    }
++}
++
+ $folders= array(
+     'app'         =&gt;'app',
+     'models'      =&gt;'app' . DIRECTORY_SEPARATOR . 'models',
+@@ -66,6 +95,10 @@
+     mk_dir($app_location . DIRECTORY_SEPARATOR . $folder);
+ }
+ 
++copy_files($medick_core. DIRECTORY_SEPARATOR .
++            'skel'.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'javascript'.DIRECTORY_SEPARATOR,
++            $app_location.DIRECTORY_SEPARATOR.$folders['js']);
++
+ $files= array(
+   'skel' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'index.php'
+                               =&gt; 'public' . DIRECTORY_SEPARATOR . 'index.php',
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-01-14 11:39:11 UTC (rev 334)
++++ trunk/libs/action/controller/Base.php	2006-01-15 14:38:09 UTC (rev 335)
+@@ -106,6 +106,8 @@
+         the injector. */
+     private $injector;
+ 
++    // private $__flash=array();
++
+     /**
+      * Process this Request
+      *
+@@ -196,6 +198,11 @@
+                 . '_' . $this-&gt;params['controller'] . ' ' . $fnfEx-&gt;getMessage());
+         }
+ 
++        if ($this-&gt;session-&gt;hasValue('flash')) {
++            $this-&gt;template-&gt;flash = $this-&gt;session-&gt;getValue('flash');
++        } else {
++            $this-&gt;template-&gt;flash = NULL;
++        }
+         if ($this-&gt;use_layout) {
+             $layout= $this-&gt;use_layout === TRUE ? $this-&gt;params['controller'] : $this-&gt;use_layout;
+             $layout_file= $this-&gt;injector-&gt;getPath('layouts') . $layout . '.phtml';
+@@ -247,17 +254,31 @@
+             $this-&gt;logger-&gt;info('Action already performed...');
+             return;
+         }
++        $status = $status === NULL ? Response::SC_OK : $status;
++        /*
+         if (is_null($status)) {
+             $status = Response::SC_OK;
+         }
++        */
+         $this-&gt;response-&gt;setStatus($status);
+         $this-&gt;response-&gt;setContent($text);
+         $this-&gt;action_performed = TRUE;
+         $this-&gt;logger-&gt;debug('Action performed.');
++
++        if ($this-&gt;session-&gt;hasValue('flash')) {
++            $this-&gt;session-&gt;removeValue('flash');
++        }
++
+     }
+ 
+     // }}}
+ 
++    protected final function flash($name, $value) {
++        // $this-&gt;__flash[$name] = $this-&gt;session-&gt;$name=$value;
++        $this-&gt;session-&gt;putValue('flash',array($name=&gt;$value));
++        $this-&gt;logger-&gt;debug($this-&gt;session-&gt;dump());
++    }
++
+     /**
+      * Act as an internal constructor.
+      * @param Request request, the request
+@@ -346,7 +367,7 @@
+             $action_name = 'index';
+             $action= $this-&gt;createMethod($action_name);
+             if (!$action || $action-&gt;isStatic()) {
+-                throw new RouteException(
++                throw new RoutingException(
+                     'Cannot invoke default action, \'index\' for this Route!',
+                     'Method named \'index\' is not defined in class: ' . $this-&gt;getClassName()
+                 );
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2006-01-14 11:39:11 UTC (rev 334)
++++ trunk/libs/action/controller/Routing.php	2006-01-15 14:38:09 UTC (rev 335)
+@@ -52,17 +52,22 @@
+     public static function recognize(Request $request) {
+         $r= new ActionControllerRouting($request);
+         try {
+-        $route = $r-&gt;findRoute($request);
+-        return   $route-&gt;createControllerInstance();
++            $route = $r-&gt;findRoute($request);
++            return   $route-&gt;createControllerInstance();
+         } catch (RoutingException $rEx) {
+             // exception thrown by findRoute if we dont match any of the registered route.
+             // load 404 route, if fails too try the default route, this are named routes.
+             // echo $rEx;
+-            return Map::getInstance()-&gt;getRouteByName('404')-&gt;createControllerInstance();
++            try {
++                return Map::getInstance()-&gt;getRouteByName('default')-&gt;createControllerInstance();
++            } catch (RoutingException $rEx2) {
++                return Map::getInstance()-&gt;getRouteByName('404')-&gt;createControllerInstance();
++            }
+         } catch (FileNotFoundException $fnfEx) {
+             // exception thrown by Injector::injectController
+             // when the requested controller is not at the expected location.
+             // echo $fnfEx;
++            return Map::getInstance()-&gt;getRouteByName('404')-&gt;createControllerInstance();
+         }
+     }
+ }
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2006-01-14 11:39:11 UTC (rev 334)
++++ trunk/libs/action/controller/session/Session.php	2006-01-15 14:38:09 UTC (rev 335)
+@@ -33,68 +33,138 @@
+ // }}}
+ 
+ /**
++ * A wrapper around PHP session handling
++ *
+  * @package locknet7.action.controller.session
+  */
+ class Session extends Object {
+ 
++    /** @var bool
++        started flag */
+     private $isStarted = FALSE;
+ 
++    /** @var ISessionContainer
++        the session container */
++    private $container;
++
+     /**
+-     * Constructor.
++     * Constructor, creates a new session object
++     *
++     * @throw IllegalStateException if the session is already started
+      */
+-    public function __construct() {
++    public function Session () {
+         if ($this-&gt;isStarted) {
+             throw new IllegalStateException('Session already Started!');
+         }
+     }
+ 
++    /**
++     * Starts a new Session
++     *
++     * Also, it setup our session preferences
++     * @return void
++     * @throw IllegalStateException if the session is already started
++     */
+     public function start() {
+         if ($this-&gt;isStarted) {
+             throw new IllegalStateException('Session already Started!');
+         }
+-        $this-&gt;isStarted= TRUE;
++        // TODO: more settings
+         // session_cache_limiter(&quot;nocache&quot;);
+         // session_write_close();
+         session_start();
+         session_regenerate_id(TRUE);
++        $this-&gt;isStarted= TRUE;
+     }
+ 
++    /**
++     * Sets a session variable
++     *
++     * @param string name, the name of the session variable
++     * @param mixed value, the value of the variable to set
++     * @return void
++     * @throw IllegalStateException if the session is not started
++     */
+     public function putValue($name, $value) {
+-        if (!$this-&gt;isStarted) {
+-            throw new IllegalStateException('Session is not Started!');
+-        }
+-        $_SESSION[$name]=$value;
++        $this-&gt;checkState();
++        $_SESSION[$name] = $value;
+     }
+ 
++    /**
++     * Gets a session variable value
++     *
++     * @param string name, the name of the session variable
++     * @return NULL if the variable is not set, or mixed, the variable value
++     * @throw IllegalStateException if the session is not started
++     */
+     public function getValue($name) {
+-        if (!$this-&gt;isStarted) {
+-            throw new IllegalStateException('Session is not Started!');
+-        }
+-        return isset($_SESSION[$name]) ? $_SESSION[$name] : NULL;
++        return $this-&gt;hasValue($name) ? $_SESSION[$name] : NULL;
+     }
+ 
++    /**
++     * Check if this session has a variable with the given name
++     *
++     * @param string name, the name of the session variable
++     * @return bool, TRUE if it has
++     * @throw IllegalStateException if the session is not started
++     */
+     public function hasValue($name) {
+-        if (!$this-&gt;isStarted) {
+-            throw new IllegalStateException('Session is not Started!');
+-        }
++        $this-&gt;checkState();
+         return isset($_SESSION[$name]);
+     }
+ 
++    /**
++     * Remove the session value with the given name
++     *
++     * @param string name, the name of the session variable
++     * @return void
++     */
+     public function removeValue($name) {
+-        $this-&gt;__set($name, null);
++        $this-&gt;checkState();
+         unset($_SESSION[$name]);
+     }
+ 
++    /**
++     * It gets the session id
++     *
++     * @return mixed, the session id
++     * @throw IllegalStateException if the session is not started
++     */
+     public function getId(){
++        $this-&gt;checkState();
+         return session_id();
+     }
+ 
++    /**
++     * It sets the session container
++     *
++     * @param ISessionContainer container to set
++     * @return void
++     */
+     public function setContainer(ISessionContainer $container) {
+         $this-&gt;container= $container;
+     }
+ 
++    /**
++     * It dumps the session contains
++     *
++     * @return array
++     */
+     public function dump() {
+         return $_SESSION;
+     }
+ 
++    /**
++     * It checks the session state
++     *
++     * This method is called internally to ensure that the session is started before using it.
++     * @return TRUE if the session is started
++     * @throw IllegalStateException if the session is not started
++     */
++    protected function checkState() {
++        if (!$this-&gt;isStarted) {
++            throw new IllegalStateException('Session is not Started!');
++        }
++        return TRUE;
++    }
+ }
+
+Modified: trunk/libs/active/support/Inflector.php
+===================================================================
+--- trunk/libs/active/support/Inflector.php	2006-01-14 11:39:11 UTC (rev 334)
++++ trunk/libs/active/support/Inflector.php	2006-01-15 14:38:09 UTC (rev 335)
+@@ -123,4 +123,24 @@
+         return strtolower(preg_replace('/([a-z])([A-Z])/','\1_\2', $word));
+     }
+     // }}}
++
++    public static function sanitize($word) {
++        $word = strip_tags($word);
++        $word = htmlentities( $word, ENT_NOQUOTES );
++        // Keep only one char in emtities!
++        $word = preg_replace( '/&amp;(.).+?;/', '$1', $word );
++        // Remove non acceptable chars
++        $word = preg_replace( '/[^A-Za-z0-9]+/', '_', $word );
++        $word = preg_replace( '/^_+/', '', $word );
++        $word = preg_replace( '/_+$/', '', $word );
++        // Uppercase the first character of each word in a string
++        $word = strtolower( $word );
++        preg_match( '/^(.*?)(_[0-9]+)?$/', $word, $matches );
++        $base = substr( $matches[1], 0, 40 );
++        $word = $base;
++        if( isset( $matches[2] ) ) {
++            $word = $base . $matches[2];
++        }
++        return $word;
++    }
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000128.html">[Medick-svn] r334 - in trunk/libs: creole/drivers/mssql medick
+</A></li>
+	<LI>Next message: <A HREF="000130.html">[Medick-svn] r336 - in trunk/libs: action/view active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#129">[ date ]</a>
+              <a href="thread.html#129">[ thread ]</a>
+              <a href="subject.html#129">[ subject ]</a>
+              <a href="author.html#129">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

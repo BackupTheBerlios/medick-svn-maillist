@@ -1,0 +1,452 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r384 - applications/testor/app/helpers applications/testor/app/views/layouts applications/testor/app/views/main applications/testor/app/views/strone applications/testor/app/views/tone applications/testor/public/stylesheet trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r384%20-%20applications/testor/app/helpers%20applications/testor/app/views/layouts%20applications/testor/app/views/main%20applications/testor/app/views/strone%20applications/testor/app/views/tone%20applications/testor/public/stylesheet%20trunk/libs/action/controller%20trunk/libs/action/controller/session%20trunk/libs/active/record&In-Reply-To=%3C200603232017.k2NKHpwT016694%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000167.html">
+   <LINK REL="Next"  HREF="000169.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r384 - applications/testor/app/helpers applications/testor/app/views/layouts applications/testor/app/views/main applications/testor/app/views/strone applications/testor/app/views/tone applications/testor/public/stylesheet trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r384%20-%20applications/testor/app/helpers%20applications/testor/app/views/layouts%20applications/testor/app/views/main%20applications/testor/app/views/strone%20applications/testor/app/views/tone%20applications/testor/public/stylesheet%20trunk/libs/action/controller%20trunk/libs/action/controller/session%20trunk/libs/active/record&In-Reply-To=%3C200603232017.k2NKHpwT016694%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r384 - applications/testor/app/helpers applications/testor/app/views/layouts applications/testor/app/views/main applications/testor/app/views/strone applications/testor/app/views/tone applications/testor/public/stylesheet trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Thu Mar 23 21:17:51 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000167.html">[Medick-svn] r382 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/app/views/project trunk/libs/action/controller trunk/libs/action/view trunk/libs/active/record
+</A></li>
+        <LI>Next message: <A HREF="000169.html">[Medick-svn] r385 - trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#168">[ date ]</a>
+              <a href="thread.html#168">[ thread ]</a>
+              <a href="subject.html#168">[ subject ]</a>
+              <a href="author.html#168">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-03-23 21:17:46 +0100 (Thu, 23 Mar 2006)
+New Revision: 384
+
+Modified:
+   applications/testor/app/helpers/main_helper.php
+   applications/testor/app/views/layouts/main.phtml
+   applications/testor/app/views/main/index.phtml
+   applications/testor/app/views/strone/index.phtml
+   applications/testor/app/views/tone/_form.phtml
+   applications/testor/app/views/tone/add.phtml
+   applications/testor/app/views/tone/edit.phtml
+   applications/testor/app/views/tone/index.phtml
+   applications/testor/public/stylesheet/testor.css
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/session/Session.php
+   trunk/libs/active/record/Base.php
+Log:
+ -- (fixed) ActiveRecord magick php methods __wakeup and __sleep
+ -- session is started on demand, after the first call to put*, get* or has* methods
+ -- ID keywords on some testor files
+
+
+Modified: applications/testor/app/helpers/main_helper.php
+===================================================================
+--- applications/testor/app/helpers/main_helper.php	2006-03-23 20:07:06 UTC (rev 383)
++++ applications/testor/app/helpers/main_helper.php	2006-03-23 20:17:46 UTC (rev 384)
+@@ -1,5 +1,5 @@
+ &lt;?php
+-
++/* $Id$ */
+ function get_comment(Reflector $reflector) {
+     $comments= explode(&quot;\n&quot;, $reflector-&gt;getDocComment());
+     foreach ($comments as $line) {
+
+Modified: applications/testor/app/views/layouts/main.phtml
+===================================================================
+--- applications/testor/app/views/layouts/main.phtml	2006-03-23 20:07:06 UTC (rev 383)
++++ applications/testor/app/views/layouts/main.phtml	2006-03-23 20:17:46 UTC (rev 384)
+@@ -2,6 +2,7 @@
+     &quot;<A HREF="http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd</A>&quot;&gt;
+ &lt;html xmlns=&quot;<A HREF="http://www.w3.org/1999/xhtml">http://www.w3.org/1999/xhtml</A>&quot; lang=&quot;en&quot; xml:lang=&quot;en&quot;&gt;
+      &lt;head&gt;
++     	 &lt;!-- $Id$ --&gt; 
+          &lt;title&gt;main&lt;/title&gt;
+          &lt;base href=&quot;&lt;?=$__server;?&gt;&lt;?=$__base;?&gt;/&quot; /&gt;
+          &lt;link rel=&quot;stylesheet&quot; href=&quot;stylesheet/medick.css&quot; /&gt;
+
+Modified: applications/testor/app/views/main/index.phtml
+===================================================================
+--- applications/testor/app/views/main/index.phtml	2006-03-23 20:07:06 UTC (rev 383)
++++ applications/testor/app/views/main/index.phtml	2006-03-23 20:17:46 UTC (rev 384)
+@@ -1,4 +1,4 @@
+-
++&lt;!-- $Id$ --&gt; 
+ &lt;div&gt;&lt;h5&gt;Testor :: aplicatie ajutatoare pentru rezolvarea problemelor aparute in release 0.2.1 din medick&lt;/h5&gt;&lt;/div&gt;
+ 
+ &lt;hr /&gt;
+
+Modified: applications/testor/app/views/strone/index.phtml
+===================================================================
+--- applications/testor/app/views/strone/index.phtml	2006-03-23 20:07:06 UTC (rev 383)
++++ applications/testor/app/views/strone/index.phtml	2006-03-23 20:17:46 UTC (rev 384)
+@@ -1,3 +1,4 @@
++&lt;!-- $Id$ --&gt; 
+ &lt;h5&gt;ActiveRecord + Session&lt;/h5&gt;
+ 
+ &lt;? if(isset($flash['notice'])):?&gt;
+
+Modified: applications/testor/app/views/tone/_form.phtml
+===================================================================
+--- applications/testor/app/views/tone/_form.phtml	2006-03-23 20:07:06 UTC (rev 383)
++++ applications/testor/app/views/tone/_form.phtml	2006-03-23 20:17:46 UTC (rev 384)
+@@ -1,4 +1,4 @@
+-    
++&lt;!-- $Id$ --&gt;    
+ &lt;div&gt;
+       &lt;label for=&quot;tone_name&quot;&gt;Name:&lt;/label&gt;
+       &lt;?=ActiveRecordHelper::error_message_on($tone, 'name');?&gt;
+
+Modified: applications/testor/app/views/tone/add.phtml
+===================================================================
+--- applications/testor/app/views/tone/add.phtml	2006-03-23 20:07:06 UTC (rev 383)
++++ applications/testor/app/views/tone/add.phtml	2006-03-23 20:17:46 UTC (rev 384)
+@@ -1,4 +1,4 @@
+-&lt;!-- &lt;h3&gt;ToneController#add&lt;/h3&gt; --&gt;
++&lt;!-- $Id$ --&gt; 
+ 
+ &lt;form action=&quot;&lt;?=URL::create('tone','create');?&gt;&quot; method=&quot;post&quot;&gt;
+   &lt;fieldset&gt;
+
+Modified: applications/testor/app/views/tone/edit.phtml
+===================================================================
+--- applications/testor/app/views/tone/edit.phtml	2006-03-23 20:07:06 UTC (rev 383)
++++ applications/testor/app/views/tone/edit.phtml	2006-03-23 20:17:46 UTC (rev 384)
+@@ -1,4 +1,4 @@
+-&lt;!-- &lt;h3&gt;ToneController#edit&lt;/h3&gt; --&gt;
++&lt;!-- $Id$ --&gt; 
+ 
+ &lt;form action=&quot;&lt;?=URL::create('tone','update');?&gt;&quot; method=&quot;post&quot;&gt;
+ &lt;input type=&quot;hidden&quot; name=&quot;id&quot; value=&quot;&lt;?=$tone-&gt;id;?&gt;&quot; /&gt;
+
+Modified: applications/testor/app/views/tone/index.phtml
+===================================================================
+--- applications/testor/app/views/tone/index.phtml	2006-03-23 20:07:06 UTC (rev 383)
++++ applications/testor/app/views/tone/index.phtml	2006-03-23 20:17:46 UTC (rev 384)
+@@ -1,4 +1,4 @@
+-
++&lt;!-- $Id$ --&gt; 
+ &lt;h5&gt;Lista Tone&lt;/h5&gt;
+ 
+ &lt;hr /&gt;
+
+Modified: applications/testor/public/stylesheet/testor.css
+===================================================================
+--- applications/testor/public/stylesheet/testor.css	2006-03-23 20:07:06 UTC (rev 383)
++++ applications/testor/public/stylesheet/testor.css	2006-03-23 20:17:46 UTC (rev 384)
+@@ -1,3 +1,4 @@
++/* $Id$ */
+ .flash_error, .flash_notice {
+   border: solid black 1px;
+   margin: 1em 3em;
+@@ -67,16 +68,6 @@
+   background-color: transparent;
+ }
+ 
+-.btn { 
+-  border: 1px solid #990000; 
+-  color: #990000; 
+-  font: bold 11px; 
+-}
+-a.btn {
+-  color: #990000;
+-  text-decoration: none;
+-}
+-
+ fieldset {
+     border: 1px solid #26a;
+     margin: 1em 0em 1em 0em;
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-03-23 20:07:06 UTC (rev 383)
++++ trunk/libs/action/controller/Base.php	2006-03-23 20:17:46 UTC (rev 384)
+@@ -315,7 +315,7 @@
+         $this-&gt;request  = $request;
+         $this-&gt;response = $response;
+         $this-&gt;session  = $request-&gt;getSession();
+-        $this-&gt;session-&gt;start();
++        // $this-&gt;session-&gt;start();
+         $this-&gt;params   = $request-&gt;getParameters();
+ 
+         $this-&gt;logger   = Registry::get('__logger');
+@@ -425,6 +425,7 @@
+             }
+         }
+         $this-&gt;params['action'] = strtolower($action_name);
++        $this-&gt;template-&gt;assign('__action', $this-&gt;params['action']);
+         // $this-&gt;logger-&gt;debug('Action:: ' . strtolower($action_name));
+         // quickly load the common magick method.
+         if ($_common= $this-&gt;createMethod('__common')) {
+@@ -516,4 +517,3 @@
+         }
+     }
+ }
+-
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2006-03-23 20:07:06 UTC (rev 383)
++++ trunk/libs/action/controller/session/Session.php	2006-03-23 20:17:46 UTC (rev 384)
+@@ -85,7 +85,6 @@
+      * @param string name, the name of the session variable
+      * @param mixed value, the value of the variable to set
+      * @return void
+-     * @throws IllegalStateException if the session is not started
+      */
+     public function putValue($name, $value) {
+         $this-&gt;checkState();
+@@ -97,7 +96,6 @@
+      *
+      * @param string name, the name of the session variable
+      * @return NULL if the variable is not set, or mixed, the variable value
+-     * @throws IllegalStateException if the session is not started
+      */
+     public function getValue($name) {
+         return $this-&gt;hasValue($name) ? $_SESSION[$name] : NULL;
+@@ -108,7 +106,6 @@
+      *
+      * @param string name, the name of the session variable
+      * @return bool, TRUE if it has
+-     * @throws IllegalStateException if the session is not started
+      */
+     public function hasValue($name) {
+         $this-&gt;checkState();
+@@ -130,7 +127,6 @@
+      * It gets the session id
+      *
+      * @return mixed, the session id
+-     * @throws IllegalStateException if the session is not started
+      */
+     public function getId(){
+         $this-&gt;checkState();
+@@ -161,13 +157,11 @@
+      *
+      * This method is called internally to ensure that the session is started before using it.
+      * @return TRUE if the session is started
+-     * @throws IllegalStateException if the session is not started
+      */
+     protected function checkState() {
+         if (!$this-&gt;isStarted) {
+-            throw new IllegalStateException('Session is not Started!');
++            $this-&gt;start();
+         }
+         return TRUE;
+     }
+ }
+-
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-03-23 20:07:06 UTC (rev 383)
++++ trunk/libs/active/record/Base.php	2006-03-23 20:17:46 UTC (rev 384)
+@@ -42,6 +42,7 @@
+ include_once('active/support/Inflector.php');
+ // 3-rd party.
+ include_once('creole/Creole.php');
++include_once('creole/CreoleTypes.php');
+ 
+ /**
+  * Main ActiveRecord Class
+@@ -108,8 +109,8 @@
+         $this-&gt;class_name = $this-&gt;getClassName();
+         $this-&gt;table_name = Inflector::pluralize(strtolower(Inflector::underscore($this-&gt;class_name)));
+ 
+-        $table_info   = ActiveRecord::$conn-&gt;getDatabaseInfo()-&gt;getTable($this-&gt;table_name);
+-        $this-&gt;pk     = $table_info-&gt;getPrimaryKey()-&gt;getName();
++        $table_info = ActiveRecord::$conn-&gt;getDatabaseInfo()-&gt;getTable($this-&gt;table_name);
++        $this-&gt;pk   = $table_info-&gt;getPrimaryKey()-&gt;getName();
+ 
+         $this-&gt;row = new DatabaseRow($this-&gt;table_name);
+         foreach( $table_info-&gt;getColumns() as $col) {
+@@ -131,11 +132,10 @@
+             }
+             $this-&gt;row[] = $field;
+         }
+-        // $logger= Registry::get('__logger');
+-        foreach ($params as $field_name =&gt; $field_value) {
+-            // $logger-&gt;debug('['.__LINE__ . '] Name: ' . $field_name . ' Value: ' . $field_value);
++        // confused?
++        if(!empty($params)) { foreach ($params as $field_name =&gt; $field_value) {
+             $this-&gt;$field_name = $field_value;
+-        }
++        }}
+     }
+ 
+     // {{{ __magic functions
+@@ -201,6 +201,7 @@
+      * @param array arguments
+      * @throws ActiveRecordException
+      */
++     
+     public function __call($method, $arguments) {
+         if ($method == 'destroy') return $this-&gt;delete();
+         $know_methods = array('save', 'insert', 'update', 'delete');
+@@ -214,11 +215,11 @@
+             $this-&gt;$method($arguments[0]);
+         }
+     }
+-
++    
+     /** returns a string representation of this object */
+-    public function __toString() {
++    public function toString() {
+         $string = '';
+-        foreach ($this-&gt;fields-&gt;getAffectedFields() as $field) {
++        foreach ($this-&gt;row-&gt;getAffectedFields() as $field) {
+             $string .= &quot;[ &quot; . $field-&gt;type . &quot; ] &quot; . $field-&gt;getName() . &quot; : &quot; . $field-&gt;getValue() . &quot;\n&quot;;
+         }
+         return $string;
+@@ -227,15 +228,16 @@
+     /** Prepare this Object for serialization */
+     public function __sleep() {
+         ActiveRecord::close_connection();
+-        return array('row', 'pk', 'has_one', 'belongs_to', 'has_many', 'has_and_belongs_to_many');
++        return array('row', 'table_name', 'class_name','has_one', 'belongs_to', 'has_many', 'has_and_belongs_to_many');
+     }
+ 
+-    /** restore the Object state after unserialize */
++    /** restore the Object state after unserialize  */
+     public function __wakeup() {
+         ActiveRecord::establish_connection();
+-        for($it = $this-&gt;fields-&gt;getIterator(); $it-&gt;valid(); $it-&gt;next()) {
+-            $field_name= $it-&gt;current()-&gt;getName();
+-            $this-&gt;$field_name = $it-&gt;current()-&gt;getValue();
++        $it= $this-&gt;row-&gt;iterator();
++        while($it-&gt;hasNext()) {
++            $current= $it-&gt;next();
++            $this-&gt;__set($current-&gt;getName(), $current-&gt;getValue());
+         }
+     }
+ 
+@@ -246,11 +248,11 @@
+      *
+      * @return DatabaseRow
+      */
+-    public final function getRow() {
++    public function getRow() {
+         return $this-&gt;row;
+     }
+ 
+-    public final function validates () {
++    protected function validates () {
+         return new Validator($this-&gt;row);
+     }
+ 
+@@ -353,11 +355,7 @@
+             $logger-&gt;info('Object has Errors!');
+             return false;
+         }
+-/*
+-        if ( !$this-&gt;before_save() || count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+-            return FALSE;
+-        }
+-*/
++
+         if ($this-&gt;row-&gt;getPrimaryKey()-&gt;isAffected) {
+             return $this-&gt;update();
+         } else {
+@@ -391,11 +389,7 @@
+             $logger-&gt;info('Object has Errors!');
+             return false;
+         }
+-/*
+-        if (!$this-&gt;before_insert() || count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+-            return false;
+-        }
+-*/
++
+         $af_rows = $this-&gt;performQuery($this-&gt;getInsertSql());
+         $id = $this-&gt;getNextId();
+         $this-&gt;after_insert();
+@@ -461,16 +455,18 @@
+      */
+     public final function delete() {
+         if (!$this-&gt;before_delete() || count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+-            return FALSE;
++            return false;
+         }
+-        $whereClause = array();
+-        foreach ($this-&gt;row-&gt;getAffectedFields() as $col) {
+-            $whereClause[] = $col-&gt;getName() . ' = ? ';
++        
++        if ($this-&gt;row-&gt;getPrimaryKey() !== NULL &amp;&amp; $this-&gt;row-&gt;getPrimaryKey()-&gt;getValue()===NULL) {
++            throw new ActiveRecordException('Refusing to delete everything from ' . $this-&gt;table_name . ', Primary Key was NULL');
+         }
+-        $sql = 'DELETE FROM ' . $this-&gt;table_name . ' WHERE ' . implode(' AND ', $whereClause);
+-        $af= $this-&gt;performQuery($sql);
++        $sql= 'delete from ' . $this-&gt;table_name . ' where id=?';
++        $stmt= ActiveRecord::$conn-&gt;prepareStatement($sql);
++        $stmt-&gt;setInt(1, $this-&gt;row-&gt;getPrimaryKey()-&gt;getValue());
++        $af_rows= $stmt-&gt;executeUpdate();
+         $this-&gt;after_delete();
+-        return $af;
++        return $af_rows;
+     }
+     // }}}
+ 
+@@ -487,7 +483,7 @@
+             $this-&gt;$_pk = $id;
+             return $id;
+         } else {
+-            return FALSE;
++            return false;
+         }
+     }
+ 
+@@ -582,7 +578,6 @@
+         if ($limit  = $builder-&gt;getLimit())  $stmt-&gt;setLimit($limit);
+         if ($offset = $builder-&gt;getOffset()) $stmt-&gt;setOffset($offset);
+         $rs = $stmt-&gt;executeQuery();
+-        Registry::get('__logger')-&gt;debug(ActiveRecord::$conn-&gt;lastQuery);
+         if ($builder-&gt;getType() == 'first') {
+             if ($rs-&gt;getRecordCount() == 1) {
+                 $rs-&gt;next();
+@@ -603,4 +598,3 @@
+         return $results;
+     }
+ }
+-
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000167.html">[Medick-svn] r382 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/app/views/project trunk/libs/action/controller trunk/libs/action/view trunk/libs/active/record
+</A></li>
+	<LI>Next message: <A HREF="000169.html">[Medick-svn] r385 - trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#168">[ date ]</a>
+              <a href="thread.html#168">[ thread ]</a>
+              <a href="subject.html#168">[ subject ]</a>
+              <a href="author.html#168">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

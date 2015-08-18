@@ -1,0 +1,136 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r305 - trunk/bin
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r305%20-%20trunk/bin&In-Reply-To=%3C200512231502.jBNF2e0V012973%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000100.html">
+   <LINK REL="Next"  HREF="000102.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r305 - trunk/bin</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r305%20-%20trunk/bin&In-Reply-To=%3C200512231502.jBNF2e0V012973%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r305 - trunk/bin">aurelian at berlios.de
+       </A><BR>
+    <I>Fri Dec 23 16:02:40 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000100.html">[Medick-svn] r304 - in trunk: config libs/action/controller libs/action/controller/http libs/logger libs/logger/formatter libs/logger/outputter public_html
+</A></li>
+        <LI>Next message: <A HREF="000102.html">[Medick-svn] r306 - applications/eltodo/public
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#101">[ date ]</a>
+              <a href="thread.html#101">[ thread ]</a>
+              <a href="subject.html#101">[ subject ]</a>
+              <a href="author.html#101">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-12-23 16:02:40 +0100 (Fri, 23 Dec 2005)
+New Revision: 305
+
+Modified:
+   trunk/bin/medick.php
+Log:
+ -- more files are generated
+
+Modified: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2005-12-20 19:41:09 UTC (rev 304)
++++ trunk/bin/medick.php	2005-12-23 15:02:40 UTC (rev 305)
+@@ -64,7 +64,6 @@
+   'public_html' . DIRECTORY_SEPARATOR . 'default.htaccess'  =&gt; 'public' . DIRECTORY_SEPARATOR . '.htaccess',
+   'config' . DIRECTORY_SEPARATOR . 'application.xml'        =&gt; 'conf'   . DIRECTORY_SEPARATOR . $app_name.'.xml',
+   'config' . DIRECTORY_SEPARATOR . 'application.routes.php' =&gt; 'conf'   . DIRECTORY_SEPARATOR . $app_name.'.routes.php'
+-  
+ );
+ 
+ $search= array(
+@@ -87,9 +86,50 @@
+     write_file($contents, $app_location.DIRECTORY_SEPARATOR.$folders[$to].DIRECTORY_SEPARATOR.$orig);
+ }
+ 
++// plain files.
+ write_file(' ',$app_location.DIRECTORY_SEPARATOR.$folders['log'].DIRECTORY_SEPARATOR.$app_name.'.log',0777);
+ 
+-write_file(&quot;&lt;html&gt;&lt;head&gt;&lt;title&gt;Welcome to Medick!&lt;/title&gt;&lt;/head&gt;&lt;body&gt;&lt;h3&gt;Welcome To Medick&lt;/h3&gt;&lt;p&gt;&lt;b&gt;Application:&lt;/b&gt; {$app_name}&lt;/p&gt;&lt;p&gt;&lt;b&gt;Location: &lt;/b&gt;{$app_location}&lt;/p&gt;&lt;/body&gt;&lt;/html&gt;&quot;, $app_location.DIRECTORY_SEPARATOR.$folders['public'].DIRECTORY_SEPARATOR.'index.html');
++$schema_sql=&lt;&lt;&lt;EOSQL
++-- \$Id $
++-- Database Schema for $app_name
+ 
+-            
++EOSQL;
+ 
++$index_html=&lt;&lt;&lt;EOHTML
++&lt;html&gt;
++  &lt;head&gt;
++    &lt;!-- \$Id$ --&gt;
++    &lt;title&gt;Welcome to Medick!&lt;/title&gt;
++  &lt;/head&gt;
++  &lt;body&gt;
++    &lt;h3&gt;Welcome To Medick&lt;/h3&gt;
++    &lt;p&gt;&lt;b&gt;Application:&lt;/b&gt; $app_name&lt;/p&gt;
++    &lt;p&gt;&lt;b&gt;Location: &lt;/b&gt;$app_location&lt;/p&gt;
++  &lt;/body&gt;
++&lt;/html&gt;
++
++EOHTML;
++
++
++$application_controller=&lt;&lt;&lt;EOCLASS
++&lt;?php
++
++  /**
++   * This class is part of $app_name project
++   *
++   * Methods added here will be available in all your controllers.
++   * \$Id$
++   * @package $app_name.controllers
++   */
++  class ApplicationController extends ActionControllerBase {
++
++  }
++    
++EOCLASS;
++
++write_file($index_html, $app_location.DIRECTORY_SEPARATOR.$folders['public'].DIRECTORY_SEPARATOR.'index.html');
++
++write_file($application_controller, $app_location.DIRECTORY_SEPARATOR.$folders['controllers'].DIRECTORY_SEPARATOR.'application.php');
++
++write_file($schema_sql,$app_location.DIRECTORY_SEPARATOR.$folders['db'].DIRECTORY_SEPARATOR.'schema.sql');
++
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000100.html">[Medick-svn] r304 - in trunk: config libs/action/controller libs/action/controller/http libs/logger libs/logger/formatter libs/logger/outputter public_html
+</A></li>
+	<LI>Next message: <A HREF="000102.html">[Medick-svn] r306 - applications/eltodo/public
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#101">[ date ]</a>
+              <a href="thread.html#101">[ thread ]</a>
+              <a href="subject.html#101">[ subject ]</a>
+              <a href="author.html#101">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

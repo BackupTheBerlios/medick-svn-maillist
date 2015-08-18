@@ -1,0 +1,685 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r378 - in trunk/libs: action/controller/http action/view active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r378%20-%20in%20trunk/libs%3A%20action/controller/http%20action/view%20active/record&In-Reply-To=%3C200603140614.k2E6EfDl022371%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000163.html">
+   <LINK REL="Next"  HREF="000165.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r378 - in trunk/libs: action/controller/http action/view active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r378%20-%20in%20trunk/libs%3A%20action/controller/http%20action/view%20active/record&In-Reply-To=%3C200603140614.k2E6EfDl022371%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r378 - in trunk/libs: action/controller/http action/view active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Tue Mar 14 07:14:41 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000163.html">[Medick-svn] r377 - branches/release_0.1/skel/public
+</A></li>
+        <LI>Next message: <A HREF="000165.html">[Medick-svn] r379 - applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/conf applications/eltodo/public trunk trunk/bin trunk/libs trunk/libs/action/controller trunk/libs/action/view trunk/libs/configurator trunk/libs/context trunk/libs/medick trunk/skel/config trunk/skel/public trunk/skel/scripts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#164">[ date ]</a>
+              <a href="thread.html#164">[ thread ]</a>
+              <a href="subject.html#164">[ subject ]</a>
+              <a href="author.html#164">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-03-14 07:14:25 +0100 (Tue, 14 Mar 2006)
+New Revision: 378
+
+Modified:
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/view/Base.php
+   trunk/libs/action/view/HTML.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/DatabaseRow.php
+Log:
+ -- removed COOKIES array from HTTPRequest merge
+ -- added ActiveRecord::attributes() method
+ -- removed HTML labels from FormHelper
+
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-03-12 08:07:17 UTC (rev 377)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-03-14 06:14:25 UTC (rev 378)
+@@ -59,9 +59,10 @@
+      * It builds the HTTPRequest object
+      *
+      * @todo a URI Helper should be written.
++     * @todo $_COOKIES are not merged anymore!!!
+      */
+     public function HTTPRequest() {
+-        foreach ($_REQUEST as $key=&gt;$value) {
++        foreach (array_merge($_GET,$_POST) as $key=&gt;$value) {
+             $this-&gt;setParameter($key, $value);
+         }
+ 
+@@ -77,7 +78,7 @@
+         elseif (array_key_exists('REQUEST_URI', $_SERVER)) {
+             $this-&gt;requestUri= substr($_SERVER['REQUEST_URI'],7);
+         }
+-        
++
+         $this-&gt;session = new Session();
+         $this-&gt;headers = HTTPRequest::getAllHeaders();
+     }
+@@ -85,11 +86,11 @@
+     public function getHeaders() {
+         return $this-&gt;headers;
+     }
+-    
++
+     public function getHeader($name) {
+         return $this-&gt;hasHeader($name) ? $this-&gt;headers[ucfirst($name)] : FALSE;
+     }
+-    
++
+     public function hasHeader($name) {
+         return isset($this-&gt;headers[ucfirst($name)]);
+     }
+@@ -104,7 +105,7 @@
+     public function setRequestUri($uri) {
+       $this-&gt;requestUri= $uri;
+     }
+-    
++
+     /**
+      * It gets a part of the path info associated with this request
+      * @param int, key, the part index
+@@ -132,7 +133,7 @@
+     // public function getRequestURI() {  }
+     public function getProtocol() {  }
+     // }}}
+-    
++
+     /**
+      * A wrapper around getallheaders apache function that gets a list
+      * of headers associated with this HTTPRequest.
+@@ -149,7 +150,7 @@
+                 if(ereg('HTTP_(.+)',$header,$hp)) {
+                     $headers[ucfirst(strtolower($hp[1]))] = $value;
+                 }
+-            }       
++            }
+         }
+         return $headers;
+     }
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2006-03-12 08:07:17 UTC (rev 377)
++++ trunk/libs/action/view/Base.php	2006-03-14 06:14:25 UTC (rev 378)
+@@ -35,7 +35,7 @@
+ include_once('action/view/HTML.php');
+ 
+ /**
+- * 
++ *
+  * @package medick.action.view
+  * @author Oancea Aurelian
+  */
+@@ -46,10 +46,10 @@
+ }
+ 
+ /**
+- * 
++ *
+  * @package medick.action.view
+  * @author Oancea Aurelian
+- */ 
++ */
+ class ActionView extends Object {
+ 
+     public static function factory($engine) {
+@@ -58,7 +58,7 @@
+ 
+     /**
+      * Strips slashes, method called recursive
+-     * 
++     *
+      * @todo Move this OUT of this class, or, in __set.
+      * @todo What if $value is Object?
+      * @param mixed value, the value on witch we strip slashes.
+@@ -86,16 +86,16 @@
+  * @author Oancea Aurelian
+  */
+ class PHPTemplateEngine extends Object implements ITemplateEngine {
+-    
++
+     /** @var array
+-        Container for templates variables */  
++        Container for templates variables */
+     private $vars= array();
+-    
++
+     /**
+      * It renders a template file
+      *
+      * @param string template file
+-     */ 
++     */
+     public function render_file($template_file) {
+         return $this-&gt;render($template_file);
+     }
+@@ -107,7 +107,7 @@
+      *
+      * @param string controller
+      * @param string patrial
+-     */ 
++     */
+     public function render_partial($controller, $partial) {
+         $path= Registry::get('__injector')-&gt;getPath('views');
+         if (NULL === $controller) {
+@@ -121,7 +121,7 @@
+ 
+     /**
+      * Render the file.
+-     * 
++     *
+      * @param string file, the file to render.
+      * @return string contents of the file
+      * @throws FileNotFoundException if we cannot find the specified file
+@@ -143,7 +143,7 @@
+ 
+     /**
+      * Wrapper for __set.
+-     * 
++     *
+      * A convenient way to make the migration from Smarty smoother
+      * @see PHPTemplateEngine::__set()
+      * @param string name
+@@ -155,9 +155,9 @@
+ 
+     /**
+      * Overload default __set behavior from PHP
+-     * 
++     *
+      * This way, I`m able to register the vars passed to the template.
+-     * 
++     *
+      * Advantages: cannot call from template the private vars of this class
+      * since $vars will act as a registry system
+      * @param string name the name of the variable
+@@ -169,7 +169,7 @@
+ 
+     /**
+      * Overload the default behavior of PHP get var.
+-     * 
++     *
+      * NOTE: Will rise an error if the variable is not set
+      * @param string name the name of variable
+      */
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-03-12 08:07:17 UTC (rev 377)
++++ trunk/libs/action/view/HTML.php	2006-03-14 06:14:25 UTC (rev 378)
+@@ -36,9 +36,9 @@
+  * @package medick.action.view
+  * @subpackage helpers
+  * @author Oancea Aurelian
+- */ 
++ */
+ class ActiveRecordHelper extends Object {
+-    
++
+     /**
+      * Finds and retuns a HTML formatted string with errors for an ActiveRecord object
+      *
+@@ -51,7 +51,7 @@
+      * @param array options the options where we can cusomize the look and feel of the error message.
+      *                      this includes: css_class and heading
+      * @return string a HTML formatted string
+-     */ 
++     */
+     public static function error_messages_for(ActiveRecord $object, $options=array()) {
+         $css_class= isset($options['css_class']) ? $options['css_class'] : 'formErrors';
+         $heading  = isset($options['heading']) &amp;&amp; (int)$options['heading'] &gt; 0 &amp;&amp; (int)$options['heading'] &lt; 6 ? $options['heading'] : 2;
+@@ -89,11 +89,11 @@
+ 
+ }
+ 
+-/** 
++/**
+  *
+  * @package medick.action.view
+  * @subpackage helpers
+- * @see <A HREF="http://api.rubyonrails.com/classes/ActionView/Helpers/FormHelper.html">http://api.rubyonrails.com/classes/ActionView/Helpers/FormHelper.html</A> 
++ * @see <A HREF="http://api.rubyonrails.com/classes/ActionView/Helpers/FormHelper.html">http://api.rubyonrails.com/classes/ActionView/Helpers/FormHelper.html</A>
+  * @author Oancea Aurelian
+  */
+ class FormHelper extends Object {
+@@ -102,11 +102,9 @@
+         if (!$field= $object-&gt;getRow()-&gt;getFieldByName($method)) {
+             return; // ex?
+         }
+-
+         $id   = strtolower(get_class($object)) . '_'.$method;
+         $name = strtolower(get_class($object)).'['.$method.']';
+-        $buff = &quot;&lt;div class=\&quot;formRow\&quot;&gt;\n&lt;label for=\&quot;&quot; . $id . &quot;\&quot;&gt;&quot; . $field-&gt;getFormattedName() . &quot;&lt;/label&gt;&lt;br /&gt;\n&quot;;
+-
++        $buff = '';
+         $errors= FALSE;
+         if($field-&gt;hasErrors()) {
+             $buff .= '&lt;div class=&quot;fieldWithErrors&quot;&gt;';
+@@ -123,7 +121,7 @@
+         if ($errors) {
+             $buff .= '&lt;/div&gt;';
+         }
+-        return $buff . &quot;&lt;/div&gt;&quot;;
++        return $buff;
+     }
+ 
+     public static function text_area(ActiveRecord $object, $method, $options=array()) {
+@@ -132,7 +130,7 @@
+         }
+         $id   = strtolower(get_class($object)) . '_'.$method;
+         $name = strtolower(get_class($object)).'['.$method.']';
+-        $buff = &quot;&lt;div class=\&quot;formRow\&quot;&gt;\n&lt;label for=\&quot;&quot; . $id . &quot;\&quot;&gt;&quot; . $field-&gt;getFormattedName() . &quot;&lt;/label&gt;&lt;br /&gt;\n&quot;;
++        $buff = '';
+         $errors= FALSE;
+         if($field-&gt;hasErrors()) {
+             $buff .= '&lt;div class=&quot;fieldWithErrors&quot;&gt;';
+@@ -148,56 +146,50 @@
+         if ($errors) {
+             $buff .= '&lt;/div&gt;';
+         }
+-        return $buff . &quot;&lt;/div&gt;&quot;;
++        return $buff;
+     }
+ 
+-    public static function check_box(
+-            Object $object,
+-            $method,
+-            $options = array(),
+-            $checked_value = &quot;1&quot;,
+-            $unchecked_value = &quot;0&quot;) {
+-                
++    public static function check_box(Object $object, $method, $options = array()) {
+         if (!$field= $object-&gt;getRow()-&gt;getFieldByName($method)) {
+             return; // ex?
+         }
+-        $id   = strtolower(get_class($object)) . '_'.$method;
+-        $name = strtolower(get_class($object)).'['.$method.']';
+-        $buff = &quot;&lt;div class=\&quot;formRow\&quot;&gt;\n&lt;label for=\&quot;&quot; . $id . &quot;\&quot;&gt;&quot; . $field-&gt;getFormattedName() . &quot;&lt;/label&gt;&lt;br /&gt;\n&quot;;
++        $id   = strtolower($object-&gt;getClassName()) . '_' .$method;
++        $name = strtolower($object-&gt;getClassName()) . '[' . $method . ']';
++        $buff = '';
+         $errors= FALSE;
+         if($field-&gt;hasErrors()) {
+             $buff .= '&lt;div class=&quot;fieldWithErrors&quot;&gt;';
+             $errors= TRUE;
+         }
+-                
+         $buff .= '&lt;input type=&quot;checkbox&quot; id=&quot;' . $id . '&quot; name=&quot;' . $name . '&quot; ';
+         foreach ($options as $key=&gt;$value) {
+-            $buff .= $key . '=&quot;'.$value.'&quot; ';
++            $buff .= $key . '=&quot;' . $value . '&quot; ';
+         }
+         if ((int)$object-&gt;$method &gt; 0) {
+-            $buff .= 'value=&quot;1&quot; checked=&quot;checked&quot; ';
++            $buff .= 'value=&quot;1&quot; checked=&quot;checked&quot;';
+         } else {
+             $buff .= 'value=&quot;0&quot;';
+         }
+-
+         $buff .= ' /&gt;';
+-        // $buff .= '&lt;input name=&quot;'.strtolower(get_class($object)).'['.$method.']&quot; type=&quot;hidden&quot; ';
++        if ($errors) {
++            $buff .= '&lt;/div&gt;';
++        }
++        $buff .= '&lt;input name=&quot;' . $name . '&quot; value=&quot;' . $object-&gt;$method . '&quot; type=&quot;hidden&quot; /&gt;';
+         return $buff;
+     }
+ }
+ 
+ /**
+- * 
++ *
+  * @package medick.action.view
+  * @subpackage helpers
+  * @author Oancea Aurelian
+- */ 
++ */
+ class URL extends Object {
+-  
++
+     public static function create($controller, $action='index', $params=array(), $ext='html') {
+         $config = Registry::get('__configurator');
+         $base   = $config-&gt;getProperty('document_root');
+-        
+         if (!$config-&gt;getProperty('rewrite')) {
+             $base .= '/index.php';
+         }
+@@ -210,7 +202,7 @@
+ }
+ 
+ /**
+- * 
++ *
+  * @package medick.action.view
+  * @subpackage helpers
+  * @deprecated use FormHelper since it provides more features
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-03-12 08:07:17 UTC (rev 377)
++++ trunk/libs/active/record/Base.php	2006-03-14 06:14:25 UTC (rev 378)
+@@ -45,20 +45,20 @@
+ 
+ /**
+  * Main ActiveRecord Class
+- * 
++ *
+  * @package medick.active.record
+  * @author Oancea Aurelian
+  */
+ abstract class ActiveRecord extends Object {
+ 
+-    /** @var string 
++    /** @var string
+         class name: Person */
+     protected $class_name = NULL;
+-    
++
+     /** @var string
+         table mane: persons */
+     protected $table_name = NULL;
+-    
++
+     /** @var CreoleConnection
+         database connection */
+     static protected $conn= NULL;
+@@ -84,17 +84,17 @@
+      * @return Creole database connection
+      */
+     public static function establish_connection () {
+-        if (self::$conn === NULL) {
+-            self::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn());
++        if (ActiveRecord::$conn === NULL) {
++            ActiveRecord::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn());
+         }
+-        return self::$conn;
++        return ActiveRecord::$conn;
+     }
+ 
+     /**
+      * Close the Database Connection
+      */
+     public static function close_connection() {
+-        self::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn())-&gt;close();
++        ActiveRecord::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn())-&gt;close();
+     }
+ 
+     /**
+@@ -104,7 +104,7 @@
+      * @final because there is no reason to overwrite in parent classes, PHP Engine will call this constructor by default.
+      */
+     public final function ActiveRecord($params = array()) {
+-        self::establish_connection();
++        ActiveRecord::establish_connection();
+         $this-&gt;class_name = $this-&gt;getClassName();
+         $this-&gt;table_name = Inflector::pluralize(strtolower(Inflector::underscore($this-&gt;class_name)));
+ 
+@@ -131,8 +131,9 @@
+             }
+             $this-&gt;row[] = $field;
+         }
+-
++        // $logger= Registry::get('__logger');
+         foreach ($params as $field_name =&gt; $field_value) {
++            // $logger-&gt;debug('['.__LINE__ . '] Name: ' . $field_name . ' Value: ' . $field_value);
+             $this-&gt;$field_name = $field_value;
+         }
+     }
+@@ -156,7 +157,7 @@
+ 
+     /**
+      * It gets the value of the field
+-     * 
++     *
+      * @see <A HREF="http://php.net/manual/en/language.oop5.overloading.php">http://php.net/manual/en/language.oop5.overloading.php</A>
+      * @param string, field_name, the field name
+      * @throws ActiveRecordException
+@@ -194,7 +195,7 @@
+      *
+      * Basically it checks before save, insert, update or delete calls that
+      * the current run has affected fields and throws an ActiveRecordException if not.
+-     * 
++     *
+      * @see <A HREF="http://php.net/manual/en/language.oop5.overloading.php">http://php.net/manual/en/language.oop5.overloading.php</A>
+      * @param string method name
+      * @param array arguments
+@@ -343,9 +344,20 @@
+      * &lt;/code&gt;
+      */
+     public final function save() {
++        $logger= Registry::get('__logger');
++        if ( !$this-&gt;before_save() ) {
++            $logger-&gt;info('Before Save Failed!');
++            return false;
++        }
++        if (count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
++            $logger-&gt;info('Object has Errors!');
++            return false;
++        }
++/*
+         if ( !$this-&gt;before_save() || count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+             return FALSE;
+         }
++*/
+         if ($this-&gt;row-&gt;getPrimaryKey()-&gt;isAffected) {
+             return $this-&gt;update();
+         } else {
+@@ -370,9 +382,20 @@
+      * @throws SQLException
+      */
+     public final function insert() {
++        $logger= Registry::get('__logger');
++        if ( !$this-&gt;before_insert() ) {
++            $logger-&gt;info('Before Save Failed!');
++            return false;
++        }
++        if (count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
++            $logger-&gt;info('Object has Errors!');
++            return false;
++        }
++/*
+         if (!$this-&gt;before_insert() || count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+-            return FALSE;
++            return false;
+         }
++*/
+         $af_rows = $this-&gt;performQuery($this-&gt;getInsertSql());
+         $id = $this-&gt;getNextId();
+         $this-&gt;after_insert();
+@@ -397,13 +420,27 @@
+      * @throws SQLException
+      */
+     public final function update() {
+-        if (!$this-&gt;before_update() || count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+-            return FALSE;
++        $logger= Registry::get('__logger');
++        if ( !$this-&gt;before_update() ) {
++            $logger-&gt;info('Before Update Failed!');
++            return false;
+         }
++        if (count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
++            $logger-&gt;info('Object has Errors!');
++            return false;
++        }
+         $af= $this-&gt;performQuery($this-&gt;getUpdateSql());
+         $this-&gt;after_update();
+         return $af;
+     }
++
++    public final function attributes(/*Array*/ $params=array()) {
++        foreach($params as $name=&gt;$value) {
++            $this-&gt;$name=$value;
++        }
++        return $this;
++    }
++
+     // }}}
+ 
+     // {{{ delete
+@@ -467,7 +504,7 @@
+         ActiveRecord::populateStmtValues($stmt, $this-&gt;row-&gt;getAffectedFields());
+         $af_rows = $stmt-&gt;executeUpdate();
+         $stmt-&gt;close();
+-        // Registry::get('__logger')-&gt;debug('Performing sql query: ' . ActiveRecord::$conn-&gt;lastQuery);
++        Registry::get('__logger')-&gt;debug('Query: ' . ActiveRecord::$conn-&gt;lastQuery);
+         // $this-&gt;_reset();
+         return $af_rows;
+     }
+
+Modified: trunk/libs/active/record/DatabaseRow.php
+===================================================================
+--- trunk/libs/active/record/DatabaseRow.php	2006-03-12 08:07:17 UTC (rev 377)
++++ trunk/libs/active/record/DatabaseRow.php	2006-03-14 06:14:25 UTC (rev 378)
+@@ -36,7 +36,7 @@
+ 
+ /**
+  * It represents a Row from the Database
+- * 
++ *
+  * @package medick.active.record
+  * @author Oancea Aurelian
+  */
+@@ -59,14 +59,14 @@
+     private $affected = FALSE;
+ 
+     /** @var string
+-        this database table name */ 
++        this database table name */
+     private $table;
+ 
+     /**
+      * Creates a new DatabaseRow
+      *
+      * @param string table, the table name where this row is from
+-     */ 
++     */
+     public function DatabaseRow($table) {
+         $this-&gt;table= $table;
+         parent::__construct();
+@@ -76,14 +76,14 @@
+      * It gets the table name
+      *
+      * @return string, the table name
+-     */ 
++     */
+     public function getTable() {
+         return $this-&gt;table;
+     }
+ 
+     /**
+      * Automatic trigger executed when a new Field is added on to this Collection
+-     * 
++     *
+      * @see Collection::onAdd
+      */
+     public function onAdd(Object $field) {
+@@ -97,7 +97,7 @@
+ 
+     /**
+      * Set the affected modifier
+-     * 
++     *
+      * @param bool affected
+      */
+     public function setAffected($affected) {
+@@ -106,7 +106,7 @@
+ 
+     /**
+      * It checks if it has affected fields by this run
+-     * 
++     *
+      * @return bool TRUE if it has, FALSE otherwise
+      */
+     public function hasAffected() {
+@@ -143,7 +143,7 @@
+      * Collects errors from the fields added on this row
+      *
+      * @return array an array of errors
+-     */ 
++     */
+     public function collectErrors() {
+         $errors= array();
+         $it = $this-&gt;iterator();
+@@ -155,24 +155,24 @@
+         }
+         return $errors;
+     }
+-    
++
+     /**
+      * Updates the Status of a Filed
+      *
+      * @param Field field
+      * @param mixed value the new field value
+-     */ 
++     */
+     public function updateStatus(Field $field, $value) {
+         $field-&gt;setValue($value);
+         $field-&gt;isAffected = TRUE;
+         $this-&gt;field_names[] = $field-&gt;getName();
+-        $this-&gt;affected_fields[] = $field;
++        $this-&gt;affected_fields[$field-&gt;getName()] = $field;
+         $this-&gt;affected = TRUE;
+     }
+ 
+     /**
+      * It gets an array with the names of the affected fields
+-     * 
++     *
+      * @return array
+      */
+     public function getAffectedFieldsNames() {
+@@ -181,7 +181,7 @@
+ 
+     /**
+      * Get an array of objects Field[] that are affected(changed) by this run
+-     * 
++     *
+      * @return Field[]
+      */
+     public function getAffectedFields() {
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000163.html">[Medick-svn] r377 - branches/release_0.1/skel/public
+</A></li>
+	<LI>Next message: <A HREF="000165.html">[Medick-svn] r379 - applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/conf applications/eltodo/public trunk trunk/bin trunk/libs trunk/libs/action/controller trunk/libs/action/view trunk/libs/configurator trunk/libs/context trunk/libs/medick trunk/skel/config trunk/skel/public trunk/skel/scripts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#164">[ date ]</a>
+              <a href="thread.html#164">[ thread ]</a>
+              <a href="subject.html#164">[ subject ]</a>
+              <a href="author.html#164">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

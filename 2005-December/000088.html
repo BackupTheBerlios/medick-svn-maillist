@@ -1,0 +1,100 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r292 - in trunk/libs/action: controller view
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r292%20-%20in%20trunk/libs/action%3A%20controller%20view&In-Reply-To=%3C200512111349.jBBDnnFj022517%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000087.html">
+   <LINK REL="Next"  HREF="000089.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r292 - in trunk/libs/action: controller view</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r292%20-%20in%20trunk/libs/action%3A%20controller%20view&In-Reply-To=%3C200512111349.jBBDnnFj022517%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r292 - in trunk/libs/action: controller view">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Dec 11 14:49:49 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000087.html">[Medick-svn] r291 - in trunk/libs/action: controller view
+</A></li>
+        <LI>Next message: <A HREF="000089.html">[Medick-svn] r293 - trunk/libs/logger/outputter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#88">[ date ]</a>
+              <a href="thread.html#88">[ thread ]</a>
+              <a href="subject.html#88">[ subject ]</a>
+              <a href="author.html#88">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-12-11 14:49:43 +0100 (Sun, 11 Dec 2005)
+New Revision: 292
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/view/Base.php
+Log:
+ -- fixed former references to Sonart class
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-12-11 13:36:23 UTC (rev 291)
++++ trunk/libs/action/controller/Base.php	2005-12-11 13:49:43 UTC (rev 292)
+@@ -122,7 +122,8 @@
+         if(ob_get_length()) {
+             ob_end_clean();
+         }
+-        $template = ActionViewBase::factory();
++        $template = new ActionViewBase();
++        // $template = new ActionView:::Base();
+         $template-&gt;error= $exception;
+         $text= $template-&gt;render_file(MEDICK_PATH . '/libs/action/controller/templates/error.phtml');
+         $status = Response::SC_INTERNAL_SERVER_ERROR;
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2005-12-11 13:36:23 UTC (rev 291)
++++ trunk/libs/action/view/Base.php	2005-12-11 13:49:43 UTC (rev 292)
+@@ -115,7 +115,7 @@
+      */
+     private static function stripslashes_deep($value) {
+         if (is_array($value)) {
+-            array_map(array('Sonart','stripslashes_deep'), $value);
++            array_map(array('ActionViewBase','stripslashes_deep'), $value);
+         } elseif (is_object($value)) {
+             
+         } else {
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000087.html">[Medick-svn] r291 - in trunk/libs/action: controller view
+</A></li>
+	<LI>Next message: <A HREF="000089.html">[Medick-svn] r293 - trunk/libs/logger/outputter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#88">[ date ]</a>
+              <a href="thread.html#88">[ thread ]</a>
+              <a href="subject.html#88">[ subject ]</a>
+              <a href="author.html#88">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

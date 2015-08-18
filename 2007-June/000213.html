@@ -1,0 +1,458 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r434 - applications/cookbook/conf	applications/eltodo/conf applications/testor/conf	trunk/libs/active/record trunk/libs/configurator trunk/skel/config
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r434%20-%20applications/cookbook/conf%0A%09applications/eltodo/conf%20applications/testor/conf%0A%09trunk/libs/active/record%20trunk/libs/configurator%20trunk/skel/config&In-Reply-To=%3C200706150851.l5F8plae014181%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000215.html">
+   <LINK REL="Next"  HREF="000214.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r434 - applications/cookbook/conf	applications/eltodo/conf applications/testor/conf	trunk/libs/active/record trunk/libs/configurator trunk/skel/config</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r434%20-%20applications/cookbook/conf%0A%09applications/eltodo/conf%20applications/testor/conf%0A%09trunk/libs/active/record%20trunk/libs/configurator%20trunk/skel/config&In-Reply-To=%3C200706150851.l5F8plae014181%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r434 - applications/cookbook/conf	applications/eltodo/conf applications/testor/conf	trunk/libs/active/record trunk/libs/configurator trunk/skel/config">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Fri Jun 15 10:51:47 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000215.html">[Medick-svn] r433 - trunk/skel/public/javascript
+</A></li>
+        <LI>Next message: <A HREF="000214.html">[Medick-svn] r435 - in trunk/libs: configurator creole/drivers/mysql
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#213">[ date ]</a>
+              <a href="thread.html#213">[ thread ]</a>
+              <a href="subject.html#213">[ subject ]</a>
+              <a href="author.html#213">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-06-15 10:51:46 +0200 (Fri, 15 Jun 2007)
+New Revision: 434
+
+Removed:
+   applications/cookbook/conf/database.ini
+   applications/eltodo/conf/database.ini
+   applications/testor/conf/database.ini
+   trunk/skel/config/database.ini
+Modified:
+   applications/cookbook/conf/cookbook.xml
+   applications/eltodo/conf/eltodo.xml
+   applications/testor/conf/testor.xml
+   trunk/libs/active/record/Base.php
+   trunk/libs/configurator/XMLConfigurator.php
+   trunk/skel/config/application.xml
+Log:
+ -- reverting to xml based config file...
+
+Modified: applications/cookbook/conf/cookbook.xml
+===================================================================
+--- applications/cookbook/conf/cookbook.xml	2007-06-15 07:57:36 UTC (rev 433)
++++ applications/cookbook/conf/cookbook.xml	2007-06-15 08:51:46 UTC (rev 434)
+@@ -47,6 +47,14 @@
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
+         &lt;!-- database(s) settings --&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;mysql&quot;
++                 hostspec = &quot;localhost&quot;
++                 database = &quot;cookbook&quot;
++                 username = &quot;root&quot;
++                 password = &quot;&quot; /&gt;
++        &lt;/database&gt;        
+     &lt;/environment&gt;
+ 
+     &lt;!-- a sample test environment --&gt;
+@@ -57,7 +65,7 @@
+         &lt;/properties&gt;
+         &lt;!-- web context --&gt;
+         &lt;web&gt;
+-            &lt;server_name&gt;<A HREF="http://exemplu.com&lt;/server_name">http://exemplu.com&lt;/server_name</A>&gt;
++            &lt;server_name&gt;<A HREF="http://exemple.com&lt;/server_name">http://exemple.com&lt;/server_name</A>&gt;
+             &lt;document_root&gt;/cookbook&lt;/document_root&gt;
+             &lt;rewrite&gt;on&lt;/rewrite&gt;
+         &lt;/web&gt;
+@@ -75,6 +83,14 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;mysql&quot;
++                 hostspec = &quot;localhost&quot;
++                 database = &quot;cookbook&quot;
++                 username = &quot;root&quot;
++                 password = &quot;&quot; /&gt;
++        &lt;/database&gt;        
+     &lt;/environment&gt;
+   
+ &lt;/application&gt;
+
+Deleted: applications/cookbook/conf/database.ini
+===================================================================
+--- applications/cookbook/conf/database.ini	2007-06-15 07:57:36 UTC (rev 433)
++++ applications/cookbook/conf/database.ini	2007-06-15 08:51:46 UTC (rev 434)
+@@ -1,34 +0,0 @@
+-;
+-; $Id$
+-;
+-
+-; 
+-; database.ini format:
+-; [section] -&gt; environment name
+-; phptype -&gt; database connection driver 
+-; database -&gt; database name
+-; username -&gt; username
+-; password -&gt; password
+-; Connection flags:
+-; persistent=PERSISTENT to mark the connection as beeing persistent
+-;
+-
+-[localhost]
+-phptype=mysql
+-hostspec=localhost
+-database=cookbook
+-username=root
+-password=virus
+-persistent=PERSISTENT
+-
+-[live]
+-phptype=mysql
+-hostspec=localhost
+-database=cookbook
+-username=cookbook
+-password=sarl7jKa
+-
+-[test]
+-phptype=sqlite
+-database=db/cookbook.sqilte.db
+-
+
+Deleted: applications/eltodo/conf/database.ini
+===================================================================
+--- applications/eltodo/conf/database.ini	2007-06-15 07:57:36 UTC (rev 433)
++++ applications/eltodo/conf/database.ini	2007-06-15 08:51:46 UTC (rev 434)
+@@ -1,34 +0,0 @@
+-;
+-; $Id$
+-;
+-
+-; 
+-; database.ini format:
+-; [section] -&gt; environment name
+-; phptype -&gt; database connection driver 
+-; database -&gt; database name
+-; username -&gt; username
+-; password -&gt; password
+-; Connection flags:
+-; persistent=PERSISTENT to mark the connection as beeing persistent
+-;
+-
+-[localhost]
+-phptype=mysql
+-hostspec=localhost
+-database=eltodo
+-username=root
+-password=virus
+-
+-[live]
+-phptype=mysql
+-hostspec=localhost
+-database=eltodo
+-username=root
+-password=sol89aNi
+-
+-[test]
+-phptype=sqlite
+-hostspec=localhost
+-database=db/eltodo.sqilte.db
+-
+
+Modified: applications/eltodo/conf/eltodo.xml
+===================================================================
+--- applications/eltodo/conf/eltodo.xml	2007-06-15 07:57:36 UTC (rev 433)
++++ applications/eltodo/conf/eltodo.xml	2007-06-15 08:51:46 UTC (rev 434)
+@@ -29,6 +29,14 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;mysql&quot;
++                 hostspec = &quot;localhost&quot;
++                 database = &quot;eltodo&quot;
++                 username = &quot;root&quot;
++                 password = &quot;&quot; /&gt;
++        &lt;/database&gt;        
+     &lt;/environment&gt;
+ 
+     &lt;!-- a sample test environment --&gt;
+@@ -57,6 +65,14 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;mysql&quot;
++                 hostspec = &quot;localhost&quot;
++                 database = &quot;eltodo&quot;
++                 username = &quot;root&quot;
++                 password = &quot;&quot; /&gt;
++        &lt;/database&gt;        
+     &lt;/environment&gt;
+   
+ &lt;/application&gt;
+
+Deleted: applications/testor/conf/database.ini
+===================================================================
+--- applications/testor/conf/database.ini	2007-06-15 07:57:36 UTC (rev 433)
++++ applications/testor/conf/database.ini	2007-06-15 08:51:46 UTC (rev 434)
+@@ -1,34 +0,0 @@
+-;
+-; $Id$
+-;
+-
+-; 
+-; database.ini format:
+-; [section] -&gt; environment name
+-; phptype -&gt; database connection driver 
+-; database -&gt; database name
+-; username -&gt; username
+-; password -&gt; password
+-; Connection flags:
+-; persistent=PERSISTENT to mark the connection as beeing persistent
+-;
+-
+-[gremlin]
+-phptype=mysql
+-hostspec=localhost
+-database=testor
+-username=root
+-password=virus
+-
+-[testor]
+-phptype=mysql
+-hostspec=localhost
+-database=testor
+-username=root
+-password=sol89aNi
+-
+-[test]
+-phptype=sqlite
+-hostspec=localhost
+-database=db/testor.sqilte.db
+-
+
+Modified: applications/testor/conf/testor.xml
+===================================================================
+--- applications/testor/conf/testor.xml	2007-06-15 07:57:36 UTC (rev 433)
++++ applications/testor/conf/testor.xml	2007-06-15 08:51:46 UTC (rev 434)
+@@ -32,6 +32,14 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;mysql&quot;
++                 hostspec = &quot;localhost&quot;
++                 database = &quot;testor&quot;
++                 username = &quot;root&quot;
++                 password = &quot;&quot; /&gt;
++        &lt;/database&gt;        
+     &lt;/environment&gt;
+ 
+     &lt;!-- a sample test environment --&gt;
+@@ -60,6 +68,14 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;mysql&quot;
++                 hostspec = &quot;localhost&quot;
++                 database = &quot;testor&quot;
++                 username = &quot;root&quot;
++                 password = &quot;&quot; /&gt;
++        &lt;/database&gt;        
+     &lt;/environment&gt;
+   
+ &lt;/application&gt;
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2007-06-15 07:57:36 UTC (rev 433)
++++ trunk/libs/active/record/Base.php	2007-06-15 08:51:46 UTC (rev 434)
+@@ -715,12 +715,15 @@
+      * @return array
+      */ 
+     private static function parse_dsn() {
++        return Registry::get('__configurator')-&gt;getDatabaseDsn();
++        /*
+         $ini_file= Registry::get('__configurator')-&gt;getApplicationPath() . DIRECTORY_SEPARATOR . 'conf' . DIRECTORY_SEPARATOR . 'database.ini';
+         if (!is_file($ini_file)) {
+             throw new ActiveRecordException('Cannot load database settings from: ' . $ini_file . ' No such file or directory!');
+         }
+         $settings= parse_ini_file($ini_file, true);
+         return $settings[Registry::get('__configurator')-&gt;getEnvName()];
++        */
+     }
+     // }}}
+ }
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2007-06-15 07:57:36 UTC (rev 433)
++++ trunk/libs/configurator/XMLConfigurator.php	2007-06-15 08:51:46 UTC (rev 434)
+@@ -37,8 +37,6 @@
+ /**
+  * XML file-based Configurator
+  * 
+- * From medick 0.3.0 this class will be removed due to the new way of configurating a medick application!
+- *
+  * @package medick.configurator
+  * @author Aurelian Oancea
+  */
+@@ -102,6 +100,42 @@
+     }
+     
+     /**
++     * Configuration Example:
++     * &lt;code&gt;
++     *   &lt;database default=&quot;foo&quot;&gt;
++     *     &lt;dsn id=&quot;one&quot;
++     *          phptype  = &quot;mysql&quot;
++     *          hostspec = &quot;localhost&quot;
++     *          database = &quot;baz&quot;
++     *          username = &quot;root&quot;
++     *          password = &quot;zzz&quot; /&gt;
++     *     &lt;dsn id = &quot;foo&quot;
++     *          phptype  = &quot;pgsql&quot;
++     *          hostspec = &quot;192.18.1.1&quot;
++     *          database =&quot;test&quot;
++     *          username =&quot;antonescu&quot;
++     *          password =&quot;x-creeme&quot; /&gt;
++     *   &lt;/database&gt;
++     * &lt;/code&gt;
++     * @see IConfigurator::getDatabaseDsn()
++     */
++    public function getDatabaseDsn($id = FALSE) {
++        if (!$id) $id = $this-&gt;sxe-&gt;database['default'];
++        foreach( $this-&gt;sxe-&gt;database-&gt;dsn as  $dsn ) {
++            if($dsn['id']==$id){
++                return array (
++                    'phptype'  =&gt; (string)trim($dsn['phptype']),
++                    'hostspec' =&gt; (string)trim($dsn['hostspec']),
++                    'username' =&gt; (string)trim($dsn['username']),
++                    'password' =&gt; (string)trim($dsn['password']),
++                    'database' =&gt; (string)trim($dsn['database'])
++                );
++            }
++        }
++        throw new ConfiguratorException('Database Id ' . $id . 'not found!');
++    }    
++    
++    /**
+      * Configuration example:
+      * &lt;code&gt;
+      *   &lt;logger&gt;
+
+Modified: trunk/skel/config/application.xml
+===================================================================
+--- trunk/skel/config/application.xml	2007-06-15 07:57:36 UTC (rev 433)
++++ trunk/skel/config/application.xml	2007-06-15 08:51:46 UTC (rev 434)
+@@ -46,6 +46,15 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
++        &lt;!-- database(s) settings --&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;mysql&quot;
++                 hostspec = &quot;localhost&quot;
++                 database = &quot;${app.name}&quot;
++                 username = &quot;root&quot;
++                 password = &quot;&quot; /&gt;
++        &lt;/database&gt;
+     &lt;/environment&gt;
+ 
+     &lt;!-- a sample test environment --&gt;
+@@ -74,6 +83,12 @@
+                 &lt;/outputter&gt;
+             &lt;/outputters&gt;
+         &lt;/logger&gt;
++        &lt;!-- database(s) settings --&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;sqlite&quot;
++                 database = &quot;${app.path}${ds}db${ds}${app.name}-sqlite.db&quot; /&gt;
++        &lt;/database&gt;
+     &lt;/environment&gt;
+   
+ &lt;/application&gt;
+
+Deleted: trunk/skel/config/database.ini
+===================================================================
+--- trunk/skel/config/database.ini	2007-06-15 07:57:36 UTC (rev 433)
++++ trunk/skel/config/database.ini	2007-06-15 08:51:46 UTC (rev 434)
+@@ -1,26 +0,0 @@
+-;
+-; $Id$
+-;
+-
+-; 
+-; database.ini format:
+-; [section] -&gt; environment name
+-; phptype -&gt; database connection driver 
+-; database -&gt; database name
+-; username -&gt; username
+-; password -&gt; password
+-; Connection flags:
+-; persistent=PERSISTENT to mark the connection as beeing persistent
+-;
+-
+-[localhost]
+-phptype=mysql
+-hostspec=localhost
+-database=${app.name}
+-username=root
+-password=virus
+-
+-[test]
+-phptype=sqlite
+-database=db/${app.name}.sqilte.db
+-
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000215.html">[Medick-svn] r433 - trunk/skel/public/javascript
+</A></li>
+	<LI>Next message: <A HREF="000214.html">[Medick-svn] r435 - in trunk/libs: configurator creole/drivers/mysql
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#213">[ date ]</a>
+              <a href="thread.html#213">[ thread ]</a>
+              <a href="subject.html#213">[ subject ]</a>
+              <a href="author.html#213">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

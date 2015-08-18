@@ -1,0 +1,881 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r329 - in trunk: . libs/action/controller libs/action/view libs/active/record libs/medick skel/config
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r329%20-%20in%20trunk%3A%20.%20libs/action/controller%20libs/action/view%20libs/active/record%20libs/medick%20skel/config&In-Reply-To=%3C200601081838.k08IcL9i015003%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000123.html">
+   <LINK REL="Next"  HREF="000125.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r329 - in trunk: . libs/action/controller libs/action/view libs/active/record libs/medick skel/config</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r329%20-%20in%20trunk%3A%20.%20libs/action/controller%20libs/action/view%20libs/active/record%20libs/medick%20skel/config&In-Reply-To=%3C200601081838.k08IcL9i015003%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r329 - in trunk: . libs/action/controller libs/action/view libs/active/record libs/medick skel/config">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Jan  8 19:38:21 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000123.html">[Medick-svn] r328 - in trunk/libs/creole/drivers: oracle/metadata pgsql
+</A></li>
+        <LI>Next message: <A HREF="000125.html">[Medick-svn] r330 - in trunk: bin libs/action/controller libs/active/record libs/medick skel/config skel/scripts test/application/models test/mock test/test/active/record test/test/active/record/associations test/test/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#124">[ date ]</a>
+              <a href="thread.html#124">[ thread ]</a>
+              <a href="subject.html#124">[ subject ]</a>
+              <a href="author.html#124">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-08 19:37:55 +0100 (Sun, 08 Jan 2006)
+New Revision: 329
+
+Added:
+   trunk/libs/active/record/DatabaseRow.php
+Removed:
+   trunk/libs/active/record/FieldsAggregate.php
+Modified:
+   trunk/CHANGELOG
+   trunk/VERSION
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/view/Base.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/RowsAggregate.php
+   trunk/libs/medick/Version.php
+   trunk/libs/medick/util.php
+   trunk/skel/config/application.xml
+Log:
+ -- step 2 in ActiveRecordBase refactorings:
+ ^ renamed FieldsAggregate to DatabaseRow.
+ ^ moved iterations code from ActiveRecordBase to DatabaseRow class.
+ -- ActionViewBase added ITemplateEngine interface and PHPTemplateEngine class.
+ -- minor fixes in application.xml template
+ -- added IIterator::reset() method to reset the pointer at the beginning of the Collection
+ -- removed RowsAggregate::offsetGet() method.
+ -- increase version to 0.0.4
+
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-01-08 10:47:13 UTC (rev 328)
++++ trunk/CHANGELOG	2006-01-08 18:37:55 UTC (rev 329)
+@@ -1,18 +1,20 @@
+ $Id$
+ (*) SVN version
+ 
+-0.0.4 (*)
++0.0.5(*)
++
++0.0.4 (09.Jan.2006)
+     - added medick application generator (bin/medick.php).
+     - added medick.util, base package for medick collections.
+     - rewrite the Routing System (more like RoR), it`s not completly done, but we have a nice working version.
+-    - clean-up Medick template engine (removed the interface).
++    - minor refactorings in ActiveRecordBase  
+     - code improvements in Logger:
+         - removed heavy backtrace witch was attached to every Logging Events.
+         - new Configuration Options, every Outputter can have properties.
+     - removed un-used application_path from configuration options.
+     - removed deprecated methods from the framework.
+ 
+-0.0.3 (28.nov.2005)
++0.0.3 (28.Nov.2005)
+     - Code Clean-Up:
+         - logger.Logger:
+                 * removed logger.outputters.Outputter::getId() abstract method;
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-01-08 10:47:13 UTC (rev 328)
++++ trunk/VERSION	2006-01-08 18:37:55 UTC (rev 329)
+@@ -1 +1 @@
+-0.0.4-svn
+\ No newline at end of file
++0.0.4
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-01-08 10:47:13 UTC (rev 328)
++++ trunk/libs/action/controller/Base.php	2006-01-08 18:37:55 UTC (rev 329)
+@@ -122,12 +122,11 @@
+         if(ob_get_length()) {
+             ob_end_clean();
+         }
+-        $template = new ActionViewBase();
++        $template = ActionViewBase::factory('php');
+         // $template = new ActionView:::Base();
+         $template-&gt;error= $exception;
+         $text= $template-&gt;render_file(MEDICK_PATH . '/libs/action/controller/templates/error.phtml');
+-        $status = Response::SC_INTERNAL_SERVER_ERROR;
+-        $response-&gt;setStatus($status);
++        $response-&gt;setStatus(Response::SC_INTERNAL_SERVER_ERROR);
+         $response-&gt;setContent($text);
+         return $response;
+     }
+@@ -279,7 +278,7 @@
+         $this-&gt;app_path      = $this-&gt;injector-&gt;getPath('__base');
+         $this-&gt;template_root = $this-&gt;injector-&gt;getPath('views') . $this-&gt;params['controller'] . DIRECTORY_SEPARATOR;
+ 
+-        $this-&gt;template = new ActionViewBase();
++        $this-&gt;template = ActionViewBase::factory('php');
+         // $this-&gt;template = new ActionView:::Base();
+         $this-&gt;template-&gt;__base= $this-&gt;config-&gt;getProperty('document_root');
+     }
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2006-01-08 10:47:13 UTC (rev 328)
++++ trunk/libs/action/view/Base.php	2006-01-08 18:37:55 UTC (rev 329)
+@@ -40,13 +40,44 @@
+ 
+ // namespace ActionView {
+ 
++interface ITemplateEngine {
++    public function render($template_file);
++    public function assign($name, $value);
++}
++
++class ActionViewBase extends Object {
++
++    public static function factory($engine) {
++        return new PHPTemplateEngine();
++    }
++
++    /**
++     * Strips slashes
++     * This method is called recursive
++     * TODO: Move this OUT of this class, or, in __set.
++     * TODO: What if $value is Object?
++     * @param mixed value, the value on witch we strip slashes.
++     *                  It can be array/string or object.
++     */
++    public static function stripslashes_deep($value) {
++        if (is_array($value)) {
++            array_map(array('ActionViewBase','stripslashes_deep'), $value);
++        } elseif (is_object($value)) {
++
++        } else {
++            stripslashes($value);
++        }
++        return $value;
++     }
++}
++
+ /**
+  * ActionViewBase is the default `Template Engine' for Medick Framwork.
+  *
+  * For a smoother transaction from &lt;tt&gt;Smarty&lt;/tt&gt;, some variabiles/methods
+  * may share the same name and behavior
+  */
+-class ActionViewBase extends Object {
++class PHPTemplateEngine extends Object implements ITemplateEngine {
+ 
+     private $vars= array();
+ 
+@@ -63,7 +94,7 @@
+     public function render($file) {
+         if (!is_file($file)) throw new MedickException ('Cannot Find Template: ' . $file);
+         if (!empty($this-&gt;vars)) {
+-            if(!get_magic_quotes_gpc()) $this-&gt;vars = self::stripslashes_deep($this-&gt;vars);
++            if(!get_magic_quotes_gpc()) $this-&gt;vars = ActionViewBase::stripslashes_deep($this-&gt;vars);
+             extract($this-&gt;vars,EXTR_SKIP);
+         }
+         ob_start();
+@@ -105,24 +136,6 @@
+                  $this-&gt;vars[$name] : trigger_error(&quot;Undefined Template Variable: &quot; . $name, E_USER_ERROR);
+     }
+ 
+-    /**
+-     * Strips slashes
+-     * This method is called recursive
+-     * TODO: Move this OUT of this class, or, in __set.
+-     * TODO: What if $value is Object?
+-     * @param mixed value, the value on witch we strip slashes.
+-     *                  It can be array/string or object.
+-     */
+-    private static function stripslashes_deep($value) {
+-        if (is_array($value)) {
+-            array_map(array('ActionViewBase','stripslashes_deep'), $value);
+-        } elseif (is_object($value)) {
+-
+-        } else {
+-            stripslashes($value);
+-        }
+-        return $value;
+-    }
+ }
+ 
+ // }
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-01-08 10:47:13 UTC (rev 328)
++++ trunk/libs/active/record/Base.php	2006-01-08 18:37:55 UTC (rev 329)
+@@ -33,7 +33,8 @@
+ // }}}
+ 
+ // ActiveRecord dependencies.
+-include_once('active/record/FieldsAggregate.php');
++// include_once('active/record/FieldsAggregate.php');
++include_once('active/record/DatabaseRow.php');
+ include_once('active/record/RowsAggregate.php');
+ include_once('active/record/QueryBuilder.php');
+ include_once('active/support/Inflector.php');
+@@ -57,6 +58,8 @@
+         DB Table Fields */
+     protected $fields;
+ 
++    protected $row;
++
+     /** @var string
+         primary key name! */
+     private $pk;
+@@ -98,7 +101,8 @@
+ 
+         $table_info   = self::$conn-&gt;getDatabaseInfo()-&gt;getTable(self::$table_name);
+         $this-&gt;pk     = $table_info-&gt;getPrimaryKey()-&gt;getName();
+-        $this-&gt;fields = new FieldsAggregate();
++        //$this-&gt;fields = new FieldsAggregate();
++        $this-&gt;row = new DatabaseRow();
+         foreach( $table_info-&gt;getColumns() as $col) {
+             $field = new Field( $col-&gt;getName() );
+             // $field-&gt;size = $col-&gt;getSize();
+@@ -115,7 +119,8 @@
+             } else {
+                 $field-&gt;isFK = false;
+             }
+-            $this-&gt;fields-&gt;add( $field );
++            // $this-&gt;fields-&gt;add( $field );
++            $this-&gt;row[] = $field;
+         }
+ 
+         foreach ($params as $field_name =&gt; $field_value) {
+@@ -132,13 +137,8 @@
+      * @throw ActiveRecordException if the field is not found.
+      */
+     public function __set($field_name, $field_value) {
+-        for($it = $this-&gt;fields-&gt;getIterator(); $it-&gt;valid(); $it-&gt;next()) {
+-            if ($it-&gt;current()-&gt;getName() == $field_name) {
+-                $it-&gt;current()-&gt;setValue($field_value);
+-                $it-&gt;current()-&gt;isAffected = TRUE;
+-                $this-&gt;fields-&gt;setAffected(TRUE);
+-                return;
+-            }
++        if ($field= $this-&gt;row-&gt;getFieldByName($field_name)) {
++            return $this-&gt;row-&gt;updateStatus($field, $field_value);
+         }
+         throw new ActiveRecordException (
+             'Cannot Set the value of field: `' . $field_name . '`. No such field!');
+@@ -152,12 +152,9 @@
+      * @return field value
+      */
+     public function __get($field_name) {
+-        for($it = $this-&gt;fields-&gt;getIterator(); $it-&gt;valid(); $it-&gt;next()) {
+-            if ( $it-&gt;current()-&gt;getName() == $field_name ) {
+-                return $it-&gt;current()-&gt;isAffected ? $it-&gt;current()-&gt;getValue() : NULL;
+-            }
++        if ($field= $this-&gt;row-&gt;getFieldByName($field_name)) {
++            return $field-&gt;isAffected ? $field-&gt;getValue() : NULL;
+         }
+-
+         try {
+             return Association::resolve(
+                                 array(
+@@ -168,7 +165,7 @@
+                                     ),
+                                 self::$table_name,
+                                 $field_name,
+-                                $this-&gt;fields
++                                $this-&gt;row
+                                 )-&gt;execute();
+         } catch (AssociationNotFoundException $anfEx) {
+             throw new ActiveRecordException (
+@@ -309,7 +306,7 @@
+      * &lt;/code&gt;
+      */
+     public final function save() {
+-        if ($this-&gt;fields-&gt;getPrimaryKey()-&gt;isAffected) {
++        if ($this-&gt;row-&gt;getPrimaryKey()-&gt;isAffected) {
+             return $this-&gt;update();
+         } else {
+             return $this-&gt;insert();
+@@ -384,10 +381,10 @@
+     public final function delete() {
+         $this-&gt;before_delete();
+         $whereClause = array();
+-        foreach ($this-&gt;fields-&gt;getAffectedFields() as $col) {
++        foreach ($this-&gt;row-&gt;getAffectedFields() as $col) {
+             $whereClause[] = $col-&gt;getName() . ' = ? ';
+         }
+-        $sql = 'DELETE FROM ' . self::$table_name . ' WHERE ' . implode(' AND ', $whereClause);
++        $sql = 'DELETE FROM ' . ActiveRecordBase::$table_name . ' WHERE ' . implode(' AND ', $whereClause);
+         $af= $this-&gt;performQuery($sql);
+         $this-&gt;after_delete();
+         return $af;
+@@ -401,9 +398,9 @@
+      * @return string the next id, or false when the table dont have a primary key
+      */
+     private function getNextId() {
+-        if ($this-&gt;fields-&gt;getPrimaryKey() !== NULL) {
++        if ($this-&gt;row-&gt;getPrimaryKey() !== NULL) {
+             $_pk = $this-&gt;pk;
+-            $id  = self::$conn-&gt;getIdGenerator()-&gt;getId($this-&gt;pk);
++            $id  = ActiveRecordBase::$conn-&gt;getIdGenerator()-&gt;getId($this-&gt;pk);
+             $this-&gt;$_pk = $id;
+             return $id;
+         } else {
+@@ -419,11 +416,11 @@
+      * @throws SQLException
+      */
+     private function performQuery($sql) {
+-        $stmt = self::$conn-&gt;prepareStatement($sql);
+-        self::populateStmtValues($stmt, $this-&gt;fields-&gt;getAffectedFields());
++        $stmt = ActiveRecordBase::$conn-&gt;prepareStatement($sql);
++        ActiveRecordBase::populateStmtValues($stmt, $this-&gt;row-&gt;getAffectedFields());
+         $af_rows = $stmt-&gt;executeUpdate();
+         $stmt-&gt;close();
+-        Registry::get('__logger')-&gt;debug('Performing sql query: ' . self::$conn-&gt;lastQuery);
++        Registry::get('__logger')-&gt;debug('Performing sql query: ' . ActiveRecordBase::$conn-&gt;lastQuery);
+         // $this-&gt;_reset();
+         return $af_rows;
+     }
+@@ -442,10 +439,13 @@
+         if ($this-&gt;pk !== NULL) {
+             $sqlSnippet = ' WHERE ' . $this-&gt;pk . ' = ' . $this-&gt;fields-&gt;getPrimaryKey()-&gt;getValue();
+         }
+-        $sql = 'UPDATE ' . self::$table_name . ' SET ';
++        $sql  = 'UPDATE ' . ActiveRecordBase::$table_name . ' SET ';
++        $sql .= implode(' = ?, ', $this-&gt;row-&gt;getAffectedFieldsNames());
++        /*
+         foreach($this-&gt;fields-&gt;getAffectedFields() as $field) {
+             $sql .= $field-&gt;getName() . ' = ?, ';
+         }
++        */
+         return substr($sql, 0, -2) . $sqlSnippet;
+     }
+ 
+@@ -455,8 +455,8 @@
+      */
+     private function getInsertSql() {
+         return 'INSERT INTO ' . self::$table_name
+-               . ' (' . implode(',', $this-&gt;fields-&gt;getAffectedFieldsNames()) . ')'
+-               . ' VALUES (' . substr(str_repeat('?,', count($this-&gt;fields-&gt;getAffectedFields())), 0, -1) . ')';
++               . ' (' . implode(',', $this-&gt;row-&gt;getAffectedFieldsNames()) . ')'
++               . ' VALUES (' . substr(str_repeat('?,', count($this-&gt;row-&gt;getAffectedFields())), 0, -1) . ')';
+     }
+ 
+     /**
+@@ -493,13 +493,13 @@
+ 
+         try {
+             // prepare the class instance.
+-            $class = new ReflectionClass(self::$class_name);
++            $class = new ReflectionClass(ActiveRecordBase::$class_name);
+         } catch (ReflectionException $rEx) {
+-            Registry::get('__injector')-&gt;inject('model', strtolower(self::$class_name));
++            Registry::get('__injector')-&gt;inject('model', strtolower(ActiveRecordBase::$class_name));
+             // retry:
+-            $class = new ReflectionClass(self::$class_name);
++            $class = new ReflectionClass(ActiveRecordBase::$class_name);
+         }
+-        $query = new QuerryBuilder(self::$table_name);
++        $query = new QuerryBuilder(ActiveRecordBase::$table_name);
+ 
+         if ( $params[0] == 'all' &amp;&amp; $numargs == 1 ) {
+             // all table fields and one arg.
+@@ -515,7 +515,7 @@
+                 $query-&gt;add('condition', $pk_name . '=?');
+                 $query-&gt;addArray($params[1]);
+             }
+-            $stmt = self::$conn-&gt;prepareStatement($query-&gt;buildQuery());
++            $stmt = ActiveRecordBase::$conn-&gt;prepareStatement($query-&gt;buildQuery());
+             $stmt-&gt;setInt(1, $params[0]);
+             $rs   = $stmt-&gt;executeQuery();
+             if ($rs-&gt;getRecordCount() == 1) {
+@@ -524,7 +524,7 @@
+                 return $class-&gt;newInstance($rs-&gt;getRow());
+             } elseif ($rs-&gt;getRecordCount() == 0) {
+                 throw new RecordNotFoundException(
+-                    'Couldn\'t find a `' . self::$class_name . '` with ID=' . $params[0]);
++                    'Couldn\'t find a `' . ActiveRecordBase::$class_name . '` with ID=' . $params[0]);
+             }
+         } elseif(is_array($params[0])) {
+             $query-&gt;addArray($params[0]);
+@@ -532,14 +532,14 @@
+             throw new ActiveRecordException('Case Not Implemented yet!');
+         }
+ 
+-        $stmt = self::$conn-&gt;prepareStatement($query-&gt;buildQuery());
++        $stmt = ActiveRecordBase::$conn-&gt;prepareStatement($query-&gt;buildQuery());
+         // add limit and/or offset if requested
+         if ($limit = $query-&gt;getLimit())   $stmt-&gt;setLimit($limit);
+         if ($offset = $query-&gt;getOffset()) $stmt-&gt;setOffset($offset);
+         $rs = $stmt-&gt;executeQuery();
+         if ($rs-&gt;getRecordCount() == 0) {
+             throw new RecordNotFoundException(
+-                'Couldn\'t find a ' . self::$class_name . ' The Result Set was empty!');
++                'Couldn\'t find a ' . ActiveRecordBase::$class_name . ' The Result Set was empty!');
+         }
+         // build a list with objects of this type.
+         $results = new RowsAggregate();
+@@ -548,7 +548,7 @@
+         }
+         // release resources.
+         $rs-&gt;close(); $stmt-&gt;close();
+-        Registry::get('__logger')-&gt;debug('Performed sql query: ' . self::$conn-&gt;lastQuery);
++        Registry::get('__logger')-&gt;debug('Performed sql query: ' . ActiveRecordBase::$conn-&gt;lastQuery);
+         return $results;
+     }
+     // }}}
+
+Added: trunk/libs/active/record/DatabaseRow.php
+===================================================================
+--- trunk/libs/active/record/DatabaseRow.php	2006-01-08 10:47:13 UTC (rev 328)
++++ trunk/libs/active/record/DatabaseRow.php	2006-01-08 18:37:55 UTC (rev 329)
+@@ -0,0 +1,134 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005, 2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++include_once('active/record/Field.php');
++
++/**
++ * It represents a Row from the Database, generic named here FieldsAggregate
++ * @package locknet7.active.record
++ */
++
++class DatabaseRow extends Collection {
++
++    /** @var Field
++        pk field */
++    private $pk_filed = NULL;
++
++    /** @var array
++        holds the field names */
++    private $field_names     = array();
++
++    /** @var array
++        affected fields, Filed[] */
++    private $affected_fields = array();
++
++    /** @var bool
++        affected flag. */
++    private $affected = FALSE;
++
++    public function onAdd(Object $field) {
++        if (!$field instanceof Field) {
++            throw new IllegalArgumentException(
++                $field-&gt;getClassName() . ' wrong parameter type, it should be a Field object');
++        }
++        if ($field-&gt;isPk) $this-&gt;pk_field = $field;
++        return TRUE;
++    }
++
++    /**
++     * Set the affected modifier
++     * @param bool affected
++     */
++    public function setAffected($affected) {
++        $this-&gt;affected = (bool)$affected;
++    }
++
++    /**
++     * It checks if it has affected fields by this run
++     * @return bool TRUE if it has, FALSE otherwise
++     */
++    public function hasAffected() {
++        return $this-&gt;affected;
++    }
++
++    /**
++     * It gets the primary key filed
++     *
++     * @return Field, the field containing the pk.
++     */
++    public function getPrimaryKey() {
++        return $this-&gt;pk_field;
++    }
++
++    /**
++     * It gets a filed by its name
++     *
++     * @param string field_name the field name to search for
++     * @return Field or FALSE if there is no Field by the given name
++     */
++    public function getFieldByName($field_name) {
++        $it = $this-&gt;iterator();
++        while($it-&gt;hasNext()) {
++            $current= $it-&gt;next();
++            if ($current-&gt;getName() == $field_name) {
++                return $current;
++            }
++        }
++        return FALSE;
++    }
++
++    public function updateStatus(Field $field, $value) {
++        $field-&gt;setValue($value);
++        $field-&gt;isAffected = TRUE;
++        $this-&gt;field_names[] = $field-&gt;getName();
++        $this-&gt;affected_fields[] = $field;
++        $this-&gt;affected = TRUE;
++    }
++
++    /**
++     * It gets an array with the names of the affected fields
++     * @return array
++     */
++    public function getAffectedFieldsNames() {
++        return $this-&gt;field_names;
++    }
++
++    /**
++     * Get an array of objects Field[] that are affected(changed) by this run
++     * @return Field[]
++     */
++    public function getAffectedFields() {
++        return $this-&gt;hasAffected() ? $this-&gt;affected_fields : array();
++    }
++}
+
+
+Property changes on: trunk/libs/active/record/DatabaseRow.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Deleted: trunk/libs/active/record/FieldsAggregate.php
+===================================================================
+--- trunk/libs/active/record/FieldsAggregate.php	2006-01-08 10:47:13 UTC (rev 328)
++++ trunk/libs/active/record/FieldsAggregate.php	2006-01-08 18:37:55 UTC (rev 329)
+@@ -1,145 +0,0 @@
+-&lt;?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005, 2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice,
+-//   this list of conditions and the following disclaimer.
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation
+-//   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
+-//   be used to endorse or promote products derived from this software without
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-//
+-// $Id$
+-//
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-include_once('active/record/Field.php');
+-
+-/**
+- * It represents a Row from the Database, generic named here FieldsAggregate
+- * @package locknet7.active.record
+- */
+-
+-class FieldsAggregate extends Object {
+-
+-    /** @var ArrayObject
+-        fields container */
+-    private $fields;
+-
+-    /** @var Field
+-        pk field*/
+-    private $pk_filed = NULL;
+-
+-    /** @var bool
+-        affected flag. */
+-    private $affected = FALSE;
+-
+-    /**
+-     * FieldsAggregate Constructor
+-     */
+-    public function __construct() {
+-        $this-&gt;fields = new ArrayObject();
+-    }
+-
+-    /**
+-     * Add a new Field on the fields container
+-     */
+-    public function add(Field $field) {
+-        if (!$this-&gt;contains($field)) $this-&gt;fields[] = $field;
+-        if ($field-&gt;isPk) $this-&gt;pk_field = $field;
+-        return $field;
+-    }
+-
+-    /**
+-     * Check if the container contains the given Field
+-     * @return bool, TRUE if it contains this Field, FALSE otherwise
+-     */
+-    public function contains(Field $field) {
+-        for ( $it = $this-&gt;getIterator(); $it-&gt;valid(); $it-&gt;next() ) {
+-            if ($it-&gt;current()-&gt;getName() == $field-&gt;getName()) {
+-                return TRUE;
+-            }
+-        }
+-        return FALSE;
+-    }
+-
+-    /**
+-     * It gets the iterator
+-     * @return Iterator
+-     */
+-    public function getIterator() {
+-        return $this-&gt;fields-&gt;getIterator();
+-    }
+-
+-    /**
+-     * Set the affected modifier
+-     * @param bool affected
+-     */
+-    public function setAffected($affected) {
+-        $this-&gt;affected = (bool)$affected;
+-    }
+-
+-    /**
+-     * It checks if it has affected fields by this run
+-     * @return bool TRUE if it has, FALSE otherwise
+-     */
+-    public function hasAffected() {
+-        return $this-&gt;affected;
+-    }
+-
+-    /**
+-     * it gets the primary key filed
+-     * @return Field, the field containing the pk.
+-     */
+-    public function getPrimaryKey() {
+-        return $this-&gt;pk_field;
+-    }
+-
+-    /**
+-     * It gets an array with the names of the affected fields
+-     * @return array
+-     */
+-    public function getAffectedFieldsNames() {
+-        $names= array();
+-        for ($it = $this-&gt;getIterator(); $it-&gt;valid(); $it-&gt;next()) {
+-            if ($it-&gt;current()-&gt;isAffected) {
+-                $names[] = $it-&gt;current()-&gt;getName();
+-            }
+-        }
+-        return $names;
+-    }
+-
+-    /**
+-     * Get an array of objects Field[] that are affected(changed) by this run
+-     * @return Field[]
+-     */
+-    public function getAffectedFields() {
+-        if (!$this-&gt;affected) return array();
+-        $affected_fields = array();
+-        for ( $it = $this-&gt;getIterator(); $it-&gt;valid(); $it-&gt;next() ) {
+-            if ($it-&gt;current()-&gt;isAffected) {
+-                $affected_fields[] = $it-&gt;current();
+-            }
+-        }
+-        return $affected_fields;
+-    }
+-}
+
+Modified: trunk/libs/active/record/RowsAggregate.php
+===================================================================
+--- trunk/libs/active/record/RowsAggregate.php	2006-01-08 10:47:13 UTC (rev 328)
++++ trunk/libs/active/record/RowsAggregate.php	2006-01-08 18:37:55 UTC (rev 329)
+@@ -76,15 +76,6 @@
+     }
+ 
+     /**
+-     * It gets the offset by his index.
+-     * @param index
+-     * @return
+-     */
+-    public function offsetGet($index) {
+-        return $this-&gt;container-&gt;offsetGet($index);
+-    }
+-
+-    /**
+      * Magick php5 __call
+      */
+     public function __call($method, $arguments) {
+
+Modified: trunk/libs/medick/Version.php
+===================================================================
+--- trunk/libs/medick/Version.php	2006-01-08 10:47:13 UTC (rev 328)
++++ trunk/libs/medick/Version.php	2006-01-08 18:37:55 UTC (rev 329)
+@@ -48,7 +48,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return Version::MAJOR . '.' . Version::MINOR . '.' . Version::TINY . '-svn';
++        return Version::MAJOR . '.' . Version::MINOR . '.' . Version::TINY;
+     }
+ 
+ }
+
+Modified: trunk/libs/medick/util.php
+===================================================================
+--- trunk/libs/medick/util.php	2006-01-08 10:47:13 UTC (rev 328)
++++ trunk/libs/medick/util.php	2006-01-08 18:37:55 UTC (rev 329)
+@@ -108,6 +108,7 @@
+ 
+     /**
+      * It gets the next element in this Collection.
++     *
+      * NOTE: the internal pointer is moved to the next element.
+      * @return medick.Object
+      */
+@@ -127,6 +128,14 @@
+      * NOTE: a call to next should be invoked before using this method
+      */
+     public function key();
++
++    /**
++     * Resets the pointer
++     *
++     * @return void
++     */
++    public function reset();
++
+ }
+ // }}}
+ 
+@@ -424,5 +433,12 @@
+         }
+         return $index;
+     }
++
++    /**
++     * @see locknet7.medick.util.IIterator::reset()
++     */
++    public function reset() {
++        $this-&gt;idx=0;
++    }
+ }
+ // }}}
+
+Modified: trunk/skel/config/application.xml
+===================================================================
+--- trunk/skel/config/application.xml	2006-01-08 10:47:13 UTC (rev 328)
++++ trunk/skel/config/application.xml	2006-01-08 18:37:55 UTC (rev 329)
+@@ -4,14 +4,14 @@
+  --&gt;
+ 
+ &lt;application&gt;
+-     
++
+     &lt;!--  ====================== --&gt;
+     &lt;!--   General properties    --&gt;
+     &lt;!--  ====================== --&gt;
+-    &lt;property name=&quot;server_name&quot;      value=&quot;<A HREF="http://morgan:8091">http://morgan:8091</A>&quot; /&gt;
+-    &lt;property name=&quot;document_root&quot;    value=&quot;/&quot; /&gt;
++    &lt;property name=&quot;server_name&quot;      value=&quot;<A HREF="http://localhost">http://localhost</A>&quot; /&gt;
++    &lt;property name=&quot;document_root&quot;    value=&quot;/${APP_NAME}&quot; /&gt;
+     &lt;property name=&quot;rewrite&quot;          value=&quot;on&quot; /&gt;
+-     
++
+     &lt;!--  ====================== --&gt;
+     &lt;!--     Logger System       --&gt;
+     &lt;!--  ====================== --&gt;
+@@ -23,7 +23,7 @@
+             &lt;/outputter&gt;
+             &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt;
+             &lt;outputter name=&quot;mail&quot; level=&quot;3&quot;&gt;
+-                &lt;property name=&quot;subject&quot; value=&quot;Fatality on ${server}&quot; /&gt;
++                &lt;property name=&quot;subject&quot; value=&quot;Fatality on ${APP_NAME}&quot; /&gt;
+                 &lt;property name=&quot;address&quot; value=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">user at example.com</A>&quot; /&gt;
+             &lt;/outputter&gt;
+         &lt;/outputters&gt;
+@@ -36,9 +36,9 @@
+         &lt;dsn id = &quot;one&quot;
+              phptype  = &quot;mysql&quot;
+              hostspec = &quot;localhost&quot;
+-             database = &quot;elproto&quot;
++             database = &quot;${APP_NAME}&quot;
+              username = &quot;root&quot;
+-             password = &quot;pazzword&quot; /&gt;
++             password = &quot;&quot; /&gt;
+     &lt;/database&gt;
+ 
+ &lt;/application&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000123.html">[Medick-svn] r328 - in trunk/libs/creole/drivers: oracle/metadata pgsql
+</A></li>
+	<LI>Next message: <A HREF="000125.html">[Medick-svn] r330 - in trunk: bin libs/action/controller libs/active/record libs/medick skel/config skel/scripts test/application/models test/mock test/test/active/record test/test/active/record/associations test/test/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#124">[ date ]</a>
+              <a href="thread.html#124">[ thread ]</a>
+              <a href="subject.html#124">[ subject ]</a>
+              <a href="author.html#124">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

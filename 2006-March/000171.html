@@ -1,0 +1,633 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r387 - applications/testor/app/models trunk trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/action/view
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r387%20-%20applications/testor/app/models%20trunk%20trunk/libs/action/controller%20trunk/libs/action/controller/session%20trunk/libs/action/view&In-Reply-To=%3C200603281840.k2SIePp7023798%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000170.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r387 - applications/testor/app/models trunk trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/action/view</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r387%20-%20applications/testor/app/models%20trunk%20trunk/libs/action/controller%20trunk/libs/action/controller/session%20trunk/libs/action/view&In-Reply-To=%3C200603281840.k2SIePp7023798%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r387 - applications/testor/app/models trunk trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/action/view">aurelian at berlios.de
+       </A><BR>
+    <I>Tue Mar 28 20:40:25 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000170.html">[Medick-svn] r386 - applications/testor/app/controllers applications/testor/app/views applications/testor/app/views/req applications/testor/conf applications/testor/db trunk trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#171">[ date ]</a>
+              <a href="thread.html#171">[ thread ]</a>
+              <a href="subject.html#171">[ subject ]</a>
+              <a href="author.html#171">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-03-28 20:40:11 +0200 (Tue, 28 Mar 2006)
+New Revision: 387
+
+Modified:
+   applications/testor/app/models/tone.php
+   trunk/boot.php
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Dispatcher.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/session/CreoleSessionContainer.php
+   trunk/libs/action/controller/session/Session.php
+   trunk/libs/action/view/Base.php
+Log:
+ -- fixed CreoleSessionContainer + some minor changes
+
+Modified: applications/testor/app/models/tone.php
+===================================================================
+--- applications/testor/app/models/tone.php	2006-03-27 19:24:03 UTC (rev 386)
++++ applications/testor/app/models/tone.php	2006-03-28 18:40:11 UTC (rev 387)
+@@ -8,6 +8,7 @@
+ class Tone extends ActiveRecord {
+ 
+     protected function before_save() {
++        $this-&gt;name= htmlentities($this-&gt;name);
+         $this-&gt;validates()-&gt;presence_of('name');
+         $this-&gt;validates()-&gt;uniqueness_of('name');
+         return TRUE;
+@@ -23,5 +24,5 @@
+          $args = func_get_args();
+          return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
+     }
++}
+ 
+-}
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2006-03-27 19:24:03 UTC (rev 386)
++++ trunk/boot.php	2006-03-28 18:40:11 UTC (rev 387)
+@@ -43,7 +43,7 @@
+ set_include_path( MEDICK_PATH . 'libs'   . DIRECTORY_SEPARATOR );
+ 
+ // this should depend on environment
+-error_reporting(E_ALL|E_STRICT);
++error_reporting( E_ALL | E_STRICT );
+ // php 5.1 strict sdandards.
+ if (version_compare(PHP_VERSION, '5.1.0') &gt; 0) {
+     date_default_timezone_set('Europe/Bucharest');
+@@ -53,3 +53,4 @@
+ include_once('medick/Medick.php');
+ set_error_handler(array(new ErrorHandler(), 'raiseError'));
+ include_once('action/controller/Dispatcher.php');
++
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-03-27 19:24:03 UTC (rev 386)
++++ trunk/libs/action/controller/Base.php	2006-03-28 18:40:11 UTC (rev 387)
+@@ -202,7 +202,9 @@
+      * @return void
+      */
+     protected function render($template_name = NULL, $status = NULL) {
+-        if (is_null($template_name)) $template_name = $this-&gt;params['action'];
++        if ($template_name === NULL) {
++            $template_name = $this-&gt;params['action'];
++        }
+         $this-&gt;render_file($this-&gt;template_root . $template_name . '.phtml', $status);
+     }
+ 
+@@ -242,7 +244,7 @@
+                 return $this-&gt;render_without_layout($template_file, $status);
+             } else {
+                 $this-&gt;template-&gt;content_for_layout= $this-&gt;template-&gt;render_file($template_file);
+-                $this-&gt;logger-&gt;debug('...done.');
++                // $this-&gt;logger-&gt;debug('...done.');
+                 return $this-&gt;render_text($this-&gt;template-&gt;render_file($layout_file), $status);
+             }
+         } else {
+@@ -250,11 +252,20 @@
+         }
+     }
+ 
++    /**
++     * Renders a partial
++     *
++     * @param string
++     * @param string
++     * @param HTTPResponse::SC_*
++     */ 
+     protected function render_partial($partial, $controller=NULL, $status=NULL) {
+         $this-&gt;register_flash();
+-        if (is_null($controller)) $location = $this-&gt;template_root;
+-        else $location = $this-&gt;injector-&gt;getPath('views') . $controller . DIRECTORY_SEPARATOR;
+-        // $this-&gt;logger-&gt;debug('Partial: ' . $location . '_' . $partial . '.phtml');
++        if ($controller === NULL) {
++            $location = $this-&gt;template_root;
++        } else {
++            $location = $this-&gt;injector-&gt;getPath('views') . $controller . DIRECTORY_SEPARATOR;
++        }
+         return $this-&gt;render_without_layout($location . '_' . $partial . '.phtml', $status);
+     }
+ 
+@@ -352,7 +363,7 @@
+     // XXX: not-done!
+     protected function sendFile($location, $options = array()) {
+         if(!is_file($location)) {
+-            throw new MedickException(&quot;File not found...&quot;);
++            throw new MedickException('File not found...');
+         }
+         // $options['length'] =   File::size($location);
+         // $options['filename'] = File::basename($location);
+@@ -381,8 +392,12 @@
+             $redirect_to .= 'index.php/';
+         }
+         $redirect_to .= $controller;
+-        if ($action !== NULL) $redirect_to .= '/' . $action;
+-        if (count($params))   $redirect_to .= '/' . implode('/', $params);
++        if ($action !== NULL) {
++            $redirect_to .= '/' . $action;
++        }
++        if (count($params)) {
++            $redirect_to .= '/' . implode('/', $params);
++        }
+         $redirect_to .= '.' . $ext;
+         
+         $this-&gt;logger-&gt;debug('Redirecting to: ' . $redirect_to);
+@@ -392,10 +407,14 @@
+ 
+     // XXX: not done.
+     // redirects to a know path (eg. /images/pic.jpg)
+-    protected function redirect_to_path($path) {   }
++    protected function redirect_to_path($path) {
++        throw new MedickException('Method: ' . __METHOD__ . ' not implemented!');
++    }
+ 
+     // XXX: not done.
+-    protected function redirect($url, $message = '', $timeout = 0, $template = NULL) {     }
++    protected function redirect($url, $message = '', $timeout = 0, $template = NULL) {
++        throw new MedickException('Method: ' . __METHOD__ . ' not implemented!');
++    }
+ 
+     // }}}
+ 
+@@ -483,7 +502,7 @@
+                     'Your filter,``'. $filter_name . '&quot; is declared as a
+                         public method of class ``' . $this-&gt;getClassName() .'&quot; !');
+             }
+-            // can we use invoke?
++            // we cannot use invoke since the filter is not public
+             $this-&gt;$filter_name();
+         }
+     }
+
+Modified: trunk/libs/action/controller/Dispatcher.php
+===================================================================
+--- trunk/libs/action/controller/Dispatcher.php	2006-03-27 19:24:03 UTC (rev 386)
++++ trunk/libs/action/controller/Dispatcher.php	2006-03-28 18:40:11 UTC (rev 387)
+@@ -64,7 +64,6 @@
+     public function dispatch() {
+         $request  = new HTTPRequest();
+         $response = new HTTPResponse();
+-        
+         try {
+             $configurator= $this-&gt;manager-&gt;getConfigurator();
+             Registry::put($configurator, '__configurator');
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2006-03-27 19:24:03 UTC (rev 386)
++++ trunk/libs/action/controller/Route.php	2006-03-28 18:40:11 UTC (rev 387)
+@@ -346,6 +346,7 @@
+      * @return string
+      */ 
+     public function toString() {
++	return '';
+         return sprintf('{%s}--&gt;Name: %s; List: %s;', 
+                         $this-&gt;getClassName(), 
+                         $this-&gt;getNameToHuman(), 
+
+Modified: trunk/libs/action/controller/session/CreoleSessionContainer.php
+===================================================================
+--- trunk/libs/action/controller/session/CreoleSessionContainer.php	2006-03-27 19:24:03 UTC (rev 386)
++++ trunk/libs/action/controller/session/CreoleSessionContainer.php	2006-03-28 18:40:11 UTC (rev 387)
+@@ -1,187 +1,138 @@
+-lo&lt;?php
+-// {{{ License
+-//////////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005, 2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice,
+-//   this list of conditions and the following disclaimer.
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation
+-//   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
+-//   be used to endorse or promote products derived from this software without
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-//
+-// $Id$
+-//
+-//////////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-include_once('action/controller/session/ISessionContainer.php');
+-
+-/**
+- * Creole Session Container.
+- * 
+- * It requires a Database table defined like this:
+- * &lt;code&gt;
+- * CREATE TABLE c_session (
+- *	`session_id` VARCHAR (255) PRIMARY KEY,
+- *	`session_data` TEXT,
+- *	`session_lastmodified` DATETIME
+- * );
+- * &lt;/code&gt;
+- * 
+- * &lt;b&gt;Warning:&lt;/b&gt; this class was tested only with mysql.
+- *  
+- * @package medick.action.controller
+- * @subpackage session
+- * @author Oancea Aurelian 
+- */
+-class CreoleSessionContainer extends Object implements ISessionContainer {
+-
+-	/** @var CreoleConnection */
+-	protected $conn=null;
+-	
+-	/** @var Logger */
+-	protected $logger= null;
+-	
+-	/**
+-	 * Constructor
+-	 */
+-	public function CreoleSessionContainer() {
+-		$this-&gt;conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn());
+-		$this-&gt;logger= Registry::get('__logger');
+-	}
+-
+-	public function open($save_path, $session_name) {
+-		$this-&gt;gc();
+-		return true;
+-	}
+-	
+-	public function close() {
+-	    $this-&gt;conn-&gt;close();
+-		return true;
+-	}
+-
+-	public function read($id) {
+-        $timeout = time() - ini_get('session.gc_maxlifetime');
+-		$stmt = $this-&gt;conn-&gt;prepareStatement('SELECT session_data FROM c_session   
+-											   WHERE session_id = ? AND session_lastmodified &gt; ' . $timeout);
+-		$stmt-&gt;setString(1, $id);
+-
+-		try {
+-			$rs = $stmt-&gt;executeQuery();
+-			
+-			if($rs-&gt;getRecordCount()==0) {
+-				return '';
+-			}
+-			$rs-&gt;first();
+-			return $rs-&gt;get('session_data');
+-			
+-		} catch (SQLException $sqlEx) {
+-            $this-&gt;logger-&gt;debug($sqlEx-&gt;getMessage());
+-			return false;
+-		}
+-	}
+-
+-
+-	public function write($id,$session_data){
+-		// 1. select
+-		$stmt = $this-&gt;conn-&gt;prepareStatement('SELECT session_id FROM c_session WHERE session_id=?');
+-		$stmt-&gt;setString(1,$id);
+-		
+-		try{
+-			$rs = $stmt-&gt;executeQuery();
+-			// 2. count results:
+-			if($rs-&gt;getRecordCount()==1) {
+-				// 3. update:
+-				$stmt = $this-&gt;conn-&gt;prepareStatement('UPDATE c_session SET session_data=?,' . 
+-													  ' session_lastmodified=now() WHERE session_id=?');
+-				$stmt-&gt;setString(1,$session_data);
+-				$stmt-&gt;setString(2,$id);
+-
+-				try{
+-					$rs=$stmt-&gt;executeUpdate();
+-					return true;
+-				} catch (SQLException $sqlEx){
+-					$this-&gt;logger-&gt;debug($sqlEx-&gt;getMessage());
+-					return false;
+-				}
+-				
+-			} else {
+-				// 4. insert
+-				$stmt = $this-&gt;conn-&gt;prepareStatement('INSERT INTO c_session (session_id,session_data,session_lastmodified) VALUES (?,?,now())');
+-				$stmt-&gt;setString(1,$id);
+-				$stmt-&gt;setString(2,$session_data);
+-				try{
+-					$rs = $stmt-&gt;executeUpdate();
+-					return true;
+-				} catch (SQLException $sqlEx){
+-					$this-&gt;logger-&gt;debug($sqlEx-&gt;getMessage());
+-					return false;
+-				}
+-			}
+-		} catch (SQLException $sqlEx){
+-			$this-&gt;logger-&gt;debug($sqlEx-&gt;getMessage());
+-			return false;
+-		}
+-		
+-
+-	}
+-
+-	public function destroy($id) {
+-        $stmt = $this-&gt;conn-&gt;prepareStatement('DELETE FROM c_session WHERE session_id = ?');
+-        $stmt-&gt;setString(1,$id);
+-        try {
+-			$rs = $stmt-&gt;executeUpdate();
+-			return true;
+-		} catch (SQLException $sqlEx) {
+-            $this-&gt;logger-&gt;debug($sqlEx-&gt;getMessage());
+-			return false;
+-		}
+-	}
+-
+-	/**
+-	 * Garbage Collection
+-	 *
+-	 * @param maxlifetime, after that the session will expire
+-	 * @return boolean
+-	 */
+-	public function gc($maxlifetime=300) {
+-//		if($maxlifetime==''){
+-//			$c = LocknetConfig::singleton();
+-//			$maxlifetime = $c-&gt;getSessionProperty('sess_time');
+-//			if(!$maxlifetime){
+-//				$maxlifetime = 0;
+-//			}
+-//		}
+-		
+-        $stmt = $this-&gt;conn-&gt;prepareStatement(
+-			'DELETE FROM c_session WHERE `session_lastmodified` &lt; ?');
+-		$stmt-&gt;setTimestamp(1,time()-$maxlifetime);
+-        try {
+-			$rs = $stmt-&gt;executeUpdate();
+-			return true;
+-		} catch (SQLException $sqlEx) {
+-            $this-&gt;logger-&gt;debug($sqlEx-&gt;getMessage());
+-			return false;
+-		}
+-	}
+-	
+-	
+-}
++&lt;?php
++// {{{ License
++//////////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005, 2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++//////////////////////////////////////////////////////////////////////////////////
++// }}}
++ 
++include_once('action/controller/session/ISessionContainer.php');
++ 
++/**
++ * Creole Session Container.
++ * 
++ * It requires a Database table defined like this:
++ * &lt;code&gt;
++ * CREATE TABLE c_sessions (
++ *   `session_id`   VARCHAR (255) PRIMARY KEY,
++ *   `session_data` TEXT,
++ *   `session_lastmodified` DATETIME
++ * );
++ * &lt;/code&gt;
++ * 
++ * &lt;b&gt;Warning:&lt;/b&gt; this class was tested only with mysql.
++ *  
++ * @package medick.action.controller
++ * @subpackage session
++ * @author Oancea Aurelian 
++ */
++class CreoleSessionContainer extends Object implements ISessionContainer {
++ 
++    /** @var CreoleConnection */
++    protected $conn=null;
++ 
++    /** @var int
++        session default maxlifetime */
++    static private $lifetime;
++ 
++    /**
++     * Constructor
++     */
++    public function CreoleSessionContainer() {
++        $this-&gt;conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn());
++        CreoleSessionContainer::$lifetime= ini_get('session.gc_maxlifetime');
++    }
++ 
++    public function open($save_path, $session_name) {
++        $this-&gt;gc();
++        return true;
++    }
++ 
++    public function close() {
++        $this-&gt;conn-&gt;close();
++        return true;
++    }
++ 
++    public function read($id) {
++        $timeout = time() - self::$lifetime;
++        $stmt = $this-&gt;conn-&gt;prepareStatement('SELECT session_data FROM c_sessions   
++                                       WHERE session_id = ? AND session_lastmodified &gt; ' . $timeout);
++        $stmt-&gt;setString(1, $id);
++        $rs = $stmt-&gt;executeQuery();
++        if($rs-&gt;getRecordCount() == 0) return '';
++        $rs-&gt;first();
++        return $rs-&gt;get('session_data');
++    }
++ 
++    public function write($id, $session_data) {
++        // 1. select
++        $stmt = $this-&gt;conn-&gt;prepareStatement('SELECT session_id FROM c_sessions WHERE session_id=?');
++        $stmt-&gt;setString(1,$id);
++        $rs = $stmt-&gt;executeQuery();
++        // 2. count results:
++        if($rs-&gt;getRecordCount()==1) {
++            // 3. update:
++            $stmt = $this-&gt;conn-&gt;prepareStatement('UPDATE c_sessions SET session_data=?,' . 
++                                                  ' session_lastmodified=now() WHERE session_id=?');
++            $stmt-&gt;setString(1,$session_data);
++            $stmt-&gt;setString(2,$id);
++            $stmt-&gt;executeUpdate();
++            return true;
++        } else {
++            // 4. insert
++            $stmt = $this-&gt;conn-&gt;prepareStatement('INSERT INTO c_sessions 
++                                    (session_id,session_data,session_lastmodified) VALUES (?,?,now())');
++            $stmt-&gt;setString(1,$id);
++            $stmt-&gt;setString(2,$session_data);
++            $rs = $stmt-&gt;executeUpdate();
++            return true;
++        }
++    }
++ 
++    public function destroy($id) {
++        $stmt = $this-&gt;conn-&gt;prepareStatement('DELETE FROM c_sessions WHERE session_id = ?');
++        $stmt-&gt;setString(1,$id);
++        $stmt-&gt;executeUpdate();
++        return true;
++    }
++ 
++    /**
++     * Garbage Collection, removes all the expired sessions
++     *
++     * @param int maxlifetime, after that the session will expire
++     * @return boolean
++     */
++    public function gc($maxlifetime=300) {
++        $stmt = $this-&gt;conn-&gt;prepareStatement('DELETE FROM c_sessions WHERE `session_lastmodified` &lt; ?');
++        $stmt-&gt;setTimestamp(1,time()-$maxlifetime);
++        $stmt-&gt;executeUpdate();
++        return true;
++    }
++}
++ 
+
+
+Property changes on: trunk/libs/action/controller/session/CreoleSessionContainer.php
+___________________________________________________________________
+Name: svn:executable
+   - *
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2006-03-27 19:24:03 UTC (rev 386)
++++ trunk/libs/action/controller/session/Session.php	2006-03-28 18:40:11 UTC (rev 387)
+@@ -32,7 +32,7 @@
+ //////////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-include_once('action/controller/session/CreoleSessionContainer.php');
++// include_once('action/controller/session/CreoleSessionContainer.php');
+ 
+ /**
+  * A wrapper around PHP session handling
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2006-03-27 19:24:03 UTC (rev 386)
++++ trunk/libs/action/view/Base.php	2006-03-28 18:40:11 UTC (rev 387)
+@@ -53,7 +53,8 @@
+ class ActionView extends Object {
+ 
+     public static function factory($engine) {
+-        return new PHPTemplateEngine();
++        $clazz= strtoupper($engine) . 'TemplateEngine';
++        return new $clazz;
+     }
+ 
+     /**
+@@ -64,7 +65,8 @@
+      * @param mixed value, the value on witch we strip slashes.
+      *                  It can be array/string or object.
+      */
+-    public static function stripslashes_deep($value) {
++     
++    /* public static function stripslashes_deep($value) {
+         if (is_array($value)) {
+             array_map(array('ActionView','stripslashes_deep'), $value);
+         } elseif (is_object($value)) {
+@@ -73,7 +75,7 @@
+             stripslashes($value);
+         }
+         return $value;
+-     }
++     } */ 
+ }
+ 
+ /**
+@@ -131,7 +133,7 @@
+             throw new FileNotFoundException ('Cannot Find Template: ' . $file);
+         }
+         if (!empty($this-&gt;vars)) {
+-            if(!get_magic_quotes_gpc()) $this-&gt;vars = ActionView::stripslashes_deep($this-&gt;vars);
++            // if(!get_magic_quotes_gpc()) $this-&gt;vars = ActionView::stripslashes_deep($this-&gt;vars);
+             extract($this-&gt;vars,EXTR_SKIP);
+         }
+         ob_start();
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000170.html">[Medick-svn] r386 - applications/testor/app/controllers applications/testor/app/views applications/testor/app/views/req applications/testor/conf applications/testor/db trunk trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#171">[ date ]</a>
+              <a href="thread.html#171">[ thread ]</a>
+              <a href="subject.html#171">[ subject ]</a>
+              <a href="author.html#171">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

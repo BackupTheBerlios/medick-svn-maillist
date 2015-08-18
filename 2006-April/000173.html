@@ -1,0 +1,836 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r389 - applications/testor/app/controllers applications/testor/app/views applications/testor/app/views/cookie applications/testor/app/views/project applications/testor/conf applications/testor/db trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/action/controller/session trunk/libs/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-April/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r389%20-%20applications/testor/app/controllers%20applications/testor/app/views%20applications/testor/app/views/cookie%20applications/testor/app/views/project%20applications/testor/conf%20applications/testor/db%20trunk/libs/action/controller%20trunk/libs/action/controller/http%20trunk/libs/action/controller/session%20trunk/libs/medick&In-Reply-To=%3C200604041836.k34IacCZ028700%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000172.html">
+   <LINK REL="Next"  HREF="000174.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r389 - applications/testor/app/controllers applications/testor/app/views applications/testor/app/views/cookie applications/testor/app/views/project applications/testor/conf applications/testor/db trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/action/controller/session trunk/libs/medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r389%20-%20applications/testor/app/controllers%20applications/testor/app/views%20applications/testor/app/views/cookie%20applications/testor/app/views/project%20applications/testor/conf%20applications/testor/db%20trunk/libs/action/controller%20trunk/libs/action/controller/http%20trunk/libs/action/controller/session%20trunk/libs/medick&In-Reply-To=%3C200604041836.k34IacCZ028700%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r389 - applications/testor/app/controllers applications/testor/app/views applications/testor/app/views/cookie applications/testor/app/views/project applications/testor/conf applications/testor/db trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/action/controller/session trunk/libs/medick">aurelian at berlios.de
+       </A><BR>
+    <I>Tue Apr  4 20:36:38 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000172.html">[Medick-svn] r388 - applications/testor/app/controllers applications/testor/conf applications/testor/db trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/action/controller/session trunk/skel/config
+</A></li>
+        <LI>Next message: <A HREF="000174.html">[Medick-svn] r390 - in applications/testor/app/views: cookie project
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#173">[ date ]</a>
+              <a href="thread.html#173">[ thread ]</a>
+              <a href="subject.html#173">[ subject ]</a>
+              <a href="author.html#173">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-04-04 20:36:34 +0200 (Tue, 04 Apr 2006)
+New Revision: 389
+
+Added:
+   applications/testor/app/controllers/cookie_controller.php
+   applications/testor/app/controllers/project_controller.php
+   applications/testor/app/views/cookie/
+   applications/testor/app/views/cookie/index.phtml
+   applications/testor/app/views/project/
+   applications/testor/app/views/project/index.phtml
+   applications/testor/app/views/project/show.phtml
+   trunk/libs/action/controller/http/Cookie.php
+Modified:
+   applications/testor/conf/testor.routes.php
+   applications/testor/db/schema.sql
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+   trunk/libs/action/controller/session/Session.php
+   trunk/libs/medick/Object.php
+Log:
+ -- added Cookies class
+ -- testor: a project controller to test medick associations (WIP)
+ -- testor: a cookie controller to test medick cookies
+
+
+Added: applications/testor/app/controllers/cookie_controller.php
+===================================================================
+--- applications/testor/app/controllers/cookie_controller.php	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/app/controllers/cookie_controller.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -0,0 +1,62 @@
++&lt;?php
++/**
++ * $Id$
++ * @desc: tests cookies behavior
++ */ 
++class CookieController extends ApplicationController {
++    
++    protected $use_layout= 'main';
++    
++    /**
++     * @desc: list all the cookies and print a form to &lt;a href=&quot;cookie/add&quot;&gt;add&lt;/a&gt; a new one, the user can also remove a cookie
++     */ 
++    public function index() {
++        $this-&gt;template-&gt;assign('cookies', $this-&gt;request-&gt;getCookies());
++    }
++
++    /**
++     * @desc: process the form that adds a new cookie
++     */ 
++    public function add() {
++        $values= $this-&gt;request-&gt;getParameter('cookie');
++        // manual check.
++        if ( $values === NULL ||
++            (isset($values['name']) &amp;&amp; $values['name'] == '') || 
++            (isset($values['value']) &amp;&amp; $values['value'] == '')
++        ) {
++            return $this-&gt;sendError($values, 'Cannot set cookie, one of cookie name or value is missing');
++        }
++        $cookie= new Cookie($values['name'], $values['value']);
++        // $cookie-&gt;setPath($values['path']);
++        // $cookie-&gt;setExpire((int)$values['expire']);
++        // $cookie-&gt;setDomain($values['domain']);
++        // $cookie-&gt;setSecure($values['secure']);
++        $this-&gt;response-&gt;setCookie($cookie);
++        $this-&gt;flash('notice', 'Added Cookie &lt;em&gt;' . $cookie-&gt;getName() . '&lt;/em&gt;');
++        $this-&gt;redirect_to('index');
++    }
++    
++    /**
++     * @desc: removes a cookie
++     */ 
++    public function nuke() {
++        if ($this-&gt;request-&gt;getParameter('name') === $this-&gt;session-&gt;getName()) {
++            $this-&gt;flash('error', 'Cookie: &lt;b&gt;' . $this-&gt;session-&gt;getName() . '&lt;/b&gt; 
++                                   cannot be removed since this is your Session Name');
++        } else {
++            // a cookie can be distroyed by setting the value to FALSE
++            $this-&gt;response-&gt;setCookie(new Cookie($this-&gt;request-&gt;getParameter('name'), FALSE));
++            $this-&gt;flash('notice', 'Cookie: &lt;em&gt;' . $this-&gt;request-&gt;getParameter('name') . '&lt;/em&gt; was removed.&lt;br /&gt;
++                                    &lt;b&gt;Close/Open&lt;/b&gt; your browser to see the change.');
++        }
++        $this-&gt;redirect_to('index');
++    }
++
++    private function sendError($cookie_values, $reason) {
++        $this-&gt;template-&gt;assign('cookie_values', $cookie_values);
++        $this-&gt;flash('error', $reason);
++        $this-&gt;redirect_to('index');
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/controllers/cookie_controller.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/controllers/project_controller.php
+===================================================================
+--- applications/testor/app/controllers/project_controller.php	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/app/controllers/project_controller.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -0,0 +1,34 @@
++&lt;?php
++
++/**
++ * This class is part of elproject, medick sample application
++ * $Id$
++ * @package elproject.controllers
++ */
++
++class ProjectController extends ApplicationController {
++
++    protected $models = array('project');
++
++    protected $use_layout= 'main';
++
++    /** List all projects */
++    public function index() {
++        try {
++            $this-&gt;template-&gt;projects= Project::find();
++        } catch (RecordNotFoundException $rnfEx) {
++            $this-&gt;render_text($rnfEx-&gt;getMessage());
++        }
++    }
++
++    /** Show one project */
++    public function show() {
++        try {
++            $this-&gt;template-&gt;project= Project::find($this-&gt;params['id']);
++        } catch (ActiveRecordException $rnfEx) {
++            $this-&gt;redirect_to('index');
++        }
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/controllers/project_controller.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/cookie/index.phtml
+===================================================================
+--- applications/testor/app/views/cookie/index.phtml	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/app/views/cookie/index.phtml	2006-04-04 18:36:34 UTC (rev 389)
+@@ -0,0 +1,69 @@
++&lt;!-- $Id: --&gt;
++&lt;h5&gt;Cookies Movements&lt;/h5&gt;
++
++&lt;? if(isset($flash['notice'])):?&gt;
++    &lt;div class=&quot;flash_notice&quot;&gt;
++        &lt;div class=&quot;label&quot;&gt;Note&lt;/div&gt;
++        &lt;div class=&quot;content&quot;&gt;&lt;?=$flash['notice'];?&gt;&lt;/div&gt;
++    &lt;/div&gt;
++&lt;? endif;?&gt;
++&lt;? if(isset($flash['error'])):?&gt;
++    &lt;div class=&quot;flash_error&quot;&gt;
++        &lt;div class=&quot;label&quot;&gt;Warning&lt;/div&gt;
++        &lt;div class=&quot;content&quot;&gt;&lt;?=$flash['error'];?&gt;&lt;/div&gt;
++    &lt;/div&gt;
++&lt;? endif;?&gt;
++
++&lt;hr /&gt;
++
++&lt;? foreach($cookies as $cookie): ?&gt;
++
++    &lt;a href=&quot;&lt;?=URL::create('cookie', 'nuke', array('name'=&gt;$cookie-&gt;getName()));?&gt;&quot;&gt;Remove&lt;/a&gt;&nbsp;
++    &lt;b&gt;Name:&lt;/b&gt;&nbsp;&lt;?=$cookie-&gt;getName();?&gt;&nbsp;&lt;b&gt;Value:&lt;/b&gt;&lt;?=$cookie-&gt;getValue();?&gt;&lt;br /&gt;
++    &lt;b&gt;DUMP: &lt;/b&gt;&nbsp;&lt;?=$cookie;?&gt;
++    &lt;hr /&gt;
++
++&lt;? endforeach; ?&gt;
++
++&lt;form name=&quot;add_cookie&quot; method=&quot;post&quot; action=&quot;&lt;?=URL::create('cookie', 'add');?&gt;&quot;&gt;
++
++&lt;fieldset&gt;
++&lt;legend&gt;Add A new Cookie&lt;/legend&gt;
++
++&lt;p&gt;
++    &lt;label for=&quot;cookie[name]&quot;&gt;Name : &lt;sup style=&quot;color:red;&quot;&gt;*&lt;/sup&gt;&lt;/label&gt;
++    &lt;input type=&quot;text&quot; name=&quot;cookie[name]&quot; value=&quot;&quot; /&gt;
++&lt;/p&gt;
++
++&lt;p&gt;
++    &lt;label for=&quot;cookie[value]&quot;&gt;Value : &lt;sup style=&quot;color:red;&quot;&gt;*&lt;/sup&gt;&lt;/label&gt;
++    &lt;input type=&quot;text&quot; name=&quot;cookie[value]&quot; value=&quot;&quot; /&gt;
++&lt;/p&gt;
++&lt;!--
++&lt;p&gt;
++    &lt;label for=&quot;cookie[expire]&quot;&gt;Expire&lt;/label&gt;
++    &lt;input type=&quot;text&quot; name=&quot;cookie[expire]&quot; value=&quot;0&quot; /&gt;
++&lt;/p&gt;
++
++&lt;p&gt;
++    &lt;label for=&quot;cookie[path]&quot;&gt;Path&lt;/label&gt;
++    &lt;input type=&quot;text&quot; name=&quot;cookie[path]&quot; value=&quot;/&quot; /&gt;
++&lt;/p&gt;
++
++&lt;p&gt;
++    &lt;label for=&quot;cookie[domain]&quot;&gt;Name&lt;/label&gt;
++    &lt;input type=&quot;text&quot; name=&quot;cookie[domain]&quot; value=&quot;&lt;?=$__server;?&gt;&quot; /&gt;
++&lt;/p&gt;
++
++&lt;p&gt;
++    &lt;label for=&quot;cookie[secure]&quot;&gt;Name&lt;/label&gt;
++    &lt;input type=&quot;radio&quot; name=&quot;cookie[secure]&quot; value=&quot;0&quot; /&gt;
++    &lt;input type=&quot;radio&quot; name=&quot;cookie[secure]&quot; value=&quot;1&quot; /&gt;
++&lt;/p&gt;
++    --&gt;
++&lt;p&gt;&lt;input name=&quot;submit&quot; value=&quot;Add Cookie&quot; type=&quot;submit&quot; /&gt;&lt;/p&gt;
++
++&lt;/fieldset&gt;
++
++&lt;/form&gt;
++
+
+
+Property changes on: applications/testor/app/views/cookie/index.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/project/index.phtml
+===================================================================
+--- applications/testor/app/views/project/index.phtml	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/app/views/project/index.phtml	2006-04-04 18:36:34 UTC (rev 389)
+@@ -0,0 +1,27 @@
++&lt;h2&gt;All Projects&lt;/h2&gt;
++&lt;table border=&quot;1&quot;&gt;
++    &lt;tr&gt;
++        &lt;td&gt;&nbsp;&lt;/td&gt;
++        &lt;td&gt;Project Name&lt;/td&gt;
++        &lt;td&gt;Portfolio&lt;/td&gt;
++        &lt;td&gt;Project Manager&lt;/td&gt;
++        &lt;td&gt;Number of Milestones&lt;/td&gt;
++        &lt;td&gt;Categories&lt;/td&gt;
++        &lt;td&gt;Start Date&lt;/td&gt;
++    &lt;/tr&gt;
++    &lt;? foreach($projects as $project): ?&gt;
++        &lt;tr&gt;
++            &lt;td&gt;&lt;a href=&quot;&lt;?= URL::create('project', 'show', array('id'=&gt;$project-&gt;id));?&gt;&quot;&gt;View&lt;/a&gt;&lt;/td&gt;
++            &lt;td&gt;&lt;?= $project-&gt;name ?&gt;&lt;/td&gt;
++            &lt;td&gt;&lt;?= $project-&gt;portfolio-&gt;name ?&gt;&lt;/td&gt;
++            &lt;td&gt;&lt;?= $project-&gt;manager-&gt;last_name ?&gt;, &lt;?= $project-&gt;manager-&gt;first_name ?&gt;&lt;/td&gt;
++            &lt;td&gt;&lt;?= $project-&gt;milestones-&gt;count() ?&gt;&lt;/td&gt;
++            &lt;td&gt;
++                &lt;? foreach ($project-&gt;categories as $category): ?&gt;
++                    &lt;?= $category-&gt;name ?&gt;,
++                &lt;? endforeach; ?&gt;
++            &lt;/td&gt;
++            &lt;td&gt;&lt;?= $project-&gt;created_at ?&gt;&lt;/td&gt;
++        &lt;/tr&gt;
++    &lt;? endforeach; ?&gt;
++&lt;/table&gt;
+
+
+Property changes on: applications/testor/app/views/project/index.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/project/show.phtml
+===================================================================
+--- applications/testor/app/views/project/show.phtml	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/app/views/project/show.phtml	2006-04-04 18:36:34 UTC (rev 389)
+@@ -0,0 +1,30 @@
++&lt;h2&gt; Project &lt;?= $project-&gt;name ?&gt;&lt;/h2&gt;&lt;br&gt;
++
++Portfolio: &lt;?= $project-&gt;portfolio-&gt;name ?&gt;&lt;br&gt;
++
++Project Manager: &lt;?= $project-&gt;manager-&gt;first_name ?&gt;,
++            &lt;?= $project-&gt;manager-&gt;last_name ?&gt;&lt;br&gt;
++
++&lt;? if($project-&gt;milestones-&gt;count()): ?&gt;
++    Milestones:&lt;br&gt;
++    &lt;? foreach($project-&gt;milestones as $milestone): ?&gt;
++        &nbsp;&nbsp;-&lt;?= $milestone-&gt;title ?&gt;&lt;br&gt;
++    &lt;? endforeach; ?&gt;
++&lt;? else: ?&gt;
++    no Milestones found.
++&lt;? endif; ?&gt;
++
++&lt;br&gt;
++
++&lt;? if(count($project-&gt;categories)): ?&gt;
++    Currently in Categories:&lt;br&gt;
++    &lt;? foreach($project-&gt;categories as $category): ?&gt;
++        &nbsp;&nbsp;-&lt;?= $category-&gt;name ?&gt;&lt;br&gt;
++    &lt;? endforeach; ?&gt;
++&lt;? else: ?&gt;
++    no Milestones found.
++&lt;? endif; ?&gt;
++
++&lt;br&gt;
++
++Start Date: &lt;?= $project-&gt;created_at ?&gt;&lt;br&gt;
+\ No newline at end of file
+
+
+Property changes on: applications/testor/app/views/project/show.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/testor/conf/testor.routes.php
+===================================================================
+--- applications/testor/conf/testor.routes.php	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/conf/testor.routes.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -6,6 +6,11 @@
+ $map= Map::getInstance();
+ $map-&gt;add(new Route('/main/index', Route::WELCOME, array('controller'=&gt;'main', 'action'=&gt;'index')));
+ 
++$route= new Route('cookie/nuke/:name');
++$route-&gt;setDefault('action','nuke');
++$route-&gt;setDefault('controller','cookie');
++$map-&gt;add($route);
++
+ $route= new Route(':controller/:number');
+ $route-&gt;setDefault('action','index');
+ $route-&gt;setRequirement('number', '/([0-9])/');
+
+Modified: applications/testor/db/schema.sql
+===================================================================
+--- applications/testor/db/schema.sql	2006-04-03 18:28:25 UTC (rev 388)
++++ applications/testor/db/schema.sql	2006-04-04 18:36:34 UTC (rev 389)
+@@ -1,16 +1,26 @@
+ -- $Id$
+ -- Database Schema for testor project
+ 
++SET AUTOCOMMIT=0;
++START TRANSACTION;
++
+ DROP DATABASE IF EXISTS `testor`;
+ CREATE DATABASE `testor`;
+ USE `testor`;
+ 
++-- --------------------------------------------------------
++-- Table structure for table `tones`
++
+ CREATE TABLE tones (
+   `id`      INT (11) PRIMARY KEY auto_increment,
+   `name`    VARCHAR (255),
+   `status`  INT(1)
+ ) ENGINE=InnoDB;
+ 
++
++-- --------------------------------------------------------
++-- Table structure for table `strones`
++
+ CREATE TABLE strones (
+   `id`      INT (11) PRIMARY KEY auto_increment,
+   `inc`     INT (11)
+@@ -18,9 +28,112 @@
+ 
+ INSERT INTO `strones` (`id`,`inc`) VALUES (1,0);
+ 
++-- --------------------------------------------------------
++-- Table structure for table `c_sessions`
++
+ CREATE TABLE c_sessions (
+ 	`session_id` VARCHAR (255) PRIMARY KEY,
+ 	`session_data` TEXT,
+ 	`session_lastmodified` DATETIME
+ ) ENGINE=InnoDB;
+ 
++-- --------------------------------------------------------
++-- ActiveRecord::Association related tables
++-- --------------------------------------------------------
++
++-- --------------------------------------------------------
++-- Table structure for table `categories`
++
++CREATE TABLE categories (
++  id        int(11)         NOT NULL auto_increment,
++  `name`    varchar(150)    NOT NULL,
++  PRIMARY KEY  (id)
++) Engine=InnoDB;
++
++-- --------------------------------------------------------
++-- Table structure for table `categories_projects`
++
++CREATE TABLE categories_projects (
++  category_id   int(11) NOT NULL,
++  project_id    int(11) NOT NULL
++) Engine=InnoDB;
++
++-- --------------------------------------------------------
++-- Table structure for table `milestones`
++
++CREATE TABLE milestones (
++  id            int(11)      NOT NULL auto_increment,
++  project_id    int(11)      NOT NULL,
++  title         varchar(150) NOT NULL,
++  description   text,
++  PRIMARY KEY  (id)
++) Engine=InnoDB;
++
++-- --------------------------------------------------------
++-- Table structure for table `portfolios`
++
++CREATE TABLE portfolios (
++  id        int(11)     NOT NULL auto_increment,
++  `name`    varchar(40) default NULL,
++  PRIMARY KEY  (id)
++) Engine=InnoDB;
++
++-- --------------------------------------------------------
++-- Table structure for table `managers`
++
++CREATE TABLE managers (
++  id            int(11)     NOT NULL auto_increment,
++  first_name    varchar(40) default NULL,
++  last_name     varchar(40) default NULL,
++  PRIMARY KEY  (id)
++) Engine=InnoDB;
++
++-- --------------------------------------------------------
++-- Table structure for table `projects`
++
++CREATE TABLE projects (
++  id            int(11)     NOT NULL auto_increment,
++  portfolio_id  int(11)     NOT NULL,
++  manager_id    int(11)     NOT NULL,
++  `name`        varchar(40) default NULL,
++  created_at    datetime    default NULL,
++  PRIMARY KEY  (id)
++) Engine=InnoDB;
++
++-- --------------------------------------------------------
++-- Foreign Keys
++
++ALTER TABLE projects ADD
++    constraint fk_project_portofolio foreign key (portfolio_id) references portfolios(id);
++
++ALTER TABLE projects ADD
++    constraint fk_project_manager foreign key (manager_id) references managers(id);
++
++ALTER TABLE categories_projects ADD
++    constraint fk_categories foreign key (category_id) references categories(id);
++
++ALTER TABLE categories_projects ADD
++    constraint fk_projects foreign key (project_id) references projects(id);
++
++ALTER TABLE milestones ADD
++    constraint fk_milestones_project foreign key (project_id) references projects(id);
++
++-- --------------------------------------------------------
++-- Inserts
++
++INSERT INTO `categories` ( `id` , `name` )
++    VALUES (NULL , 'medick');
++INSERT INTO `categories` ( `id` , `name` )
++    VALUES (NULL , 'PHP');
++INSERT INTO `portfolios` ( `id` , `name` )
++    VALUES (NULL , 'locknet.ro');
++INSERT INTO `managers` ( `id` , `first_name` , `last_name` )
++    VALUES ( NULL , 'oancea', 'aurelian');
++INSERT INTO `projects` ( `id` , `portfolio_id` , `manager_id`,`name` , `created_at` )
++    VALUES ( NULL , '1', '1', 'elproject', NOW());
++INSERT INTO `milestones` ( `id` , `project_id` , `title` , `description` )
++    VALUES (NULL , '1', 'First Release', 'A description of this milestone.');
++INSERT INTO `categories_projects` ( `category_id` , `project_id` )
++    VALUES ('1', '1'), ('2', '1');
++
++COMMIT;
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-04-03 18:28:25 UTC (rev 388)
++++ trunk/libs/action/controller/Base.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -336,7 +336,7 @@
+         $this-&gt;app_path = $this-&gt;injector-&gt;getPath('__base');
+         $this-&gt;template_root = $this-&gt;injector-&gt;getPath('views') . $this-&gt;params['controller'] . DIRECTORY_SEPARATOR;
+         $this-&gt;template = ActionView::factory('php');
+-         
++        
+         // register session container if any
+         // TODO: this should be moved elsewhere
+         if ($this-&gt;config-&gt;getWebContext()-&gt;session !== NULL &amp;&amp; 
+
+Added: trunk/libs/action/controller/http/Cookie.php
+===================================================================
+--- trunk/libs/action/controller/http/Cookie.php	2006-04-03 18:28:25 UTC (rev 388)
++++ trunk/libs/action/controller/http/Cookie.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -0,0 +1,141 @@
++&lt;?php
++// {{{ License
++//////////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005,2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++//////////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * 
++ * @package medick.action.controller
++ * @subpackage http
++ */
++
++class Cookie extends Object {
++    
++    /** @var string
++        Cookie name */ 
++    private $name;
++
++    /** @var string
++        Cookie value */ 
++    private $value;
++
++    /** @var int
++        Cookie expire */ 
++    private $expire;
++    
++    /** @var string
++        Cookie path */ 
++    private $path;
++    
++    /** @var string 
++        Cookie domain */
++    private $domain;
++
++    /** @var bool
++        Cookie secure */ 
++    private $secure;
++    
++    /**
++     * Creates A new Cookie
++     *
++     * @param string Cookie name
++     * @param string Cookie value
++     * @param int 
++     * @param string Cookie path
++     * @param string Cookie domain
++     * @param bool    
++     */ 
++    public function Cookie($name, $value = '', $expire = 0, $path = '/', $domain = '', $secure = FALSE) {
++        $this-&gt;name   = $name;
++        $this-&gt;value  = $value;
++        $this-&gt;expire = $expire;
++        $this-&gt;path   = $path;
++        $this-&gt;domain = $domain;
++        $this-&gt;secure = $secure;
++    }
++
++    public function getName() {
++        return $this-&gt;name;
++    }
++
++    public function getValue() {
++        return $this-&gt;value;
++    }
++
++    public function setValue($value) {
++        $this-&gt;value= $value;
++    }
++
++    public function getExpire() {
++        return $this-&gt;expire;
++    }
++
++    public function setExpire($expire) {
++        $this-&gt;expire = $expire;
++    }
++    
++    public function getPath() {
++        return $this-&gt;path;
++    }
++
++    public function setPath($path) {
++        $this-&gt;path= $path;
++    }
++    
++    public function getDomain() {
++        return $this-&gt;domain;
++    }
++
++    public function setDomain($domain) {
++        $this-&gt;domain = $domain;
++    }
++    
++    public function getSecure() {
++        return (bool)$this-&gt;secure;
++    }
++
++    public function setSecure($secure) {
++        $this-&gt;secure= (bool)$secure;
++    }
++    
++    public function toString() {
++      return (
++        $this-&gt;name . '=' . 
++        ($this-&gt;value === '' ? 'deleted' : $this-&gt;value).
++        ($this-&gt;expire !== 0 ? '; expires=' . gmdate('D, d-M-Y H:i:s \G\M\T', $this-&gt;expire) : '').
++        ($this-&gt;path !== '' ? '; path=' . $this-&gt;path : '').
++        ($this-&gt;domain !== '' ? '; domain=' . $this-&gt;domain : '').
++        ($this-&gt;secure ? '; secure' : '')
++      );
++    }
++}
++ 
+
+
+Property changes on: trunk/libs/action/controller/http/Cookie.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-04-03 18:28:25 UTC (rev 388)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -32,6 +32,7 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
++include_once('action/controller/http/Cookie.php');
+ include_once('action/controller/session/Session.php');
+ 
+ /**
+@@ -69,9 +70,11 @@
+         foreach (array_merge($_GET,$_POST) as $key=&gt;$value) {
+             $this-&gt;setParameter($key, $value);
+         }
++
++        foreach ($_COOKIE as $cookie_name=&gt;$cookie_value) {
++            $this-&gt;cookies[$cookie_name]= new Cookie($cookie_name, $cookie_value);
++        }
+         
+-        $this-&gt;cookies= $_COOKIE;
+-        
+         unset($_REQUEST); unset($_GET); unset($_POST);
+ 
+         if (array_key_exists('PATH_INFO', $_SERVER) &amp;&amp; $_SERVER['PATH_INFO']!='' ) {
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2006-04-03 18:28:25 UTC (rev 388)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -78,7 +78,7 @@
+      * @param string the name of the header
+      * @param mixed  the value of this header
+      */
+-    public function setHeader($name,$value) {
++    public function setHeader($name, $value) {
+         header($name . &quot;: &quot; . $value);
+     }
+ 
+@@ -91,9 +91,8 @@
+         return $this-&gt;setHeader('Content-type', $type);
+     }
+ 
+-
+-    public function setCookie($cookie) {
+-        $this-&gt;setHeader('Set-Cookie', $cookie);
++    public function setCookie(Cookie $cookie) {
++        $this-&gt;setHeader('Set-Cookie', $cookie-&gt;toString());
+     }
+     
+     /**
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2006-04-03 18:28:25 UTC (rev 388)
++++ trunk/libs/action/controller/session/Session.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -32,8 +32,6 @@
+ //////////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-// include_once('action/controller/session/CreoleSessionContainer.php');
+-
+ /**
+  * A wrapper around PHP session handling
+  *
+@@ -50,7 +48,11 @@
+     /** @var ISessionContainer
+         the session container */
+     private $container = NULL;
+-
++  
++    /** @var string
++        Session name */
++    private $name = 'MSESSID';
++    
+     /**
+      * Constructor, creates a new session object
+      *
+@@ -76,6 +78,7 @@
+         
+         // TODO: more settings
+         // session_cache_limiter(&quot;nocache&quot;);
++        session_name($this-&gt;name);
+         if ($this-&gt;container!==NULL) {
+             session_set_save_handler(
+                 array($this-&gt;container, 'open'),
+@@ -91,6 +94,24 @@
+     }
+ 
+     /**
++     * It sets the Session Name.
++     * 
++     * Medick uses MSESSID as a session name identifier, overwritting PHPSESSID
++     * @param string the session name
++     */
++    public function setName($name) {
++        $this-&gt;name = $name;
++    }
++    
++    /**
++     * It gets this Session name
++     *
++     * @return string the Session Name
++     */
++    public function getName() {
++        return $this-&gt;name;
++    }
++    /**
+      * Sets a session variable
+      *
+      * @param string name, the name of the session variable
+
+Modified: trunk/libs/medick/Object.php
+===================================================================
+--- trunk/libs/medick/Object.php	2006-04-03 18:28:25 UTC (rev 388)
++++ trunk/libs/medick/Object.php	2006-04-04 18:36:34 UTC (rev 389)
+@@ -73,7 +73,7 @@
+      * @return string 
+      */ 
+     public function toString() {
+-        return $this-&gt;__toString();
++        return ucfirst($this-&gt;getClassName());
+     }
+     
+     /**
+@@ -86,7 +86,7 @@
+      * @return string
+      */
+     public function __toString() {
+-        return ucfirst($this-&gt;getClassName());
++        return $this-&gt;toString();
+     }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000172.html">[Medick-svn] r388 - applications/testor/app/controllers applications/testor/conf applications/testor/db trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/action/controller/session trunk/skel/config
+</A></li>
+	<LI>Next message: <A HREF="000174.html">[Medick-svn] r390 - in applications/testor/app/views: cookie project
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#173">[ date ]</a>
+              <a href="thread.html#173">[ thread ]</a>
+              <a href="subject.html#173">[ subject ]</a>
+              <a href="author.html#173">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

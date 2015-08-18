@@ -1,0 +1,206 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r245 - in trunk: libs/action/controller test/application/models test/test/action/controller
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r245%20-%20in%20trunk%3A%20libs/action/controller%20test/application/models%20test/test/action/controller&In-Reply-To=%3C200510291549.j9TFnxvC020117%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000048.html">
+   <LINK REL="Next"  HREF="000050.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r245 - in trunk: libs/action/controller test/application/models test/test/action/controller</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r245%20-%20in%20trunk%3A%20libs/action/controller%20test/application/models%20test/test/action/controller&In-Reply-To=%3C200510291549.j9TFnxvC020117%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r245 - in trunk: libs/action/controller test/application/models test/test/action/controller">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Oct 29 17:49:59 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000048.html">[Medick-svn] r244 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000050.html">[Medick-svn] r246 - trunk/test
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#49">[ date ]</a>
+              <a href="thread.html#49">[ thread ]</a>
+              <a href="subject.html#49">[ subject ]</a>
+              <a href="author.html#49">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-29 17:49:59 +0200 (Sat, 29 Oct 2005)
+New Revision: 245
+
+Added:
+   trunk/test/application/models/fakemodelone.php
+   trunk/test/application/models/fakemodeltwo.php
+   trunk/test/test/action/controller/InjectorTest.php
+Modified:
+   trunk/libs/action/controller/Injector.php
+Log:
+ [ AR/Injector ] :
+    -&gt; if the find method is not defined a InhectorException is thrown
+    -&gt; the same exception is thrown also if the find method is not declared as beeing static and public.
+    -&gt; added UnitTest.
+
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2005-10-29 10:07:49 UTC (rev 244)
++++ trunk/libs/action/controller/Injector.php	2005-10-29 15:49:59 UTC (rev 245)
+@@ -64,9 +64,21 @@
+         }
+           
+         $model_object = new ReflectionClass(ucfirst($model));
+-        if ($model_object-&gt;getParentClass()-&gt;name != 'ActiveRecordBase') {
+-            throw new InjectorException ('Wrong Definition of your Model, `' . $model_name . '` must extend ActiveRecordBase object!');
++
++        if (@$model_object-&gt;getParentClass()-&gt;name != 'ActiveRecordBase') {
++            throw new InjectorException ('Wrong Definition of your Model, `' . ucfirst($model) . '` must extend ActiveRecordBase object!');
+         }
++        // if (!$model_object-&gt;hasMethod('find')) { XXX. php 5.1 only.
++        try {
++            $method= $model_object-&gt;getMethod('find');
++            if (!$method-&gt;isStatic() &amp;&amp; !$method-&gt;isPublic()) {
++                throw new InjectorException('Class method: ' . ucfirst($model) . '::find() should be declared static and public!');
++            }
++        } catch (ReflectionException $rex) {
++            throw new InjectorException (
++                'Cannot Inject your Model, `' . ucfirst($model) . '`!
++                The dummy `find` method is not defined! [ User Info: ' . $rex-&gt;getMessage() . ']');
++        }
+     }
+   
+     /** prepare static members for our model
+
+Added: trunk/test/application/models/fakemodelone.php
+===================================================================
+--- trunk/test/application/models/fakemodelone.php	2005-10-29 10:07:49 UTC (rev 244)
++++ trunk/test/application/models/fakemodelone.php	2005-10-29 15:49:59 UTC (rev 245)
+@@ -0,0 +1,3 @@
++&lt;?php
++    // $Id$
++    class fakemodelone{     }
+
+
+Property changes on: trunk/test/application/models/fakemodelone.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/test/application/models/fakemodeltwo.php
+===================================================================
+--- trunk/test/application/models/fakemodeltwo.php	2005-10-29 10:07:49 UTC (rev 244)
++++ trunk/test/application/models/fakemodeltwo.php	2005-10-29 15:49:59 UTC (rev 245)
+@@ -0,0 +1,8 @@
++&lt;?php
++
++// $Id$
++    
++include_once('active/record/Base.php');
++
++class fakemodeltwo extends ActiveRecordBase {   }
++
+
+
+Property changes on: trunk/test/application/models/fakemodeltwo.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/test/test/action/controller/InjectorTest.php
+===================================================================
+--- trunk/test/test/action/controller/InjectorTest.php	2005-10-29 10:07:49 UTC (rev 244)
++++ trunk/test/test/action/controller/InjectorTest.php	2005-10-29 15:49:59 UTC (rev 245)
+@@ -0,0 +1,52 @@
++&lt;?php
++
++// $Id$
++
++include_once('logger/Logger.php');
++include_once('mock/MockConfigurator.php');
++include_once('action/controller/Injector.php');
++
++/** Test Injector */
++class InjectorTest extends UnitTestCase {
++
++    /** set up */
++    public function setUp() {
++        Registry::put(new MockConfigurator(), '__configurator');
++        Registry::put(new Logger(), '__logger');
++    }
++    
++    /** tearDown */
++    public function tearDown() {
++        Registry::close();
++    }
++
++    /** Inject a non existent model */
++    public function testFileNotFound() {
++        try {
++            Injector::inject('non_existent_model.php');
++            $this-&gt;fail('A FileNotFound Exception should be thrown!');
++        } catch (Exception $ex) {
++            $this-&gt;assertIsA($ex, 'FileNotFoundException');
++        }
++    }
++
++    /** A model that don`t extends ActiveRecordBase */
++    public function testWrongModel() {
++        try {
++            Injector::inject('fakemodelone');
++            $this-&gt;fail('An InjectorException should be thrown!');
++        } catch (Exception $ex) {
++            $this-&gt;assertIsA($ex, 'InjectorException');
++        }
++    }
++
++    /** A model without find method */
++    public function testWrongModelTwo() {
++        try {
++            Injector::inject('fakemodeltwo');
++            $this-&gt;fail('An InjectorException should be thrown!');
++        } catch (Exception $ex) {
++            $this-&gt;assertIsA($ex, 'InjectorException');
++        }
++    }
++}
+
+
+Property changes on: trunk/test/test/action/controller/InjectorTest.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000048.html">[Medick-svn] r244 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000050.html">[Medick-svn] r246 - trunk/test
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#49">[ date ]</a>
+              <a href="thread.html#49">[ thread ]</a>
+              <a href="subject.html#49">[ subject ]</a>
+              <a href="author.html#49">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

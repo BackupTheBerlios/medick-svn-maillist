@@ -1,0 +1,291 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r283 - in trunk/libs: action/controller action/view active/record active/support
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-November/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r283%20-%20in%20trunk/libs%3A%20action/controller%20action/view%20active/record%20active/support&In-Reply-To=%3C200511282010.jASKA5Qu004644%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000078.html">
+   <LINK REL="Next"  HREF="000080.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r283 - in trunk/libs: action/controller action/view active/record active/support</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r283%20-%20in%20trunk/libs%3A%20action/controller%20action/view%20active/record%20active/support&In-Reply-To=%3C200511282010.jASKA5Qu004644%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r283 - in trunk/libs: action/controller action/view active/record active/support">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Nov 28 21:10:05 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000078.html">[Medick-svn] r282 - in trunk/libs/action/controller: . http session
+</A></li>
+        <LI>Next message: <A HREF="000080.html">[Medick-svn] r284 - trunk/public_html
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#79">[ date ]</a>
+              <a href="thread.html#79">[ thread ]</a>
+              <a href="subject.html#79">[ subject ]</a>
+              <a href="author.html#79">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-11-28 21:10:04 +0100 (Mon, 28 Nov 2005)
+New Revision: 283
+
+Modified:
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/action/view/HTML.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/support/Inflector.php
+Log:
+  [ Inflector ] added camelize and uderscore methods
+  [ ACInjector/ARBase  ] fix class name/ file name / table name when the name of the table had undescores in it
+  [ ARBase ] added __sleep and __wakeup magic functions, to allow a decent serialization for ARBase Objects (thanks andrei)
+  [ AVHTML ] using index as action name by default
+
+
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2005-11-28 19:28:01 UTC (rev 282)
++++ trunk/libs/action/controller/Injector.php	2005-11-28 20:10:04 UTC (rev 283)
+@@ -61,8 +61,7 @@
+     public function __construct() {
+         $this-&gt;config = Registry::get('__configurator');
+         $this-&gt;logger = Registry::get('__logger');
+-        $app_path = $this-&gt;config-&gt;getProperty('application_path') . DIRECTORY_SEPARATOR;
+-        $app_path .= 'app' . DIRECTORY_SEPARATOR;
++        $app_path = $this-&gt;config-&gt;getProperty('application_path') . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR;
+         $this-&gt;path['__base']      = $app_path;
+         $this-&gt;path['models']      = $app_path . 'models'      . DIRECTORY_SEPARATOR;
+         $this-&gt;path['controllers'] = $app_path . 'controllers' . DIRECTORY_SEPARATOR;
+@@ -82,7 +81,8 @@
+         $types= array('model', 'controller', 'helper', 'layout', 'include_path');
+         $method= 'inject' . ucfirst($type);
+         if (!method_exists($this, $method)) {
+-            throw new InjectorException('Call to undefined method: `' . $this-&gt;getClassName() . '-&gt;' . $method . '(string ' . $param . ')`');
++            throw new InjectorException(
++                'Call to undefined method: `' . $this-&gt;getClassName() . '-&gt;' . $method . '(string ' . $param . ')`');
+         } elseif (in_array($type, $types)) {
+             if ($param=='') return $this-&gt;$method();
+             else return $this-&gt;$method($param);
+@@ -110,7 +110,7 @@
+             set_include_path(get_include_path() . PATH_SEPARATOR . $top . 'vendor');
+         }
+         if (is_dir($top . 'libs')) {
+-            set_include_path(get_include_path() . PATH_SEPARATOR . $top . 'lib');
++            set_include_path(get_include_path() . PATH_SEPARATOR . $top . 'libs');
+         }
+     }
+ 
+@@ -126,16 +126,15 @@
+     protected function injectModel($name) {
+         $location= $this-&gt;path['models'] . $name . '.php';
+         $this-&gt;logger-&gt;debug('Model Location:: ' . $location);
+-        $this-&gt;logger-&gt;debug('Model Name:: ' . ucfirst($name));
+-
+         $this-&gt;includeFile($location, ucfirst($name));
+-
++        $model_class_name= Inflector::camelize($name);
++        $this-&gt;logger-&gt;debug('Model Class Name:: ' . $model_class_name);
+         try {
+-            $model_object = new ReflectionClass(ucfirst($name));
++            $model_object = new ReflectionClass($model_class_name);
+ 
+             if (@$model_object-&gt;getParentClass()-&gt;name != 'ActiveRecordBase') {
+                 throw new InjectorException (
+-                    'Wrong Definition of user Model, `' . ucfirst($name) . '`, it must extend ActiveRecordBase object!');
++                    'Wrong Definition of user Model, `' . $model_class_name . '`, it must extend ActiveRecordBase object!');
+             }
+ 
+             // if (!$model_object-&gt;hasMethod('find')) { XXX. php 5.1 only.
+@@ -143,12 +142,11 @@
+             $method= $model_object-&gt;getMethod('find');
+             if (!$method-&gt;isStatic() &amp;&amp; !$method-&gt;isPublic()) {
+                 throw new InjectorException (
+-                    'Class method: ' . ucfirst($name) . '::find([mixed arguments]) should be declared as static and public!');
++                    'Class method: ' . $model_class_name . '::find([mixed arguments]) should be declared as static and public!');
+             }
+         } catch (ReflectionException $rEx) {
+             throw new InjectorException (
+-                'Cannot Inject user Model, `' . ucfirst($name) . '`!
+-                The dummy `find` method is not defined! [ User Info: ' . $rEx-&gt;getMessage() . ']');
++                'Cannot Inject user Model, `' . $model_class_name . '`!', $rEx-&gt;getMessage());
+         }
+ 
+     }
+@@ -194,7 +192,7 @@
+                     should be instantiable (must have a public constructor)!');
+             }
+         } catch (ReflectionException $rEx) {
+-            throw new InjectorException ('Cannot inject user controller class `' . $clazz . '` [ User Info ] :' . $rEx-&gt;getMessage());
++            throw new InjectorException ('Cannot inject user controller class `' . $clazz . '`',$rEx-&gt;getMessage());
+         }
+     }
+ 
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2005-11-28 19:28:01 UTC (rev 282)
++++ trunk/libs/action/view/HTML.php	2005-11-28 20:10:04 UTC (rev 283)
+@@ -42,7 +42,7 @@
+ }
+ 
+ class URL extends Object {
+-    public static function create($controller, $action, $params=array(), $separator='&amp;') {
++    public static function create($controller, $action='index', $params=array(), $separator='&amp;') {
+         $config = Registry::get('__configurator');
+         $base   = $config-&gt;getProperty('document_root');
+         if (!$config-&gt;getProperty('rewrite')) {
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2005-11-28 19:28:01 UTC (rev 282)
++++ trunk/libs/active/record/Base.php	2005-11-28 20:10:04 UTC (rev 283)
+@@ -54,10 +54,6 @@
+         primary key name! */
+     private $pk;
+ 
+-    /** @var Logger
+-        a Logger instance */
+-    protected $logger;
+-
+     // {{{ Associations
+     protected $has_one= array();
+     protected $has_many= array();
+@@ -101,12 +97,14 @@
+      * @param array, params, parameters as pair of `field name` =&gt; `value`
+      */
+     public final function __construct($params = array()) {
+-        $this-&gt;logger= Registry::get('__logger');
+         self::establish_connection();
++        
+         $this-&gt;fields = new FieldsAggregate();
+-        self::$table_name = Inflector::pluralize(strtolower(get_class($this)));
++        
++        self::$table_name = Inflector::pluralize(strtolower(Inflector::underscore($this-&gt;getClassName())));
++        
+         $table_info = self::$conn-&gt;getDatabaseInfo()-&gt;getTable(self::$table_name);
+-        $this-&gt;pk = $table_info-&gt;getPrimaryKey()-&gt;getName();
++        $this-&gt;pk   = $table_info-&gt;getPrimaryKey()-&gt;getName();
+ 
+         foreach( $table_info-&gt;getColumns() as $col) {
+             $field = new Field( $col-&gt;getName() );
+@@ -143,6 +141,7 @@
+      * @throw ActiveRecordException if the field is not found.
+      */
+     public function __set($field_name, $field_value) {
++        Registry::get('__logger')-&gt;debug('Setting the value of field: ' . $field_name .' to :' . $field_value);
+         for($it = $this-&gt;fields-&gt;getIterator(); $it-&gt;valid(); $it-&gt;next()) {
+             if ($it-&gt;current()-&gt;getName() == $field_name) {
+                 $it-&gt;current()-&gt;setValue($field_value);
+@@ -172,10 +171,10 @@
+         try {
+             return Association::resolve(
+                                 array(
+-                                    'has_one'=&gt;$this-&gt;has_one,
+-                                    'belongs_to'=&gt;$this-&gt;belongs_to,
+-                                    'has_many'=&gt;$this-&gt;has_many,
+-                                    'has_and_belongs_to_many'=&gt;$this-&gt;has_and_belongs_to_many
++                                    'has_one'    =&gt; $this-&gt;has_one,
++                                    'belongs_to' =&gt; $this-&gt;belongs_to,
++                                    'has_many'   =&gt; $this-&gt;has_many,
++                                    'has_and_belongs_to_many' =&gt; $this-&gt;has_and_belongs_to_many
+                                     ),
+                                 self::$table_name,
+                                 $field_name,
+@@ -222,6 +221,22 @@
+         }
+         return $string;
+     }
++    
++    /** Prepare this Object for serialization */
++    public function __sleep() {
++        self::close();
++        return array('fields', 'pk', 'has_one', 'belongs_to', 'has_many', 'has_and_belongs_to_many');
++    }
++    
++    /** restore the Object state after unserialize */
++    public function __wakeup() {
++        self::establish_connection();
++        for($it = $this-&gt;fields-&gt;getIterator(); $it-&gt;valid(); $it-&gt;next()) {
++            $field_name= $it-&gt;current()-&gt;getName();
++            $this-&gt;$field_name = $it-&gt;current()-&gt;getValue();
++        }
++    }
++    
+     // }}}
+ 
+     // {{{ filters:
+@@ -481,6 +496,7 @@
+     public static final function __find($params= array()) {
+         $numargs = sizeof($params);
+         if($numargs == 0) return self::__find(array('all'));
++        
+         self::establish_connection();
+ 
+         $clazz= Inflector::singularize(ucfirst(self::$table_name));
+@@ -488,7 +504,8 @@
+         try {
+             $class = new ReflectionClass($clazz);
+         } catch (ReflectionException $rEx) {
+-            Registry::get('__logger')-&gt;debug($clazz . 'probably not included. Trying to inject. [ User Info: ' . $rEx-&gt;getMessage() . ']');
++            Registry::get('__logger')-&gt;debug('`'.$clazz . '` probably not included. Trying to inject.
++                                            [ User Info: ' . $rEx-&gt;getMessage() . ']');
+             Registry::get('__injector')-&gt;inject('model', strtolower($clazz));
+             // retry:
+             $class = new ReflectionClass($clazz);
+
+Modified: trunk/libs/active/support/Inflector.php
+===================================================================
+--- trunk/libs/active/support/Inflector.php	2005-11-28 19:28:01 UTC (rev 282)
++++ trunk/libs/active/support/Inflector.php	2005-11-28 20:10:04 UTC (rev 283)
+@@ -112,5 +112,16 @@
+         }
+         return $word;
+     }
++
++    // {{{ based on cake.    
++    public static function camelize($word) {
++        return str_replace(&quot; &quot;, &quot;&quot;, ucwords(str_replace(&quot;_&quot;, &quot; &quot;, $word)));
++    }
++    
++    public static function underscore($word) {
++        $word = preg_replace('/([A-Z]+)([A-Z])/','\1_\2', $word);
++        return strtolower(preg_replace('/([a-z])([A-Z])/','\1_\2', $word));
++    }
++    // }}}
+ }
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000078.html">[Medick-svn] r282 - in trunk/libs/action/controller: . http session
+</A></li>
+	<LI>Next message: <A HREF="000080.html">[Medick-svn] r284 - trunk/public_html
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#79">[ date ]</a>
+              <a href="thread.html#79">[ thread ]</a>
+              <a href="subject.html#79">[ subject ]</a>
+              <a href="author.html#79">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

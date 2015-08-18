@@ -1,0 +1,381 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r197 - branches/route.190
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r197%20-%20branches/route.190&In-Reply-To=%3C200510131957.j9DJv2NI031370%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000000.html">
+   <LINK REL="Next"  HREF="000002.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r197 - branches/route.190</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r197%20-%20branches/route.190&In-Reply-To=%3C200510131957.j9DJv2NI031370%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r197 - branches/route.190">aurelian at berlios.de
+       </A><BR>
+    <I>Thu Oct 13 21:57:02 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000000.html">[Medick-svn] r196 - in trunk/libs/action: controller view
+</A></li>
+        <LI>Next message: <A HREF="000002.html">[Medick-svn] r198 - trunk/test
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1">[ date ]</a>
+              <a href="thread.html#1">[ thread ]</a>
+              <a href="subject.html#1">[ subject ]</a>
+              <a href="author.html#1">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-13 21:57:01 +0200 (Thu, 13 Oct 2005)
+New Revision: 197
+
+Removed:
+   branches/route.190/Injector.php
+   branches/route.190/Request.php
+   branches/route.190/Response.php
+   branches/route.190/cli/
+   branches/route.190/http/
+   branches/route.190/session/
+Log:
+ - removed unused files.
+
+Deleted: branches/route.190/Injector.php
+===================================================================
+--- branches/route.190/Injector.php	2005-10-13 19:14:43 UTC (rev 196)
++++ branches/route.190/Injector.php	2005-10-13 19:57:01 UTC (rev 197)
+@@ -1,80 +0,0 @@
+-&lt;?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-include_once('active/record/Base.php');
+-
+-/** 
+- * Model Injector.
+- * Injects the model name into Active Record Base Class.
+- * @package locknet7.action.controller
+- */
+-
+-class Injector extends Object {
+-
+-    /**
+-     * Tasks:
+-     * 1) include the model file
+-     * 2) investigate the Model class
+-     * 3) set ActiveRecordBase::$__klass, aka the table name.
+-     * @TODO: can we hook a Registry here?
+-     */
+-    public static function inject($model) {
+-        $logger = Registry::get('__logger');
+-        $model_location = Registry::get('__configurator')-&gt;getProperty('application_path') . 
+-            DIRECTORY_SEPARATOR . 'models' . DIRECTORY_SEPARATOR . $model . '.php';
+-        $logger-&gt;debug('Model Location:: ' . $model_location);
+-        // FIXME: a custom error.
+-        if (!is_file($model_location)) throw new MedickException ('No such file or directory!');
+-        
+-        include_once($model_location);
+-
+-        $model_name = ucfirst($model);
+-        
+-        $logger-&gt;debug('Model Name:: ' .$model_name);
+-        
+-        $model_object = new ReflectionClass($model_name);
+-
+-        if ($model_object-&gt;getParentClass()-&gt;name != 'ActiveRecordBase') {
+-            throw new MedickException ('Wrong Definition of your Model, ' . $model_name . ' must extend ActiveRecordBase object!');
+-        }
+-        $logger-&gt;debug('Table:: ' .$model);
+-        ActiveRecordBase::setTable($model);
+-    }
+-
+-    /** prepare static members for our model */
+-    public static function prepareARBase() {
+-        return ActiveRecordBase::establish_connection();
+-    }
+-}
+-
+
+Deleted: branches/route.190/Request.php
+===================================================================
+--- branches/route.190/Request.php	2005-10-13 19:14:43 UTC (rev 196)
++++ branches/route.190/Request.php	2005-10-13 19:57:01 UTC (rev 197)
+@@ -1,103 +0,0 @@
+-&lt;?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-if (php_sapi_name() == 'cli') {
+-    include_once('action/controller/cli/CLIRequest.php');   
+-} else {
+-    include_once('action/controller/http/HTTPRequest.php');
+-}
+-
+-/** 
+- * @package locknet7.action.controller.request
+- */
+-abstract class Request extends Object {
+-    
+-    /** @var array
+-        current request parameters */
+-    protected $params = array();
+-    
+-    /** @var Route current request Route */ // XXX. is this used anymore?
+-    protected $route;
+-    
+-    /**
+-     * It gets the param
+-     * @param mixed, param, the paremeter name
+-     * @return the param value of NULL if this param was not passed with this Resuest
+-     */
+-    public function getParam($param) {
+-        return isset($this-&gt;params[$param]) ? $this-&gt;params[$param] : NULL;
+-    }    
+-    
+-    /**
+-     * Check if the current Request has the parameter with the specified name
+-     * @param string param_name the parameter name
+-     * @return bool TRUE if the parameter_name is included in this request, FALSE otherwise
+-     */
+-    public function hasParam($param_name) {
+-        return isset($this-&gt;params[$param_name]);
+-    }
+-    
+-    /** 
+-     * It gets all the parameters of this Request 
+-     * @return array this request parameters.
+-     */
+-    public function getParams() {
+-        return $this-&gt;params;   
+-    }
+-    
+-    /**
+-     * It sets a param.
+-     * @param string, name, the name of the param to set
+-     * @param mixed, value, value of the param
+-     * @return void
+-     */
+-    public function setParam($name, $value) {
+-        $this-&gt;params[$name] = $value;
+-    }    
+-    
+-    /** XXX. is this used anymore?
+-     * It sets the Request Route
+-     * @param Route route, the route to set on this Request
+-     * @return void
+-     */
+-    public function setRoute(IRoute $route) {
+-        $this-&gt;route = $route;
+-    }    
+-    
+-    /** It gets the Route */
+-    public function getRoute() {
+-        return $this-&gt;route;
+-    }
+-}
+-
+
+Deleted: branches/route.190/Response.php
+===================================================================
+--- branches/route.190/Response.php	2005-10-13 19:14:43 UTC (rev 196)
++++ branches/route.190/Response.php	2005-10-13 19:57:01 UTC (rev 197)
+@@ -1,105 +0,0 @@
+-&lt;?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-if (php_sapi_name() == 'cli') {
+-    include_once('action/controller/cli/CLIResponse.php');   
+-} else {
+-    include_once('action/controller/http/HTTPResponse.php');
+-}
+-
+-/**
+- * @package locknet7.action.controller.response
+- */
+-abstract class Response extends Object {
+-
+-    /** Status code (200) indicating the request succeeded normally. */
+-    const SC_OK = 200;
+-
+-    /** Status code (304) indicating that a conditional GET
+-        operation found that the resource was available and not modified. */
+-    const SC_NOT_MODIFIED = 304;
+-
+-    /** Status code (400) indicating the request sent by the
+-        client was syntactically incorrect. */
+-    const SC_BAD_REQUEST = 400;
+-
+-    /** Status code (403) indicating the server
+-        understood the request but refused to fulfill it. */
+-    const SC_FORBIDDEN = 403;
+-
+-    /** Status code (404) indicating that the requested
+-        resource is not available. */
+-    const SC_NOT_FOUND = 404;
+-
+-    /** Status code (500) indicating an error inside
+-        the HTTP server which prevented it from fulfilling the request. */
+-    const SC_INTERNAL_SERVER_ERROR = 500;
+-
+-    /** Status code (503) indicating that the HTTP server
+-        is temporarily overloaded, and unable to handle the request. */
+-    const SC_SERVICE_UNAVAILABLE = 503;
+-    
+-    protected $content;
+-    
+-    /**
+-     * Set the content 
+-     * @param mixed content, the content
+-     */
+-    public function setContent($content) {
+-        $this-&gt;content = $content;
+-    }
+-    
+-    /** Appends some content */
+-    public function append($content) {
+-        $this-&gt;content .= $content;
+-    } 
+-    
+-    /** It gets the content */
+-    public function getContent() {
+-        return $this-&gt;content;
+-    }
+-    
+-    /** echo`s the content */
+-    public function dump() {
+-        echo $this-&gt;content;
+-    }
+-    
+-    /** 
+-     * Sets the status of this response
+-     * @param Response::SC_*, status, the status of this response
+-     */
+-    abstract function setStatus($status);
+-
+-}
+-
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000000.html">[Medick-svn] r196 - in trunk/libs/action: controller view
+</A></li>
+	<LI>Next message: <A HREF="000002.html">[Medick-svn] r198 - trunk/test
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#1">[ date ]</a>
+              <a href="thread.html#1">[ thread ]</a>
+              <a href="subject.html#1">[ subject ]</a>
+              <a href="author.html#1">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

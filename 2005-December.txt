@@ -1,0 +1,4195 @@
+From aurelian at berlios.de  Sat Dec 10 16:43:00 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 10 Dec 2005 16:43:00 +0100
+Subject: [Medick-svn] r286 - applications/eltodo/conf
+Message-ID: <200512101543.jBAFh09f002513@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-10 16:42:59 +0100 (Sat, 10 Dec 2005)
+New Revision: 286
+
+Removed:
+   applications/eltodo/conf/eltodo.bootstrap.php
+Log:
+ -- still alive commit, removed un-needed eltodo.bootstrap.php file
+
+Deleted: applications/eltodo/conf/eltodo.bootstrap.php
+===================================================================
+--- applications/eltodo/conf/eltodo.bootstrap.php	2005-11-28 20:31:31 UTC (rev 285)
++++ applications/eltodo/conf/eltodo.bootstrap.php	2005-12-10 15:42:59 UTC (rev 286)
+@@ -1,100 +0,0 @@
+-<?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * Sample __APPLICATION__NAME__.bootsrap.php file
+- * Will bootstrap the application by setting it`s propreties.
+- * Required files for start-up are included here
+- * @package locknet7.start
+- */
+-
+-// error reporting level, turn this off in production!
+-error_reporting(E_ALL|E_STRICT);
+-
+-if (PHP_VERSION >= '5.1.0') {
+-    date_default_timezone_set('Europe/Bucharest');
+-}
+-/*
+-if (version_compare(PHP_VERSION, '5.1.0') >= 0) {
+-    date_default_timezone_set('Europe/Bucharest');
+-}
+-*/
+-// $pathinfo = pathinfo(__FILE__);
+-// $file     = explode('.',$pathinfo['basename']);
+-
+-// application name
+-define('APP_NAME', 'eltodo');
+-
+-// main TOP_LOCATION.
+-define('TOP_LOCATION', '/wwwroot/medick/trunk/');
+-
+-// include_path, rewrite the existing one
+-set_include_path( TOP_LOCATION . 'libs'   . DIRECTORY_SEPARATOR . PATH_SEPARATOR );
+-
+-// load core classes.
+-include_once('medick/Object.php');
+-include_once('medick/Exception.php');
+-include_once('medick/ErrorHandler.php');
+-include_once('medick/Registry.php');
+-include_once('medick/Dispatcher.php');
+-include_once('medick/Version.php');
+-
+-// set-up the error handler:
+-restore_error_handler();
+-set_error_handler(array(new ErrorHandler(), 'raiseError'));
+-
+-// hook a Configurator into Registry.
+-include_once('configurator/XMLConfigurator.php');
+-Registry::put(new XMLConfigurator('/wwwroot/medick/applications/eltodo/conf/eltodo.xml'), '__configurator');
+-// include_once('configurator/INIConfigurator.php');
+-// Registry::put(new INIConfigurator('/wwwroot/medick/applications/eltodo/conf/eltodo.ini'), '__configurator');
+-
+-// core loaded.
+-include_once('logger/Logger.php');
+-$logger= new Logger();
+-$logger->debug('Core Loaded...');
+-$logger->debug('Running on Medick $v:' . Version::getVersion());
+-$logger->debug('Bootstrapped: ' . APP_NAME . '.bootstrap.php');
+-$logger->debug('XML Config File: ' . APP_NAME . '.xml');
+-$logger->debug('Routes File: ' . APP_NAME . '.routes.php');
+-Registry::put($logger, '__logger');
+-
+-// get some orientation.
+-include_once('action/controller/Map.php');
+-$map= Registry::put(new Map(), '__map');
+-
+-// load application map.
+-include_once('/wwwroot/medick/applications/eltodo/conf/eltodo.routes.php');
+-
+-?>
+
+
+
+From aurelian at berlios.de  Sat Dec 10 16:43:49 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 10 Dec 2005 16:43:49 +0100
+Subject: [Medick-svn] r287 - applications/eltodo/public
+Message-ID: <200512101543.jBAFhn8n002559@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-10 16:43:49 +0100 (Sat, 10 Dec 2005)
+New Revision: 287
+
+Modified:
+   applications/eltodo/public/index.php
+Log:
+ -- removed un-used include from eltodo.index.php
+
+Modified: applications/eltodo/public/index.php
+===================================================================
+--- applications/eltodo/public/index.php	2005-12-10 15:42:59 UTC (rev 286)
++++ applications/eltodo/public/index.php	2005-12-10 15:43:49 UTC (rev 287)
+@@ -37,7 +37,5 @@
+  * The file __APPLICATION__NAME__.bootstrap.php should be included here.
+  */
+ 
+-include_once('/wwwroot/medick/applications/eltodo/conf/eltodo.bootstrap.php');
+-
+ Dispatcher::dispatch();
+ 
+
+
+
+From aurelian at berlios.de  Sat Dec 10 16:45:51 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 10 Dec 2005 16:45:51 +0100
+Subject: [Medick-svn] r288 - applications/eltodo/public
+Message-ID: <200512101545.jBAFjpEj002646@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-10 16:45:50 +0100 (Sat, 10 Dec 2005)
+New Revision: 288
+
+Modified:
+   applications/eltodo/public/.htaccess
+Log:
+ -- clean-up the .htaccess file for eltodo sample application
+
+Modified: applications/eltodo/public/.htaccess
+===================================================================
+--- applications/eltodo/public/.htaccess	2005-12-10 15:43:49 UTC (rev 287)
++++ applications/eltodo/public/.htaccess	2005-12-10 15:45:50 UTC (rev 288)
+@@ -1,20 +1,24 @@
+-# default.htaccess file for Medick framework.
+-# rename-it to .htaccess
+-# $Id: default.htaccess 181 2005-10-03 20:34:29Z aurelian $
+- 
++# eltodo project .htaccess file
++# $Id: .htaccess 181 2005-10-03 20:34:29Z aurelian $
++
++# Configuration
++php_value auto_prepend_file /wwwroot/medick/trunk/boot.php
++
++SetEnv MEDICK_APPLICATION_PATH /wwwroot/medick/applications/eltodo
++SetEnv MEDICK_APPLICATION_NAME eltodo
++
+ #ErrorDocument 404 /todo.html
+  
+ RewriteEngine on
+ 
+-RewriteCond    %{REQUEST_FILENAME}  -d
+-RewriteRule    ^(.+[^/])$           $1/  [R]
+- 
+-# ## Works
+-#RewriteRule ^todo/edit/(.*)$ /index.php?controller=todo&action=edit&id=$1 [NE,L]
+-#RewriteRule ^todo/(.*)$ /index.php?controller=todo&action=$1 [NE,L]
+-# ##
+-  
+-RewriteRule ^([A-Za-z]+)/?([A-Za-z]+)/?\.html$ index.php?controller=$1&action=$2 [NS]
+-RewriteRule ^([A-Za-z]+)/([A-Za-z]+)/([0-9]+)\.html?$ index.php?controller=$1&action=$2&id=$3 [NS]
+-RewriteRule ^([A-Za-z]+)/([A-Za-z]+)/([0-9]+)/?$ index.php?controller=$1&action=$2&id=$3 [L]
+- 
++# all files with .something are skipped
++RewriteCond %{REQUEST_URI} \..+$
++RewriteCond %{REQUEST_URI} !\.html$
++RewriteRule .* - [L]
++# the others are redirected to the front web controller
++RewriteRule ^(.*)$ index.php [QSA,L]
++
++# RewriteCond %{REQUEST_FILENAME} !-s
++# RewriteCond %{REQUEST_URI} !^index.php/$
++# RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
++
+
+
+
+From aurelian at berlios.de  Sat Dec 10 17:04:40 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 10 Dec 2005 17:04:40 +0100
+Subject: [Medick-svn] r289 - trunk/libs/medick
+Message-ID: <200512101604.jBAG4ewE004146@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-10 17:04:40 +0100 (Sat, 10 Dec 2005)
+New Revision: 289
+
+Added:
+   trunk/libs/medick/util.php
+Log:
+ -- initial import of medick.util
+
+Added: trunk/libs/medick/util.php
+===================================================================
+--- trunk/libs/medick/util.php	2005-12-10 15:45:50 UTC (rev 288)
++++ trunk/libs/medick/util.php	2005-12-10 16:04:40 UTC (rev 289)
+@@ -0,0 +1,122 @@
++<?php
++// {{{ License
++//////////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice, 
++//   this list of conditions and the following disclaimer. 
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation 
++//   and/or other materials provided with the distribution. 
++//   * Neither the name of locknet.ro nor the names of its contributors may 
++//   be used to endorse or promote products derived from this software without 
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++// 
++// $Id$
++// 
++//////////////////////////////////////////////////////////////////////////////////
++// }}}
++
++// {{{ ICollection
++/**
++ * Base interface for medick Collections
++ *
++ * A Collection for medick framework is an array witch holds numeric 
++ * keys with Objects as values
++ * 
++ * @package locknet7.medick.util
++ */
++interface ICollection {
++    
++    /** 
++     * Adds a new Object into this Collection
++     * @param medick.Object
++     * @return Object, the Object just added.
++     */ 
++    function add(Object $o);
++    
++    /**
++     * Removes the Object from this collection
++     * @param medick.Object the Object we want to remove
++     * @return Object, the Object just removed
++     */ 
++    function remove(Object $o);
++    
++    /**
++     * Removes all the objects stored in this Collection
++     * @return void
++     */
++    function clear();
++    
++    /**
++     * Indicates the size of this Collection
++     * @return int the size
++     */
++    function size();
++
++    /**
++     * Check if this Collection is empty
++     * @return bool, TRUE if this Collection is empty, FALSE otherwise
++     */
++    function isEmpty();
++
++    /**
++     * It gets the current iterator associated with this collection
++     * @return medick.util.IIterator
++     */
++    function iterator(); 
++    
++    /**
++     * It gets a PHP Array representation of this collection
++     * @return array
++     */
++    function toArray();
++    
++    /**
++     * Returns true if this collection contains the specified element
++     * @return bool
++     */
++    function contains(Object $o);
++    
++}
++// }}}
++
++// {{{ IIterator
++/**
++ * An iterator over a Collection
++ * 
++ * @package locknet7.medick.util
++ */
++interface IIterator {
++
++    /**
++     * Check if this Iterator has more elements
++     * @return TRUE if this Iterator has a next element, 
++     *         FALSE if we are at the last element
++     */
++    function hasNext();
++
++    /**
++     * It gets the current element
++     * @return medick.Object
++     */
++    function next();
++    
++}
++// }}}
++
+
+
+Property changes on: trunk/libs/medick/util.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at berlios.de  Sat Dec 10 17:07:13 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 10 Dec 2005 17:07:13 +0100
+Subject: [Medick-svn] r290 - trunk
+Message-ID: <200512101607.jBAG7D0V004439@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-10 17:07:13 +0100 (Sat, 10 Dec 2005)
+New Revision: 290
+
+Modified:
+   trunk/boot.php
+Log:
+ -- including medick.util when booting.
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2005-12-10 16:04:40 UTC (rev 289)
++++ trunk/boot.php	2005-12-10 16:07:13 UTC (rev 290)
+@@ -7,13 +7,13 @@
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+ //
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+@@ -26,9 +26,9 @@
+ // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
++//
+ // $Id$
+-// 
++//
+ //////////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+@@ -54,13 +54,14 @@
+ include_once('medick/Registry.php');
+ include_once('medick/Dispatcher.php');
+ include_once('medick/Version.php');
++include_once('medick/util.php');
+ include_once('configurator/XMLConfigurator.php');
+ include_once('logger/Logger.php');
+ include_once('action/controller/Map.php');
+ 
+-$conf_files = $_SERVER['MEDICK_APPLICATION_PATH'] . DIRECTORY_SEPARATOR . 'conf' . 
++$conf_files = $_SERVER['MEDICK_APPLICATION_PATH'] . DIRECTORY_SEPARATOR . 'conf' .
+                         DIRECTORY_SEPARATOR . $_SERVER['MEDICK_APPLICATION_NAME'];
+-                        
++
+ Registry::put(new XMLConfigurator($conf_files . '.xml'), '__configurator');
+ 
+ $map= Registry::put(new Map(), '__map');
+
+
+
+From aurelian at berlios.de  Sun Dec 11 14:36:26 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 11 Dec 2005 14:36:26 +0100
+Subject: [Medick-svn] r291 - in trunk/libs/action: controller view
+Message-ID: <200512111336.jBBDaQex016147@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-11 14:36:23 +0100 (Sun, 11 Dec 2005)
+New Revision: 291
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/view/Base.php
+Log:
+ -- clean-up our template engine
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-12-10 16:07:13 UTC (rev 290)
++++ trunk/libs/action/controller/Base.php	2005-12-11 13:36:23 UTC (rev 291)
+@@ -34,6 +34,8 @@
+ 
+ include_once('action/view/Base.php');
+ 
++// namespace ActionController {
++
+ /**
+  * @package locknet7.action.controller
+  * Base Class For Our Application Controllers
+@@ -257,17 +259,6 @@
+     // }}}
+ 
+     /**
+-     * It sets the value a template entry
+-     * @see http://php.net/manual/en/language.oop5.overloading.php
+-     * @param string, name,  name
+-     * @param mixed, value, value
+-     * @throw Error if using a reserved word
+-     */
+-    public function __set($name, $value) {
+-        $this->template->$name= $value;
+-    }
+-
+-    /**
+      * Act as an internal constructor.
+      * @param Request request, the request
+      * @param Response response, the response
+@@ -287,7 +278,8 @@
+         $this->app_path      = $this->injector->getPath('__base');
+         $this->template_root = $this->injector->getPath('views') . $this->params['controller'] . DIRECTORY_SEPARATOR;
+ 
+-        $this->template = ActionViewBase::factory();
++        $this->template = new ActionViewBase();
++        // $this->template = new ActionView:::Base();
+         $this->template->__base= $this->config->getProperty('document_root');
+     }
+ 
+@@ -384,7 +376,8 @@
+      *              return News::find_all();
+      *          }
+      *          // Notes: 1) use protected for internal filters
+-     *          // 2) a filter must return void, in case of a failure, use the redirect method.
++     *          // 2) a filter must return void, in case of a failure, 
++     *          // use the redirect method.
+      *          protected function authenticate() {
+      *              // authentication code here
+      *          }
+@@ -395,17 +388,20 @@
+     private function add_before_filters() {
+         if (!is_array($this->before_filter)) {
+             throw new MedickException(
+-                $this->getClassName() . '->\$before_filter should be an array of strings, each string representing a method name');
++                $this->getClassName() . '->\$before_filter should be an array 
++                    of strings, each string representing a method name');
+         }
+         foreach($this->before_filter as $filter_name) {
+             if (!$filter= $this->createMethod($filter_name)) {
+-                $this->logger->info('Could not create filter: `'.$filter_name.'`, skipping...');
++                $this->logger->info(
++                    'Could not create filter: `'.$filter_name.'`, skipping...');
+                 continue;
+             }
+             // a filter should be declared as protected.
+             if (!$filter->isProtected()) {
+                 throw new MedickException(
+-                    'Your filter,`'. $filter_name . '` is declared as a public method of class `' . $this->getClassName() .'` !');
++                    'Your filter,`'. $filter_name . '` is declared as a 
++                        public method of class `' . $this->getClassName() .'` !');
+             }    
+             $this->$filter_name();
+         }
+@@ -447,3 +443,4 @@
+     }
+ }
+ 
++// }
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2005-12-10 16:07:13 UTC (rev 290)
++++ trunk/libs/action/view/Base.php	2005-12-11 13:36:23 UTC (rev 291)
+@@ -38,41 +38,18 @@
+ 
+ include_once('action/view/HTML.php');
+ 
+-/**
+- * Abstract Template Engine.
+- * This way, we can extend this rendering engine to output xslt templates and so on.
+- * 
+- * This object, is a factory that builds concrete Template Engine
+- */
+-abstract class ActionViewBase extends Object {
++// namespace ActionView {
+ 
+-    /** Safe way of keeping the assigned vars */
+-	protected $vars = array();
+-    
+-    /**
+-     * Renders the file
+-     * Is a wrapper for <code>Sonart::render($file)</code>
+-     * @param string, template_file, the template file to render.
+-     */
+-	abstract function render_file($template_file);
+-
+-	abstract function assign($name, $value);
+-
+-	public static function factory() {
+-		return new Sonart();	
+-	}
+-	
+-}
+-
+ /**
+- * Sonart is the default Template Engine for Medick Framwork.
++ * ActionViewBase is the default `Template Engine' for Medick Framwork.
+  * 
+  * For a smoother transaction from <tt>Smarty</tt>, some variabiles/methods 
+  * may share the same name and behavior
+  */
+-class Sonart extends ActionViewBase {
++class ActionViewBase extends Object {
+ 	
+-    /** @see ActionViewBase::render_file($template_file) */
++    private $vars= array();
++
+ 	public function render_file($template_file) {
+ 		return $this->render($template_file);
+ 	}
+@@ -95,11 +72,6 @@
+         ob_end_clean();
+         return $c;
+ 	}
+-	
+-	/** xxx */
+-	public function getVars() {
+-		return $this->vars;
+-	}
+ 
+ 	/**
+      * Wrapper for __set
+@@ -152,3 +124,5 @@
+         return $value;
+     }	
+ }
++
++// }
+
+
+
+From aurelian at berlios.de  Sun Dec 11 14:49:49 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 11 Dec 2005 14:49:49 +0100
+Subject: [Medick-svn] r292 - in trunk/libs/action: controller view
+Message-ID: <200512111349.jBBDnnFj022517@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-11 14:49:43 +0100 (Sun, 11 Dec 2005)
+New Revision: 292
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/view/Base.php
+Log:
+ -- fixed former references to Sonart class
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-12-11 13:36:23 UTC (rev 291)
++++ trunk/libs/action/controller/Base.php	2005-12-11 13:49:43 UTC (rev 292)
+@@ -122,7 +122,8 @@
+         if(ob_get_length()) {
+             ob_end_clean();
+         }
+-        $template = ActionViewBase::factory();
++        $template = new ActionViewBase();
++        // $template = new ActionView:::Base();
+         $template->error= $exception;
+         $text= $template->render_file(MEDICK_PATH . '/libs/action/controller/templates/error.phtml');
+         $status = Response::SC_INTERNAL_SERVER_ERROR;
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2005-12-11 13:36:23 UTC (rev 291)
++++ trunk/libs/action/view/Base.php	2005-12-11 13:49:43 UTC (rev 292)
+@@ -115,7 +115,7 @@
+      */
+     private static function stripslashes_deep($value) {
+         if (is_array($value)) {
+-            array_map(array('Sonart','stripslashes_deep'), $value);
++            array_map(array('ActionViewBase','stripslashes_deep'), $value);
+         } elseif (is_object($value)) {
+             
+         } else {
+
+
+
+From aurelian at berlios.de  Sun Dec 11 15:19:49 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 11 Dec 2005 15:19:49 +0100
+Subject: [Medick-svn] r293 - trunk/libs/logger/outputter
+Message-ID: <200512111419.jBBEJnoh004252@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-11 15:19:47 +0100 (Sun, 11 Dec 2005)
+New Revision: 293
+
+Modified:
+   trunk/libs/logger/outputter/FileOutputter.php
+Log:
+ -- try to create the file before opening
+
+Modified: trunk/libs/logger/outputter/FileOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/FileOutputter.php	2005-12-11 13:49:43 UTC (rev 292)
++++ trunk/libs/logger/outputter/FileOutputter.php	2005-12-11 14:19:47 UTC (rev 293)
+@@ -48,6 +48,9 @@
+      * @param string the file to write on
+      */
+     public function __construct($level, $file) {
++        if (!is_file($file)) {
++            touch($file);
++        }
+         $this->handler = fopen($file, 'a');
+         $this->level = $level;
+     }
+
+
+
+From aurelian at berlios.de  Sun Dec 11 15:21:15 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 11 Dec 2005 15:21:15 +0100
+Subject: [Medick-svn] r294 - trunk/libs/action/controller/templates
+Message-ID: <200512111421.jBBELFrG005126@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-11 15:21:01 +0100 (Sun, 11 Dec 2005)
+New Revision: 294
+
+Modified:
+   trunk/libs/action/controller/templates/error.phtml
+Log:
+ -- [error.phtml] valid xhtml output
+
+Modified: trunk/libs/action/controller/templates/error.phtml
+===================================================================
+--- trunk/libs/action/controller/templates/error.phtml	2005-12-11 14:19:47 UTC (rev 293)
++++ trunk/libs/action/controller/templates/error.phtml	2005-12-11 14:21:01 UTC (rev 294)
+@@ -17,7 +17,7 @@
+            <h2><?=get_class($error);?></h2>
+ 
+            <strong>Message: <?=$error->getMessage();?></strong><br />
+-           <? if (method_exists($error,'getUserInfo')): ?>
++           <? if (method_exists($error,'getUserInfo') && $error->getUserInfo() != ''): ?>
+                 User Info: <?=$error->getUserInfo();?><br />
+            <? endif; ?>
+            <? if (method_exists($error,'getNativeError')): ?>
+@@ -25,10 +25,10 @@
+            <? endif; ?>
+ 
+            <strong>in</strong> <?=$error->getFile();?> at line: <?=$error->getLine();?>
+-           <hr noshade="noshade" />
++           <hr />
+            Backtrace:<br />
+            <pre><?=$error->getTraceAsString();?></pre>
+-           <hr noshade="noshade" />
++           <hr />
+         </div>
+     </body>
+ </html>
+
+
+
+From aurelian at berlios.de  Sun Dec 11 20:44:19 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 11 Dec 2005 20:44:19 +0100
+Subject: [Medick-svn] r295 - in trunk/libs: action/controller configurator logger logger/outputter medick
+Message-ID: <200512111944.jBBJiJQj017913@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-11 20:43:41 +0100 (Sun, 11 Dec 2005)
+New Revision: 295
+
+Modified:
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/configurator/XMLConfigurator.php
+   trunk/libs/logger/Logger.php
+   trunk/libs/logger/outputter/FileOutputter.php
+   trunk/libs/logger/outputter/MailOutputter.php
+   trunk/libs/logger/outputter/Outputter.php
+   trunk/libs/logger/outputter/StdoutOutputter.php
+   trunk/libs/medick/Exception.php
+Log:
+ - [ MException ] added InvalidArgumentException
+ - [ ACInjector ] removed application_path from the configuration options, using $_SERVER[MEDICK_APPLICATION_PATH]
+ - [ CXMLConfigurator ] rewrite getLoggerOutputters method, to make use of the 
+        new configuration properties added for Logging system
+ - [ Logger ] reading new configuration properties
+ - [ LOutputters ] using the new configuration options
+
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/action/controller/Injector.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -61,7 +61,7 @@
+     public function __construct() {
+         $this->config = Registry::get('__configurator');
+         $this->logger = Registry::get('__logger');
+-        $app_path = $this->config->getProperty('application_path') . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR;
++        $app_path = $_SERVER['MEDICK_APPLICATION_PATH'] . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR;
+         $this->path['__base']      = $app_path;
+         $this->path['models']      = $app_path . 'models'      . DIRECTORY_SEPARATOR;
+         $this->path['controllers'] = $app_path . 'controllers' . DIRECTORY_SEPARATOR;
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/configurator/XMLConfigurator.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -108,12 +108,16 @@
+     public function getLoggerOutputters() {
+         $i=0; $ret= array();
+         if (is_null($this->sxe->logger->outputters)) return $ret;
+-        foreach(new RecursiveIteratorIterator($this->sxe->logger->outputters) as $outputter) {
++        foreach ($this->sxe->logger->outputters->outputter as $outputter) {
+             $ret[$i]['name']    = (string)trim($outputter['name']);
+             $ret[$i]['level']   = (string)trim($outputter['level']);
+-            $ret[$i++]['value'] = (string)trim($outputter['value']);
++            foreach ($outputter->property as $property) {
++                $ret[$i]['properties'][(string)trim($property['name'])]= (string)trim($property['value']);
++            }
++            $i++;
+         }
+         return $ret;
++        
+     }
+     
+     /** @see IConfigurator::getLoggerFormatter */
+
+Modified: trunk/libs/logger/Logger.php
+===================================================================
+--- trunk/libs/logger/Logger.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/logger/Logger.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -75,7 +75,6 @@
+     public function __construct() {
+         $configurator = Registry::get('__configurator');
+         $outputters   = $configurator->getLoggerOutputters();
+-
+         if (sizeof($outputters) != 0) {
+             $this->load($outputters);
+         }
+@@ -165,7 +164,12 @@
+             @include_once($class_file);
+             try {
+                 $class= new ReflectionClass($class_name);
+-                $this->attach($class->newInstance($outputter['level'],$outputter['value']));
++                $instance= $class->newInstance($outputter['level']);
++                if (isset($outputter['properties'])) {
++                    $instance->setProperties($outputter['properties']);
++                }
++                $instance->initialize();
++                $this->attach($instance);
+             } catch (ReflectionException $rEx) {
+                 $this->warn($rEx->getMessage());
+             }
+
+Modified: trunk/libs/logger/outputter/FileOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/FileOutputter.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/logger/outputter/FileOutputter.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -43,16 +43,16 @@
+     private $handler;
+ 
+     /**
+-     * It builds this outputter
++     * Initialize this outputter
+      * @param int, level, this outputter individual level
+      * @param string the file to write on
+      */
+-    public function __construct($level, $file) {
++    public function initialize() {
++        $file= $this->getProperty('path');
+         if (!is_file($file)) {
+             touch($file);
+         }
+         $this->handler = fopen($file, 'a');
+-        $this->level = $level;
+     }
+ 
+     /**
+
+Modified: trunk/libs/logger/outputter/MailOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/MailOutputter.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/logger/outputter/MailOutputter.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -45,10 +45,9 @@
+     /** email subject */
+     private $subject;
+ 
+-    public function __construct($level, $email, $subject='Fatality...') {
+-        $this->level   = $level;
+-        $this->email   = $email;
+-        $this->subject = $subject;
++    public function initialize() {
++        $this->email   = $this->getProperty('address');
++        $this->subject = $this->getProperty('subject');
+     }
+ 
+     protected function write($message) {
+
+Modified: trunk/libs/logger/outputter/Outputter.php
+===================================================================
+--- trunk/libs/logger/outputter/Outputter.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/logger/outputter/Outputter.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -42,17 +42,48 @@
+     /** individual outputter level*/
+     protected $level;
+ 
++    private $properties= array();
++
++    public function __construct($level) {
++        $this->level= $level;
++    }
++
++    public function hasProperty($property) {
++        if (isset($this->properties[$property]) && $this->properties[$property] != '') {
++            return TRUE;
++        } else {
++            throw new InvalidOffsetException('Outputter::properties dosent have `' . $property . '` as property');
++        }
++    }
++
++    public function getProperty($property) {
++        return $this->hasProperty($property) ? $this->properties[$property] : NULL;
++    }
++
++    public function setProperty($property, $value) {
++        $this->properties[$property]= $value;
++    }
++
++    public function setProperties(/* Array */ $properties) {
++        if (!is_array($properties)) {
++            throw new 
++                IllegalArgumentException('\$properties should be an array in ' . __FILE__ . ' at line: ' . (int)(__LINE__-3));
++        }
++        $this->properties= $properties;
++    }
++
+     /**
+      * Receive the Logger update
+      * and writes the log event using to the formatter
+      */
+     public function update(ILogger $logger) {
+-        if ($this->level <= $logger->getMessageLevel()){
++        if ($this->level <= $logger->getMessageLevel()) {
+             $this->write($logger->getFormatter()->format($logger->getEvent()));
+         }
+     }
+ 
+     // {{{ abstract methods
++    public abstract function initialize();
+     /** it writes the message */
+     protected abstract function write($message);
+     // }}}
+
+Modified: trunk/libs/logger/outputter/StdoutOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/StdoutOutputter.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/logger/outputter/StdoutOutputter.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -50,7 +50,7 @@
+      * It builds a new StdOutputter
+      * @param int, level, logger level.
+      */
+-    public function __construct($level) {
++    public function initialize() {
+         if (php_sapi_name() == 'cli') {
+             $this->isCLI = TRUE;
+             $this->eol = "\n";
+@@ -59,7 +59,6 @@
+             $this->output .= '<table border="1" style="font-family: verdana;font-size: 0.7em;" width="100%"><tr><td>';
+             $this->eol =  '</td></tr><tr><td>';
+         }
+-        $this->level = $level;
+     }
+ 
+     /** It flushes (echoes) the output buffer on exit */
+
+Modified: trunk/libs/medick/Exception.php
+===================================================================
+--- trunk/libs/medick/Exception.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/medick/Exception.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -93,6 +93,17 @@
+  */
+ class InvalidOffsetException extends MedickException { }
+ // }}}
++
++// {{{ InvalidArgumentException
++if (!class_exists('InvalidArgumentException')) {
++    /**
++     * Exception that denotes invalid arguments were passed
++     * @package locknet7.medick
++     */
++    class InvalidArgumentException extends MedickException {    }
++}
++// }}}
++
+ // {{{ IOException
+ /**
+  * General Input/Output Exception
+
+
+
+From aurelian at berlios.de  Sun Dec 11 20:50:18 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 11 Dec 2005 20:50:18 +0100
+Subject: [Medick-svn] r296 - trunk/config
+Message-ID: <200512111950.jBBJoImC024566@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-11 20:50:13 +0100 (Sun, 11 Dec 2005)
+New Revision: 296
+
+Modified:
+   trunk/config/application.xml
+Log:
+ -- config/application.xml removed un-necesary configuration property application_path, added more sample usage of outputters properties
+
+Modified: trunk/config/application.xml
+===================================================================
+--- trunk/config/application.xml	2005-12-11 19:43:41 UTC (rev 295)
++++ trunk/config/application.xml	2005-12-11 19:50:13 UTC (rev 296)
+@@ -10,7 +10,6 @@
+     <!--  ====================== -->
+     <property name="server_name"      value="http://morgan:8091" />
+     <property name="document_root"    value="/" />
+-    <property name="application_path" value="/wwwroot/htdocs/locknet7/app" />
+     <property name="rewrite"          value="on" />
+      
+     <!--  ====================== -->
+@@ -19,7 +18,14 @@
+     <logger>
+         <formatter>simple</formatter>
+         <outputters>
+-            <outputter name="file"    level="0" value="/wwwroot/htdocs/locknet7/log/locknet7.log" />
++            <outputter name="file" level="0">
++                <property name="path" value="/wwwroot/htdocs/locknet7/log/locknet7.log" />
++            </outputter>
++            <outputter name="stdout" level="0" />
++            <outputter name="" level="3">
++                <property name="subject" value="Fatality on {$server}" />
++                <property name="address" value="user at example.com" />
++            </outputter>
+         </outputters>
+     </logger>
+ 
+@@ -32,7 +38,7 @@
+              hostspec = "localhost"
+              database = "elproto"
+              username = "root"
+-             password = "sacosica" />
++             password = "pazzword" />
+     </database>
+ 
+ </application>
+
+
+
+From aurelian at berlios.de  Sun Dec 11 20:58:36 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 11 Dec 2005 20:58:36 +0100
+Subject: [Medick-svn] r297 - applications/eltodo/conf
+Message-ID: <200512111958.jBBJwaxM012472@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-11 20:58:35 +0100 (Sun, 11 Dec 2005)
+New Revision: 297
+
+Modified:
+   applications/eltodo/conf/eltodo.xml
+Log:
+ -- [ eltodo.conf.xml ] changed to reflect the new logger outputters properties
+
+Modified: applications/eltodo/conf/eltodo.xml
+===================================================================
+--- applications/eltodo/conf/eltodo.xml	2005-12-11 19:50:13 UTC (rev 296)
++++ applications/eltodo/conf/eltodo.xml	2005-12-11 19:58:35 UTC (rev 297)
+@@ -8,15 +8,16 @@
+   <!-- General properties -->
+   <property name="server_name"      value="http://localhost" />
+   <property name="document_root"    value="/eltodo" />
+-  <property name="application_path" value="/wwwroot/medick/applications/eltodo" />
+   <property name="rewrite"          value="on" />
+      
+   <!-- Logger System -->
+   <logger>
+       <formatter>simple</formatter>
+       <outputters>
+-        <outputter name="file"    level="0" value="/wwwroot/medick/applications/eltodo/log/eltodo.log" />
+-        <!-- <outputter name="stdout"  level="0" /> -->
++        <outputter name="file" level="0">
++            <property name="path" value="/wwwroot/medick/applications/eltodo/log/eltodo.log" />
++        </outputter>
++        <outputter name="stdout"  level="0" />
+       </outputters>
+   </logger>
+ 
+
+
+
+From aurelian at berlios.de  Mon Dec 12 20:13:16 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 12 Dec 2005 20:13:16 +0100
+Subject: [Medick-svn] r298 - in trunk/libs/creole: . common contrib drivers/mssql drivers/mysql drivers/odbc drivers/oracle drivers/sqlite/metadata
+Message-ID: <200512121913.jBCJDGMR013501@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-12 20:13:00 +0100 (Mon, 12 Dec 2005)
+New Revision: 298
+
+Modified:
+   trunk/libs/creole/CreoleTypes.php
+   trunk/libs/creole/SQLException.php
+   trunk/libs/creole/common/PreparedStatementCommon.php
+   trunk/libs/creole/contrib/DebugConnection.php
+   trunk/libs/creole/drivers/mssql/MSSQLPreparedStatement.php
+   trunk/libs/creole/drivers/mysql/MySQLPreparedStatement.php
+   trunk/libs/creole/drivers/odbc/ODBCPreparedStatement.php
+   trunk/libs/creole/drivers/oracle/OCI8PreparedStatement.php
+   trunk/libs/creole/drivers/sqlite/metadata/SQLiteDatabaseInfo.php
+Log:
+ - [ creole ] merged from Creole HEAD
+
+Modified: trunk/libs/creole/CreoleTypes.php
+===================================================================
+--- trunk/libs/creole/CreoleTypes.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/CreoleTypes.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,6 +1,6 @@
+ <?php
+ /*
+- *  $Id: CreoleTypes.php,v 1.17 2005/09/28 13:18:19 hlellelid Exp $
++ *  $Id: CreoleTypes.php,v 1.18 2005/11/07 22:38:52 hlellelid Exp $
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+@@ -24,7 +24,7 @@
+  * 
+  * @author    David Giffin <david at giffin.org>
+  * @author    Hans Lellelid <hans at xmpl.org>
+- * @version   $Revision: 1.17 $
++ * @version   $Revision: 1.18 $
+  * @package   creole
+  */
+ abstract class CreoleTypes {
+@@ -149,7 +149,6 @@
+         {
+             if (!isset(self::$affixMap[$creoleType])) {
+                 $e = new SQLException("Unable to return 'affix' for unknown CreoleType: " . $creoleType);
+-                print $e;
+                 throw $e;
+             }
+             return self::$affixMap[$creoleType];
+
+Modified: trunk/libs/creole/SQLException.php
+===================================================================
+--- trunk/libs/creole/SQLException.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/SQLException.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -27,13 +27,13 @@
+  * @package   creole
+  */
+ class SQLException extends Exception {
+-
++    
+     /** Information that provides additional information for context of Exception (e.g. SQL statement or DSN). */
+     protected $userInfo;
+-
++    
+     /** Native RDBMS error string */
+     protected $nativeError;
+-
++    
+     /**
+      * Constructs a SQLException.
+      * @param string $msg Error message
+@@ -50,51 +50,51 @@
+             $this->setUserInfo($userinfo);
+         }
+     }
+-
++    
+     /**
+      * Sets additional user / debug information for this error.
+-     *
++     *  
+      * @param array $info
+      * @return void
+-     */
++     */ 
+     public function setUserInfo($info)
+     {
+         $this->userInfo = $info;
+-        // $this->message .= " [User Info: " .$this->userInfo . "]";
++        $this->message .= " [User Info: " .$this->userInfo . "]";
+     }
+-
++    
+     /**
+-     * Returns the additional / debug information for this error.
+-     *
++     * Returns the additional / debug information for this error. 
++     * 
+      * @return array hash of user info properties.
+      */
+     public function getUserInfo()
+     {
+         return $this->userInfo;
+     }
+-
++    
+     /**
+      * Sets driver native error message.
+-     *
++     *  
+      * @param string $info
+      * @return void
+-     */
++     */ 
+     public function setNativeError($msg)
+     {
+         $this->nativeError = $msg;
+-        // $this->message .= " [Native Error: " .$this->nativeError . "]";
++        $this->message .= " [Native Error: " .$this->nativeError . "]";
+     }
+-
++    
+     /**
+      * Gets driver native error message.
+-     *
++     * 
+      * @return string
+      */
+     public function getNativeError()
+     {
+         return $this->nativeError;
+-    }
+-
++    }        
++    
+     /**
+      * @deprecated This method only exists right now for easier compatibility w/ PHPUnit!
+      */
+
+Modified: trunk/libs/creole/common/PreparedStatementCommon.php
+===================================================================
+--- trunk/libs/creole/common/PreparedStatementCommon.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/common/PreparedStatementCommon.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,6 +1,6 @@
+ <?php
+ /*
+- *  $Id: PreparedStatementCommon.php,v 1.14 2005/04/16 18:55:28 hlellelid Exp $
++ *  $Id: PreparedStatementCommon.php,v 1.16 2005/11/13 01:30:00 gamr Exp $
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+@@ -28,7 +28,7 @@
+  * to work with BLOB and CLOB values w/o needing special LOB-specific routines.
+  *
+  * @author    Hans Lellelid <hans at xmpl.org>
+- * @version   $Revision: 1.14 $
++ * @version   $Revision: 1.16 $
+  * @package   creole.common
+  */
+ abstract class PreparedStatementCommon {
+@@ -59,6 +59,21 @@
+     protected $sql;
+ 
+     /**
++     * Possibly contains a cached prepared SQL Statement.
++     * Gives an early out to replaceParams if the same
++     * query is run multiple times without changing the
++     * params.
++     * @var string
++     */
++    protected $sql_cache;
++
++    /**
++     * Flag to set if the cache is upto date or not
++     * @var boolean
++     */
++    protected $sql_cache_valid = false;
++
++    /**
+      * The string positions of the parameters in the SQL.
+      * @var array
+      */
+@@ -251,14 +266,18 @@
+      */
+     protected function replaceParams()
+     {
++    	// early out if we still have the same query ready
++    	if ( $this->sql_cache_valid === true ) {
++		return $this->sql_cache;
++	}
++
+         // Default behavior for this function is to behave in 'emulated' mode.    
+         $sql = '';    
+         $last_position = 0;
+ 
+         for ($position = 0; $position < $this->positionsCount; $position++) {
+             if (!isset($this->boundInVars[$position + 1])) {
+-              throw new SQLException(
+-                'Replace params: undefined query param @postion: ' . ($position + 1) .'||' . 'Trying to execute: ' . $this->sql);
++                throw new SQLException('Replace params: undefined query param: ' . ($position + 1));
+             }
+             $current_position = $this->positions[$position];            
+             $sql .= substr($this->sql, $last_position, $current_position - $last_position);
+@@ -267,8 +286,15 @@
+         }
+         // append the rest of the query
+         $sql .= substr($this->sql, $last_position);
+-        
+-        return $sql;
++
++	// just so we dont touch anything with a blob/clob
++	if ( strlen ( $sql ) > 2048 ) { 
++		$this->sql_cache = $sql;
++    		$this->sql_cache_valid = true;
++		return $this->sql_cache;
++	} else {
++		return $sql;
++	}
+     }
+ 
+     /**
+@@ -377,6 +403,7 @@
+ 		//case 'gmp':
+ 	    }
+             $setter = 'set' . ucfirst($type); // PHP types are case-insensitive, but we'll do this in case that changes
++	    $this->sql_cache_valid = false;
+             $this->$setter($paramIndex, $value);
+         }        
+     }
+@@ -391,6 +418,7 @@
+      */
+     function setArray($paramIndex, $value) 
+     {        
++	    $this->sql_cache_valid = false;
+         if ($value === null) {
+             $this->setNull($paramIndex);
+         } else {
+@@ -407,6 +435,7 @@
+      */
+     function setBoolean($paramIndex, $value) 
+     {                
++	    $this->sql_cache_valid = false;
+         if ($value === null) {
+             $this->setNull($paramIndex);
+         } else {
+@@ -420,6 +449,7 @@
+      */
+     function setBlob($paramIndex, $blob) 
+     {        
++	    $this->sql_cache_valid = false;
+         if ($blob === null) {
+             $this->setNull($paramIndex);
+         } else {
+@@ -437,6 +467,7 @@
+      */
+     function setClob($paramIndex, $clob) 
+     {
++	    $this->sql_cache_valid = false;
+         if ($clob === null) {
+             $this->setNull($paramIndex);
+         } else {      
+@@ -456,6 +487,7 @@
+      */
+     function setDate($paramIndex, $value) 
+     {
++	    $this->sql_cache_valid = false;
+         if ($value === null) {
+             $this->setNull($paramIndex);
+         } else {
+@@ -472,6 +504,7 @@
+      */
+     function setDecimal($paramIndex, $value) 
+     {
++	    $this->sql_cache_valid = false;
+         if ($value === null) {
+             $this->setNull($paramIndex);
+         } else {
+@@ -486,6 +519,7 @@
+      */
+     function setDouble($paramIndex, $value) 
+     {
++	    $this->sql_cache_valid = false;
+         if ($value === null) {
+             $this->setNull($paramIndex);
+         } else {
+@@ -500,6 +534,7 @@
+      */
+     function setFloat($paramIndex, $value) 
+     {
++	    $this->sql_cache_valid = false;
+         if ($value === null) {
+             $this->setNull($paramIndex);
+         } else {
+@@ -514,6 +549,7 @@
+      */
+     function setInt($paramIndex, $value) 
+     {
++	    $this->sql_cache_valid = false;
+         if ($value === null) {
+             $this->setNull($paramIndex);
+         } else {
+@@ -528,6 +564,7 @@
+      */
+     function setInteger($paramIndex, $value)
+     {
++	    $this->sql_cache_valid = false;
+         $this->setInt($paramIndex, $value);
+     }
+ 
+@@ -537,6 +574,7 @@
+      */
+     function setNull($paramIndex) 
+     {
++	    $this->sql_cache_valid = false;
+         $this->boundInVars[$paramIndex] = 'NULL';
+     }
+ 
+@@ -547,6 +585,7 @@
+      */
+     function setString($paramIndex, $value) 
+     {
++	    $this->sql_cache_valid = false;
+         if ($value === null) {
+             $this->setNull($paramIndex);
+         } else {
+@@ -567,6 +606,7 @@
+      */
+     function setTime($paramIndex, $value) 
+     {        
++	    $this->sql_cache_valid = false;
+         if ($value === null) {
+             $this->setNull($paramIndex);
+         } else {
+@@ -586,6 +626,7 @@
+      */
+     function setTimestamp($paramIndex, $value) 
+     {        
++	    $this->sql_cache_valid = false;
+         if ($value === null) {
+             $this->setNull($paramIndex);
+         } else {
+
+Modified: trunk/libs/creole/contrib/DebugConnection.php
+===================================================================
+--- trunk/libs/creole/contrib/DebugConnection.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/contrib/DebugConnection.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,91 +1,268 @@
+ <?php
+-  /**
+-   * Debug implementation of Connection.
+-   *
+-   * This is a Connection that implements the decorator pattern, wrapping around
+-   * the true Connection object (stored in $childConnection). This Connection
+-   * tracks information about queries executed and makes that information available
+-   * for debugging purposes. The information tracked is the last query executed
+-   * on the connection (getLastExecutedQuery()) and the total number of
+-   * queries executed on the connection thus far (getNumQueriesExecuted()).
+-   *
+-   * To use this debug connection, you need to register it as a new Creole
+-   * driver that handles all connection types. To do this, call the following
+-   * before calling Creole::getConnection():
+-   *
+-   * <code>
+-   * Creole::registerDriver('*', 'creole.drivers.debug.DebugConnection');
+-   * </code>
+-   *
+-   * The next call to Creole::getConnection() will return an instance of
+-   * DebugConnection.
+-   * 
+-   * @author Michael Sims
+-   * @package creole.drivers.debug
+-   */
+-  class DebugConnection implements Connection {
+-    /** @var Connection */
+-     private $childConnection = null;
+-     /** @var int */
+-     private $numQueriesExecuted = 0;
+-     /** @var string */
+-     private $lastExecutedQuery = '';
+-     /**
+-      * @var object Instance of PEAR Log (or other class with log() method).*/
+-     private $logger;
+-     /** 
+-      * Sets a Logger class (e.g. PEAR Log) to use for logging.
+-      * The logger class must have a log() method.  All messages are logged at default log level.
+-      * @param object $logger
+-      */
+-     public function setLogger($logger)
+-     {
+-       $this->logger = $logger;
+-     }
+-     /**
+-      * Returns the number of queries executed on this connection so far
+-      *
+-      * @return int
+-      */
+-     public function getNumQueriesExecuted()
+-     {
+-       return $this->numQueriesExecuted;
+-     }
+-     /**
+-      * Returns the last query executed on this connection
+-      *
+-      * @return string
+-      */
+-     public function getLastExecutedQuery()
+-     {
+-       return $this->lastExecutedQuery;
+-     }
+-     
+-     /**
+-      * connect()
+-      */
+-      public function connect($dsninfo, $flags = 0)
+-      {
+-        if (!($driver = Creole::getDriver($dsninfo['phptype']))) {
+-          throw new SQLException("No driver has been registered to handle connection type: $type");
+-        }		
+-        $connectionClass = Creole::import($driver);
+-        $this->childConnection = new $connectionClass();
+-        $this->log("connect(): DSN: ". var_export($dsninfo, true) . ", FLAGS: " . var_export($flags, true));
+-        return $this->childConnection->connect($dsninfo, $flags);
+-      }	
+-      
+-      /**
+-       * @see Connection::getDatabaseInfo()
+-       */
+-      public function getDatabaseInfo()
+-      {
+-        return $this->childConnection->getDatabaseInfo();
+-      }	
+-      
+-      /**
+-       * @see Connection::getIdGenerator()
+-       */
+-      public function getIdGenerator()	
+-      {
+-        return $this->childConnection->getIdGenerator();
+	}
+	
+	/**
+	 * @see Connection::prepareStatement()
+	 */
+	public function prepareStatement($sql)
+	{
+		$this->log("prepareStatement(): $sql");
+		$obj = $this->childConnection->prepareStatement($sql);
+		$objClass = get_class($obj);		
+		return new $objClass($this, $sql);
+	}
+	
+	/**
+	 * @see Connection::createStatement()
+	 */
+	public function createStatement()
+	{
+		$obj = $this->childConnection->createStatement();
+		$objClass = get_class($obj);		
+		return new $objClass($this);
+	}
+	
+	/**
+	 * @see Connection::applyLimit()
+	 */
+	public function applyLimit(&$sql, $offset, $limit)
+	{
+		$this->log("applyLimit(): $sql, offset: $offset, limit: $limit");
+		return $this->childConnection->applyLimit($sql, $offset, $limit);
+	}
+	
+	/**
+	 * @see Connection::close()
+	 */
+	public function close()
+	{
+		$this->log("close(): Closing connection.");
+		return $this->childConnection->close();
+	}
+	
+	/**
+	 * @see Connection::executeQuery()
+	 */
+	publ!
+ ic function executeQuery($sql, $fetchmode = null)
+	{
+		$this->log("executeQuery(): $sql");
+		$this->lastExecutedQuery = $sql;
+		$this->numQueriesExecuted++;
+		return $this->childConnection->executeQuery($sql, $fetchmode);	
+	}
+	
+	/**
+	 * @see Connection::executeUpdate()
+	 */
+	public function executeUpdate($sql)
+	{
+		$this->log("executeUpdate(): $sql");
+		$this->lastExecutedQuery = $sql;
+		$this->numQueriesExecuted++;
+		return $this->childConnection->executeUpdate($sql);	
+	}
+	
+	/**
+	 * @see Connection::getUpdateCount()
+	 */
+	public function getUpdateCount()
+	{
+		return $this->childConnection->getUpdateCount();
+	}
+	
+	/**
+	 * @see Connection::prepareCall()
+	 **/
+	public function prepareCall($sql)
+	{
+		$this->log("prepareCall(): $sql");
+		return $this->childConnection->prepareCall($sql);
+	}
+	
+	/**
+	 * @see Connection::getResource()
+	 */
+	public function getResource()
+	{
+		return $this->childConnection->getResource();
+	}
+	
+	/**
+	 * @see Connection::connect()
+	 */
+	public function!
+  getDSN()
+	{
+		return $this->childConnection->getDSN();
+	}
+	
+	!
+ /**
+	 * 
+@see Connection::getFlags()
+	 */
+	public function getFlags()
+	{
+		return $this->childConnection->getFlags();
+	}
+	
+	/**
+	 * @see Connection::begin()
+	 */
+	public function begin()
+	{
+		$this->log("Beginning transaction.");
+		return $this->childConnection->begin();
+	}
+	
+	/**
+	 * @see Connection::commit()
+	 */
+	public function commit()
+	{
+		$this->log("Committing transaction.");
+		return $this->childConnection->commit();
+	}
+	
+	/**
+	 * @see Connection::rollback()
+	 */
+	public function rollback()
+	{
+		$this->log("Rolling back transaction.");
+		return $this->childConnection->rollback();
+	}
+	
+	/**
+	 * @see Connection::setAutoCommit()
+	 */
+	public function setAutoCommit($bit)
+	{
+		$this->log("Setting autocommit to: " . var_export($bit, true));
+		return $this->childConnection->setAutoCommit($bit);
+	}
+	
+	/**
+	 * @see Connection::getAutoCommit()
+	 */
+	public function getAutoCommit()
+	{
+		return $this->childConnection->getAutoCommit();
+	}
+	
+	/**
+	 * Private function that logs message usi!
+ ng specified logger (if provided).
+	 * @param string $msg Message to log.
+	 */
+	private function log($msg)
+	{
+		if ($this->logger) {
+			$this->logger->log($msg);
+		}
+	}
+
+}
++
++/**
++ * Debug implementation of Connection.
++ *
++ * This is a Connection that implements the decorator pattern, wrapping around
++ * the true Connection object (stored in $childConnection). This Connection
++ * tracks information about queries executed and makes that information available
++ * for debugging purposes. The information tracked is the last query executed
++ * on the connection (getLastExecutedQuery()) and the total number of
++ * queries executed on the connection thus far (getNumQueriesExecuted()).
++ *
++ * To use this debug connection, you need to register it as a new Creole
++ * driver that handles all connection types. To do this, call the following
++ * before calling Creole::getConnection():
++ *
++ * <code>
++ * Creole::registerDriver('*', 'creole.drivers.debug.DebugConnection');
++ * </code>
++ *
++ * The next call to Creole::getConnection() will return an instance of
++ * DebugConnection.
++ *
++ * @author Michael Sims
++ * @package creole.drivers.debug
++ */
++class DebugConnection implements Connection {
++
++	/** @var Connection */
++	private $childConnection = null;
++	
++	/** @var int */
++	private $numQueriesExecuted = 0;
++	
++	/** @var string */
++	private $lastExecutedQuery = '';
++
++	/**
++	 * @var object Instance of PEAR Log (or other class with log() method).
++	 */
++	private $logger;
++	
++	/**
++	 * Sets a Logger class (e.g. PEAR Log) to use for logging.
++	 * The logger class must have a log() method.  All messages are logged at default log level.
++	 * @param object $logger
++	 */
++	public function setLogger($logger)
++	{
++		$this->logger = $logger;
++	}
++	
++	/**
++	 * Returns the number of queries executed on this connection so far
++	 *
++	 * @return int
++	 */
++	public function getNumQueriesExecuted()
++	{
++		return $this->numQueriesExecuted;
++	}
++	
++	/**
++	 * Returns the last query executed on this connection
++	 *
++	 * @return string
++	 */
++	public function getLastExecutedQuery()
++	{
++		return $this->lastExecutedQuery;
++	}
++	
++	/**
++	 * connect()
++	 */
++	public function connect($dsninfo, $flags = 0)
++	{
++		if (!($driver = Creole::getDriver($dsninfo['phptype']))) {
++			throw new SQLException("No driver has been registered to handle connection type: $type");
++		}		
++		$connectionClass = Creole::import($driver);
++		$this->childConnection = new $connectionClass();
++		$this->log("connect(): DSN: ". var_export($dsninfo, true) . ", FLAGS: " . var_export($flags, true));
++		return $this->childConnection->connect($dsninfo, $flags);
++	}
++	
++	/**
++	 * @see Connection::getDatabaseInfo()
++	 */
++	public function getDatabaseInfo()
++	{
++		return $this->childConnection->getDatabaseInfo();
++	}
++	
++	/**
++	 * @see Connection::getIdGenerator()
++	 */
++	public function getIdGenerator()
++	{
++		return $this->childConnection->getIdGenerator();
++	}
++	
++	/**
++	 * @see Connection::isConnected()
++	 */
++	public function isConnected()
++	{
++		return $this->childConnection->isConnected();
++	}
++	
++	/**
++	 * @see Connection::prepareStatement()
++	 */
++	public function prepareStatement($sql)
++	{
++		$this->log("prepareStatement(): $sql");
++		$obj = $this->childConnection->prepareStatement($sql);
++		$objClass = get_class($obj);		
++		return new $objClass($this, $sql);
++	}
++	
++	/**
++	 * @see Connection::createStatement()
++	 */
++	public function createStatement()
++	{
++		$obj = $this->childConnection->createStatement();
++		$objClass = get_class($obj);		
++		return new $objClass($this);
++	}
++	
++	/**
++	 * @see Connection::applyLimit()
++	 */
++	public function applyLimit(&$sql, $offset, $limit)
++	{
++		$this->log("applyLimit(): $sql, offset: $offset, limit: $limit");
++		return $this->childConnection->applyLimit($sql, $offset, $limit);
++	}
++	
++	/**
++	 * @see Connection::close()
++	 */
++	public function close()
++	{
++		$this->log("close(): Closing connection.");
++		return $this->childConnection->close();
++	}
++	
++	/**
++	 * @see Connection::executeQuery()
++	 */
++	public function executeQuery($sql, $fetchmode = null)
++	{
++		$this->log("executeQuery(): $sql");
++		$this->lastExecutedQuery = $sql;
++		$this->numQueriesExecuted++;
++		return $this->childConnection->executeQuery($sql, $fetchmode);	
++	}
++	
++	/**
++	 * @see Connection::executeUpdate()
++	 */
++	public function executeUpdate($sql)
++	{
++		$this->log("executeUpdate(): $sql");
++		$this->lastExecutedQuery = $sql;
++		$this->numQueriesExecuted++;
++		return $this->childConnection->executeUpdate($sql);	
++	}
++	
++	/**
++	 * @see Connection::getUpdateCount()
++	 */
++	public function getUpdateCount()
++	{
++		return $this->childConnection->getUpdateCount();
++	}
++	
++	/**
++	 * @see Connection::prepareCall()
++	 **/
++	public function prepareCall($sql)
++	{
++		$this->log("prepareCall(): $sql");
++		return $this->childConnection->prepareCall($sql);
++	}
++	
++	/**
++	 * @see Connection::getResource()
++	 */
++	public function getResource()
++	{
++		return $this->childConnection->getResource();
++	}
++	
++	/**
++	 * @see Connection::connect()
++	 */
++	public function getDSN()
++	{
++		return $this->childConnection->getDSN();
++	}
++	
++	/**
++	 * @see Connection::getFlags()
++	 */
++	public function getFlags()
++	{
++		return $this->childConnection->getFlags();
++	}
++	
++	/**
++	 * @see Connection::begin()
++	 */
++	public function begin()
++	{
++		$this->log("Beginning transaction.");
++		return $this->childConnection->begin();
++	}
++	
++	/**
++	 * @see Connection::commit()
++	 */
++	public function commit()
++	{
++		$this->log("Committing transaction.");
++		return $this->childConnection->commit();
++	}
++	
++	/**
++	 * @see Connection::rollback()
++	 */
++	public function rollback()
++	{
++		$this->log("Rolling back transaction.");
++		return $this->childConnection->rollback();
++	}
++	
++	/**
++	 * @see Connection::setAutoCommit()
++	 */
++	public function setAutoCommit($bit)
++	{
++		$this->log("Setting autocommit to: " . var_export($bit, true));
++		return $this->childConnection->setAutoCommit($bit);
++	}
++	
++	/**
++	 * @see Connection::getAutoCommit()
++	 */
++	public function getAutoCommit()
++	{
++		return $this->childConnection->getAutoCommit();
++	}
++	
++	/**
++	 * Private function that logs message using specified logger (if provided).
++	 * @param string $msg Message to log.
++	 */
++	private function log($msg)
++	{
++		if ($this->logger) {
++			$this->logger->log($msg);
++		}
++	}
++
++}
+\ No newline at end of file
+
+Modified: trunk/libs/creole/drivers/mssql/MSSQLPreparedStatement.php
+===================================================================
+--- trunk/libs/creole/drivers/mssql/MSSQLPreparedStatement.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/drivers/mssql/MSSQLPreparedStatement.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,6 +1,6 @@
+ <?php
+ /*
+- *  $Id: MSSQLPreparedStatement.php,v 1.12 2004/06/13 02:31:07 hlellelid Exp $
++ *  $Id: MSSQLPreparedStatement.php,v 1.13 2005/11/13 01:29:01 gamr Exp $
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+@@ -26,7 +26,7 @@
+  * MSSQL specific PreparedStatement functions.
+  * 
+  * @author    Hans Lellelid <hans at xmpl.org>
+- * @version   $Revision: 1.12 $
++ * @version   $Revision: 1.13 $
+  * @package   creole.drivers.mssql
+  */
+ class MSSQLPreparedStatement extends PreparedStatementCommon implements PreparedStatement {
+@@ -44,6 +44,7 @@
+      */
+     function setBlob($paramIndex, $blob) 
+     {
++    	$this->sql_cache_valid = false;
+         if ($blob === null) {
+             $this->setNull($paramIndex);
+         } else {
+
+Modified: trunk/libs/creole/drivers/mysql/MySQLPreparedStatement.php
+===================================================================
+--- trunk/libs/creole/drivers/mysql/MySQLPreparedStatement.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/drivers/mysql/MySQLPreparedStatement.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,6 +1,6 @@
+ <?php
+ /*
+- *  $Id: MySQLPreparedStatement.php,v 1.6 2004/03/20 04:16:49 hlellelid Exp $
++ *  $Id: MySQLPreparedStatement.php,v 1.7 2005/12/10 13:46:55 hlellelid Exp $
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+@@ -26,19 +26,19 @@
+  * MySQL subclass for prepared statements.
+  * 
+  * @author    Hans Lellelid <hans at xmpl.org>
+- * @version   $Revision: 1.6 $
++ * @version   $Revision: 1.7 $
+  * @package   creole.drivers.mysql
+  */
+ class MySQLPreparedStatement extends PreparedStatementCommon implements PreparedStatement {        
+     
+     /**
+-     * Quotes string using native mysql function.
++     * Quotes string using native mysql function (mysql_real_escape_string()).
+      * @param string $str
+      * @return string
+      */
+     protected function escape($str)
+     {
+-        return mysql_escape_string($str);
++        return mysql_real_escape_string($str, $this->conn->getResource());
+     }    
+     
+ }
+
+Modified: trunk/libs/creole/drivers/odbc/ODBCPreparedStatement.php
+===================================================================
+--- trunk/libs/creole/drivers/odbc/ODBCPreparedStatement.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/drivers/odbc/ODBCPreparedStatement.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,6 +1,6 @@
+ <?php
+ /*
+- *  $Id: ODBCPreparedStatement.php,v 1.3 2005/04/01 17:08:37 dlawson_mi Exp $
++ *  $Id: ODBCPreparedStatement.php,v 1.4 2005/11/13 01:29:01 gamr Exp $
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+@@ -27,7 +27,7 @@
+  * ODBC specific PreparedStatement functions.
+  *
+  * @author    Dave Lawson <dlawson at masterytech.com>
+- * @version   $Revision: 1.3 $
++ * @version   $Revision: 1.4 $
+  * @package   creole.drivers.odbc
+  */
+ class ODBCPreparedStatement extends PreparedStatementCommon implements PreparedStatement
+@@ -181,6 +181,7 @@
+      */
+     function setNull($paramIndex)
+     {
++    	$this->sql_cache_valid = false;
+         $this->boundInVars[$paramIndex] = null;
+     }
+ 
+@@ -192,6 +193,7 @@
+         if ($this->conn->getAdapter()->emulatePrepareStmt())
+             return parent::setBlob($paramIndex, $blob);
+             
++    	$this->sql_cache_valid = false;
+         if ($blob === null)
+         {
+             $this->setNull($paramIndex);
+@@ -220,6 +222,7 @@
+         if ($this->conn->getAdapter()->emulatePrepareStmt())
+             return parent::setClob($paramIndex, $clob);
+ 
++    	$this->sql_cache_valid = false;
+         if ($clob === null)
+         {
+             $this->setNull($paramIndex);
+@@ -240,4 +243,4 @@
+         $this->boundInVars[$paramIndex] = "'" . $this->escape($clob) . "'";
+     }
+ 
+-}
+\ No newline at end of file
++}
+
+Modified: trunk/libs/creole/drivers/oracle/OCI8PreparedStatement.php
+===================================================================
+--- trunk/libs/creole/drivers/oracle/OCI8PreparedStatement.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/drivers/oracle/OCI8PreparedStatement.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,6 +1,6 @@
+ <?php
+ /*
+- *  $Id: OCI8PreparedStatement.php,v 1.23 2005/10/06 20:42:52 sethr Exp $
++ *  $Id: OCI8PreparedStatement.php,v 1.25 2005/11/21 17:54:11 sethr Exp $
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+@@ -27,7 +27,7 @@
+  * 
+  * @author    David Giffin <david at giffin.org>
+  * @author    Hans Lellelid <hans at xmpl.org>
+- * @version   $Revision: 1.23 $
++ * @version   $Revision: 1.25 $
+  * @package   creole.drivers.oracle
+  */
+ class OCI8PreparedStatement extends PreparedStatementCommon implements PreparedStatement {
+@@ -141,8 +141,9 @@
+ 
+         if($this->resultSet) $this->resultSet->close();
+         $this->resultSet = null; // reset
+-        
++
+         $stmt = oci_parse($this->conn->getResource(), $this->sqlToOracleBindVars($this->sql));
++
+         if (!$stmt) {
+             throw new SQLException("Unable to prepare update", $this->conn->nativeError(), $this->sqlToOracleBindVars($this->sql));
+         }
+@@ -199,7 +200,7 @@
+             $idxName = ":var" . $idx;
+             if (!oci_bind_by_name($stmt, $idxName, $this->boundInVars[$idx], -1)) {
+                 throw new SQLException("Erorr binding value to placeholder " . $idx);
+-            }            
++            } 
+         } // foreach
+ 
+         foreach ($this->lobs as $idx => $val) {
+@@ -409,5 +410,15 @@
+         }
+    }
+ 
++   /**
++     * @param int $paramIndex
++     * @return void
++     */
++    function setNull($paramIndex)
++    {
++        $this->boundInVars[$paramIndex] = '';
++    }
++
++
+ }
+ 
+
+Modified: trunk/libs/creole/drivers/sqlite/metadata/SQLiteDatabaseInfo.php
+===================================================================
+--- trunk/libs/creole/drivers/sqlite/metadata/SQLiteDatabaseInfo.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/drivers/sqlite/metadata/SQLiteDatabaseInfo.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -42,7 +42,7 @@
+         $result = sqlite_query($this->dblink, $sql);
+             
+         if (!$result) {
+-            throw new SQLException("Could not list tables", sqlite_error_string(sqlite_last_error($this->dblink)));
++            throw new SQLException("Could not list tables", sqlite_last_error($this->dblink));
+         }
+         
+         while ($row = sqlite_fetch_array($result)) {
+
+
+
+From aurelian at berlios.de  Mon Dec 12 20:41:54 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 12 Dec 2005 20:41:54 +0100
+Subject: [Medick-svn] r299 - in trunk/libs/action/controller: . http
+Message-ID: <200512121941.jBCJfsTY031232@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-12 20:41:48 +0100 (Mon, 12 Dec 2005)
+New Revision: 299
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Routing.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+Log:
+ -- fix php 5.0 fatal error (Only variables should be passed by reference) in HTTPRequest, made Request params private.
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-12-12 19:13:00 UTC (rev 298)
++++ trunk/libs/action/controller/Base.php	2005-12-12 19:41:48 UTC (rev 299)
+@@ -289,8 +289,8 @@
+         if(!is_file($location)) {
+             throw new MedickException("File not found...");
+         }
+-        // $options['length'] = File->size($location);
+-        // $options['filename'] = File->basename($location);
++        // $options['length'] =   File::size($location);
++        // $options['filename'] = File::basename($location);
+     }
+ 
+     // {{{ redirects
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2005-12-12 19:13:00 UTC (rev 298)
++++ trunk/libs/action/controller/Request.php	2005-12-12 19:41:48 UTC (rev 299)
+@@ -41,7 +41,7 @@
+ 
+     /** @var array
+         current request parameters */
+-    protected $params = array();
++    private $params = array();
+ 
+     /** @var Route current request Route */ // XXX. is this used anymore?
+     protected $route;
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2005-12-12 19:13:00 UTC (rev 298)
++++ trunk/libs/action/controller/Routing.php	2005-12-12 19:41:48 UTC (rev 299)
+@@ -63,7 +63,10 @@
+                 $request->setParam($param->getName(), $request->getPathInfo($key));
+             }
+         } else {
+-            $logger->debug('Unknown Route! Loading default...');
++            $logger->debug('Unknown Route! {' . 
++                            $request->getParam('controller') . 
++                            '/'. $request->getParam('action') . 
++                            '} Loading default...');
+             $route= $map->getRouteByName('default');
+             $request->setParam('controller', $route->getController());
+             $request->setParam('action', $route->getAction());
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2005-12-12 19:13:00 UTC (rev 298)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2005-12-12 19:41:48 UTC (rev 299)
+@@ -40,11 +40,11 @@
+ class HTTPRequest extends Request {
+     
+     /** @var Session */
+-    protected $session;
++    private $session;
+ 
+     /** @var array
+         path_info_parts */
+-    protected $path_info= array();
++    private $path_info= array();
+ 
+     /**
+      * Constructor.
+@@ -52,7 +52,7 @@
+      */
+     public function __construct() {
+         foreach ($_REQUEST as $key=>$value) {
+-            $this->params[$key] = $value;
++            $this->setParam($key, $value);
+         }
+         
+         unset($_REQUEST); unset($_GET); unset($_POST);
+@@ -61,15 +61,15 @@
+             $parts= explode('/', trim($_SERVER['PATH_INFO'], '/'));
+             foreach ($parts as $key=>$part) {
+                 if ($key == 0) {
+-                    $this->params['controller'] = current(explode('.', $part));
++                    $this->setParam('controller', current($x=explode('.', $part)));
+                 } elseif ($key == 1) {
+-                    $this->params['action']     = current(explode('.', $part));
++                    $this->setParam('action', current($x=explode('.', $part)));
+                 } else {
+-                    $this->path_info[]          = current(explode('.', $part));
++                    $this->path_info[] = current($x=explode('.', $part));
+                 }
+             }
+         }
+-        $this->session= new Session();
++        $this->session = new Session();
+     }
+ 
+     /**
+@@ -90,16 +90,10 @@
+     }
+     
+     // {{{ todos.
+-    
+-    // XXX
+     public function getIP() {  }
+-    
+-    // XXX
+     public function getRequestURI() {  }
+-    
+-    // XXX: 
+     public function getProtocol() {  }
+-    
+     // }}}
+     
+ }
++
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2005-12-12 19:13:00 UTC (rev 298)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2005-12-12 19:41:48 UTC (rev 299)
+@@ -84,3 +84,4 @@
+         $this->content = "<html><body>You are being <a href=\"$location\">redirected</a>.</body></html>";
+     }
+ }
++
+
+
+
+From aurelian at berlios.de  Mon Dec 12 20:51:36 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 12 Dec 2005 20:51:36 +0100
+Subject: [Medick-svn] r300 - in applications/eltodo: app/controllers app/models app/views/project conf public public/images
+Message-ID: <200512121951.jBCJpaZZ003175@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-12 20:51:31 +0100 (Mon, 12 Dec 2005)
+New Revision: 300
+
+Added:
+   applications/eltodo/public/images/delete.png
+Modified:
+   applications/eltodo/app/controllers/project_controller.php
+   applications/eltodo/app/models/project.php
+   applications/eltodo/app/views/project/all.phtml
+   applications/eltodo/conf/eltodo.routes.php
+   applications/eltodo/public/.htaccess
+Log:
+ -- [ eltodo.sample ] updated.
+
+Modified: applications/eltodo/app/controllers/project_controller.php
+===================================================================
+--- applications/eltodo/app/controllers/project_controller.php	2005-12-12 19:41:48 UTC (rev 299)
++++ applications/eltodo/app/controllers/project_controller.php	2005-12-12 19:51:31 UTC (rev 300)
+@@ -8,11 +8,42 @@
+ 
+ class ProjectController extends ApplicationController {
+ 
++    /** nedded models */
+     protected $models = array('project');
+-
++    
++    /** layout to use for this controller */
+     protected $use_layout= 'eltodo';
+ 
+-    /** List all projects */
++    /** Creates a new Project */
++    public function create() {
++        $project= new Project(array('name'=>$this->params['project_name']));
++        try {
++            $project->save();
++            // $this->flash('Project added!');
++        } catch (SQLException $ex) {
++            $this->logger->warn($ex->getMessage());
++        } catch (DuplicateRecordException $drEx) {
++            $this->logger->warn($drEx->getMessage());
++            // $this->flash('A project with the same name already exists!');
++        }
++        $this->redirect_to('all');
++        // $this->render_text('done');
++    }
++
++    /** Removes a project */
++    public function delete() {
++        $project= new Project (array('id'=>$this->params['id']));
++        try {
++            $project->delete();
++            // $this->flash('Project removed!');
++        } catch (SQLException $sqlEx) {
++            $this->logger->warn($ex->getMessage());
++        }
++        $this->redirect_to('all');
++    }
++
++
++    /** List all projects, this is the default Route. */
+     public function all() {
+         try {
+             $this->template->projects= Project::find();
+
+Modified: applications/eltodo/app/models/project.php
+===================================================================
+--- applications/eltodo/app/models/project.php	2005-12-12 19:41:48 UTC (rev 299)
++++ applications/eltodo/app/models/project.php	2005-12-12 19:51:31 UTC (rev 300)
+@@ -6,8 +6,19 @@
+  * @package eltodo.models
+  */
+ 
++class DuplicateRecordException extends MedickException {    }
++
+ class Project extends ActiveRecordBase {
+ 
++    public function before_insert() {
++        try {
++            $projects=Project::find(array('condition'=>'name=\''.$this->name.'\''));
++            throw new DuplicateRecordException($this->name . ' already exists.');
++        } catch (RecordNotFoundException $ex) {
++            return true;
++        }
++    }
++
+     public static function find() {
+         $args= func_get_args();
+         self::setTable(__CLASS__);
+@@ -15,4 +26,3 @@
+     }
+ 
+ }
+-
+
+Modified: applications/eltodo/app/views/project/all.phtml
+===================================================================
+--- applications/eltodo/app/views/project/all.phtml	2005-12-12 19:41:48 UTC (rev 299)
++++ applications/eltodo/app/views/project/all.phtml	2005-12-12 19:51:31 UTC (rev 300)
+@@ -2,8 +2,8 @@
+ <!-- $Id$ -->
+ <form action="<?=URL::create('project','create');?>" method="post">
+     <div>
+-        <label>New Project:</label>
+-        <?=Form::text('name', NULL, array('maxlength'=>255,'size'=>55)); ?>
++        <label>Create a new Project:</label>
++        <?=Form::text('project_name', NULL, array('maxlength'=>255,'size'=>55)); ?>
+         <?=Form::submit('submit', 'Submit') ?>
+     </div>
+ </form>
+@@ -11,10 +11,16 @@
+ <hr />
+ 
+ <? foreach($projects as $project): ?>
+-    <?=$project->name;?> <br />
++    <a 
++        href="<?= URL::create('project', 'delete', array('id'=>$project->id));?>" 
++        onclick="return confirm('Are you sure you want to delete the project <?=$project->name;?>');"
++    >
++    <img src="images/delete.png" border="0">
++        </a>
++    <?=$project->name;?><br />
+ <? endforeach;?>
+ 
+ <? if(!count($projects)):?>
+-    No project found.
++    No projects found.
+ <? endif;?>
+ 
+
+Modified: applications/eltodo/conf/eltodo.routes.php
+===================================================================
+--- applications/eltodo/conf/eltodo.routes.php	2005-12-12 19:41:48 UTC (rev 299)
++++ applications/eltodo/conf/eltodo.routes.php	2005-12-12 19:51:31 UTC (rev 300)
+@@ -9,5 +9,19 @@
+         $project->setName('default');
+         $map->add($project);
+     }
++    
++    { // solves /project/create.html
++        $create_project= new Route('project', 'create');
++        $create_project->add(new RouteParam('name'));
++        $create_project->setFailure($project);
++        $map->add($create_project);
++    }
++    
++    { // solves: /project/delete/{id}.html
++        $delete_project= new Route('project', 'delete');
++        $delete_project->add(new RouteParam('id'));
++        $delete_project->setFailure($project);
++        $map->add($delete_project);
++    }
+ }
+ ?>
+
+Modified: applications/eltodo/public/.htaccess
+===================================================================
+--- applications/eltodo/public/.htaccess	2005-12-12 19:41:48 UTC (rev 299)
++++ applications/eltodo/public/.htaccess	2005-12-12 19:51:31 UTC (rev 300)
+@@ -12,13 +12,13 @@
+ RewriteEngine on
+ 
+ # all files with .something are skipped
+-RewriteCond %{REQUEST_URI} \..+$
+-RewriteCond %{REQUEST_URI} !\.html$
+-RewriteRule .* - [L]
++# RewriteCond %{REQUEST_URI} \..+$
++# RewriteCond %{REQUEST_URI} !\.html$
++# RewriteRule .* - [L]
+ # the others are redirected to the front web controller
+-RewriteRule ^(.*)$ index.php [QSA,L]
++# RewriteRule ^(.*)$ index.php [QSA,L]
+ 
+-# RewriteCond %{REQUEST_FILENAME} !-s
+-# RewriteCond %{REQUEST_URI} !^index.php/$
+-# RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
++RewriteCond %{REQUEST_FILENAME} !-s
++RewriteCond %{REQUEST_URI} !^index.php/$
++RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+ 
+
+Added: applications/eltodo/public/images/delete.png
+===================================================================
+(Binary files differ)
+
+
+Property changes on: applications/eltodo/public/images/delete.png
+___________________________________________________________________
+Name: svn:mime-type
+   + application/octet-stream
+
+
+
+From aurelian at berlios.de  Tue Dec 20 20:05:51 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Tue, 20 Dec 2005 20:05:51 +0100
+Subject: [Medick-svn] r301 - applications/eltodo/log
+Message-ID: <200512201905.jBKJ5pTU004299@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-20 20:05:46 +0100 (Tue, 20 Dec 2005)
+New Revision: 301
+
+Removed:
+   applications/eltodo/log/eltodo.log
+Log:
+ -- removed log files from svn
+
+Deleted: applications/eltodo/log/eltodo.log
+===================================================================
+--- applications/eltodo/log/eltodo.log	2005-12-12 19:51:31 UTC (rev 300)
++++ applications/eltodo/log/eltodo.log	2005-12-20 19:05:46 UTC (rev 301)
+@@ -1 +0,0 @@
+-
+
+
+
+From aurelian at berlios.de  Tue Dec 20 20:08:18 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Tue, 20 Dec 2005 20:08:18 +0100
+Subject: [Medick-svn] r302 - applications/eltodo/log
+Message-ID: <200512201908.jBKJ8IM0005614@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-20 20:08:15 +0100 (Tue, 20 Dec 2005)
+New Revision: 302
+
+Modified:
+   applications/eltodo/log/
+Log:
+ -- ignoring all the files in log/
+
+
+Property changes on: applications/eltodo/log
+___________________________________________________________________
+Name: svn:ignore
+   + *.log
+
+
+
+
+From aurelian at berlios.de  Tue Dec 20 20:26:21 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Tue, 20 Dec 2005 20:26:21 +0100
+Subject: [Medick-svn] r303 - in trunk: . bin
+Message-ID: <200512201926.jBKJQLtD017783@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-20 20:26:19 +0100 (Tue, 20 Dec 2005)
+New Revision: 303
+
+Added:
+   trunk/bin/
+   trunk/bin/medick.php
+Log:
+ -- initial import
+
+Added: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2005-12-20 19:08:15 UTC (rev 302)
++++ trunk/bin/medick.php	2005-12-20 19:26:19 UTC (rev 303)
+@@ -0,0 +1,95 @@
++<?php
++// $Id$
++$medick_core=dirname(dirname(__FILE__));
++
++function mk_dir($dir) {
++    if (!is_dir($dir)) {
++        if (mkdir($dir)) {
++          echo "\tcreate ";
++        } else {
++          exit("Can create {$dir}, permissions?\n");
++        }
++    } else {
++        echo "\texists ";
++    }
++    
++    echo "{$dir}\n";
++}
++
++function write_file($contents, $to, $mode= FALSE) {
++    if (file_exists($to)) {
++        echo "\texists {$to}\n";
++    } else {
++        if(file_put_contents($to, $contents)) {
++            echo "\tcreate {$to}\n";
++        } else {
++            exit("Cannot create {$to}, permissions?\n");
++        }
++    }
++    if ($mode) {
++        if (!chmod($to, $mode)) exit("Cannot set permissions to {$mode} on {$to}\n");
++    }
++}
++
++$folders= array(
++    'app'         =>'app',
++    'models'      =>'app' . DIRECTORY_SEPARATOR . 'models',
++    'controllers' =>'app' . DIRECTORY_SEPARATOR . 'controllers',
++    'helpers'     =>'app' . DIRECTORY_SEPARATOR . 'helpers',
++    'views'       =>'app' . DIRECTORY_SEPARATOR . 'views',
++    'layouts'     =>'app' . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'layouts',
++    'conf'        =>'conf',
++    'db'          =>'db',
++    'libs'        =>'libs',
++    'doc'         =>'doc',
++    'log'         =>'log',
++    'public'      =>'public',
++    'js'          =>'public' . DIRECTORY_SEPARATOR . 'javascript',
++    'css'         =>'public' . DIRECTORY_SEPARATOR . 'stylesheet',
++    'img'         =>'public' . DIRECTORY_SEPARATOR . 'images'
++  );
++
++$app_name= isset($argv[1]) ? $argv[1] : exit("No Application Location Specified.\n");
++
++$app_location= getcwd() . DIRECTORY_SEPARATOR . $app_name;
++
++mk_dir($app_location);
++
++foreach ($folders as $folder) {
++    mk_dir($app_location . DIRECTORY_SEPARATOR . $folder);
++}
++
++$files= array(
++  'public_html' . DIRECTORY_SEPARATOR . 'index.php'         => 'public' . DIRECTORY_SEPARATOR . 'index.php',
++  'public_html' . DIRECTORY_SEPARATOR . 'default.htaccess'  => 'public' . DIRECTORY_SEPARATOR . '.htaccess',
++  'config' . DIRECTORY_SEPARATOR . 'application.xml'        => 'conf'   . DIRECTORY_SEPARATOR . $app_name.'.xml',
++  'config' . DIRECTORY_SEPARATOR . 'application.routes.php' => 'conf'   . DIRECTORY_SEPARATOR . $app_name.'.routes.php'
++  
++);
++
++$search= array(
++            '${LOG}',
++            '${CORE}',
++            '${APP_PATH}',
++            '${APP_NAME}'
++          );
++
++$replace= array(
++            $app_location.DIRECTORY_SEPARATOR.$folders['log'].DIRECTORY_SEPARATOR.$app_name.'.log',
++            $medick_core,
++            $app_location,
++            $app_name
++          );
++
++foreach ($files as $from=>$file) {
++    $contents= str_replace($search, $replace, file_get_contents($medick_core.DIRECTORY_SEPARATOR.$from));
++    list($to,$orig)= explode(DIRECTORY_SEPARATOR, $file,2);
++    write_file($contents, $app_location.DIRECTORY_SEPARATOR.$folders[$to].DIRECTORY_SEPARATOR.$orig);
++}
++
++write_file(' ',$app_location.DIRECTORY_SEPARATOR.$folders['log'].DIRECTORY_SEPARATOR.$app_name.'.log',0777);
++
++write_file("<html><head><title>Welcome to Medick!</title></head><body><h3>Welcome To Medick</h3><p><b>Application:</b> {$app_name}</p><p><b>Location: </b>{$app_location}</p></body></html>", $app_location.DIRECTORY_SEPARATOR.$folders['public'].DIRECTORY_SEPARATOR.'index.html');
++
++            
++
+
+
+Property changes on: trunk/bin/medick.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at berlios.de  Tue Dec 20 20:41:24 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Tue, 20 Dec 2005 20:41:24 +0100
+Subject: [Medick-svn] r304 - in trunk: config libs/action/controller libs/action/controller/http libs/logger libs/logger/formatter libs/logger/outputter public_html
+Message-ID: <200512201941.jBKJfOIQ022842@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-20 20:41:09 +0100 (Tue, 20 Dec 2005)
+New Revision: 304
+
+Modified:
+   trunk/config/application.routes.php
+   trunk/config/application.xml
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/action/controller/Map.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/Routing.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/logger/Logger.php
+   trunk/libs/logger/LoggingEvent.php
+   trunk/libs/logger/formatter/SimpleFormatter.php
+   trunk/libs/logger/outputter/StdoutOutputter.php
+   trunk/public_html/default.htaccess
+Log:
+ -- added medick variables (used in application generator)
+       on application.xml and public_html/default.htaccess
+ -- Logger clean-up: 
+     * removed backtrace from LoggingEvent (it was so cool, but the performace and debugging objects with var_dump was so painfull)
+     * minor layout changes on StdoutOutputter
+     * using REMOTE_ADDR in LoggingEvent (later on we can set a ignore multiple errors from the same ip?)
+ -- Request clean-up:
+     * removed unused (deprecated) methods/members from HTTPRequest and Request (Route related)
+     * using list() inseard current($x=extract())
+ -- Injector: only libs folder from user space is added to the include_path
+ -- Route: 
+    * removed unused(deprecated) methods related to controller(*name,*path)
+    * overwriting the Route::id when one sets an action via Route::setAction(string name)
+ -- Routing:
+    * fix: do not overwrite a Request::parameter if it already exists.
+    * the prev. fix will lead us to more clean-up in routing system: 
+         you should register parameters in Map only they come from PATH_INFO and not from _REQUEST(!!!)
+
+
+Modified: trunk/config/application.routes.php
+===================================================================
+--- trunk/config/application.routes.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/config/application.routes.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -1,45 +1,12 @@
+ <?php
+ // routes.php
+ // $Id$
+-// @TODO: write some documentation about this file :)
++// @TODO: write some documentation about this file
+ 
+-// an example of route configuration in medick.
+-
+-// $map= MedickRegistry::get('__map');
+-
+ {
+-    { // /todo/edit/id.html
+-        $route= new Route('todo', 'edit');
+-        $route->setAccess(1);
+-        $route->add(new RouteParam('id'));
+-        $map->add($route);
+-    }
+-    
+-    { // /todo/create.html
+-        $route= new Route('todo', 'create');
+-        $route->setAccess(1);
+-        $param= new RouteParam('description');
+-        $route->add($param);
+-        $param= new RouteParam('done');
+-        $route->add($param);
+-        $map->add($route);
+-    }
++    {
+ 
+-    { // /todo/update.html
+-        $route= new Route('todo', 'update');
+-        $route->setAccess(1);
+-        $param= new RouteParam('description');
+-        $route->add($param);
+-        $param= new RouteParam('done');
+-        $route->add($param);
+-        $map->add($route);
+     }
+-    
+-    { // /todo/delete.html
+-        $route= new Route('todo', 'delete');
+-        $route->setAccess(1);
+-        $route->add(new RouteParam('id'));
+-        $map->add($route);
+-    }
+ }
++
+ ?>
+
+Modified: trunk/config/application.xml
+===================================================================
+--- trunk/config/application.xml	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/config/application.xml	2005-12-20 19:41:09 UTC (rev 304)
+@@ -19,11 +19,11 @@
+         <formatter>simple</formatter>
+         <outputters>
+             <outputter name="file" level="0">
+-                <property name="path" value="/wwwroot/htdocs/locknet7/log/locknet7.log" />
++              <property name="path" value="${LOG}" />
+             </outputter>
+             <outputter name="stdout" level="0" />
+-            <outputter name="" level="3">
+-                <property name="subject" value="Fatality on {$server}" />
++            <outputter name="mail" level="3">
++                <property name="subject" value="Fatality on ${server}" />
+                 <property name="address" value="user at example.com" />
+             </outputter>
+         </outputters>
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/action/controller/Injector.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -102,13 +102,11 @@
+ 
+ 
+     /**
+-     * Adds user folders, `vendor' and `libs` to the include_path
++     * Adds user 3-rd party libs folder under include_path
++     * @return void
+      */
+     public function injectInclude_path() {
+         $top= $this->path['__base'] . '..' . DIRECTORY_SEPARATOR;
+-        if (is_dir($top . 'vendor')) {
+-            set_include_path(get_include_path() . PATH_SEPARATOR . $top . 'vendor');
+-        }
+         if (is_dir($top . 'libs')) {
+             set_include_path(get_include_path() . PATH_SEPARATOR . $top . 'libs');
+         }
+@@ -226,3 +224,4 @@
+         }
+     }
+ }
++
+
+Modified: trunk/libs/action/controller/Map.php
+===================================================================
+--- trunk/libs/action/controller/Map.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/action/controller/Map.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -97,8 +97,8 @@
+      * @return Route or FALSE if this map don`t contain this route.
+      */
+     public function contains(Route $route) {
+-        foreach ($this->routes AS $_route) {
+-            if ($_route->getId()==$route->getId()) {
++        foreach ($this->routes as $_route) {
++            if ($_route->getId() == $route->getId()) {
+                 return $_route;
+             }
+         }
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/action/controller/Request.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -43,9 +43,6 @@
+         current request parameters */
+     private $params = array();
+ 
+-    /** @var Route current request Route */ // XXX. is this used anymore?
+-    protected $route;
+-
+     /**
+      * It gets the param
+      * @param mixed, param, the paremeter name
+@@ -81,19 +78,5 @@
+     public function setParam($name, $value) {
+         $this->params[$name] = $value;
+     }
+-
+-    /** XXX. is this used anymore?
+-     * It sets the Request Route
+-     * @param Route route, the route to set on this Request
+-     * @return void
+-     */
+-    public function setRoute(IRoute $route) {
+-        $this->route = $route;
+-    }
+-
+-    /** It gets the Route */
+-    public function getRoute() {
+-        return $this->route;
+-    }
+ }
+ 
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/action/controller/Route.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -85,8 +85,8 @@
+      * Set the failure Route name
+      * @param string name, the name of the failure route.
+      */
+-    public function setFailure(Route $name) {
+-        $this->failure = $name;
++    public function setFailure(Route $route) {
++        $this->failure = $route;
+     }
+ 
+     /**
+@@ -128,6 +128,7 @@
+      */
+     public function setAction($action) {
+         $this->action= $action;
++        $this->id= md5($this->controller . $this->action);
+     }
+ 
+     /**
+@@ -147,35 +148,6 @@
+     }
+ 
+     /**
+-     * The controller name like 'TodoController'
+-     * @return string controller name
+-     */
+-    public function getControllerName() {
+-      return ucfirst($this->controller) . 'Controller';
+-    }
+-
+-    /**
+-     * It gets the controller path
+-     * like /home/user/app/controllers/
+-     * @deprecated, this method should be merged with getControllerFile.
+-     * @return string the controller path
+-     */
+-    public function getControllerPath() {
+-        return
+-            Registry::get('__configurator')->getProperty('application_path') . DIRECTORY_SEPARATOR . 'app' .
+-            DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR;
+-    }
+-
+-    /**
+-     * It gets the controller file like 'todo_controller.php'
+-     * @deprecated, this method should be merged with getControllerPath()
+-     * @return string the controller file
+-     */
+-    public function getControllerFile() {
+-        return strtolower($this->controller) . '_controller.php';
+-    }
+-
+-    /**
+      * It sets the access level.
+      * @param AccessLevel access
+      */
+@@ -219,4 +191,8 @@
+     public function getHeaders() {
+         return $this->headers;
+     }
++    
++    public function toString() {
++        return sprintf('Route Controller/Action {Id}: %s/%s {%s}', $this->controller,$this->action, $this->id);
++    }
+ }
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/action/controller/Routing.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -60,6 +60,7 @@
+             $logger->debug('Route Recognized: ' . $route->getName());
+             $params= $route->getParams();
+             foreach ($params as $key=>$param) {
++                if ($request->hasParam($param->getName())) continue;
+                 $request->setParam($param->getName(), $request->getPathInfo($key));
+             }
+         } else {
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -61,11 +61,14 @@
+             $parts= explode('/', trim($_SERVER['PATH_INFO'], '/'));
+             foreach ($parts as $key=>$part) {
+                 if ($key == 0) {
+-                    $this->setParam('controller', current($x=explode('.', $part)));
++                    list($controller)= explode('.', $part, 2);
++                    $this->setParam('controller', $controller);
+                 } elseif ($key == 1) {
+-                    $this->setParam('action', current($x=explode('.', $part)));
++                    list($action)= explode('.', $part, 2);
++                    $this->setParam('action', $action);
+                 } else {
+-                    $this->path_info[] = current($x=explode('.', $part));
++                    list($param)= explode('.', $part,2);
++                    $this->path_info[] = $param;
+                 }
+             }
+         }
+
+Modified: trunk/libs/logger/Logger.php
+===================================================================
+--- trunk/libs/logger/Logger.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/logger/Logger.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -90,7 +90,7 @@
+     }
+ 
+     /** __magic __overloading__ */
+-    public function __call($method, $message) {
++    public function __call($method, $message=FALSE) {
+         if (!$message) return;
+         if (sizeof($this->outputters) == 0) return;
+         if (!in_array($method, $this->levels)) {
+
+Modified: trunk/libs/logger/LoggingEvent.php
+===================================================================
+--- trunk/libs/logger/LoggingEvent.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/logger/LoggingEvent.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -37,10 +37,6 @@
+  * @package locknet7.logger
+  */
+ class LoggingEvent extends Object {
+-
+-    /** @var array
+-        application backtrace */
+-    public $backtrace = array();
+     
+     /** @var mixed 
+         logging message */
+@@ -51,38 +47,24 @@
+     public $level;
+     
+     /** @var string 
+-        in what file the message took place.*/
+-    public $file;
+-    
+-    /** @var int 
+-        at what line we logged the event.*/
+-    public $line;
+-    
+-    /** @var string 
+-        function*/
+-    public $function;
+-    
+-    /** @var string 
+-        class */
+-    public $class;
+-    
+-    /** @var string 
+         date */
+     public $date;
+     
++    /** @var string
++        ip-address */
++    public $ip;
++    
+     /**
+      * Constructor, set`s the properties
+      * @param mixed, message, the message
+      * @param string, this event level
+      */ 
+     public function __construct($message, $level) {
+-        $this->backtrace = debug_backtrace();
+         $this->message   = $message;
+         $this->level     = strtoupper($level);
+         $this->date      = time();
+-        $this->file      = end(@explode(DIRECTORY_SEPARATOR,@$this->backtrace[2]['file']));
+-        $this->line      = @$this->backtrace[2]['line'];
+-        $this->class     = @$this->backtrace[3]['class'];
+-        $this->function  = @$this->backtrace[3]['function'];
++        if (array_key_exists('REMOTE_ADDR',$_SERVER)) {
++            $this->ip= $_SERVER['REMOTE_ADDR'];
++        }
+     }
+ }
+
+Modified: trunk/libs/logger/formatter/SimpleFormatter.php
+===================================================================
+--- trunk/libs/logger/formatter/SimpleFormatter.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/logger/formatter/SimpleFormatter.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -40,9 +40,7 @@
+ class SimpleFormatter extends Formatter {
+     /** @see Formatter::format */
+     public function format(LoggingEvent $event) {
+-        $_oo = $event->class ? $event->class . '::' . $event->function : $event->function;
+-        return strftime("%d/%m/%Y %H:%M:%S", $event->date) . 
+-               ' [ ' . $event->file . ' / ' . $event->line . ' ] ' . 
+-               $_oo . ' '. $event->level . ' >>> ' . $this->extractMessage($event->message);
++        return "{$event->ip} -- " . strftime("%d/%m/%Y %H:%M:%S", $event->date) . 
++            " [ {$event->level} ] >>> {$this->extractMessage($event->message)}";
+     }
+ }
+
+Modified: trunk/libs/logger/outputter/StdoutOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/StdoutOutputter.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/logger/outputter/StdoutOutputter.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -54,9 +54,9 @@
+         if (php_sapi_name() == 'cli') {
+             $this->isCLI = TRUE;
+             $this->eol = "\n";
+-            $this->output .= "\n";
++            $this->output .= $this->eol;
+         } else {
+-            $this->output .= '<table border="1" style="font-family: verdana;font-size: 0.7em;" width="100%"><tr><td>';
++            $this->output .= '<table border="1" style="font-family: verdana;font-size: 0.8em;background-color:white" width="100%"><tr><td>';
+             $this->eol =  '</td></tr><tr><td>';
+         }
+     }
+
+Modified: trunk/public_html/default.htaccess
+===================================================================
+--- trunk/public_html/default.htaccess	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/public_html/default.htaccess	2005-12-20 19:41:09 UTC (rev 304)
+@@ -2,10 +2,10 @@
+ # $Id$
+ 
+ # Configuration
+-php_value auto_prepend_file ___PATH___TO___MEDICK___INSTALATION___/boot.php
++php_value auto_prepend_file ${CORE}/boot.php
+ 
+-SetEnv MEDICK_APPLICATION_PATH ___YOUR___APPLICATION___PATH___
+-SetEnv MEDICK_APPLICATION_NAME ___YOUR___APPLICATION___NAME___
++SetEnv MEDICK_APPLICATION_PATH ${APP_PATH}
++SetEnv MEDICK_APPLICATION_NAME ${APP_NAME}
+  
+ RewriteEngine on
+ 
+
+
+
+From aurelian at berlios.de  Fri Dec 23 16:02:40 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Fri, 23 Dec 2005 16:02:40 +0100
+Subject: [Medick-svn] r305 - trunk/bin
+Message-ID: <200512231502.jBNF2e0V012973@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-23 16:02:40 +0100 (Fri, 23 Dec 2005)
+New Revision: 305
+
+Modified:
+   trunk/bin/medick.php
+Log:
+ -- more files are generated
+
+Modified: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2005-12-20 19:41:09 UTC (rev 304)
++++ trunk/bin/medick.php	2005-12-23 15:02:40 UTC (rev 305)
+@@ -64,7 +64,6 @@
+   'public_html' . DIRECTORY_SEPARATOR . 'default.htaccess'  => 'public' . DIRECTORY_SEPARATOR . '.htaccess',
+   'config' . DIRECTORY_SEPARATOR . 'application.xml'        => 'conf'   . DIRECTORY_SEPARATOR . $app_name.'.xml',
+   'config' . DIRECTORY_SEPARATOR . 'application.routes.php' => 'conf'   . DIRECTORY_SEPARATOR . $app_name.'.routes.php'
+-  
+ );
+ 
+ $search= array(
+@@ -87,9 +86,50 @@
+     write_file($contents, $app_location.DIRECTORY_SEPARATOR.$folders[$to].DIRECTORY_SEPARATOR.$orig);
+ }
+ 
++// plain files.
+ write_file(' ',$app_location.DIRECTORY_SEPARATOR.$folders['log'].DIRECTORY_SEPARATOR.$app_name.'.log',0777);
+ 
+-write_file("<html><head><title>Welcome to Medick!</title></head><body><h3>Welcome To Medick</h3><p><b>Application:</b> {$app_name}</p><p><b>Location: </b>{$app_location}</p></body></html>", $app_location.DIRECTORY_SEPARATOR.$folders['public'].DIRECTORY_SEPARATOR.'index.html');
++$schema_sql=<<<EOSQL
++-- \$Id $
++-- Database Schema for $app_name
+ 
+-            
++EOSQL;
+ 
++$index_html=<<<EOHTML
++<html>
++  <head>
++    <!-- \$Id$ -->
++    <title>Welcome to Medick!</title>
++  </head>
++  <body>
++    <h3>Welcome To Medick</h3>
++    <p><b>Application:</b> $app_name</p>
++    <p><b>Location: </b>$app_location</p>
++  </body>
++</html>
++
++EOHTML;
++
++
++$application_controller=<<<EOCLASS
++<?php
++
++  /**
++   * This class is part of $app_name project
++   *
++   * Methods added here will be available in all your controllers.
++   * \$Id$
++   * @package $app_name.controllers
++   */
++  class ApplicationController extends ActionControllerBase {
++
++  }
++    
++EOCLASS;
++
++write_file($index_html, $app_location.DIRECTORY_SEPARATOR.$folders['public'].DIRECTORY_SEPARATOR.'index.html');
++
++write_file($application_controller, $app_location.DIRECTORY_SEPARATOR.$folders['controllers'].DIRECTORY_SEPARATOR.'application.php');
++
++write_file($schema_sql,$app_location.DIRECTORY_SEPARATOR.$folders['db'].DIRECTORY_SEPARATOR.'schema.sql');
++
+
+
+
+From aurelian at berlios.de  Mon Dec 26 16:51:14 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 26 Dec 2005 16:51:14 +0100
+Subject: [Medick-svn] r306 - applications/eltodo/public
+Message-ID: <200512261551.jBQFpESf030324@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-26 16:51:13 +0100 (Mon, 26 Dec 2005)
+New Revision: 306
+
+Added:
+   applications/eltodo/public/index.html
+Log:
+ -- initial import: generated by bin/medick.php script.
+
+Added: applications/eltodo/public/index.html
+===================================================================
+--- applications/eltodo/public/index.html	2005-12-23 15:02:40 UTC (rev 305)
++++ applications/eltodo/public/index.html	2005-12-26 15:51:13 UTC (rev 306)
+@@ -0,0 +1,18 @@
++<html>
++    <head>
++        <!-- \$Id: medick.php 305 2005-12-23 15:02:40Z aurelian $ -->
++        <title>Welcome to Medick!</title>
++     </head>
++     <body>
++         <h3>
++             <center>Welcome To Medick</center>
++         </h3>
++
++         <h4>You are ready to go!</h4>
++         <p><b>Application name :</b> eltodo</p>
++         <p><b>Develop eltodo application on: </b>/wwwroot/medick/applications/eltodo</p>
++         <p>Setup a default controller in <i>/wwwroot/medick/applications/eltodo/config/eltodo.routes.php</i>, and remove this file.</p>
++         <p>Ask for support on medick <a href="https://lists.berlios.de/mailman/listinfo/medick-devel">development list</a>.</p>
++    </body>
++</html>
++
+
+
+
+From aurelian at berlios.de  Mon Dec 26 16:52:38 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 26 Dec 2005 16:52:38 +0100
+Subject: [Medick-svn] r307 - applications/eltodo/public
+Message-ID: <200512261552.jBQFqcXx030431@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-26 16:52:38 +0100 (Mon, 26 Dec 2005)
+New Revision: 307
+
+Modified:
+   applications/eltodo/public/index.html
+Log:
+ -- propset.
+
+Modified: applications/eltodo/public/index.html
+===================================================================
+--- applications/eltodo/public/index.html	2005-12-26 15:51:13 UTC (rev 306)
++++ applications/eltodo/public/index.html	2005-12-26 15:52:38 UTC (rev 307)
+@@ -1,6 +1,6 @@
+ <html>
+     <head>
+-        <!-- \$Id: medick.php 305 2005-12-23 15:02:40Z aurelian $ -->
++        <!-- $Id$ -->
+         <title>Welcome to Medick!</title>
+      </head>
+      <body>
+
+
+Property changes on: applications/eltodo/public/index.html
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at berlios.de  Mon Dec 26 16:59:11 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 26 Dec 2005 16:59:11 +0100
+Subject: [Medick-svn] r308 - applications/eltodo/conf
+Message-ID: <200512261559.jBQFxBaG031144@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-26 16:59:11 +0100 (Mon, 26 Dec 2005)
+New Revision: 308
+
+Modified:
+   applications/eltodo/conf/eltodo.routes.php
+Log:
+ -- using the new routing system in eltodo sample application
+
+Modified: applications/eltodo/conf/eltodo.routes.php
+===================================================================
+--- applications/eltodo/conf/eltodo.routes.php	2005-12-26 15:52:38 UTC (rev 307)
++++ applications/eltodo/conf/eltodo.routes.php	2005-12-26 15:59:11 UTC (rev 308)
+@@ -2,26 +2,7 @@
+ // eltodo.routes.php
+ // $Id$
+ 
+-{
+-    { // solves: /, /project.html, /project/index.html
+-        $project= new Route('project');
+-        $project->setAction('all');
+-        $project->setName('default');
+-        $map->add($project);
+-    }
+-    
+-    { // solves /project/create.html
+-        $create_project= new Route('project', 'create');
+-        $create_project->add(new RouteParam('name'));
+-        $create_project->setFailure($project);
+-        $map->add($create_project);
+-    }
+-    
+-    { // solves: /project/delete/{id}.html
+-        $delete_project= new Route('project', 'delete');
+-        $delete_project->add(new RouteParam('id'));
+-        $delete_project->setFailure($project);
+-        $map->add($delete_project);
+-    }
+-}
++$map= Map::getInstance();
++$map->add(new Route(':controller/:action/:id'));
++
+ ?>
+
+
+
+From aurelian at berlios.de  Mon Dec 26 17:03:55 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 26 Dec 2005 17:03:55 +0100
+Subject: [Medick-svn] r310 - trunk/config
+Message-ID: <200512261603.jBQG3txV031790@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-26 17:03:54 +0100 (Mon, 26 Dec 2005)
+New Revision: 310
+
+Modified:
+   trunk/config/application.routes.php
+Log:
+ -- using the new Routing system.
+
+Modified: trunk/config/application.routes.php
+===================================================================
+--- trunk/config/application.routes.php	2005-12-26 16:03:24 UTC (rev 309)
++++ trunk/config/application.routes.php	2005-12-26 16:03:54 UTC (rev 310)
+@@ -3,10 +3,6 @@
+ // $Id$
+ // @TODO: write some documentation about this file
+ 
+-{
+-    {
+-
+-    }
+-}
+-
++$map= Map::getInstance();
++$map->add(new Route(':controller/:action/:id'));
+ ?>
+
+
+
+From aurelian at berlios.de  Mon Dec 26 17:03:25 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 26 Dec 2005 17:03:25 +0100
+Subject: [Medick-svn] r309 - trunk/bin
+Message-ID: <200512261603.jBQG3Pmm031616@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-26 17:03:24 +0100 (Mon, 26 Dec 2005)
+New Revision: 309
+
+Modified:
+   trunk/bin/medick.php
+Log:
+ -- more TEXT
+
+Modified: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2005-12-26 15:59:11 UTC (rev 308)
++++ trunk/bin/medick.php	2005-12-26 16:03:24 UTC (rev 309)
+@@ -90,7 +90,7 @@
+ write_file(' ',$app_location.DIRECTORY_SEPARATOR.$folders['log'].DIRECTORY_SEPARATOR.$app_name.'.log',0777);
+ 
+ $schema_sql=<<<EOSQL
+--- \$Id $
++-- \$Id$
+ -- Database Schema for $app_name
+ 
+ EOSQL;
+@@ -102,9 +102,11 @@
+     <title>Welcome to Medick!</title>
+   </head>
+   <body>
+-    <h3>Welcome To Medick</h3>
++    <h3><center>Welcome To Medick</center></h3>
+     <p><b>Application:</b> $app_name</p>
+-    <p><b>Location: </b>$app_location</p>
++    <p><b>Develop $app_name on : </b>$app_location</p>
++    <p>Setup a default controller in <i>$app_location/config/$app_name.routes.php</i>, and remove this file.</p>
++    <p>Ask for support on medick <a href="https://lists.berlios.de/mailman/listinfo/medick-devel">development list</a>.</p>
+   </body>
+ </html>
+ 
+
+
+
+From aurelian at berlios.de  Mon Dec 26 17:30:38 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 26 Dec 2005 17:30:38 +0100
+Subject: [Medick-svn] r312 - trunk
+Message-ID: <200512261630.jBQGUcjd001798@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-26 17:30:38 +0100 (Mon, 26 Dec 2005)
+New Revision: 312
+
+Modified:
+   trunk/CHANGELOG
+Log:
+ -- updated CHANGELOG
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2005-12-26 16:13:13 UTC (rev 311)
++++ trunk/CHANGELOG	2005-12-26 16:30:38 UTC (rev 312)
+@@ -2,6 +2,15 @@
+ (*) SVN version
+ 
+ 0.0.4 (*)
++    - added medick application generator (bin/medick.php).
++    - added medick.util, packeage witch holds MedickCollection and MedickIterator.
++    - rewrite the Routing System (more like RoR), it`s not completly done, but we have a nice working version.
++    - clean-up Medick template engine (removed the interface).
++    - code improvements in Logger:
++        - removed heavy backtrace witch was attached to every Logging Events.
++        - new Configuration Options, every Outputter can have properties.
++    - removed un-used application_path from configuration options.
++    - removed deprecated methods from the framework.  
+ 
+ 0.0.3 (28.nov.2005)
+     - Code Clean-Up:
+
+
+
+From aurelian at berlios.de  Mon Dec 26 17:13:14 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 26 Dec 2005 17:13:14 +0100
+Subject: [Medick-svn] r311 - in trunk: . libs/action/controller libs/action/controller/http libs/medick
+Message-ID: <200512261613.jBQGDEhH032648@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-12-26 17:13:13 +0100 (Mon, 26 Dec 2005)
+New Revision: 311
+
+Removed:
+   trunk/libs/action/controller/route/
+Modified:
+   trunk/boot.php
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Map.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/Routing.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/medick/util.php
+Log:
+ -- rewrite the Routing system.
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/boot.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -51,21 +51,21 @@
+ include_once('medick/Exception.php');
+ include_once('medick/ErrorHandler.php');
+ set_error_handler(array(new ErrorHandler(), 'raiseError'));
++include_once('medick/util.php');
+ include_once('medick/Registry.php');
+ include_once('medick/Dispatcher.php');
+ include_once('medick/Version.php');
+-include_once('medick/util.php');
+ include_once('configurator/XMLConfigurator.php');
+ include_once('logger/Logger.php');
+ include_once('action/controller/Map.php');
++include_once('action/controller/Route.php');
++include_once('action/controller/Routing.php');
+ 
+ $conf_files = $_SERVER['MEDICK_APPLICATION_PATH'] . DIRECTORY_SEPARATOR . 'conf' .
+                         DIRECTORY_SEPARATOR . $_SERVER['MEDICK_APPLICATION_NAME'];
+ 
+ Registry::put(new XMLConfigurator($conf_files . '.xml'), '__configurator');
+ 
+-$map= Registry::put(new Map(), '__map');
+-
+ $logger= Registry::put(new Logger(), '__logger');
+ 
+ $logger->debug('Core Loaded...');
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/action/controller/Base.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -142,7 +142,7 @@
+         $this->instantiate($request, $response);
+         $this->add_models();
+         $this->add_before_filters();
+-        $this->perform_action($request->getParam('action'));
++        $this->perform_action($request->getParameter('action'));
+         return $response;
+     }
+ 
+@@ -270,7 +270,7 @@
+         $this->response = $response;
+         $this->session  = $request->getSession();
+         $this->session->start();
+-        $this->params   = $request->getParams();
++        $this->params   = $request->getParameters();
+ 
+         $this->logger   = Registry::get('__logger');
+         $this->injector = Registry::get('__injector');
+
+Modified: trunk/libs/action/controller/Map.php
+===================================================================
+--- trunk/libs/action/controller/Map.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/action/controller/Map.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -32,77 +32,21 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-include_once('action/controller/Route.php');
+-include_once('action/controller/route/RouteParam.php');
+-
+ /**
+  * @package locknet7.action.controller
+  */
++class Map extends AbstractCollection {
+ 
+-class Map extends Object {
++    private static $instance= NULL;
+ 
+-    /** 
+-     * @var array, routes, container for Routes
+-     */
+-    private $routes = array();
+-
+-    /**
+-     * @var Route the current running route
+-     */ 
+-    private $curent_route;
+-    
+-    /**
+-     * Sets the current Route
+-     * @param Route route
+-     */ 
+-    public function setCurrentRoute(Route $route) {
+-        $this->curent_route= $route;
++    protected function Map() {
++        parent::AbstractCollection(array());
+     }
+-    
+-    /**
+-     * Gets the current route
+-     * @return Route
+-     */ 
+-    public function getCurrentRoute() {
+-        return $this->curent_route;
+-    }
+ 
+-    /**
+-     * Adds a route to this map
+-     * @param Route route
+-     */
+-    public function add(Route $route) {
+-        if ($this->contains($route)) return;
+-        $this->routes[]=$route;
+-    }
+-
+-    /**
+-     * It gets a route by his name
+-     * @param string the name of the route to look for.
+-     * @throw RouteException
+-     */
+-    public function getRouteByName($name) {
+-        foreach ($this->routes as $route) {
+-            if ($route->getName()==$name) {
+-                return $route;
+-            }
++    public static function getInstance() {
++        if (Map::$instance===NULL) {
++            Map::$instance= new Map();
+         }
+-        throw new RouteException('Cannot find a route with this name: `' . $name . '` !');
++        return Map::$instance;
+     }
+-
+-    /**
+-     * Check if the current Map contains the given route
+-     * If so, we return-it, otherwise we return false
+-     * @param Route route
+-     * @return Route or FALSE if this map don`t contain this route.
+-     */
+-    public function contains(Route $route) {
+-        foreach ($this->routes as $_route) {
+-            if ($_route->getId() == $route->getId()) {
+-                return $_route;
+-            }
+-        }
+-        return FALSE;
+-    }
+ }
+-
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/action/controller/Request.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -48,8 +48,8 @@
+      * @param mixed, param, the paremeter name
+      * @return the param value of NULL if this param was not passed with this Resuest
+      */
+-    public function getParam($param) {
+-        return isset($this->params[$param]) ? $this->params[$param] : NULL;
++    public function getParameter($param) {
++        return $this->hasParameter($param) ? $this->params[$param] : NULL;
+     }
+ 
+     /**
+@@ -57,7 +57,7 @@
+      * @param string param_name the parameter name
+      * @return bool TRUE if the parameter_name is included in this request, FALSE otherwise
+      */
+-    public function hasParam($param_name) {
++    public function hasParameter($param_name) {
+         return isset($this->params[$param_name]);
+     }
+ 
+@@ -65,7 +65,7 @@
+      * It gets all the parameters of this Request
+      * @return array this request parameters.
+      */
+-    public function getParams() {
++    public function getParameters() {
+         return $this->params;
+     }
+ 
+@@ -75,7 +75,7 @@
+      * @param mixed, value, value of the param
+      * @return void
+      */
+-    public function setParam($name, $value) {
++    public function setParameter($name, $value) {
+         $this->params[$name] = $value;
+     }
+ }
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/action/controller/Route.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -35,164 +35,160 @@
+ /**
+  * @package locknet7.action.controller.route
+  */
+-class Route extends Object {
+ 
+-    /** @var string
+-        this route name */
+-    private $name = '';
+-    
+-    /** @var string
+-        route controller name */
+-    private $controller;
+-    
+-    /** @var string
+-        route action name */
+-    private $action;
+-    
+-    /** @var string 
+-        unique route identifier. */
+-    private $id;
+-    
+-    /** @var array RouteParam[]
+-        route parameters. */
+-    private $params;
+-    
+-    /** @var mixed
+-        route access level.*/
+-    private $access;
+-    
+-    /** @var array
+-        distinctive route headers*/
+-    private $headers;
+-    
+-    /** @var string 
+-        name of the failure Route.*/
+-    private $failure;
++/**
++ * A Collection with Components
++ */
++class Components extends AbstractCollection {   }
+ 
+-    /**
+-     * Constructor.
+-     * @param string controller name
+-     * @param string action name
+-     */
+-    public function __construct($controller, $action= '') {
+-        $this->controller= $controller;
+-        $this->action= $action;
+-        $this->id= md5($this->controller . $this->action);
+-        $this->params= array();
++/**
++ * A Route Component
++ */
++class Component extends Object {
++
++    private $name;
++
++    private $dymanic;
++
++    private $position;
++
++    public function Component($name) {
++        $this->name= $name;
+     }
+-    
+-    /**
+-     * Set the failure Route name
+-     * @param string name, the name of the failure route.
+-     */
+-    public function setFailure(Route $route) {
+-        $this->failure = $route;
++
++    public function getName() {
++        return $this->name;
+     }
+ 
+-    /**
+-     * Gets the failure Route name
+-     * @return string
+-     */
+-    public function getFailure() {
+-        return $this->failure;
++    public function setDynamic($dynamic) {
++        $this->dynamic= (bool)$dynamic;
+     }
+ 
+-    /**
+-     * It gets this route id,
+-     * a md5`ed concat`ed string between controller+action
+-     * @return string
+-     */
+-    public function getId() {
+-        return $this->id;
++    public function isDynamic() {
++        return $this->isDynamic;
+     }
+ 
+-    /**
+-     * Sets the name of this route.
+-     * @param string name
+-     */
+-    public function setName($name) {
++    public function setPosition($position) {
++        $this->position= (int)$position;
++    }
++
++}
++
++/**
++ * Route class.
++ */
++class Route extends Object {
++
++    /** @var string
++        incoming Route Definition list. */
++    private $route_list;
++
++    private $defaults;
++
++    private $name;
++
++    private $components;
++
++
++    public function Route($route_list, $name = '', Array $defaults = array(), Array $requirements = array()) {
++
++        $this->components= new Components();
++
++        $this->route_list= $route_list;
++        $this->defaults= $defaults;
++
+         $this->name= $name;
++
++        $parts= explode('/', trim($this->route_list, '/'));
++
++        foreach ($parts as $key=>$element) {
++
++            if (preg_match('/:[a-z0-9_\-]+/',$element, $match)) {
++                $c= new Component(substr(trim($match[0]), 1));
++                $c->setDynamic(TRUE);
++
++            } else {
++                $c= new Component($element);
++                $c->setDynamic(FALSE);
++            }
++            $c->setPosition($key);
++            $this->components->add($c);
++        }
++
+     }
+ 
+     /**
+-     * Gets the name of this route.
+-     * @return string name of this route.
++     * It gets the name of this Route.
++     *
++     * @return string name.
+      */
+     public function getName() {
+-        return $this->name == '' ? $this->controller . '/' . $this->action : $this->name;
++        return $this->name;
+     }
+ 
+     /**
+-     * It sets the action for this route.
+-     * @param string action action name
++     * It sets the name of this Route.
++     *
++     * @param string name, the name of this Route.
+      */
+-    public function setAction($action) {
+-        $this->action= $action;
+-        $this->id= md5($this->controller . $this->action);
++    public function setName($name) {
++        $this->name= (string)$name;
+     }
+ 
+     /**
+-     * It gets the action.
+-     * @return string action
++     * Sets defaults for this Route.
++     *
++     * @param array an array witch holds defaults values for this Route.
+      */
+-    public function getAction() {
+-        return $this->action;
++    public function setDefaults(Array $defaults) {
++        $this->defaults= $defaults;
+     }
+ 
+-    /**
+-     * It get the controller
+-     * @return string controller, like 'todo'
+-     */
+-    public function getController() {
+-        return $this->controller;
+-    }
++    // match the current Route against incoming URL.
++    // @TODO: refactor.
++    // @return bool
++    public function match(Request $request) {
++        $parts= $request->getPathInfoParts();
+ 
+-    /**
+-     * It sets the access level.
+-     * @param AccessLevel access
+-     */
+-    public function setAccess($access) {
+-        $this->access= $access;
+-    }
++        // if / was requested, just skip this part.
++        if (count($parts) !=0 ) {
++            $it= $this->components->iterator();
++            while($it->hasNext()) {
++                $name= $it->next()->getName();
+ 
+-    /**
+-     * Adds a new Parameter on this route or a Header.
+-     * @param Object argument
+-     */
+-    public function add($argument) {
+-        if ($argument instanceof RouteParam) {
+-            $this->params[]  = $argument;
+-        } elseif ($argument instanceof RouteHeader) {
+-            $this->headers[] = $argument;
+-        } else {
+-            throw new RouteException('Wrong Argument Type in ' . __METHOD__ . ', Argument should be one of RouteParam or RouteHeader objects!');
++                if (isset($parts[$it->key()])) {
++
++                    if (FALSE===strpos($parts[$it->key()], '.html')) {
++                        $part= $parts[$it->key()];
++                    } else {
++                        list($part)= explode('.', $parts[$it->key()]);
++                    }
++                    $request->setParameter($name, $part);
++                }
++
++            }
+         }
+-        return $argument;
+-    }
+ 
+-    public function addFromArray($params) {
+-        foreach($params as $param) {
+-            $this->add($param);   
++        // more to be done.
++
++        // check if we have a controller.
++        if (!$request->hasParameter('controller')) {
++            if (array_key_exists('controller', $this->defaults)) {
++                $request->setParameter('controller', $this->defaults['controller']);
++            } else { // we don`t have a controller for this route (?), exit.
++                return FALSE;
++            }
+         }
+-    }
+ 
+-    /**
+-     * Gets the list with the attached params
+-     * @return array RouteParam[]
+-     */
+-    public function getParams() {
+-        return $this->params;
++        // check for a default action
++        if (!$request->hasParameter('action')) {
++            if (array_key_exists('action', $this->defaults)) {
++                $request->setParameter('action', $this->defaults['action']);
++            } else {
++                $request->setParameter('action','index');
++            }
++        }
++        return TRUE;
+     }
+ 
+-    /** 
+-     * It gets the list of headers
+-     * @return array RouteHeaders
+-     */
+-    public function getHeaders() {
+-        return $this->headers;
+-    }
+-    
+-    public function toString() {
+-        return sprintf('Route Controller/Action {Id}: %s/%s {%s}', $this->controller,$this->action, $this->id);
+-    }
+ }
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/action/controller/Routing.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -37,46 +37,35 @@
+ /**
+  * @package locknet7.action.controller.route
+  */
++
+ class ActionControllerRouting extends Object {
+ 
++    // @return Route.
++    // @throws RoutingException
++    private function findRoute(Request $request) {
++        $it= Map::getInstance()->iterator();
++        while($it->hasNext()) {
++            if ($it->next()->match($request)) return $it->current();
++        }
++        throw new RoutingException('Cannot find a Route for this hash: ' . $request->getPathInfo());
++    }
++
++    private function createControllerInstance($controller) {
++        return Registry::put(new Injector(), '__injector')->inject('controller', $controller);
++    }
++
+     /**
+-     * Check if the application Map contains the current Route.
+-     *
+-     * If so, we add the route parameters into the current request.
+-     *
+-     * @param locknet7.action.controller.Request
+-     * @return locknet7.action.controller.Base
++     * Recognize a Route Based on the Request.
+      */
+     public static function recognize(Request $request) {
+-        $map   = Registry::get('__map');
+-        $logger= Registry::get('__logger');
+-        // do we know this route?
+-        if ($route= $map->contains(
+-                                new Route(
+-                                    $request->getParam('controller'), 
+-                                    $request->getParam('action')))
+-                                  )
+-        {
+-            $logger->debug('Route Recognized: ' . $route->getName());
+-            $params= $route->getParams();
+-            foreach ($params as $key=>$param) {
+-                if ($request->hasParam($param->getName())) continue;
+-                $request->setParam($param->getName(), $request->getPathInfo($key));
+-            }
+-        } else {
+-            $logger->debug('Unknown Route! {' . 
+-                            $request->getParam('controller') . 
+-                            '/'. $request->getParam('action') . 
+-                            '} Loading default...');
+-            $route= $map->getRouteByName('default');
+-            $request->setParam('controller', $route->getController());
+-            $request->setParam('action', $route->getAction());
+-        }
+-        $logger->debug(
+-            'Running on Route: ' . $route->getName() .
+-            ' ctrller: ' . $route->getController() .
+-            ' act: ' . $route->getAction());
+-        $map->setCurrentRoute($route);
+-        return Registry::put(new Injector(), '__injector')->inject('controller', $route->getController());
++        $r= new ActionControllerRouting($request);
++        // try {
++        $route = $r->findRoute($request);
++        return   $r->createControllerInstance($request->getParameter('controller'));
++        // } catch (RoutingException $rEx) {
++            // load 404 route, if fails too try the default route, this are named routes.
++        //    echo $rEx;
++        // }
+     }
+ }
++
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -42,9 +42,9 @@
+     /** @var Session */
+     private $session;
+ 
+-    /** @var array
++    /** @var string
+         path_info_parts */
+-    private $path_info= array();
++    private $path_info= NULL;
+ 
+     /**
+      * Constructor.
+@@ -52,25 +52,13 @@
+      */
+     public function __construct() {
+         foreach ($_REQUEST as $key=>$value) {
+-            $this->setParam($key, $value);
++            $this->setParameter($key, $value);
+         }
+         
+         unset($_REQUEST); unset($_GET); unset($_POST);
+         
+         if (array_key_exists('PATH_INFO', $_SERVER)) {
+-            $parts= explode('/', trim($_SERVER['PATH_INFO'], '/'));
+-            foreach ($parts as $key=>$part) {
+-                if ($key == 0) {
+-                    list($controller)= explode('.', $part, 2);
+-                    $this->setParam('controller', $controller);
+-                } elseif ($key == 1) {
+-                    list($action)= explode('.', $part, 2);
+-                    $this->setParam('action', $action);
+-                } else {
+-                    list($param)= explode('.', $part,2);
+-                    $this->path_info[] = $param;
+-                }
+-            }
++            $this->path_info= $_SERVER['PATH_INFO'];
+         }
+         $this->session = new Session();
+     }
+@@ -80,10 +68,15 @@
+      * @param int, key, the part index
+      * @return value of this part or NULL if this part is not defined
+      */
+-    public function getPathInfo($key) {
+-        return isset($this->path_info[$key]) ? $this->path_info[$key] : NULL;
++    public function getPathInfo() {
++        return $this->path_info;
+     }
+ 
++    public function getPathInfoParts() {
++        if (is_null($this->path_info)) return array();
++        return explode('/', trim($this->path_info,'/'));
++    }
++
+     /**
+      * It gets the Session
+      * @return Session, the curent Session
+
+Modified: trunk/libs/medick/util.php
+===================================================================
+--- trunk/libs/medick/util.php	2005-12-26 16:03:54 UTC (rev 310)
++++ trunk/libs/medick/util.php	2005-12-26 16:13:13 UTC (rev 311)
+@@ -55,13 +55,13 @@
+      * @param medick.Object the Object we want to remove
+      * @return Object, the Object just removed
+      */ 
+-    function remove(Object $o);
++    // function remove(Object $o);
+     
+     /**
+      * Removes all the objects stored in this Collection
+      * @return void
+      */
+-    function clear();
++    // function clear();
+     
+     /**
+      * Indicates the size of this Collection
+@@ -91,7 +91,7 @@
+      * Returns true if this collection contains the specified element
+      * @return bool
+      */
+-    function contains(Object $o);
++    // function contains(Object $o);
+     
+ }
+ // }}}
+@@ -105,7 +105,8 @@
+ interface IIterator {
+ 
+     /**
+-     * Check if this Iterator has more elements
++     * Check if this Collection has more elements
++     *
+      * @return TRUE if this Iterator has a next element, 
+      *         FALSE if we are at the last element
+      */
+@@ -113,10 +114,97 @@
+ 
+     /**
+      * It gets the current element
++     *
+      * @return medick.Object
+      */
+     function next();
+     
++    /**
++     * It gets the current element.
++     * 
++     * @return medick.Object
++     */
++    function current();
++
++    /**
++     * It gets the current element key
++     *
++     * @return int
++     */
++    function key();
++    
+ }
+ // }}}
+ 
++
++// {{{ AbstractCollection
++abstract class AbstractCollection extends Object implements ICollection {
++
++    private $elements;
++
++    public function AbstractCollection(Array $elements=array()) {
++        $this->elements= $elements;
++    }
++
++    public function iterator() {
++        return new MedickIterator($this);
++    }
++
++    public function add(Object $object) {
++        $this->elements[]= $object;
++    }
++
++    public function size() {
++        return count($this->elements);
++    }
++
++    public function isEmpty() {
++        return $this->size() == 0;
++    }
++
++    public function get($idx) {
++        return $this->elements[(int)$idx];
++    }
++
++    public function toArray() {
++        return $this->elements;
++    }
++
++}
++// }}}
++
++// {{{ MedickIterator
++class MedickIterator implements IIterator {
++
++    private $collection;
++
++    // private $elements;
++
++    private $idx=0;
++
++    public function MedickIterator(ICollection $collection) {
++        $this->collection = $collection;
++        // $this->elements   = $collection->toArray();
++        // reset($this->elements);
++    }
++
++    public function hasNext() {
++        return $this->collection->size() > $this->idx;
++    }
++
++    public function next() {
++        // return $this->elements[$this->idx++];
++        return $this->collection->get($this->idx++);
++    }
++
++    public function current() {
++        // return $this->elements[(int)($this->idx - 1)];
++        return $this->collection->get((int)($this->idx - 1));
++    }
++
++    public function key() {
++        return (int)($this->idx-1);
++    }
++
++}
++// }}}
+
+
+

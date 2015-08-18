@@ -1,0 +1,252 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r300 - in applications/eltodo: app/controllers app/models app/views/project conf public public/images
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r300%20-%20in%20applications/eltodo%3A%20app/controllers%20app/models%20app/views/project%20conf%20public%20public/images&In-Reply-To=%3C200512121951.jBCJpaZZ003175%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000095.html">
+   <LINK REL="Next"  HREF="000097.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r300 - in applications/eltodo: app/controllers app/models app/views/project conf public public/images</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r300%20-%20in%20applications/eltodo%3A%20app/controllers%20app/models%20app/views/project%20conf%20public%20public/images&In-Reply-To=%3C200512121951.jBCJpaZZ003175%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r300 - in applications/eltodo: app/controllers app/models app/views/project conf public public/images">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Dec 12 20:51:36 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000095.html">[Medick-svn] r299 - in trunk/libs/action/controller: . http
+</A></li>
+        <LI>Next message: <A HREF="000097.html">[Medick-svn] r301 - applications/eltodo/log
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#96">[ date ]</a>
+              <a href="thread.html#96">[ thread ]</a>
+              <a href="subject.html#96">[ subject ]</a>
+              <a href="author.html#96">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-12-12 20:51:31 +0100 (Mon, 12 Dec 2005)
+New Revision: 300
+
+Added:
+   applications/eltodo/public/images/delete.png
+Modified:
+   applications/eltodo/app/controllers/project_controller.php
+   applications/eltodo/app/models/project.php
+   applications/eltodo/app/views/project/all.phtml
+   applications/eltodo/conf/eltodo.routes.php
+   applications/eltodo/public/.htaccess
+Log:
+ -- [ eltodo.sample ] updated.
+
+Modified: applications/eltodo/app/controllers/project_controller.php
+===================================================================
+--- applications/eltodo/app/controllers/project_controller.php	2005-12-12 19:41:48 UTC (rev 299)
++++ applications/eltodo/app/controllers/project_controller.php	2005-12-12 19:51:31 UTC (rev 300)
+@@ -8,11 +8,42 @@
+ 
+ class ProjectController extends ApplicationController {
+ 
++    /** nedded models */
+     protected $models = array('project');
+-
++    
++    /** layout to use for this controller */
+     protected $use_layout= 'eltodo';
+ 
+-    /** List all projects */
++    /** Creates a new Project */
++    public function create() {
++        $project= new Project(array('name'=&gt;$this-&gt;params['project_name']));
++        try {
++            $project-&gt;save();
++            // $this-&gt;flash('Project added!');
++        } catch (SQLException $ex) {
++            $this-&gt;logger-&gt;warn($ex-&gt;getMessage());
++        } catch (DuplicateRecordException $drEx) {
++            $this-&gt;logger-&gt;warn($drEx-&gt;getMessage());
++            // $this-&gt;flash('A project with the same name already exists!');
++        }
++        $this-&gt;redirect_to('all');
++        // $this-&gt;render_text('done');
++    }
++
++    /** Removes a project */
++    public function delete() {
++        $project= new Project (array('id'=&gt;$this-&gt;params['id']));
++        try {
++            $project-&gt;delete();
++            // $this-&gt;flash('Project removed!');
++        } catch (SQLException $sqlEx) {
++            $this-&gt;logger-&gt;warn($ex-&gt;getMessage());
++        }
++        $this-&gt;redirect_to('all');
++    }
++
++
++    /** List all projects, this is the default Route. */
+     public function all() {
+         try {
+             $this-&gt;template-&gt;projects= Project::find();
+
+Modified: applications/eltodo/app/models/project.php
+===================================================================
+--- applications/eltodo/app/models/project.php	2005-12-12 19:41:48 UTC (rev 299)
++++ applications/eltodo/app/models/project.php	2005-12-12 19:51:31 UTC (rev 300)
+@@ -6,8 +6,19 @@
+  * @package eltodo.models
+  */
+ 
++class DuplicateRecordException extends MedickException {    }
++
+ class Project extends ActiveRecordBase {
+ 
++    public function before_insert() {
++        try {
++            $projects=Project::find(array('condition'=&gt;'name=\''.$this-&gt;name.'\''));
++            throw new DuplicateRecordException($this-&gt;name . ' already exists.');
++        } catch (RecordNotFoundException $ex) {
++            return true;
++        }
++    }
++
+     public static function find() {
+         $args= func_get_args();
+         self::setTable(__CLASS__);
+@@ -15,4 +26,3 @@
+     }
+ 
+ }
+-
+
+Modified: applications/eltodo/app/views/project/all.phtml
+===================================================================
+--- applications/eltodo/app/views/project/all.phtml	2005-12-12 19:41:48 UTC (rev 299)
++++ applications/eltodo/app/views/project/all.phtml	2005-12-12 19:51:31 UTC (rev 300)
+@@ -2,8 +2,8 @@
+ &lt;!-- $Id$ --&gt;
+ &lt;form action=&quot;&lt;?=URL::create('project','create');?&gt;&quot; method=&quot;post&quot;&gt;
+     &lt;div&gt;
+-        &lt;label&gt;New Project:&lt;/label&gt;
+-        &lt;?=Form::text('name', NULL, array('maxlength'=&gt;255,'size'=&gt;55)); ?&gt;
++        &lt;label&gt;Create a new Project:&lt;/label&gt;
++        &lt;?=Form::text('project_name', NULL, array('maxlength'=&gt;255,'size'=&gt;55)); ?&gt;
+         &lt;?=Form::submit('submit', 'Submit') ?&gt;
+     &lt;/div&gt;
+ &lt;/form&gt;
+@@ -11,10 +11,16 @@
+ &lt;hr /&gt;
+ 
+ &lt;? foreach($projects as $project): ?&gt;
+-    &lt;?=$project-&gt;name;?&gt; &lt;br /&gt;
++    &lt;a 
++        href=&quot;&lt;?= URL::create('project', 'delete', array('id'=&gt;$project-&gt;id));?&gt;&quot; 
++        onclick=&quot;return confirm('Are you sure you want to delete the project &lt;?=$project-&gt;name;?&gt;');&quot;
++    &gt;
++    &lt;img src=&quot;images/delete.png&quot; border=&quot;0&quot;&gt;
++        &lt;/a&gt;
++    &lt;?=$project-&gt;name;?&gt;&lt;br /&gt;
+ &lt;? endforeach;?&gt;
+ 
+ &lt;? if(!count($projects)):?&gt;
+-    No project found.
++    No projects found.
+ &lt;? endif;?&gt;
+ 
+
+Modified: applications/eltodo/conf/eltodo.routes.php
+===================================================================
+--- applications/eltodo/conf/eltodo.routes.php	2005-12-12 19:41:48 UTC (rev 299)
++++ applications/eltodo/conf/eltodo.routes.php	2005-12-12 19:51:31 UTC (rev 300)
+@@ -9,5 +9,19 @@
+         $project-&gt;setName('default');
+         $map-&gt;add($project);
+     }
++    
++    { // solves /project/create.html
++        $create_project= new Route('project', 'create');
++        $create_project-&gt;add(new RouteParam('name'));
++        $create_project-&gt;setFailure($project);
++        $map-&gt;add($create_project);
++    }
++    
++    { // solves: /project/delete/{id}.html
++        $delete_project= new Route('project', 'delete');
++        $delete_project-&gt;add(new RouteParam('id'));
++        $delete_project-&gt;setFailure($project);
++        $map-&gt;add($delete_project);
++    }
+ }
+ ?&gt;
+
+Modified: applications/eltodo/public/.htaccess
+===================================================================
+--- applications/eltodo/public/.htaccess	2005-12-12 19:41:48 UTC (rev 299)
++++ applications/eltodo/public/.htaccess	2005-12-12 19:51:31 UTC (rev 300)
+@@ -12,13 +12,13 @@
+ RewriteEngine on
+ 
+ # all files with .something are skipped
+-RewriteCond %{REQUEST_URI} \..+$
+-RewriteCond %{REQUEST_URI} !\.html$
+-RewriteRule .* - [L]
++# RewriteCond %{REQUEST_URI} \..+$
++# RewriteCond %{REQUEST_URI} !\.html$
++# RewriteRule .* - [L]
+ # the others are redirected to the front web controller
+-RewriteRule ^(.*)$ index.php [QSA,L]
++# RewriteRule ^(.*)$ index.php [QSA,L]
+ 
+-# RewriteCond %{REQUEST_FILENAME} !-s
+-# RewriteCond %{REQUEST_URI} !^index.php/$
+-# RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
++RewriteCond %{REQUEST_FILENAME} !-s
++RewriteCond %{REQUEST_URI} !^index.php/$
++RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+ 
+
+Added: applications/eltodo/public/images/delete.png
+===================================================================
+(Binary files differ)
+
+
+Property changes on: applications/eltodo/public/images/delete.png
+___________________________________________________________________
+Name: svn:mime-type
+   + application/octet-stream
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000095.html">[Medick-svn] r299 - in trunk/libs/action/controller: . http
+</A></li>
+	<LI>Next message: <A HREF="000097.html">[Medick-svn] r301 - applications/eltodo/log
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#96">[ date ]</a>
+              <a href="thread.html#96">[ thread ]</a>
+              <a href="subject.html#96">[ subject ]</a>
+              <a href="author.html#96">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

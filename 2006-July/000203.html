@@ -1,0 +1,154 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r423 - in trunk: . docs/medick.website libs/action/controller libs/active/record libs/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-July/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r423%20-%20in%20trunk%3A%20.%20docs/medick.website%20libs/action/controller%20libs/active/record%20libs/medick&In-Reply-To=%3C200607091435.k69EZ4Cu022323%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000201.html">
+   <LINK REL="Next"  HREF="000205.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r423 - in trunk: . docs/medick.website libs/action/controller libs/active/record libs/medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r423%20-%20in%20trunk%3A%20.%20docs/medick.website%20libs/action/controller%20libs/active/record%20libs/medick&In-Reply-To=%3C200607091435.k69EZ4Cu022323%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r423 - in trunk: . docs/medick.website libs/action/controller libs/active/record libs/medick">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Jul  9 16:35:04 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000201.html">[Medick-svn] r422 - trunk/libs/active/record
+</A></li>
+        <LI>Next message: <A HREF="000205.html">[Medick-svn] r425 - applications/cookbook/conf	applications/eltodo/conf applications/testor/conf trunk	trunk/bin trunk/libs/active/record trunk/libs/configurator	trunk/skel trunk/skel/app trunk/skel/config trunk/skel/db	trunk/skel/public trunk/skel/public/stylesheet
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#203">[ date ]</a>
+              <a href="thread.html#203">[ thread ]</a>
+              <a href="subject.html#203">[ subject ]</a>
+              <a href="author.html#203">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-07-09 16:35:03 +0200 (Sun, 09 Jul 2006)
+New Revision: 423
+
+Modified:
+   trunk/VERSION
+   trunk/docs/medick.website/index.html
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/medick/Medick.php
+Log:
+ -- starting on pre-release 2 of medick 0.3.0
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-07-08 14:19:12 UTC (rev 422)
++++ trunk/VERSION	2006-07-09 14:35:03 UTC (rev 423)
+@@ -1 +1 @@
+-0.3.0pre1
++0.3.0pre2-svn
+
+Modified: trunk/docs/medick.website/index.html
+===================================================================
+--- trunk/docs/medick.website/index.html	2006-07-08 14:19:12 UTC (rev 422)
++++ trunk/docs/medick.website/index.html	2006-07-09 14:35:03 UTC (rev 423)
+@@ -18,11 +18,11 @@
+     &lt;div id=&quot;header&quot;&gt;&lt;h1&gt;medick - PHP Framework - soon...&lt;/h1&gt;&lt;/div&gt;
+     &lt;div id=&quot;content&quot;&gt;
+       &lt;ul&gt;
+-        &lt;li&gt;Version 0.2.3 is here:&lt;br /&gt;
+-          &lt;a href=&quot;<A HREF="http://medick.locknet.ro/download/medick-0.2.3.tgz">http://medick.locknet.ro/download/medick-0.2.3.tgz</A>&quot;&gt;
++        &lt;li&gt;Version 0.3.0pre1 is here:&lt;br /&gt;
++          &lt;a href=&quot;<A HREF="http://medick.locknet.ro/download/medick-0.3.0pre1.tgz">http://medick.locknet.ro/download/medick-0.3.0pre1.tgz</A>&quot;&gt;
+             &lt;img src=&quot;<A HREF="http://medick.locknet.ro/s/download.gif">http://medick.locknet.ro/s/download.gif</A>&quot; 
+-              alt=&quot;Download Medick version 0.2.3&quot; 
+-              title=&quot;Download Medick version 0.2.3&quot; /&gt;
++              alt=&quot;Download Medick version 0.3.0pre1&quot; 
++              title=&quot;Download Medick version 0.3.0pre1&quot; /&gt;
+           &lt;/a&gt;
+         &lt;/li&gt;
+         &lt;li&gt;Want to know what is all about?&lt;br /&gt;
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2006-07-08 14:19:12 UTC (rev 422)
++++ trunk/libs/action/controller/Injector.php	2006-07-09 14:35:03 UTC (rev 423)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++// Copyright (c) 2005, 2006 Oancea Aurelian &lt;aurelian[at]locknet[dot]ro&gt;
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-07-08 14:19:12 UTC (rev 422)
++++ trunk/libs/active/record/Base.php	2006-07-09 14:35:03 UTC (rev 423)
+@@ -195,7 +195,7 @@
+      * &lt;/ul&gt;
+      * 
+      * @TODO: more checks on before_ / after_ filters
+-     * @see Validator, Fields
++     * @see Validator, Field
+      * @throws MedickException if the called method is not defined (similar with php error)
+      */ 
+     public function __call($method, $args) {
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-07-08 14:19:12 UTC (rev 422)
++++ trunk/libs/medick/Medick.php	2006-07-09 14:35:03 UTC (rev 423)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++// Copyright (c) 2005, 2006 Oancea Aurelian &lt;aurelian[at]locknet[dot]ro&gt;
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.3.0pre1';
++        return '0.3.0pre2-svn';
+     }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000201.html">[Medick-svn] r422 - trunk/libs/active/record
+</A></li>
+	<LI>Next message: <A HREF="000205.html">[Medick-svn] r425 - applications/cookbook/conf	applications/eltodo/conf applications/testor/conf trunk	trunk/bin trunk/libs/active/record trunk/libs/configurator	trunk/skel trunk/skel/app trunk/skel/config trunk/skel/db	trunk/skel/public trunk/skel/public/stylesheet
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#203">[ date ]</a>
+              <a href="thread.html#203">[ thread ]</a>
+              <a href="subject.html#203">[ subject ]</a>
+              <a href="author.html#203">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

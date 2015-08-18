@@ -1,0 +1,1046 @@
+From aurelian at mail.berlios.de  Mon Jan 22 08:58:26 2007
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Mon, 22 Jan 2007 08:58:26 +0100
+Subject: [Medick-svn] r430 - in trunk: . docs/dev libs/action/controller
+	libs/action/controller/http libs/action/controller/session
+	libs/action/view libs/active/record libs/active/support
+	libs/configurator libs/context libs/logger
+	libs/logger/formatter libs/logger/outputter libs/medick
+	libs/medick/io
+Message-ID: <200701220758.l0M7wQEB020472@sheep.berlios.de>
+
+Author: aurelian
+Date: 2007-01-22 08:58:24 +0100 (Mon, 22 Jan 2007)
+New Revision: 430
+
+Modified:
+   trunk/LICENSE
+   trunk/docs/dev/HEADER
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Dispatcher.php
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/action/controller/Map.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Response.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/Routing.php
+   trunk/libs/action/controller/http/Cookie.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+   trunk/libs/action/controller/session/CreoleSessionContainer.php
+   trunk/libs/action/controller/session/ISessionContainer.php
+   trunk/libs/action/controller/session/Session.php
+   trunk/libs/action/view/Base.php
+   trunk/libs/action/view/HTML.php
+   trunk/libs/action/view/JSON.php
+   trunk/libs/active/record/Association.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Field.php
+   trunk/libs/active/record/QueryBuilder.php
+   trunk/libs/active/record/RowsAggregate.php
+   trunk/libs/active/record/SQLCommand.php
+   trunk/libs/active/record/Validator.php
+   trunk/libs/active/support/Inflector.php
+   trunk/libs/configurator/IConfigurator.php
+   trunk/libs/configurator/INIConfigurator.php
+   trunk/libs/configurator/LoggerConfigurator.php
+   trunk/libs/configurator/XMLConfigurator.php
+   trunk/libs/context/ContextManager.php
+   trunk/libs/logger/ILogger.php
+   trunk/libs/logger/Logger.php
+   trunk/libs/logger/LoggingEvent.php
+   trunk/libs/logger/formatter/DefaultFormatter.php
+   trunk/libs/logger/formatter/Formatter.php
+   trunk/libs/logger/formatter/SimpleFormatter.php
+   trunk/libs/logger/outputter/FileOutputter.php
+   trunk/libs/logger/outputter/IOutputter.php
+   trunk/libs/logger/outputter/MailOutputter.php
+   trunk/libs/logger/outputter/Outputter.php
+   trunk/libs/logger/outputter/StdoutOutputter.php
+   trunk/libs/medick/ConsoleOptions.php
+   trunk/libs/medick/ErrorHandler.php
+   trunk/libs/medick/Exception.php
+   trunk/libs/medick/Medick.php
+   trunk/libs/medick/Object.php
+   trunk/libs/medick/Registry.php
+   trunk/libs/medick/io/Folder.php
+   trunk/libs/medick/util.php
+Log:
+Bumped copyright year (still alive)
+
+Modified: trunk/LICENSE
+===================================================================
+--- trunk/LICENSE	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/LICENSE	2007-01-22 07:58:24 UTC (rev 430)
+@@ -1,4 +1,4 @@
+-Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ 
+ Redistribution and use in source and binary forms, with or without
+ modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/docs/dev/HEADER
+===================================================================
+--- trunk/docs/dev/HEADER	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/docs/dev/HEADER	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ //////////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005,2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -33,6 +33,5 @@
+ // }}}
+ 
+ /**
+- * @package locknet7.
++ * @package medick.
+  */
+-
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/Base.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/action/controller/Dispatcher.php
+===================================================================
+--- trunk/libs/action/controller/Dispatcher.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/Dispatcher.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2006 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -59,6 +59,7 @@
+     
+     /**
+      * Framework entry point
++     *
+      * @return void.
+      */
+     public function dispatch() {
+@@ -83,4 +84,3 @@
+         }
+     }
+ }
+-
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/Injector.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -36,7 +36,7 @@
+ 
+ /**
+  * Solves dependencys, by including application specific files
+- * controllers, models, layout files.
++ * controllers, models or layout files.
+  * Aditional using php reflection api, it validates the user classes
+  *
+  * @package medick.action.controller
+@@ -106,7 +106,6 @@
+         return isset($this->path[$type]) && (!is_null($type)) ? $this->path[$type] : $this->path;
+     }
+ 
+-
+     /**
+      * Adds user 3-rd party libs folder under include_path
+      * @return void
+@@ -229,4 +228,3 @@
+         }
+     }
+ }
+-
+
+Modified: trunk/libs/action/controller/Map.php
+===================================================================
+--- trunk/libs/action/controller/Map.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/Map.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2006 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -90,4 +90,3 @@
+         throw new RoutingException('Cannot find a Route with this name: ' . $name); 
+     }
+ }
+-
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/Request.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -136,4 +136,3 @@
+         return $buff;
+     }
+ }
+-
+
+Modified: trunk/libs/action/controller/Response.php
+===================================================================
+--- trunk/libs/action/controller/Response.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/Response.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2006 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/Route.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -373,16 +373,12 @@
+      * @param Request request, the request on witch we want to merge
+      */ 
+     private function doMerge(Request $request) {
+-        // $l = Registry::get('__logger');
+         foreach ($this->merges as $name=>$value) {
+             if (isset(Route::$old_merges[$name])) unset(Route::$old_merges[$name]);
+-            // $l->debug('+++++ ' . $name);
+-            // $l->debug('+++++ ' . $value);
+             $request->setParameter($name, $value);
+         }
+         // discard previously route parameters.
+         foreach (Route::$old_merges as $name=>$value) {
+-            // $l->debug('----- ' . $name);
+             $request->setParameter($name, NULL);
+         }
+         // cache merged parameters  
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/Routing.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2006 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -35,6 +35,7 @@
+ include_once('action/controller/Injector.php');
+ 
+ /**
++ * It knows how to create a Controller from the URL
+  * 
+  * @package medick.action.controller
+  * @subpackage routing
+@@ -43,8 +44,10 @@
+ class ActionControllerRouting extends Object {
+ 
+     /**
++     * Finds the Route on this Map using the Request
+      * 
+-     * @return Route.
++     * @param request Request
++     * @return Route
+      * @throws RoutingException
+      */ 
+     private function findRoute(Request $request) {
+@@ -75,4 +78,3 @@
+         }
+     }
+ }
+-
+
+Modified: trunk/libs/action/controller/http/Cookie.php
+===================================================================
+--- trunk/libs/action/controller/http/Cookie.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/http/Cookie.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ //////////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005,2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -138,4 +138,3 @@
+       );
+     }
+ }
+- 
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -241,4 +241,3 @@
+     }
+ 
+ }
+-
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -33,7 +33,8 @@
+ // }}}
+ 
+ /**
+- * 
++ * HTTP Response Object 
++ *
+  * @package medick.action.controller
+  * @subpackage http
+  * @author Oancea Aurelian
+@@ -130,4 +131,3 @@
+         $this->content = "<html><body>You are being <a href=\"$location\">redirected</a>.</body></html>";
+     }
+ }
+-
+
+Modified: trunk/libs/action/controller/session/CreoleSessionContainer.php
+===================================================================
+--- trunk/libs/action/controller/session/CreoleSessionContainer.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/session/CreoleSessionContainer.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ //////////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/action/controller/session/ISessionContainer.php
+===================================================================
+--- trunk/libs/action/controller/session/ISessionContainer.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/session/ISessionContainer.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ //////////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/controller/session/Session.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ //////////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2006 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/view/Base.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -193,4 +193,3 @@
+     }
+ 
+ }
+-
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/view/HTML.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -296,4 +296,3 @@
+         return $buff;
+     }
+ }
+-
+
+Modified: trunk/libs/action/view/JSON.php
+===================================================================
+--- trunk/libs/action/view/JSON.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/action/view/JSON.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ //////////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005,2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -77,4 +77,3 @@
+   }
+ 
+ }
+-
+
+Modified: trunk/libs/active/record/Association.php
+===================================================================
+--- trunk/libs/active/record/Association.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/active/record/Association.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -259,4 +259,3 @@
+         return ActiveRecord::build(new QueryBuilder(Inflector::singularize($this->class), $arguments));
+     }
+ }
+-
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/active/record/Base.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/active/record/Field.php
+===================================================================
+--- trunk/libs/active/record/Field.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/active/record/Field.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -194,4 +194,3 @@
+     }
+     
+ }
+-
+
+Modified: trunk/libs/active/record/QueryBuilder.php
+===================================================================
+--- trunk/libs/active/record/QueryBuilder.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/active/record/QueryBuilder.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -166,4 +166,3 @@
+         return $command;
+     }
+ }
+-
+
+Modified: trunk/libs/active/record/RowsAggregate.php
+===================================================================
+--- trunk/libs/active/record/RowsAggregate.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/active/record/RowsAggregate.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -94,4 +94,3 @@
+         trigger_error(sprintf('Call to undefined method: %s->%s(%s).', get_class($this), $method,$arguments), E_USER_ERROR);
+     }
+ }
+-
+
+Modified: trunk/libs/active/record/SQLCommand.php
+===================================================================
+--- trunk/libs/active/record/SQLCommand.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/active/record/SQLCommand.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -140,4 +140,3 @@
+     }
+ 
+ }
+-
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/active/record/Validator.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2006 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/active/support/Inflector.php
+===================================================================
+--- trunk/libs/active/support/Inflector.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/active/support/Inflector.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -131,9 +131,9 @@
+         return strtolower(preg_replace('/([a-z])([A-Z])/','\1_\2', $word));
+     }
+ 
+-   public static function humanize($lower_case_and_underscored_word) {
+-      return ucwords(str_replace("_"," ",$lower_case_and_underscored_word));
+-   }
++    public static function humanize($lower_case_and_underscored_word) {
++        return ucwords(str_replace("_"," ",$lower_case_and_underscored_word));
++    }
+ 
+     // }}}
+ 
+@@ -157,4 +157,3 @@
+         return $word;
+     }
+ }
+-
+
+Modified: trunk/libs/configurator/IConfigurator.php
+===================================================================
+--- trunk/libs/configurator/IConfigurator.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/configurator/IConfigurator.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005,2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/configurator/INIConfigurator.php
+===================================================================
+--- trunk/libs/configurator/INIConfigurator.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/configurator/INIConfigurator.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005,2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -79,4 +79,3 @@
+     }
+ 
+ }
+-
+
+Modified: trunk/libs/configurator/LoggerConfigurator.php
+===================================================================
+--- trunk/libs/configurator/LoggerConfigurator.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/configurator/LoggerConfigurator.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005,2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -55,4 +55,3 @@
+     public function getDatabaseDsn($id = FALSE) {  }
+     
+ }
+-
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/configurator/XMLConfigurator.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005,2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -198,4 +198,3 @@
+     }
+ 
+ }
+-
+
+Modified: trunk/libs/context/ContextManager.php
+===================================================================
+--- trunk/libs/context/ContextManager.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/context/ContextManager.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ //////////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005,2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -58,4 +58,3 @@
+     }
+     
+ }
+- 
+
+Modified: trunk/libs/logger/ILogger.php
+===================================================================
+--- trunk/libs/logger/ILogger.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/logger/ILogger.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -52,4 +52,3 @@
+      */
+     function notify();
+ }
+-
+
+Modified: trunk/libs/logger/Logger.php
+===================================================================
+--- trunk/libs/logger/Logger.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/logger/Logger.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -236,4 +236,3 @@
+         return $this->level;
+     }
+ }
+-
+
+Modified: trunk/libs/logger/LoggingEvent.php
+===================================================================
+--- trunk/libs/logger/LoggingEvent.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/logger/LoggingEvent.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -71,4 +71,3 @@
+         }
+     }
+ }
+-
+
+Modified: trunk/libs/logger/formatter/DefaultFormatter.php
+===================================================================
+--- trunk/libs/logger/formatter/DefaultFormatter.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/logger/formatter/DefaultFormatter.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -45,4 +45,3 @@
+         return $event->level . " >>> " . $event->message;
+     }
+ }
+-
+
+Modified: trunk/libs/logger/formatter/Formatter.php
+===================================================================
+--- trunk/libs/logger/formatter/Formatter.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/logger/formatter/Formatter.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/logger/formatter/SimpleFormatter.php
+===================================================================
+--- trunk/libs/logger/formatter/SimpleFormatter.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/logger/formatter/SimpleFormatter.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/logger/outputter/FileOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/FileOutputter.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/logger/outputter/FileOutputter.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -80,4 +80,3 @@
+         return;
+     }
+ }
+-
+
+Modified: trunk/libs/logger/outputter/IOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/IOutputter.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/logger/outputter/IOutputter.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -45,4 +45,3 @@
+      */ 
+     function update(ILogger $logger);
+ }
+-
+
+Modified: trunk/libs/logger/outputter/MailOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/MailOutputter.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/logger/outputter/MailOutputter.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -67,4 +67,3 @@
+         @mail($this->email, $this->subject, $message);
+     }
+ }
+-
+
+Modified: trunk/libs/logger/outputter/Outputter.php
+===================================================================
+--- trunk/libs/logger/outputter/Outputter.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/logger/outputter/Outputter.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -98,4 +98,3 @@
+     protected abstract function write($message);
+     // }}}
+ }
+-
+
+Modified: trunk/libs/logger/outputter/StdoutOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/StdoutOutputter.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/logger/outputter/StdoutOutputter.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -93,4 +93,3 @@
+         return $this->output;
+     }
+ }
+-
+
+Modified: trunk/libs/medick/ConsoleOptions.php
+===================================================================
+--- trunk/libs/medick/ConsoleOptions.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/medick/ConsoleOptions.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/medick/ErrorHandler.php
+===================================================================
+--- trunk/libs/medick/ErrorHandler.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/medick/ErrorHandler.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/medick/Exception.php
+===================================================================
+--- trunk/libs/medick/Exception.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/medick/Exception.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/medick/Medick.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/medick/Object.php
+===================================================================
+--- trunk/libs/medick/Object.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/medick/Object.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -106,4 +106,3 @@
+ class MedickProperty extends ReflectionProperty {
+ 
+ }
+-
+
+Modified: trunk/libs/medick/Registry.php
+===================================================================
+--- trunk/libs/medick/Registry.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/medick/Registry.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -97,4 +97,3 @@
+     }
+     // }}}
+ }
+-
+
+Modified: trunk/libs/medick/io/Folder.php
+===================================================================
+--- trunk/libs/medick/io/Folder.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/medick/io/Folder.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -73,4 +73,3 @@
+         return $returnFiles;
+     }
+ }
+-
+
+Modified: trunk/libs/medick/util.php
+===================================================================
+--- trunk/libs/medick/util.php	2006-10-25 18:58:33 UTC (rev 429)
++++ trunk/libs/medick/util.php	2007-01-22 07:58:24 UTC (rev 430)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -422,4 +422,3 @@
+     }
+ }
+ // }}}
+-
+
+
+

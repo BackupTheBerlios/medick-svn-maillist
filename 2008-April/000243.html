@@ -1,0 +1,3084 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r463 - in exp: . medick2 medick2/config medick2/public	medick2/tmp medick2/tmp/one medick2/tmp/two medick2/vendor	medick2/vendor/medick medick2/vendor/medick/lib	medick2/vendor/medick/lib/action	medick2/vendor/medick/lib/action/controller	medick2/vendor/medick/lib/action/controller/http	medick2/vendor/medick/lib/context medick2/vendor/medick/lib/logger	medick2/vendor/medick/lib/logger/formatter	medick2/vendor/medick/lib/logger/outputter	medick2/vendor/medick/lib/medick	medick2/vendor/medick/lib/plugin medick2/vendor/plugins	medick2/vendor/plugins/foo medick2/vendor/plugins/foo/lib
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2008-April/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r463%20-%20in%20exp%3A%20.%20medick2%20medick2/config%20medick2/public%0A%09medick2/tmp%20medick2/tmp/one%20medick2/tmp/two%20medick2/vendor%0A%09medick2/vendor/medick%20medick2/vendor/medick/lib%0A%09medick2/vendor/medick/lib/action%0A%09medick2/vendor/medick/lib/action/controller%0A%09medick2/vendor/medick/lib/action/controller/http%0A%09medick2/vendor/medick/lib/context%20medick2/vendor/medick/lib/logger%0A%09medick2/vendor/medick/lib/logger/formatter%0A%09medick2/vendor/medick/lib/logger/outputter%0A%09medick2/vendor/medick/lib/medick%0A%09medick2/vendor/medick/lib/plugin%20medick2/vendor/plugins%0A%09medick2/vendor/plugins/foo%20medick2/vendor/plugins/foo/lib&In-Reply-To=%3C200804022145.m32Lj7eJ007948%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000244.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r463 - in exp: . medick2 medick2/config medick2/public	medick2/tmp medick2/tmp/one medick2/tmp/two medick2/vendor	medick2/vendor/medick medick2/vendor/medick/lib	medick2/vendor/medick/lib/action	medick2/vendor/medick/lib/action/controller	medick2/vendor/medick/lib/action/controller/http	medick2/vendor/medick/lib/context medick2/vendor/medick/lib/logger	medick2/vendor/medick/lib/logger/formatter	medick2/vendor/medick/lib/logger/outputter	medick2/vendor/medick/lib/medick	medick2/vendor/medick/lib/plugin medick2/vendor/plugins	medick2/vendor/plugins/foo medick2/vendor/plugins/foo/lib</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r463%20-%20in%20exp%3A%20.%20medick2%20medick2/config%20medick2/public%0A%09medick2/tmp%20medick2/tmp/one%20medick2/tmp/two%20medick2/vendor%0A%09medick2/vendor/medick%20medick2/vendor/medick/lib%0A%09medick2/vendor/medick/lib/action%0A%09medick2/vendor/medick/lib/action/controller%0A%09medick2/vendor/medick/lib/action/controller/http%0A%09medick2/vendor/medick/lib/context%20medick2/vendor/medick/lib/logger%0A%09medick2/vendor/medick/lib/logger/formatter%0A%09medick2/vendor/medick/lib/logger/outputter%0A%09medick2/vendor/medick/lib/medick%0A%09medick2/vendor/medick/lib/plugin%20medick2/vendor/plugins%0A%09medick2/vendor/plugins/foo%20medick2/vendor/plugins/foo/lib&In-Reply-To=%3C200804022145.m32Lj7eJ007948%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r463 - in exp: . medick2 medick2/config medick2/public	medick2/tmp medick2/tmp/one medick2/tmp/two medick2/vendor	medick2/vendor/medick medick2/vendor/medick/lib	medick2/vendor/medick/lib/action	medick2/vendor/medick/lib/action/controller	medick2/vendor/medick/lib/action/controller/http	medick2/vendor/medick/lib/context medick2/vendor/medick/lib/logger	medick2/vendor/medick/lib/logger/formatter	medick2/vendor/medick/lib/logger/outputter	medick2/vendor/medick/lib/medick	medick2/vendor/medick/lib/plugin medick2/vendor/plugins	medick2/vendor/plugins/foo medick2/vendor/plugins/foo/lib">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Wed Apr  2 23:45:07 CEST 2008</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000244.html">[Medick-svn] r464 - trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#243">[ date ]</a>
+              <a href="thread.html#243">[ thread ]</a>
+              <a href="subject.html#243">[ subject ]</a>
+              <a href="author.html#243">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2008-04-02 23:45:05 +0200 (Wed, 02 Apr 2008)
+New Revision: 463
+
+Added:
+   exp/medick2/
+   exp/medick2/AUTOLOAD
+   exp/medick2/CONCEPTS
+   exp/medick2/PLUGINS
+   exp/medick2/boot.php
+   exp/medick2/config/
+   exp/medick2/config/cfields.xml
+   exp/medick2/lib/
+   exp/medick2/log/
+   exp/medick2/public/
+   exp/medick2/public/.htaccess
+   exp/medick2/public/index.php
+   exp/medick2/script/
+   exp/medick2/tmp/
+   exp/medick2/tmp/one/
+   exp/medick2/tmp/one/One.php
+   exp/medick2/tmp/two/
+   exp/medick2/tmp/two/Two.php
+   exp/medick2/vendor/
+   exp/medick2/vendor/medick/
+   exp/medick2/vendor/medick/lib/
+   exp/medick2/vendor/medick/lib/action/
+   exp/medick2/vendor/medick/lib/action/controller/
+   exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+   exp/medick2/vendor/medick/lib/action/controller/Map.php
+   exp/medick2/vendor/medick/lib/action/controller/Request.php
+   exp/medick2/vendor/medick/lib/action/controller/Response.php
+   exp/medick2/vendor/medick/lib/action/controller/Route.php
+   exp/medick2/vendor/medick/lib/action/controller/Router.php
+   exp/medick2/vendor/medick/lib/action/controller/http/
+   exp/medick2/vendor/medick/lib/action/controller/http/HTTPCookie.php
+   exp/medick2/vendor/medick/lib/action/controller/http/HTTPRequest.php
+   exp/medick2/vendor/medick/lib/action/controller/http/HTTPResponse.php
+   exp/medick2/vendor/medick/lib/action/controller/http/HTTPSession.php
+   exp/medick2/vendor/medick/lib/action/controller/init.php
+   exp/medick2/vendor/medick/lib/context/
+   exp/medick2/vendor/medick/lib/context/AbstractConfigurator.php
+   exp/medick2/vendor/medick/lib/context/ContextManager.php
+   exp/medick2/vendor/medick/lib/context/IConfigurator.php
+   exp/medick2/vendor/medick/lib/context/XMLConfigurator.php
+   exp/medick2/vendor/medick/lib/context/init.php
+   exp/medick2/vendor/medick/lib/logger/
+   exp/medick2/vendor/medick/lib/logger/ILogger.php
+   exp/medick2/vendor/medick/lib/logger/Logger.php
+   exp/medick2/vendor/medick/lib/logger/LoggingEvent.php
+   exp/medick2/vendor/medick/lib/logger/formatter/
+   exp/medick2/vendor/medick/lib/logger/formatter/DefaultFormatter.php
+   exp/medick2/vendor/medick/lib/logger/formatter/Formatter.php
+   exp/medick2/vendor/medick/lib/logger/formatter/SimpleFormatter.php
+   exp/medick2/vendor/medick/lib/logger/init.php
+   exp/medick2/vendor/medick/lib/logger/outputter/
+   exp/medick2/vendor/medick/lib/logger/outputter/FileOutputter.php
+   exp/medick2/vendor/medick/lib/logger/outputter/IOutputter.php
+   exp/medick2/vendor/medick/lib/logger/outputter/MailOutputter.php
+   exp/medick2/vendor/medick/lib/logger/outputter/Outputter.php
+   exp/medick2/vendor/medick/lib/logger/outputter/StdoutOutputter.php
+   exp/medick2/vendor/medick/lib/medick/
+   exp/medick2/vendor/medick/lib/medick/ErrorHandler.php
+   exp/medick2/vendor/medick/lib/medick/Medick.php
+   exp/medick2/vendor/medick/lib/medick/Object.php
+   exp/medick2/vendor/medick/lib/plugin/
+   exp/medick2/vendor/medick/lib/plugin/IPlugin.php
+   exp/medick2/vendor/medick/lib/plugin/Plugins.php
+   exp/medick2/vendor/medick/lib/plugin/init.php
+   exp/medick2/vendor/plugins/
+   exp/medick2/vendor/plugins/foo/
+   exp/medick2/vendor/plugins/foo/init.php
+   exp/medick2/vendor/plugins/foo/lib/
+   exp/medick2/vendor/plugins/foo/lib/FooPlugin.php
+Log:
+ -- initial import of medick2 experiment
+
+Added: exp/medick2/AUTOLOAD
+===================================================================
+--- exp/medick2/AUTOLOAD	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/AUTOLOAD	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,44 @@
++h2. Autoload
++
++h3. About
++
++* Mecanism nou de &quot;incarcare&quot; a claselor in Medick 0.5.
++* Se realizeaza prin divizarea Medick in framework-uri.
++* Fiecare Framework contine un fisier init.php prin care se adauga o functie __autoload pentru descoperirea automata a claselor necesare.
++
++h3. Exemple:
++
++context/init.php
++
++function __context_autoload($class) {
++  $file= 'context'.DIRECTORY_SEPARATOR.$class.'.php';
++  if(is_file( dirname(__FILE__) . DIRECTORY_SEPARATOR . $class . '.php' )) {
++    return require $file;
++  }
++}
++
++spl_autoload_register('__context_autoload');
++
++h3. Core Details
++
++h4. include_path:
++
++* vendor/medick/lib
++
++h4. loading a framework
++
++Medick::load_framework('foo_bar');
++
++loads: MEDICK_PATH/lib/foo/bar/init.php
++
++h4. core classes:
++
++* medick/Object.php
++* medick/Medick.php
++* medick/ErrorHandler.php
++
++h4. frameworks:
++* context
++* logger
++* action_controller
++
+
+Added: exp/medick2/CONCEPTS
+===================================================================
+--- exp/medick2/CONCEPTS	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/CONCEPTS	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,39 @@
++h2. Definitions
++  
++  MEDICK_PATH -&gt; path to Medick Framework.
++  APP_PATH    -&gt; path to boot.php file
++ 
++h2. TODOs
++
++  Create a Context Object with config and logger, inject this one then (25.03)
++
++h2. Structure
++
++APP_PATH
++  boot.php
++  app/
++  config/
++  log/
++  tmp/
++  script/
++  vendor/medick (MEDICK_PATH)
++  vendor/plugins
++
++h2. Medick Initialization
++
++  index.php 
++  | boot.php
++  |   Medick.prepare_application()
++  |     error_handler
++  |     load_frameworks
++  |       context
++  |       logger
++  |       plugins
++  |       action_controller
++  | $d= new Dispatcher (IConfigurator)
++  |   setup_logger
++  |   load_plugins
++  |
++  | $d-&gt;dispatch()
++  |   route_recognision
++
+
+Added: exp/medick2/PLUGINS
+===================================================================
+--- exp/medick2/PLUGINS	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/PLUGINS	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,46 @@
++h2. Plugins
++
++h3. About
++
++* A plugin is a new API to add new functionalities to medick applications
++* Allow access to Medick Framework core components
++* Enhance existing applications
++
++h3. Plugin Framework
++
++* A plugin is a folder with php files and other resources located in:
++  -&gt; vendor/plugins
++  -&gt; user specified locations in config.xml file
++
++* Eg. Foo is a Medick plugin if the folder foo exists and in has a init.php file on it.
++
++h3. init.php file
++
++* declare plugin load (include) path
++* one can use a init.php similar to ones provided by medick frameworks
++* one can use and alter include_path settings
++* one can require/include all the files
++* available objects/variables:
++  -&gt; $logger, current Logger instance
++  -&gt; $config, current Configurator instance
++
++h3. Options
++
++* By default Medick loads all the plugins from declared locations.
++* The load order is not guaranteed
++* &quot;Auto-discovery&quot; can be turned off in config.xml
++* Load order can be altered in config.xml
++
++h3. API
++
++* defined in Plugin Framework IPlugin interface
++* Plugin Framework is loaded after the Logger Framework
++* Plugin Framework is initialized and configured in Dispatcher after the logger is up
++
++inheritance:
++
++(interface)IPlugin &lt; (abstract_class)TYPE_1_Plugin &lt; USER_Plugin
++                   &lt; (abstract_class)TYPE_2_Plugin &lt; USER_Plugin
++
++
++
+
+Added: exp/medick2/boot.php
+===================================================================
+--- exp/medick2/boot.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/boot.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,33 @@
++&lt;?php
++//
++// $Id: boot.php 452 2007-08-15 08:06:49Z aurelian $
++//
++
++/**
++ * It boots a medick application
++ *
++ * @package medick.core
++ */
++
++define( 'APP_PATH', dirname(__FILE__) . DIRECTORY_SEPARATOR );
++
++// medick framework path.
++define( 'MEDICK_PATH', join( DIRECTORY_SEPARATOR, 
++                             array(dirname(__FILE__), 'vendor', 'medick')));
++
++// rewrite system include path
++set_include_path( MEDICK_PATH . DIRECTORY_SEPARATOR . 'lib'   . DIRECTORY_SEPARATOR );
++
++// this should depend on environment
++error_reporting( E_ALL | E_STRICT | E_RECOVERABLE_ERROR );
++
++// php 5.1 strict sdandards.
++if (version_compare(PHP_VERSION, '5.1.0') &gt; 0) {
++    date_default_timezone_set('Europe/Bucharest');
++}
++
++// load core classes
++require 'medick/Medick.php';
++
++Medick::prepare_application();
++
+
+Added: exp/medick2/config/cfields.xml
+===================================================================
+--- exp/medick2/config/cfields.xml	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/config/cfields.xml	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,38 @@
++&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
++
++&lt;application name=&quot;cfields&quot;&gt;
++
++  &lt;properties&gt;
++    &lt;property name=&quot;load.paths&quot; value=&quot;&quot; /&gt;
++
++    &lt;property name=&quot;plugin.autodiscovery&quot; value=&quot;true&quot; /&gt;
++    &lt;property name=&quot;plugin.path&quot;          value=&quot;vendor/plugins&quot; /&gt;
++
++  &lt;/properties&gt;
++
++  &lt;plugins&gt;
++    &lt;plugin name=&quot;foo&quot; path=&quot;&quot; /&gt;
++    &lt;plugin name=&quot;bar&quot; path=&quot;&quot; /&gt;
++  &lt;/plugins&gt;
++
++  &lt;routes&gt;
++    &lt;route name=&quot;__default&quot; value=&quot;:controller/:action/:id&quot; /&gt;
++  &lt;/routes&gt;
++
++  &lt;environments&gt;
++    &lt;environment name=&quot;localhost&quot;&gt;
++      
++      &lt;logger&gt;
++        &lt;formatter&gt;default&lt;/formatter&gt;
++        &lt;outputters&gt;
++          &lt;!-- &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt; --&gt;
++          &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
++            &lt;property name=&quot;path&quot; value=&quot;/W/Devel/medick/exp/medick2/log/localhost.log&quot; /&gt;
++          &lt;/outputter&gt;
++        &lt;/outputters&gt;
++      &lt;/logger&gt; &lt;!-- /logger --&gt;
++
++    &lt;/environment&gt;
++  &lt;/environments&gt;
++
++&lt;/application&gt;
+
+Added: exp/medick2/public/.htaccess
+===================================================================
+--- exp/medick2/public/.htaccess	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/public/.htaccess	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,39 @@
++# .htaccess file for eldepot sample medick application
++# $Id: default.htaccess 379 2006-03-18 17:36:03Z aurelian $
++
++# Configuration
++
++# 1. Apache Section.
++DirectoryIndex index.html index.php
++
++# 2. PHP Options.
++# this options will not work for php as cgi
++# and it will be removed in version 0.2
++# HINT: move this one to PHPTemplateView class
++php_value short_open_tag 1
++# this should depend on environment.
++# while we are on &quot;planning&quot;, we will 
++# keep this to 1
++php_value display_errors 1
++
++# 4. Rewrite
++RewriteEngine on
++
++# Set 1.
++#RewriteCond %{REQUEST_FILENAME} !-s
++#RewriteCond %{REQUEST_URI} !^index.php/$
++#RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
++
++# Set 2.
++RewriteBase /medick2
++
++# Send requests without parameters to index.php
++# -- disabled since we want to show index.html
++# -- default index page for medick.
++#RewriteRule ^$ index.php  [L]
++# Send requests for files that exist to those files.
++RewriteCond %{REQUEST_FILENAME} !-f
++# Send requests for directories that exist to those directories.
++RewriteCond %{REQUEST_FILENAME} !-d
++# Send requests to index.php, appending the query string part.
++RewriteRule (.*) index.php/$1  [QSA,L]
+
+Added: exp/medick2/public/index.php
+===================================================================
+--- exp/medick2/public/index.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/public/index.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,20 @@
++&lt;?php
++// $Id: index.php 379 2006-03-18 17:36:03Z aurelian $
++
++// 
++// This file is part of cFields project
++// auto-generated on 2008 Mar 11 16:52:31 with medick version: 0.4.1
++// 
++
++// complete path to medick boot.php file.
++include_once('/W/Devel/medick/exp/medick2/boot.php');
++
++// complete path to cFields.xml
++// and environment to load
++$d= new Dispatcher(
++          ContextManager::load(
++            '/W/Devel/medick/exp/medick2/config/cfields.xml',
++            'localhost')
++        );
++$d-&gt;dispatch();
++
+
+Added: exp/medick2/tmp/one/One.php
+===================================================================
+--- exp/medick2/tmp/one/One.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/tmp/one/One.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,7 @@
++&lt;?php
++
++class One {
++  public function __construct() {
++    echo __METHOD__ . &quot;\n&quot;;
++  }
++}
+
+Added: exp/medick2/tmp/two/Two.php
+===================================================================
+--- exp/medick2/tmp/two/Two.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/tmp/two/Two.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,7 @@
++&lt;?php
++
++class Two {
++  public function __construct() {
++    echo __METHOD__ . &quot;\n&quot;;
++  }
++}
+
+Added: exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,46 @@
++&lt;?php
++
++//
++// $Id: $
++//
++
++/*
++ * 
++ */ 
++class Dispatcher extends Object {
++
++  private $configurator;
++
++  private $logger;
++
++  private $plugins;
++
++  public function __construct(IConfigurator $configurator) {
++    // configurator
++    $this-&gt;configurator= $configurator;
++    // logger
++    $this-&gt;logger= new Logger();
++    $this-&gt;logger-&gt;setFormatter( Logger::formatter($this-&gt;configurator) );
++    $this-&gt;logger-&gt;attachOutputters( Logger::outputters($this-&gt;configurator) );
++
++    $this-&gt;logger-&gt;debugf( '[frw] Medick v.$%s ready to dispatch!', Medick::version() );
++
++    // plugins
++    $this-&gt;plugins= Plugins::discover( $this-&gt;configurator, $this-&gt;logger );
++    // collect routes?
++
++  }
++
++  public function dispatch() {
++    $request = new HTTPRequest();
++    $response= new HTTPResponse();
++    try {
++      Router::recognize( $request, $this-&gt;configurator, $this-&gt;logger );
++      // -&gt;process( $request, $response )-&gt;dump();
++    } catch(Exception $ex) {
++      echo sprintf('Exception: %s with message: %s', get_class($ex), $ex-&gt;getMessage());
++    }
++  }
++
++}
++
+
+Added: exp/medick2/vendor/medick/lib/action/controller/Map.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Map.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/action/controller/Map.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,37 @@
++&lt;?php
++
++class Map extends Object {
++
++  private $config;
++
++  private $routes;
++
++  public function __construct( IConfigurator $config ) {
++    $this-&gt;config= $config;
++    $this-&gt;routes= array();
++  }
++
++  public function find_route(Request $request) {
++    if(empty($this-&gt;routes)) $this-&gt;load_routes();
++    foreach($this-&gt;routes as $route) {
++      if($route-&gt;match($request)) return $route;
++    }
++    throw new Exception( &quot;Couldn't find a route to match your request.&quot; );
++  }
++
++  /*
++   * Collects routes from Configurator and then from plugins
++   */ 
++  private function load_routes() {
++    // 1. config.xml routes
++    foreach($this-&gt;config-&gt;routes() as $r) {
++      $this-&gt;routes[]= new Route( (string)trim($r['value']) );
++    }
++    // 2. plugins routes
++
++    // XXX:
++    //  throw exception if 0 routes? or load the __default always?
++  }
++
++}
++
+
+Added: exp/medick2/vendor/medick/lib/action/controller/Request.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Request.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/action/controller/Request.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,120 @@
++&lt;?php
++//
++// $Id: Request.php 447 2007-07-23 17:44:43Z aurelian $
++//
++
++/**
++ * It is an incoming request from the user
++ * 
++ * Contains various informations about the Request Parameters
++ * @see HTTPRequest, Dispatcher, Route
++ * @package medick.action.controller
++ * @author Aurelian Oancea
++ */
++class Request extends Object {
++
++    /** @var array
++        current request parameters */
++    private $params = array();
++    
++    /** 
++     * Hidden Constructor 
++     */
++     protected function Request() { }
++
++    /**
++     * It gets a Request Parameter
++     * 
++     * @param mixed, param, the paremeter name
++     * @return the param value of NULL if this param was not passed with this Resuest
++     */
++    public function getParameter($param) {
++      die('DEPRECATED!!!!');
++        return $this-&gt;hasParameter($param) ? $this-&gt;params[$param] : null;
++    }
++
++    public function parameter($name) {
++      $args= func_get_args();
++      if( sizeof($args) == 1 ) {
++        return isset($this-&gt;params[$name]) ? $this-&gt;params[$name] : null;
++      } else {
++        $this-&gt;params[$name]= $args[1];
++      }
++    }
++
++    /**
++     * Check if the current Request has the parameter with the specified name
++     * 
++     * @param string param_name the parameter name
++     * @return bool TRUE if the parameter_name is included in this request, FALSE otherwise
++     */
++    public function hasParameter($param_name) {
++      die('DEPRECATED!!!');
++        return isset($this-&gt;params[$param_name]);
++    }
++
++    /**
++     * It gets all the parameters of this Request
++     * 
++     * @return array this request parameters.
++     */
++    public function getParameters() {
++      die(__METHOD__ . &quot; --&gt; DEPRECATED!!!&quot;);
++        return $this-&gt;params;
++    }
++
++    /**
++     * It sets a Request Parameter
++     *
++     * @param string, name, the name of the param to set
++     * @param mixed, value, value of the param
++     * @return void
++     */
++    public function setParameter($name, $value) {
++      die(__METHOD__ . &quot; --&gt; DEPRECATED!!!&quot;);
++        $this-&gt;params[$name] = $value;
++    }
++
++    /**
++     * It adds an array of parameters on this Request
++     *
++     * @param array parameters, parameters name/value pairs
++     * @return void
++     */ 
++    public function parameters( Array $parameters=array() ) {
++        foreach ($parameters as $name=&gt;$value) {
++            $this-&gt;parameter($name, $value);
++        }
++    }
++    
++    /**
++     * Gets a string representation of this Object
++     *
++     * @return string
++     */ 
++    public function toString() {
++        $buff = &quot;{&quot;.$this-&gt;getClassName().&quot;}--&gt;\n&quot;;
++        foreach ($this-&gt;getParameters() as $name=&gt;$value) {
++            $buff .= &quot;[{$name}=&quot;;
++            if (is_array($value)) {
++                $buff .= &quot;\n\t[Array:\n&quot;;
++                foreach ($value as $k=&gt;$v) {
++                    $buff .= &quot;\t\t[{$k}=&quot;;
++                    if (is_array($v)) {
++                        $buff .= &quot;[Array]\n&quot;;
++                        continue;
++                    }
++                    if (strlen($v)&gt;75) {
++                        $buff .= substr(str_replace(&quot;&quot;,&quot;\n&quot;,$v),0,75) .&quot; .....]\n&quot;;
++                    } else {
++                        $buff .= &quot;$v]\n&quot;;
++                    }
++                }
++                $buff .= &quot;]]\n&quot;;
++            } else {
++                $buff .= &quot;{$value}]&quot;;
++            }
++        }
++        return $buff;
++    }
++}
+
+Added: exp/medick2/vendor/medick/lib/action/controller/Response.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Response.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/action/controller/Response.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,93 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: Response.php 447 2007-07-23 17:44:43Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * It is a Response that a medick application will always try to build.
++ * 
++ * A Dispatcher will know how to dump the buffer of this response back to the user.
++ * 
++ * @package medick.action.controller
++ * @author Aurelian Oancea
++ */
++class Response extends Object {
++    
++    /** @var string
++        response content */
++    protected $content;
++
++    /**
++     * Hidden Constructor
++     *
++     * This class is not meant to be instanciated,
++     * insteard use inheritance to extend and build more specialized Responses
++     *
++     * @see HTTPResponse
++     */
++    protected function Response(){  }
++
++    /**
++     * Set the content
++     * Will discard all the changes made on the buffer so far
++     * 
++     * @param mixed content, the content
++     */
++    public function setContent($content) {
++        $this-&gt;content = $content;
++    }
++
++    /** 
++     * Add content on the buffer
++     *
++     * @param mixed content
++     */
++    public function append($content) {
++        $this-&gt;content .= $content;
++    }
++
++    /** 
++     * It gets the content
++     * @return string the content that we push so far on to this Response
++     */
++    public function getContent() {
++        return $this-&gt;content;
++    }
++
++    /** 
++     * Echos the content (buffer)
++     */
++    public function dump() {
++        echo $this-&gt;content;
++    }
++
++}
+
+Added: exp/medick2/vendor/medick/lib/action/controller/Route.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Route.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/action/controller/Route.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,127 @@
++&lt;?php
++
++// XXX: Route Segment
++class __Segment extends Object {
++
++  private $name;
++
++  private $is_dynamic;
++
++  public function __construct($name, $is_dynamic) {
++    $this-&gt;name= $name;
++    $this-&gt;is_dynamic= (bool)$is_dynamic;
++  }
++
++  public function name() {
++    return $this-&gt;name;
++  }
++
++  public function is_dynamic() {
++    return $this-&gt;is_dynamic;
++  }
++
++}
++
++class Route extends Object {
++
++  private $definition;
++
++  private $segments;
++
++  private $requirements;
++
++  private $merges;
++
++  private static $old_merges   = array();
++  private static $old_defaults = array();
++
++  public function __construct( $definition, Array $requirements= array(), Array $defaults= array() ) {
++    $this-&gt;definition   = $definition;
++    $this-&gt;requirements = $requirements;
++    $this-&gt;defaults     = $defaults;
++
++    // internal structures
++    $this-&gt;segments     = array();
++    $this-&gt;merges       = array();
++
++    $this-&gt;load_segments();
++  }
++
++  private function load_segments() {
++    $parts= explode('/', trim($this-&gt;definition, '/'));
++    foreach ($parts as $key=&gt;$element) {
++      if (preg_match('/:[a-z0-9_\-]+/',$element, $match)) {
++        $segment= new __Segment(substr(trim($match[0]), 1), true);
++      } else {
++        $segment= new __Segment($element, false);
++      }
++      $this-&gt;segments[]= $segment;
++    }
++  }
++
++  private function merge(Request $request) {
++    $request-&gt;parameter('foo');
++    foreach($this-&gt;merges as $name =&gt; $value) {
++      $request-&gt;parameter($name, $value);
++    }
++  }
++
++  public function match( Request $request ) {
++    $parts= $request-&gt;uri();
++    $p_size= count($parts);
++    $s_size= count($this-&gt;segments);
++    // if we have more parameters passed, as expected.
++    if ( $p_size &gt; $s_size ) {
++      return false;
++    }
++
++    if( $p_size != 0 ) {
++      for($i=0;$i&lt;$s_size;$i++) {
++        // access corresponding part.
++        if(!isset($parts[$i])) continue;
++        $segment= $this-&gt;segments[$i];
++        $part   = $parts[$i];
++        // if segment is not dynamic and segment name is not equal to current part without extension
++        // eg. /foo defined while /bar requested :p
++        if( !$segment-&gt;is_dynamic() &amp;&amp; $segment-&gt;name () != $this-&gt;strip_ext($part) ) return false;
++        // if a requirement is set on this segment and if it's not meet
++        elseif( isset( $this-&gt;requirements[$segment-&gt;name()] )  &amp;&amp;
++          !preg_match( $this-&gt;requirements[$segment-&gt;name()], $part )
++        ) return false;
++        // ready to merge then
++        else $this-&gt;merges[$segment-&gt;name()] = $this-&gt;strip_ext($part);
++      }
++    }
++    
++    // merge request parameters
++    $this-&gt;merge( $request );
++
++    // load default values
++    $this-&gt;defaults( $request );
++
++    // validate 
++    $this-&gt;validate( $request );
++
++    Medick::dump('huh?');
++    return true;
++  }
++
++  //
++  // if 
++  // -&gt; c.bar is passed, c is returned :)
++  // -&gt; yahoo.html =&gt; yahoo
++  //
++  private function strip_ext($on) {
++    if (false === strpos($on, '.html')) {
++      $part = $on;
++    } else {
++      list($part)= explode('.', $on);
++    }
++    return $part;
++  }
++
++  public function create_controller() {
++
++  }
++
++}
+
+Added: exp/medick2/vendor/medick/lib/action/controller/Router.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Router.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/action/controller/Router.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,19 @@
++&lt;?php
++
++class Router extends Object {
++
++  private function __construct() {
++
++  }
++
++  public static function recognize(Request $request, IConfigurator $config, Logger $logger) {
++
++    $map= new Map( $config );
++    $route= $map-&gt;find_route( $request );
++
++    return $route-&gt;create_controller();
++
++  }
++
++}
++
+
+Added: exp/medick2/vendor/medick/lib/action/controller/http/HTTPCookie.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/http/HTTPCookie.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/action/controller/http/HTTPCookie.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,114 @@
++&lt;?php
++//
++// $Id: Cookie.php 444 2007-07-20 17:57:43Z aurelian $
++//
++
++/**
++ * It's a HTTPCookie 
++ *
++ * @package medick.action.controller
++ * @subpackage http
++ * @author Aurelian Oancea
++ */
++
++class HTTPCookie extends Object {
++    
++    /** @var string
++        Cookie name */ 
++    private $name;
++
++    /** @var string
++        Cookie value */ 
++    private $value;
++
++    /** @var int
++        Cookie expire */ 
++    private $expire;
++    
++    /** @var string
++        Cookie path */ 
++    private $path;
++    
++    /** @var string 
++        Cookie domain */
++    private $domain;
++
++    /** @var bool
++        Cookie secure */ 
++    private $secure;
++    
++    /**
++     * Creates A new Cookie
++     *
++     * @param string Cookie name
++     * @param string Cookie value
++     * @param int 
++     * @param string Cookie path
++     * @param string Cookie domain
++     * @param bool    
++     */ 
++    public function Cookie($name, $value = '', $expire = 0, $path = '/', $domain = '', $secure = FALSE) {
++        $this-&gt;name   = $name;
++        $this-&gt;value  = $value;
++        $this-&gt;expire = $expire;
++        $this-&gt;path   = $path;
++        $this-&gt;domain = $domain;
++        $this-&gt;secure = $secure;
++    }
++
++    public function getName() {
++        return $this-&gt;name;
++    }
++
++    public function getValue() {
++        return $this-&gt;value;
++    }
++
++    public function setValue($value) {
++        $this-&gt;value= $value;
++    }
++
++    public function getExpire() {
++        return $this-&gt;expire;
++    }
++
++    public function setExpire($expire) {
++        $this-&gt;expire = $expire;
++    }
++    
++    public function getPath() {
++        return $this-&gt;path;
++    }
++
++    public function setPath($path) {
++        $this-&gt;path= $path;
++    }
++    
++    public function getDomain() {
++        return $this-&gt;domain;
++    }
++
++    public function setDomain($domain) {
++        $this-&gt;domain = $domain;
++    }
++    
++    public function getSecure() {
++        return (bool)$this-&gt;secure;
++    }
++
++    public function setSecure($secure) {
++        $this-&gt;secure= (bool)$secure;
++    }
++    
++    public function toString() {
++      return (
++        $this-&gt;name . '=' . 
++        ($this-&gt;value === '' ? 'deleted' : $this-&gt;value).
++        ($this-&gt;expire !== 0 ? '; expires=' . gmdate('D, d-M-Y H:i:s \G\M\T', $this-&gt;expire) : '').
++        ($this-&gt;path !== '' ? '; path=' . $this-&gt;path : '').
++        ($this-&gt;domain !== '' ? '; domain=' . $this-&gt;domain : '').
++        ($this-&gt;secure ? '; secure' : '')
++      );
++    }
++}
++
+
+Added: exp/medick2/vendor/medick/lib/action/controller/http/HTTPRequest.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/http/HTTPRequest.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/action/controller/http/HTTPRequest.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,246 @@
++&lt;?php
++//
++// $Id: HTTPRequest.php 451 2007-08-01 14:57:17Z aurelian $
++//
++
++/**
++ * A HTTPRequest
++ *
++ * This is known to work with PHP installed as mod_php with apache, 
++ * for other types of installation please contact me at aurelian [ at ] locknet [ 
++ * dot ] ro if you need advice!
++ *
++ * @todo unified Headers list (eg, convert all the headers to small caps)
++ * @todo use getHeader in isXhr method
++ * @todo maybe we need a URI Helper class?
++ * @todo test with php as cgi and with php with lighttpd
++ *
++ * @package medick.action.controller
++ * @subpackage http
++ * @author Aurelian Oancea
++ */
++class HTTPRequest extends Request {
++
++    /** @var string
++        request method */
++    private $method;
++    
++    /** @var Session */
++    private $session;
++
++    /** @var string
++        path_info_parts */
++    private $requestUri= NULL;
++
++    /** @var array
++        the list of headers associated with this HTTPRequest */
++    private $headers= array();
++
++    /** @var array
++        cookies list */
++    private $cookies= array();
++    
++    /**
++     * It builds the HTTPRequest object
++     */
++    public function HTTPRequest() {
++        $this-&gt;method= isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
++        foreach (array_merge($_GET,$_POST) as $key=&gt;$value) {
++            $this-&gt;setParameter($key, $value);
++        }
++
++        foreach ($_COOKIE as $cookie_name=&gt;$cookie_value) {
++            $this-&gt;cookies[$cookie_name]= new HTTPCookie($cookie_name, $cookie_value);
++        }
++        unset($_REQUEST); unset($_GET); unset($_POST);
++
++        // setup requestUri
++        if (array_key_exists('PATH_INFO', $_SERVER) &amp;&amp; $_SERVER['PATH_INFO'] != '' ) {
++            $this-&gt;requestUri= $_SERVER['PATH_INFO'];
++        }
++        // this is for php as cgi where PATH_INFO is not available
++        elseif (array_key_exists('ORIG_PATH_INFO', $_SERVER)) {
++            // todo: it should be also tested for non root locations eg:
++            // <A HREF="http://www.example.com/foo/medick/myapplication/project/create.html">http://www.example.com/foo/medick/myapplication/project/create.html</A> 
++            // should substract only /project/create.html!
++            // even if we don't use rewrite mode (rewrite=off in config file) this should work.
++            $this-&gt;requestUri= $_SERVER['ORIG_PATH_INFO']; 
++        } else {
++          // fallback to REQUEST_URI
++          $this-&gt;requestUri= substr($_SERVER['REQUEST_URI'],7);
++        }
++
++        $this-&gt;session = new HTTPSession();
++        $this-&gt;headers = HTTPRequest::getAllHeaders();
++    }
++
++    /**
++     * Get the current request method
++     *
++     * @return string the method of this request (POST/GET/HEAD/DELETE/PUT)
++     */ 
++    public function getMethod() {
++        return $this-&gt;method;
++    }
++    
++    /**
++     * Check if this request was made using POST
++     *
++     * @return bool true if it's a POST
++     */ 
++    public function isPost() {
++        return $this-&gt;method == 'POST';
++    }
++    
++    /**
++     * Check if this Request was made using GET
++     *
++     * @return bool true if it was GET
++     */ 
++    public function isGet() {
++        return $this-&gt;method == 'GET';
++    }
++    
++    /**
++     * Check if this Request was made with an AJAX call (Xhr)
++     *
++     * @return bool true if it was Xhr
++     */ 
++    public function isXhr() {
++      return isset($_SERVER['HTTP_X_REQUESTED_WITH']) &amp;&amp; ($_SERVER['HTTP_X_REQUESTED_WITH'] == 'XMLHttpRequest');
++    }    
++    
++    /**
++     * Gets an array of Cookies
++     *
++     * @return array
++     */ 
++    public function getCookies() {
++        return $this-&gt;cookies;
++    }
++
++    /**
++     * Check if it has a Cookie with the specfied name
++     *
++     * @param string the Cookie name
++     * @return bool true if it has
++     */ 
++    public function hasCookie($name) {
++        return isset($this-&gt;cookies[$name]);
++    }
++
++    /**
++     * It gets a cookie by it's name
++     *
++     * @param string cookie name
++     * @return Cookie or FALSE if this Request don't have the requested cookie
++     */ 
++    public function getCookie($name) {
++        return $this-&gt;hasCookie($name) ? $this-&gt;cookies[$name] : FALSE;
++    }
++    
++    /**
++     * It gets an array of headers associated with this request
++     *
++     * @return array
++     */ 
++    public function getHeaders() {
++        return $this-&gt;headers;
++    }
++    
++    /**
++     * It gets a header
++     * 
++     * @param strign name of the header to look for
++     * @return string header value or FALSE if it don't have the header
++     */ 
++    public function getHeader($name) {
++        return $this-&gt;hasHeader($name) ? $this-&gt;headers[ucfirst($name)] : FALSE;
++    }
++    
++    /**
++     * Check if it has a specific header
++     *
++     * @param string name of the header to check for
++     * @return bool true if it has
++     */ 
++    public function hasHeader($name) {
++        return isset($this-&gt;headers[ucfirst($name)]);
++    }
++
++    /**
++     * Sets this Request URI
++     *
++     * Usefull for testing
++     * @param uri string incoming URI
++     * @return void
++     */
++    public function setRequestUri($uri) {
++      $this-&gt;requestUri= $uri;
++    }
++
++    /**
++     * It gets a part of the path info associated with this request
++     *
++     * @return value of this part or NULL if this part is not defined
++     */
++    // public function getRequestUri() {
++    //     return $this-&gt;requestUri;
++    // }
++    
++    /**
++     * Split the RequestURI by forward slash
++     *
++     * @return array with URI Parts
++     */  
++    public function getUriParts() {
++      die('DEPRECATED pisamas pa tine de cacanr!!!');
++      return $this-&gt;uri();
++    }
++
++    public function uri() {
++      if (is_null($this-&gt;requestUri)) return array();
++      return explode('/', trim($this-&gt;requestUri,'/'));
++    }
++
++    /**
++     * It gets the Session
++     * @return Session, the curent Session
++     */
++    public function getSession() {
++        return $this-&gt;session;
++    }
++
++    // {{{ todos.
++    // public function getIP() { throw new MedickException('Method Not Implemented!'); }
++    // public function getProtocol() { throw new MedickException('Method Not Implemented!'); }
++    // }}}
++
++    /**
++     * A wrapper around getallheaders apache function that gets a list
++     * of headers associated with this HTTPRequest.
++     *
++     * @return array
++     */
++    protected static function getAllHeaders() {
++        $headers= array();
++        if (function_exists('getallheaders')) {
++            // this will work only for mod_php!
++            $headers= getallheaders();
++        } else {
++            foreach($_SERVER as $header=&gt;$value) {
++              if(preg_match('/HTTP_(.+)/',$header,$hp)) {
++                  $h= preg_replace_callback(
++                    '/(^|_)(.)/', 
++                    create_function(  
++                        '$matches', 
++                        'return $matches[1] ? &quot;-&quot;.ucfirst( $matches[2] ) : ucfirst( $matches[2] );'), 
++                    strtolower($hp[1]));
++                  $headers[$h] = $value;
++                }
++            }
++        }
++        return $headers;
++    }
++
++}
+
+Added: exp/medick2/vendor/medick/lib/action/controller/http/HTTPResponse.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/http/HTTPResponse.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/action/controller/http/HTTPResponse.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,195 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: HTTPResponse.php 451 2007-08-01 14:57:17Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * HTTP Response Object 
++ *
++ * @todo: think of a cachable list of headers and how to send them.
++ *
++ * Caution: only 4 response statuses are implemented in Response::setStatus method:
++ *
++ * 200 OK, 304 Not Modified, 404 Not Found, 500 Internal Server Error
++ *
++ * Contact me if you need more.
++ *
++ * @package medick.action.controller
++ * @subpackage http
++ * @author Aurelian Oancea
++ */
++class HTTPResponse extends Response {
++
++    /** Status code (200) indicating the request succeeded normally. */
++    const SC_OK = 200;
++
++    /** Status code (304) indicating that a conditional GET
++        operation found that the resource was available and not modified. */
++    const SC_NOT_MODIFIED = 304;
++
++    /** Status code (400) indicating the request sent by the
++        client was syntactically incorrect. */
++    const SC_BAD_REQUEST = 400;
++
++    /** Status code (403) indicating the server
++        understood the request but refused to fulfill it. */
++    const SC_FORBIDDEN = 403;
++
++    /** Status code (404) indicating that the requested
++        resource is not available. */
++    const SC_NOT_FOUND = 404;
++
++    /** Status code (500) indicating an error inside
++        the HTTP server which prevented it from fulfilling the request. */
++    const SC_INTERNAL_SERVER_ERROR = 500;
++
++    /** Status code (503) indicating that the HTTP server
++        is temporarily overloaded, and unable to handle the request. */
++    const SC_SERVICE_UNAVAILABLE = 503;
++
++    /** Constructor */
++    public function HTTPResponse() {  }
++    
++    /**
++     * Sets the header $name with $value
++     *
++     * Caution: this method makes use of PHP function header() directly, meaning that 
++     * there is no instance variable to keep a list of all the headers that are build 
++     * during a Response sequence.
++     *
++     * &lt;code&gt;
++     *  $response-&gt;setHeader(&quot;X-Foo&quot;, &quot;Bar&quot;);// &lt;==&gt; header(&quot;X-Foo: Bar&quot;);
++     * &lt;/code&gt;
++     *
++     * @param string the name of the header
++     * @param mixed  the value of this header
++     */
++    public function setHeader($name, $value) {
++        header($name . &quot;: &quot; . $value);
++    }
++
++    /**
++     * It gets the Response headers
++     *
++     * It gets only the headers that have been already sent, 
++     * eg. Content-Type header will not be on the list
++     *
++     * Caution: this method is not cachable, meaning that multiple calls on it
++     * will fetch the list of headers each time. There is no $headers instance 
++     * variable to keep a list that will be later sent with the Response.
++     *
++     * Caution: names and values are trimmed!
++     *
++     * &lt;code&gt;
++     * $response-&gt;setHeader(&quot;X-Foo&quot;, &quot;Bar&quot;);
++     * $response-&gt;setHeader(&quot;X-Framework&quot;, &quot;Medick &quot;); // notice the space at the end
++     * $response-&gt;getHeaders(); // array(&quot;X-Foo&quot;=&gt;&quot;Bar&quot;, &quot;X-Framework&quot;=&gt;&quot;Medick&quot;);
++     * &lt;/code&gt;
++     */ 
++    public function getHeaders() {
++      $headers= array();
++      foreach(headers_list() as $header) {
++        list($name, $value) = explode(':', $header);
++        $headers[trim($name)]= trim($value);
++      }
++      return $headers;
++    }
++
++    public function getHeader( $name ) {
++      $headers= $this-&gt;getHeaders();
++      return isset($headers[trim($name)]) ? trim($headers[trim($name)]) : false;
++    }
++    
++    // bleah.
++    public function hasHeader( $name ) {
++      return in_array(trim($name), array_keys($this-&gt;getHeaders()));
++    }
++
++    /**
++     * Sets the content-type header
++     *
++     * @param string the content type
++     */
++    public function setContentType($type) {
++        return $this-&gt;setHeader('Content-type', $type);
++    }
++    
++    /**
++     * Sets a Cookie.
++     * 
++     * &lt;code&gt;
++     *  $response-&gt;setCookie(new Cookie(&quot;Foo&quot;, &quot;Bar&quot;));
++     * &lt;/code&gt;
++     *
++     * @param Cookie Cookie
++     * @see Cookie
++     */ 
++    public function setCookie(Cookie $cookie) {
++        $this-&gt;setHeader('Set-Cookie', $cookie-&gt;toString());
++    }
++    
++    /**
++     * Sets the status of this response
++     *
++     * @param HTTPResponse::SC_* the status of this response
++     */
++    public function setStatus( $status ) {
++        switch($status){
++            case HTTPResponse::SC_OK: // 200
++                $message = 'OK';
++                break;
++            case HTTPResponse::SC_NOT_MODIFIED: // 304
++                $message = 'Not Modified';
++                break;
++            case HTTPResponse::SC_NOT_FOUND: // 404
++                $message = 'Not Found';
++                break;
++            case HTTPResponse::SC_INTERNAL_SERVER_ERROR: // 500
++                $message = 'Internal Server Error';
++                break;
++            default:
++                return;
++        }
++        header(&quot;HTTP/1.1 &quot; . $status . $message, TRUE, $status);
++    }
++
++    /**
++     * Perform a HTTP redirect
++     *
++     * @param string location, location to redirect to
++     */
++    public function redirect( $location ) {
++        $this-&gt;setHeader('Location', $location);
++        $this-&gt;content = '&lt;html&gt;&lt;body&gt;You are being &lt;a href=&quot;'.$location.'&quot;&gt;redirected&lt;/a&gt;.&lt;/body&gt;&lt;/html&gt;';
++    }
++}
++
+
+Added: exp/medick2/vendor/medick/lib/action/controller/http/HTTPSession.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/http/HTTPSession.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/action/controller/http/HTTPSession.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,182 @@
++&lt;?php
++//
++// $Id: Session.php 431 2007-06-12 14:37:19Z aurelian $
++//
++
++/**
++ * A wrapper around PHP session handling
++ *
++ * @package medick.action.controller
++ * @subpackage http
++ * @author Aurelian Oancea
++ */
++class HTTPSession extends Object {
++
++    /** @var bool
++        started flag */
++    private $isStarted = FALSE;
++
++    /** @var ISessionContainer
++        the session container */
++    private $container = NULL;
++  
++    /** @var string
++        Session name */
++    private $name = 'MSESSID';
++    
++    /**
++     * Constructor, creates a new session object
++     *
++     * @throws IllegalStateException if the session is started
++     */
++    public function Session () {
++        if ($this-&gt;isStarted) {
++            throw new IllegalStateException('Session already Started!');
++        }
++    }
++
++    /**
++     * Starts a new Session
++     *
++     * Also, it setup our session preferences
++     * @return void
++     * @throws IllegalStateException if the session is already started
++     */
++    public function start() {
++        if ($this-&gt;isStarted) {
++            throw new IllegalStateException('Session already Started!');
++        }
++        
++        // TODO: more settings
++        // session_cache_limiter(&quot;nocache&quot;);
++        session_name($this-&gt;name);
++        if ($this-&gt;container!==NULL) {
++            session_set_save_handler(
++                array($this-&gt;container, 'open'),
++                array($this-&gt;container, 'close'),
++                array($this-&gt;container, 'read'),
++                array($this-&gt;container, 'write'),
++                array($this-&gt;container, 'destroy'),
++                array($this-&gt;container, 'gc'));
++        }
++        session_start();
++        //session_regenerate_id(TRUE);
++        $this-&gt;isStarted= TRUE;
++    }
++
++    /**
++     * It sets the Session Name.
++     * 
++     * Medick uses MSESSID as a session name identifier, overwritting PHPSESSID
++     * @param string the session name
++     */
++    public function setName($name) {
++        $this-&gt;name = $name;
++    }
++    
++    /**
++     * It gets this Session name
++     *
++     * @return string the Session Name
++     */
++    public function getName() {
++        return $this-&gt;name;
++    }
++    /**
++     * Sets a session variable
++     *
++     * @param string name, the name of the session variable
++     * @param mixed value, the value of the variable to set
++     * @return void
++     */
++    public function putValue($name, $value) {
++        $this-&gt;checkState();
++        $_SESSION[$name] = $value;
++    }
++
++    /**
++     * Gets a session variable value
++     *
++     * @param string name, the name of the session variable
++     * @return NULL if the variable is not set, or mixed, the variable value
++     */
++    public function getValue($name) {
++        return $this-&gt;hasValue($name) ? $_SESSION[$name] : NULL;
++    }
++
++    /**
++     * Check if this session has a variable with the given name
++     *
++     * @param string name, the name of the session variable
++     * @return bool, TRUE if it has
++     */
++    public function hasValue($name) {
++        $this-&gt;checkState();
++        return isset($_SESSION[$name]);
++    }
++
++    /**
++     * Remove the session value with the given name
++     *
++     * @param string name, the name of the session variable
++     * @return void
++     */
++    public function removeValue($name) {
++        $this-&gt;checkState();
++        // unset($_SESSION[$name]);
++        session_unregister($name);
++    }
++
++    /**
++     * It gets the session id
++     *
++     * @return mixed, the session id
++     */
++    public function getId(){
++        $this-&gt;checkState();
++        return session_id();
++    }
++
++    /**
++     * It sets the session container
++     *
++     * @param ISessionContainer container to set
++     * @return void
++     */
++    public function setContainer(ISessionContainer $container) {
++        $this-&gt;container= $container;
++    }
++
++    /**
++     * It dumps the session
++     *
++     * @return array
++     */
++    public function dump() {
++        $this-&gt;checkState();
++        return $_SESSION;
++    }
++
++    /**
++     * Alias for Session::dump()
++     *
++     * @see Session::dump
++     */ 
++    public function getValues() {
++        return $this-&gt;dump();
++    }
++    
++    /**
++     * It checks the session state
++     *
++     * This method is called internally to ensure that the session is started before using it.
++     * @return TRUE if the session is started
++     */
++    protected function checkState() {
++        if (!$this-&gt;isStarted) {
++            $this-&gt;start();
++        }
++        return TRUE;
++    }
++      
++}
+
+Added: exp/medick2/vendor/medick/lib/action/controller/init.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/init.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/action/controller/init.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,27 @@
++&lt;?php
++
++//  ActionController Framework Autoload Definition
++
++function __action_controller_autoload($class) {
++
++  // special case
++  if($class == 'ActionController') {
++    return require 'action/controller/Base.php';
++  }
++
++  $base= dirname(__FILE__) . DIRECTORY_SEPARATOR;
++
++  // action/controller/http
++  if(strpos(strtolower($class), 'http') !== false &amp;&amp; is_file($base.'http'.DIRECTORY_SEPARATOR.$class.'.php') ) {
++    return require 'action'.DIRECTORY_SEPARATOR.'controller'.DIRECTORY_SEPARATOR.'http'.DIRECTORY_SEPARATOR.$class.'.php';
++  }
++
++  // the rest
++  $file= 'action'.DIRECTORY_SEPARATOR.'controller'.DIRECTORY_SEPARATOR.$class.'.php';
++  if(is_file( dirname(__FILE__) . DIRECTORY_SEPARATOR . $class . '.php' )) {
++    return require $file;
++  }
++}
++
++spl_autoload_register('__action_controller_autoload');
++
+
+Added: exp/medick2/vendor/medick/lib/context/AbstractConfigurator.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/AbstractConfigurator.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/context/AbstractConfigurator.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,26 @@
++&lt;?php
++
++/*
++ * Should contain default values so the application can then run without a config file
++ *
++ * Should provide overwritable methods to access default values
++ *
++ */ 
++abstract class AbstractConfigurator extends Object implements IConfigurator {
++
++  protected $file;
++
++  protected $environment;
++
++  //
++  // XXX: don't throw anything and load default values
++  //
++  public function __construct( $file, $environment ) {
++    if(!is_file($file)) {
++      throw new Exception( sprintf('Cannot load configuration file %s', $file) );
++    }
++    $this-&gt;file= $file;
++    $this-&gt;environment= $environment;
++  }
++
++}
+
+Added: exp/medick2/vendor/medick/lib/context/ContextManager.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/ContextManager.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/context/ContextManager.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,10 @@
++&lt;?php
++
++class ContextManager extends Object {
++
++  public static function load($xml_file, $environment) {
++    // XXX: factory based on the file type
++    return new XMLConfigurator( $xml_file, $environment );
++  }
++
++}
+
+Added: exp/medick2/vendor/medick/lib/context/IConfigurator.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/IConfigurator.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/context/IConfigurator.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,22 @@
++&lt;?php
++
++interface IConfigurator {
++
++  public function __construct($file, $environment);
++
++  // return Array
++  public function logger_outputters();
++
++  // return string
++  public function logger_formatter();
++
++  // retrun mixed
++  // -&gt; $env false: lookup in global namespace
++  // -&gt; $env true : use the current environment
++  public function property($name, $env= false);
++
++  // return Array
++  public function routes();
++
++}
++
+
+Added: exp/medick2/vendor/medick/lib/context/XMLConfigurator.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/XMLConfigurator.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/context/XMLConfigurator.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,94 @@
++&lt;?php
++
++class XMLConfigurator extends AbstractConfigurator {
++
++  // SimpleXML
++  private $sxe;
++  
++  // Environment as SimpleXML
++  private $env = null;
++
++  private $properties = array();
++
++  public function __construct($file, $environment) {
++    parent::__construct( $file, $environment );
++
++    // XXX: handle errors
++    $this-&gt;sxe= simplexml_load_file($file);
++    // find env in doc.
++    foreach($this-&gt;sxe-&gt;environments-&gt;environment as $e) {
++      if($e-&gt;name == $e) {
++        $this-&gt;env= $e;
++        break;
++      }
++    }
++
++    // XXX: custom ex.
++    if($this-&gt;env === null) {
++      throw new Exception( sprintf('Cannot load environment &quot;%s&quot; from %s', $environment, $file) );
++    }
++
++  }
++
++  public function application_name() {
++    return (string)trim($this-&gt;sxe['name']);
++  }
++
++  //
++  // XXX:
++  // -&gt; check the usability of returning false, maybe we should throw an exception?
++  // -&gt; properties should be loaded in constructor
++  // -&gt; properties should have defaults
++  //
++  public function property($name, $env = false) {
++    if(empty($this-&gt;properties)) $this-&gt;load_properties();
++    $lookup = $env === false ? '__global_env' : (string)$this-&gt;env['name'];
++    return isset($this-&gt;properties[$lookup][$name]) ? $this-&gt;properties[$lookup][$name] : false;
++  }
++
++  //
++  // $properties=
++  //
++  //  array(1) {
++  //    [&quot;__global_env&quot;]=&gt;
++  //    array(3) {
++  //      [&quot;load.paths&quot;]=&gt;
++  //      string(0) &quot;&quot;
++  //      [&quot;plugin.autodiscovery&quot;]=&gt;
++  //      bool(true)
++  //      [&quot;plugin.path&quot;]=&gt;
++  //      string(14) &quot;vendor/plugins&quot;
++  //    }
++  //  }
++  //
++  private function load_properties() {
++    foreach($this-&gt;sxe-&gt;properties-&gt;property as $prop) {
++      $this-&gt;properties['__global_env'][(string)trim($prop['name'])]= $this-&gt;parse_prop_value($prop['value']);
++    }
++  }
++
++  private function parse_prop_value($val) {
++    $value= (string)trim($val);
++    if(in_array($value, array('true', 'on', '1'))) return true;
++    elseif(in_array($value, array('false', 'off', '0'))) return false;
++    else return $value;
++  }
++
++
++  public function routes() {
++    return $this-&gt;sxe-&gt;routes-&gt;route;
++  }
++
++  // referes to a env. logger outputters
++  public function logger_outputters() {
++    if (is_null($this-&gt;env-&gt;logger-&gt;outputters)) return array();
++    return $this-&gt;env-&gt;logger-&gt;outputters-&gt;outputter;
++  }
++  
++  // referes to a env. logger formatter
++  public function logger_formatter() {
++    return (string)trim($this-&gt;env-&gt;logger-&gt;formatter);
++  }
++
++}
++
+
+Added: exp/medick2/vendor/medick/lib/context/init.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/init.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/context/init.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,13 @@
++&lt;?php
++
++//  Context Framework Autoload Definition
++
++function __context_autoload($class) {
++  $file= 'context'.DIRECTORY_SEPARATOR.$class.'.php';
++  if(is_file( dirname(__FILE__) . DIRECTORY_SEPARATOR . $class . '.php' )) {
++    return require $file;
++  }
++}
++
++spl_autoload_register('__context_autoload');
++
+
+Added: exp/medick2/vendor/medick/lib/logger/ILogger.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/logger/ILogger.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/logger/ILogger.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,25 @@
++&lt;?php
++//
++// $Id: ILogger.php 431 2007-06-12 14:37:19Z aurelian $
++//
++
++/**
++ * Logger interface
++ * 
++ * @package medick.logger
++ * @author Aurelian Oancea
++ */
++interface ILogger {
++
++    /**
++     * Attaches an Output Appender.
++     * 
++     * @param Outputter appender
++     */
++    function attach(IOutputter $outputter);
++
++    /**
++     * Notifies an outputter
++     */
++    function notify();
++}
+
+Added: exp/medick2/vendor/medick/lib/logger/Logger.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/logger/Logger.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/logger/Logger.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,191 @@
++&lt;?php
++
++/**
++ * The Logger.
++ *
++ * @package medick.logger
++ * @author Aurelian Oancea
++ */
++class Logger extends Object implements ILogger {
++
++  /** a fancy way of telling the level */
++  const DEBUG = 0;
++  const INFO  = 1;
++  const WARN  = 2;
++  const ERROR = 3;
++
++  /** @var array list with allowed levels */
++  private $levels = array('debug','info','warn','error');
++
++  /** @var int default priority level */
++  private $level = 0;
++
++  /** @var Formatter */
++  private $formatter;
++
++  /** @var array list of IOutputters[] */
++  private $outputters = array();
++
++  /** @var LoggingEvent the event to log */
++  private $event = NULL;
++
++  /** @var int message level */
++  private $messageLevel;
++
++  public static function formatter(IConfigurator $config) {
++    $class= ucfirst($config-&gt;logger_formatter()).'Formatter';
++    return new $class;
++  }
++
++  public static function outputters(IConfigurator $config) {
++    $instances= array();
++    foreach($config-&gt;logger_outputters() as $outputter) {
++    $class= ucfirst((string)trim($outputter['name'])) . 'Outputter';
++    $klass = new $class( $outputter['level'] );
++    foreach($outputter-&gt;property as $property) {
++      $klass-&gt;setProperty( (string)trim($property['name']), (string)trim($property['value']) );
++    }
++    $klass-&gt;initialize();
++    $instances[]= $klass;
++    }
++    return $instances;
++  }
++
++  /** __magic __overloading__ */
++  public function __call($method, $message=false) {
++    if ($message===false || sizeof($this-&gt;outputters) == 0) return;
++
++    if (!in_array($method, $this-&gt;levels)) {
++      trigger_error(
++        sprintf('Call to undefined function: %s::%s(%s).', $this-&gt;getClassName(), $method, $message), E_USER_ERROR
++      );
++    }
++    foreach ($this-&gt;levels as $_level=&gt;$_name) {
++      if($_name == $method) break;
++    }
++    if ($_level &lt; $this-&gt;level) return;
++    $this-&gt;messageLevel = $_level;
++    $this-&gt;event = new LoggingEvent($message[0], $method);
++    $this-&gt;notify();
++  }
++
++  /*
++   * Experimental addon that acts as sprintf only with %s format for this Logger
++   */ 
++  public function debugf($e) {
++    $args= func_get_args();
++    $str = array_shift($args);
++    if(sizeof($args) &gt; 0) {
++      while($line= array_shift($args)) {
++        $str= preg_replace( '/%s/', $line, $str, 1 );
++      }
++    }
++    return $this-&gt;debug( $str );
++  }
++
++  /**  Notify the outputters */
++  public function notify() {
++    foreach($this-&gt;outputters as $outputter) {
++      $outputter-&gt;update($this);
++    }
++  }
++
++  /**
++   * Attach an outputter
++   * 
++   * @param IOutputter outputter the outputter
++   */
++  public function attach(IOutputter $outputter) {
++    if ($this-&gt;contains($outputter)) return;
++    $this-&gt;outputters[] = $outputter;
++  }
++
++  /**
++   * Attach a bunch of outputters
++   *
++   * @param IOutputters[]
++   */ 
++  public function attachOutputters(Array $outputters) {
++    foreach($outputters as $outputter) {
++      $this-&gt;attach($outputter);
++    }
++  }
++
++  /**
++   * Check to see if the list outputters contains the given outputter.
++   *
++   * @param IOutputter outputter an outputter witch acts as an observer
++   * @return bool
++   */
++  private function contains(IOutputter $outputter) {
++    foreach ($this-&gt;outputters as $out) {
++      if ($out-&gt;getClassName() == $outputter-&gt;getClassName()) {
++        return true;
++      }
++    }
++    return false;
++  }
++
++  /**
++   * It gets the list with attached outputters
++   * 
++   * @return IOutputter[]
++   */
++  public function getOutputters() {
++    return $this-&gt;outputters;
++  }
++
++  /**
++   * It gets the last message level
++   * 
++   * @return int, the message level
++   */
++  public function getMessageLevel() {
++    return $this-&gt;messageLevel;
++  }
++
++  /**
++   * It gets the event
++   * 
++   * @return LoggingEvent
++   */
++  public function getEvent() {
++    return $this-&gt;event;
++  }
++
++  /**
++   * Set's the event formatter
++   * 
++   * @param Formatter formatter the formatter
++   */
++  public function setFormatter(Formatter $formatter) {
++    $this-&gt;formatter = $formatter;
++  }
++
++  /**
++   * It gets the formatter
++   * 
++   * @return Formatter
++   */
++  public function getFormatter() {
++    return $this-&gt;formatter;
++  }
++
++  /**
++   * It sets the logging level
++   * 
++   * @param Logger level the level, it can be Logger::DEBUG (0), Logger::INFO (1)...
++   */
++  public function setLevel($level) {
++    $this-&gt;level = $level;
++  }
++
++  /**
++   * It gets the level.
++   * 
++   * @return int the logging level
++   */
++  public function getLevel() {
++    return $this-&gt;level;
++  }
++}
+
+Added: exp/medick2/vendor/medick/lib/logger/LoggingEvent.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/logger/LoggingEvent.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/logger/LoggingEvent.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,73 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: LoggingEvent.php 431 2007-06-12 14:37:19Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * A logged event object
++ * 
++ * @package medick.logger
++ * @author Aurelian Oancea
++ */
++class LoggingEvent extends Object {
++
++    /** @var mixed
++        logging message */
++    public $message;
++
++    /** @var int
++        message level */
++    public $level;
++
++    /** @var string
++        date */
++    public $date;
++
++    /** @var string
++        ip-address */
++    public $ip;
++
++    /**
++     * Constructor, set`s the properties
++     * 
++     * @param mixed, message, the message
++     * @param string, this event level
++     */
++    public function __construct($message, $level) {
++        $this-&gt;message   = $message;
++        $this-&gt;level     = strtoupper($level);
++        $this-&gt;date      = time();
++        if (array_key_exists('REMOTE_ADDR',$_SERVER)) {
++            $this-&gt;ip= $_SERVER['REMOTE_ADDR'];
++        }
++    }
++}
+
+Added: exp/medick2/vendor/medick/lib/logger/formatter/DefaultFormatter.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/logger/formatter/DefaultFormatter.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/logger/formatter/DefaultFormatter.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,18 @@
++&lt;?php
++//
++// $Id: DefaultFormatter.php 431 2007-06-12 14:37:19Z aurelian $
++//
++
++/**
++ * Default Logger formatter
++ * 
++ * @package medick.logger
++ * @subpackage formatter
++ * @author Aurelian Oancea
++ */
++class DefaultFormatter extends Formatter {
++    /** @see medick.logger.formatter.Formatter::format(medick.logger.LoggingEvent event) */
++    public function format(LoggingEvent $event) {
++        return $event-&gt;level . &quot; &gt;&gt; &quot; . $event-&gt;message;
++    }
++}
+
+Added: exp/medick2/vendor/medick/lib/logger/formatter/Formatter.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/logger/formatter/Formatter.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/logger/formatter/Formatter.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,64 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: Formatter.php 431 2007-06-12 14:37:19Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * Base abstract Event Formatter.
++ * 
++ * @package medick.logger
++ * @subpackage formatter
++ * @author Aurelian Oancea
++ */
++abstract class Formatter extends Object {
++    /**
++     * Formats the event
++     * @param medick.logger.LoggingEvent event, the event
++     * @return string
++     */
++    abstract public function format(LoggingEvent $event);
++
++    /**
++     * Returns the string representation of the message data.
++     * @param  mixed $message   The original message data.  This may be a
++     *                          string or any object.
++     * @return string           The string representation of the message.
++     * @access protected
++     */
++    protected function extractMessage($message) {
++        if(!is_string($message)) $message = print_r($message, TRUE);
++        // if (array_key_exists('MEDICK_APPLICATION_PATH', $_SERVER)) {
++        //     $message= str_replace($_SERVER['MEDICK_APPLICATION_PATH'], &quot;{&quot; . strtoupper($_SERVER['MEDICK_APPLICATION_NAME']) . &quot;}&quot;, $message);
++        // }
++        return $message;
++    }
++}
+
+Added: exp/medick2/vendor/medick/lib/logger/formatter/SimpleFormatter.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/logger/formatter/SimpleFormatter.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/logger/formatter/SimpleFormatter.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,48 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: SimpleFormatter.php 431 2007-06-12 14:37:19Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * Simple formatter.
++ * 
++ * @package medick.logger
++ * @subpackage formatter
++ * @author Aurelian Oancea
++ */
++class SimpleFormatter extends Formatter {
++    /** @see medick.logger.formatter.Formatter::format(medick.logger.LoggingEvent event) */
++    public function format(LoggingEvent $event) {
++        return &quot;{$event-&gt;ip} -- &quot; . strftime(&quot;%d/%m/%Y %H:%M:%S&quot;, $event-&gt;date) .
++            &quot; [ {$event-&gt;level} ] &gt;&gt;&gt; {$this-&gt;extractMessage($event-&gt;message)}&quot;;
++    }
++}
+
+Added: exp/medick2/vendor/medick/lib/logger/init.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/logger/init.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/logger/init.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,28 @@
++&lt;?php
++
++// try {
++//   Medick::depends_on('context');
++// } catch(Exception $ex) {
++//   Medick::load_framework('context');
++// }
++
++// Logger Framework AutoLoadder
++
++function __logger_autoload($class) {
++  $base = dirname(__FILE__).DIRECTORY_SEPARATOR;
++  // logger/outputter
++  if(strpos(strtolower($class), 'outputter') !== false &amp;&amp; is_file($base.'outputter'.DIRECTORY_SEPARATOR.$class.'.php') ) {
++    return require 'logger'.DIRECTORY_SEPARATOR.'outputter'.DIRECTORY_SEPARATOR.$class.'.php';
++  }
++  // logger/formatter
++  if(strpos(strtolower($class), 'formatter') !== false &amp;&amp; is_file($base.'formatter'.DIRECTORY_SEPARATOR.$class.'.php') ) {
++    return require 'logger'.DIRECTORY_SEPARATOR.'formatter'.DIRECTORY_SEPARATOR.$class.'.php';
++  }
++  // the rest
++  if(is_file( dirname(__FILE__) . DIRECTORY_SEPARATOR . $class . '.php' )) {
++    return require 'logger'.DIRECTORY_SEPARATOR.$class.'.php';
++  }
++}
++
++spl_autoload_register('__logger_autoload');
++
+
+Added: exp/medick2/vendor/medick/lib/logger/outputter/FileOutputter.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/logger/outputter/FileOutputter.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/logger/outputter/FileOutputter.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,53 @@
++&lt;?php
++//
++// $Id: FileOutputter.php 430 2007-01-22 07:58:24Z aurelian $
++//
++
++/**
++ * It writes logging messages to a file
++ * 
++ * @package medick.logger
++ * @subpackage outputter
++ * @author Oancea Aurelian
++ */
++class FileOutputter extends Outputter {
++
++    /** @var resource
++        file handler */
++    private $handler;
++
++    /**
++     * Initialize this outputter
++     * 
++     * @param int, level, this outputter individual level
++     * @param string the file to write on
++     */
++    public function initialize() {
++        $file= $this-&gt;getProperty('path');
++        if (!is_file($file)) {
++            touch($file);
++        }
++        $this-&gt;handler = fopen($file, 'a');
++    }
++
++    /**
++     * Closes the handler on exit
++     */
++    public function __destruct() {
++        if ($this-&gt;handler) {
++            fclose($this-&gt;handler);
++        }
++    }
++
++    /** 
++     * It writes the message
++     *
++     * @param string message
++     */
++    protected function write($message) {
++        if (flock($this-&gt;handler, LOCK_EX|LOCK_NB)) {
++            fwrite($this-&gt;handler, $message . &quot;\n&quot;);
++        }
++        return;
++    }
++}
+
+Added: exp/medick2/vendor/medick/lib/logger/outputter/IOutputter.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/logger/outputter/IOutputter.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/logger/outputter/IOutputter.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,47 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: IOutputter.php 430 2007-01-22 07:58:24Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * Outputters interface
++ * 
++ * @package medick.logger
++ * @subpackage outputter
++ */
++interface IOutputter {
++    
++    /**
++     * @param medick.logger.ILogger logger the logger to update
++     */ 
++    function update(ILogger $logger);
++}
+
+Added: exp/medick2/vendor/medick/lib/logger/outputter/MailOutputter.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/logger/outputter/MailOutputter.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/logger/outputter/MailOutputter.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,69 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: MailOutputter.php 430 2007-01-22 07:58:24Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * It sends an email message with the logger event
++ * 
++ * @todo ignore multiple messages by using a file lock (or smthing)
++ * @package medick.logger
++ * @subpackage outputter
++ * @author Oancea Aurelian
++ */
++class MailOutputter extends Outputter {
++
++    /** @var string
++        the email address */
++    private $email;
++    
++    /** @var string
++        email subject */
++    private $subject;
++    
++    /**
++     * Initialize this outputer
++     */ 
++    public function initialize() {
++        $this-&gt;email   = $this-&gt;getProperty('address');
++        $this-&gt;subject = $this-&gt;getProperty('subject');
++    }
++    
++    /**
++     * Write the message and send an email with it
++     *
++     * @param string message
++     */ 
++    protected function write($message) {
++        @mail($this-&gt;email, $this-&gt;subject, $message);
++    }
++}
+
+Added: exp/medick2/vendor/medick/lib/logger/outputter/Outputter.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/logger/outputter/Outputter.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/logger/outputter/Outputter.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,96 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: Outputter.php 430 2007-01-22 07:58:24Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * Abstract Outputter
++ * 
++ * @package medick.logger
++ * @subpackage outputter
++ * @author Oancea Aurelian
++ */
++abstract class Outputter extends Object implements IOutputter {
++
++    /** @var int
++        individual outputter level*/
++    protected $level;
++
++    /** @var array
++        this outputter properties */ 
++    private $properties= array();
++
++    /**
++     * Creates a new Outputter
++     * 
++     * @param int level the minimum level to respond
++     */ 
++    public function __construct($level) {
++        $this-&gt;level= $level;
++    }
++
++    public function hasProperty($property) {
++        if (isset($this-&gt;properties[$property]) &amp;&amp; $this-&gt;properties[$property] != '') {
++            return TRUE;
++        } else {
++            throw new Exception('Outputter::properties dosent have `' . $property . '` as property');
++        }
++    }
++
++    public function getProperty($property) {
++        return $this-&gt;hasProperty($property) ? $this-&gt;properties[$property] : null;
++    }
++
++    public function setProperty($property, $value) {
++        $this-&gt;properties[$property]= $value;
++    }
++
++    public function setProperties(Array $properties) {
++        $this-&gt;properties= $properties;
++    }
++
++    /**
++     * Receive the Logger update and writes the log event using the formatter
++     */
++    public function update(ILogger $logger) {
++        if ($this-&gt;level &lt;= $logger-&gt;getMessageLevel()) {
++            $this-&gt;write($logger-&gt;getFormatter()-&gt;format($logger-&gt;getEvent()));
++        }
++    }
++
++    // {{{ abstract methods
++    /** Initialize this specific outputter */
++    public abstract function initialize();
++    /** It writes the message */
++    protected abstract function write($message);
++    // }}}
++}
+
+Added: exp/medick2/vendor/medick/lib/logger/outputter/StdoutOutputter.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/logger/outputter/StdoutOutputter.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/logger/outputter/StdoutOutputter.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,95 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: StdoutOutputter.php 430 2007-01-22 07:58:24Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * StdoutOutputter
++ * 
++ * @package medick.logger
++ * @subpackage outputter
++ * @author Oancea Aurelian
++ */
++class StdoutOutputter extends Outputter {
++
++    /** @var bool
++        FALSE if the sapi name is cli */
++    private $isCLI = FALSE;
++    
++    /** @var string
++        end of line style (can be \n for cli or html) */
++    private $eol;
++    
++    /** @var string
++        buffer */
++    private $output;
++
++    /**
++     * It initialize this Outputter
++     */
++    public function initialize() {
++        if (php_sapi_name() == 'cli') {
++            $this-&gt;isCLI = TRUE;
++            $this-&gt;eol = &quot;\n&quot;;
++            $this-&gt;output .= $this-&gt;eol;
++        } else {
++            $this-&gt;output .= '&lt;table border=&quot;1&quot; style=&quot;font-family: verdana;font-size: 0.8em;background-color:white&quot; width=&quot;100%&quot;&gt;&lt;tr&gt;&lt;td&gt;';
++            $this-&gt;eol =  '&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;';
++        }
++    }
++
++    /** 
++     * It flushes (echoes) the output buffer on exit 
++     */
++    public function __destruct() {
++        if ($this-&gt;isCLI) {
++            $this-&gt;output .= $this-&gt;eol;
++        } else {
++            $this-&gt;output .= '&lt;/td&gt;&lt;/tr&gt;&lt;/table&gt;';
++        }
++        echo $this-&gt;output;
++    }
++
++    /** 
++     * It writes the message to the buffer 
++     */
++    protected function write($message) {
++        $this-&gt;output .= $message . $this-&gt;eol;
++    }
++
++    /** 
++     * It gets the output 
++     */
++    public function getOutput() {
++        return $this-&gt;output;
++    }
++}
+
+Added: exp/medick2/vendor/medick/lib/medick/ErrorHandler.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/medick/ErrorHandler.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/medick/ErrorHandler.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,54 @@
++&lt;?php
++//
++// $Id: ErrorHandler.php 452 2007-08-15 08:06:49Z aurelian $
++//
++
++class Error extends Exception {
++
++  public $file, $line, $trace;
++
++  public function __construct($message, $code, $file, $line, $trace ) {
++    parent::__construct($message, $code);
++    $this-&gt;file= $file;
++    $this-&gt;line= $line;
++    $this-&gt;trace= $trace;
++  }
++
++}
++
++/**
++ * The Medick Error Handler.
++ *
++ * @package medick.core
++ * @author Aurelian Oancea
++ */
++class ErrorHandler extends Object {
++
++    /**
++     * Setup this ErrorHandler
++     */
++    public function __construct() {
++        ini_set('docref_root', null);
++        ini_set('docref_ext', null);
++    }
++
++    /**
++     * Raise An Error
++     * 
++     * @param int errno
++     * @param string errstr
++     * @param string errfile
++     * @param int errline
++     * @throws Error
++     */
++    function raiseError($errno, $errstr, $errfile, $errline) {
++        $errRep = error_reporting();
++        if( ($errno &amp; $errRep) != $errno) {
++            return;
++        }
++        $trace = debug_backtrace();
++        array_shift($trace);
++        throw new Error( $errstr, $errno, $errfile, $errline, $trace );
++    }
++}
++
+
+Added: exp/medick2/vendor/medick/lib/medick/Medick.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/medick/Medick.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/medick/Medick.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,45 @@
++&lt;?php
++
++require 'medick/Object.php';
++require 'medick/ErrorHandler.php';
++
++class Medick extends Object {
++
++  private static $frameworks = array();
++
++  public static function prepare_application() {
++    
++    set_error_handler( array(new ErrorHandler(), 'raiseError') );
++
++    Medick::load_framework('context');
++    Medick::load_framework('logger');
++    Medick::load_framework('plugin');
++    Medick::load_framework('action_controller');
++
++    // Medick::load_framework('active_record');
++
++  }
++
++  public static function load_framework( $name ) {
++    if(in_array($name, Medick::$frameworks)) return;
++    // XXX: check the path
++    // require la fisierul init din eg. active/record/init.php
++    require str_replace( '_' , DIRECTORY_SEPARATOR, $name ) . DIRECTORY_SEPARATOR . 'init.php';
++    Medick::$frameworks[]= $name;
++  }
++
++  public static function framework_loaded($name) {
++    return isset(Medick::$frameworks[$name]);
++  }
++
++  public static function version() {
++    return '2.0.4';
++  }
++
++  public static function dump($o) {
++    echo &quot;&lt;pre&gt;&quot;;var_dump($o);echo &quot;&lt;/pre&gt;&quot;;
++    die();
++  }
++
++}
++
+
+Added: exp/medick2/vendor/medick/lib/medick/Object.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/medick/Object.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/medick/Object.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,18 @@
++&lt;?php
++
++class Object {
++
++  public function getClassName() {
++    return get_class($this);
++  }
++
++  public function toString() {
++    
++  }
++
++  public function __toString() {
++    return $this-&gt;toString();
++  }
++
++}
++
+
+Added: exp/medick2/vendor/medick/lib/plugin/IPlugin.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/plugin/IPlugin.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/plugin/IPlugin.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,15 @@
++&lt;?php
++
++interface IPlugin {
++
++  /*
++   * Should create a new Instance
++   */ 
++  public function __construct(IConfigurator $config, ILogger $logger);
++
++  /*
++   * Should return the plugin name
++   */
++  public function name();
++
++}
+
+Added: exp/medick2/vendor/medick/lib/plugin/Plugins.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/plugin/Plugins.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/plugin/Plugins.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,48 @@
++&lt;?php
++
++class Plugins extends Object {
++
++  static private $registry= array();
++
++  public static function loaded($plugin_name) {
++    return isset(Plugins::$registry[$plugin_name]);
++  }
++
++  public static function add( IPlugin $plugin ) {
++    Plugins::$registry[$plugin-&gt;name()]= $plugin;
++  }
++
++  //
++  // XXX: 
++  // -&gt; foo_bar should be FooBar
++  //
++  private static function plugin_class_name($plugin_path) {
++    $plugin_name= $plugin_path-&gt;getFilename();
++    return  ucfirst($plugin_name) . 'Plugin';
++  }
++
++  // should return IPlugin[]
++  public static function discover( IConfigurator $config, ILogger $logger ) {
++
++    if($config-&gt;property( 'plugin.autodiscovery') === false) return;
++    
++    //
++    // XXX.
++    // -&gt; plugin.path
++    // -&gt; multiple paths?
++    // -&gt; &lt;plugin&gt; section
++    //
++
++    foreach(new DirectoryIterator( MEDICK_PATH . '/../../vendor/plugins' ) as $plugin_path) {
++      $plugin_load_file = $plugin_path-&gt;getPathname() . DIRECTORY_SEPARATOR . 'init.php';
++      if( $plugin_path-&gt;isDir() &amp;&amp; is_file($plugin_load_file) &amp;&amp; require($plugin_load_file)) {
++        $class= Plugins::plugin_class_name($plugin_path);
++        Plugins::add( new $class($config, $logger) );
++        $logger-&gt;debugf( &quot;[frw] %s --&gt; %s&quot;, str_replace(MEDICK_PATH, '${'.$config-&gt;application_name().'}', $plugin_load_file), $class );
++      }
++    }
++
++  }
++
++}
++
+
+Added: exp/medick2/vendor/medick/lib/plugin/init.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/plugin/init.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/medick/lib/plugin/init.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,13 @@
++&lt;?php
++
++// Plugin Framework Autoload Definition
++
++function __plugin_autoload($class) {
++  $file= 'plugin'.DIRECTORY_SEPARATOR.$class.'.php';
++  if(is_file( dirname(__FILE__) . DIRECTORY_SEPARATOR . $class . '.php' )) {
++    return require $file;
++  }
++}
++
++spl_autoload_register('__plugin_autoload');
++
+
+Added: exp/medick2/vendor/plugins/foo/init.php
+===================================================================
+--- exp/medick2/vendor/plugins/foo/init.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/plugins/foo/init.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,12 @@
++&lt;?php
++
++// Foo Plugin loadder
++function __foo_plugin_autoload($class) {
++  $file= 'lib'.DIRECTORY_SEPARATOR.$class.'.php';
++  if(is_file( dirname(__FILE__) . DIRECTORY_SEPARATOR . $file )) {
++    return require $file;
++  }
++}
++
++spl_autoload_register('__foo_plugin_autoload');
++
+
+Added: exp/medick2/vendor/plugins/foo/lib/FooPlugin.php
+===================================================================
+--- exp/medick2/vendor/plugins/foo/lib/FooPlugin.php	2007-10-18 21:30:12 UTC (rev 462)
++++ exp/medick2/vendor/plugins/foo/lib/FooPlugin.php	2008-04-02 21:45:05 UTC (rev 463)
+@@ -0,0 +1,22 @@
++&lt;?php
++
++class FooPlugin extends Object implements IPlugin {
++
++  //
++  // array(
++  //    'name'   =&gt; $name,
++  //    'author' =&gt; $author,
++  //    'version'=&gt; $version,
++  //    'url'    =&gt; $url
++  //  )
++
++  public function __construct( IConfigurator $config, ILogger $logger ) {
++    // $logger-&gt;debugf( &quot;%s loaded&quot;, $this-&gt;name() );
++  }
++
++  public function name() {
++    return &quot;FooPlugin&quot;;
++  }
++
++}
++
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000244.html">[Medick-svn] r464 - trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#243">[ date ]</a>
+              <a href="thread.html#243">[ thread ]</a>
+              <a href="subject.html#243">[ subject ]</a>
+              <a href="author.html#243">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

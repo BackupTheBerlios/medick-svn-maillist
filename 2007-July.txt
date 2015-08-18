@@ -1,0 +1,1408 @@
+From aurelian at mail.berlios.de  Sun Jul  1 19:31:07 2007
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Sun, 1 Jul 2007 19:31:07 +0200
+Subject: [Medick-svn] r442 - tags
+Message-ID: <200707011731.l61HV7Xj028214@sheep.berlios.de>
+
+Author: aurelian
+Date: 2007-07-01 19:31:07 +0200 (Sun, 01 Jul 2007)
+New Revision: 442
+
+Removed:
+   tags/medick-0.1.1/
+   tags/medick-0.2.3/
+Log:
+ -- removed old version, maybe a spam killer
+
+
+
+From aurelian at mail.berlios.de  Fri Jul 20 16:31:54 2007
+From: aurelian at mail.berlios.de (aurelian at mail.berlios.de)
+Date: Fri, 20 Jul 2007 16:31:54 +0200
+Subject: [Medick-svn] r443 - applications/eltodo/app/views/project
+Message-ID: <200707201431.l6KEVsZF011823@sheep.berlios.de>
+
+Author: aurelian
+Date: 2007-07-20 16:31:48 +0200 (Fri, 20 Jul 2007)
+New Revision: 443
+
+Modified:
+   applications/eltodo/app/views/project/overview.phtml
+Log:
+ -- using URL helper
+
+Modified: applications/eltodo/app/views/project/overview.phtml
+===================================================================
+--- applications/eltodo/app/views/project/overview.phtml	2007-07-01 17:31:07 UTC (rev 442)
++++ applications/eltodo/app/views/project/overview.phtml	2007-07-20 14:31:48 UTC (rev 443)
+@@ -4,7 +4,7 @@
+ <div id="project_name" style="font-weight:bold;font-size:1.8em"><?=$project->name;?></div>
+ 
+ <script language="JavaScript">
+-    new Ajax.InPlaceEditor('project_name', '/eltodo/project/update_name',
++    new Ajax.InPlaceEditor('project_name','<?=URL::create('project','update_name')?>',
+     { callback: function(form, value) { return 'id=<?=$project->id;?>&name=' + value }});
+ </script>
+ 
+
+
+
+From aurelian at mail.berlios.de  Fri Jul 20 19:57:45 2007
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Fri, 20 Jul 2007 19:57:45 +0200
+Subject: [Medick-svn] r444 - in trunk: . libs libs/action/controller
+	libs/action/controller/http libs/action/view libs/context
+	libs/context/configurator
+Message-ID: <200707201757.l6KHvjGa006682@sheep.berlios.de>
+
+Author: aurelian
+Date: 2007-07-20 19:57:43 +0200 (Fri, 20 Jul 2007)
+New Revision: 444
+
+Added:
+   trunk/libs/context/configurator/
+Removed:
+   trunk/libs/configurator/
+Modified:
+   trunk/CHANGELOG
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/action/controller/http/Cookie.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+   trunk/libs/action/view/Base.php
+   trunk/libs/action/view/HTML.php
+   trunk/libs/action/view/JSON.php
+   trunk/libs/context/ContextManager.php
+   trunk/libs/context/configurator/XMLConfigurator.php
+Log:
+- (bug) fixed URL::create when rewrite is off (still needs more testing)
+- (bug) fixed a syntax error in JSON
+- moved configurator to context
+- start to work on ETag
+- start to unify logger messages
+- added methods to allow more control of HTTPResponse headers
+- some docs on HTTPResponse
+- using ORIG_PATH_INFO in HTTPRequest so it can work with lighttpd
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2007-07-20 14:31:48 UTC (rev 443)
++++ trunk/CHANGELOG	2007-07-20 17:57:43 UTC (rev 444)
+@@ -1,7 +1,15 @@
+ $Id$
+ 
+ 0.4.1-svn
+-
++    - (bug) fixed URL::create when rewrite is off (still needs more testing)
++    - (bug) fixed a syntax error in JSON
++    - moved configurator to context
++    - start to work on ETag
++    - start to unify logger messages
++    - added methods to allow more control of HTTPResponse headers
++    - some docs on HTTPResponse
++    - using ORIG_PATH_INFO in HTTPRequest so it can work with lighttpd
++    
+ 0.4.0 (17.Jun.2007)
+     - added HTTPRequest::is_xhr() method
+     - added JSON decode / encode
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2007-07-20 14:31:48 UTC (rev 443)
++++ trunk/libs/action/controller/Base.php	2007-07-20 17:57:43 UTC (rev 444)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+@@ -303,10 +303,7 @@
+      * @param Exception $exception
+      * @return Response
+      */
+-    public static function process_with_exception(
+-                                                   Request $request,
+-                                                   Response $response,
+-                                                   Exception $exception) {
++    public static function process_with_exception( Request $request, Response $response, Exception $exception ) {
+         $body = $response->getContent();
+         if(ob_get_length()) {
+             ob_end_clean();
+@@ -396,7 +393,8 @@
+         if ($this->use_layout) {
+             $layout= $this->use_layout === TRUE ? $this->params['controller'] : $this->use_layout;
+             $layout_file= $this->injector->getPath('layouts') . $layout . '.phtml';
+-            $this->logger->debug('Layout: ' . $layout_file);
++            $this->logger->debug('[Medick] >> Using layout: ' . 
++                str_replace( $this->config->getApplicationPath(), '${'.$this->config->getApplicationName().'}', $layout_file));
+             if (!is_file($layout_file)) {
+                 return $this->render_without_layout($template_file, $status);
+             } else {
+@@ -456,8 +454,20 @@
+             return;
+         }
+         $status = $status === NULL ? HTTPResponse::SC_OK : $status;
+-        $this->response->setStatus($status);
+-        $this->response->setContent($text);
++        // add ETag header
++        // if( $status == HTTPResponse::SC_OK && strlen($text) > 0 ) { 
++        //   $this->response->setHeader('ETag', md5($text));
++        //   if( $this->request->getHeader('HTTP_IF_NONE_MATCH') == md5($text) ) {
++        //     $this->response->setStatus(HTTPResponse::SC_NOT_MODIFIED);
++        //     $this->response->setContent('');
++        //   } else {
++            $this->response->setStatus($status);
++            $this->response->setContent($text);
++        //   }
++        // } else {
++        //   $this->response->setStatus($status);
++        //   $this->response->setContent($text);
++        // }
+         $this->action_performed = TRUE;
+         $this->logger->debug('Action performed.');
+ 
+@@ -466,7 +476,6 @@
+         }
+     }
+ 
+-
+     // }}}
+ 
+     private function register_flash() {
+@@ -586,7 +595,7 @@
+         }
+         $redirect_to .= '.' . $ext;
+         
+-        $this->logger->debug('Redirecting to: ' . $redirect_to);
++        $this->logger->debug('[Medick] >> Redirecting to: ' . $redirect_to);
+         $this->response->redirect($redirect_to);
+         $this->action_performed = TRUE;
+     }
+@@ -594,7 +603,7 @@
+     // XXX: not done.
+     // redirects to a know path (eg. /images/pic.jpg)
+     protected function redirect_to_path($path) {
+-        $this->logger->debug('Redirecting to: ' . $path);
++        $this->logger->debug('[Medick] >> Redirecting to: ' . $path);
+         $this->response->redirect($this->config->getWebContext()->server_name . $this->config->getWebContext()->document_root . '/' . $path);
+         $this->action_performed = TRUE;
+     }
+@@ -608,8 +617,6 @@
+ 
+     /**
+      * Performs the action
+-     *
+-     * The magic __common method is also invoked just before the action to perform
+      * 
+      * @param string, action_name, the action to perform
+      * @todo still to refactor.
+@@ -618,7 +625,6 @@
+      */
+     private function perform_action($action_name) {
+         $forbidden_actions = array('process', '__construct', '__destruct', '__common');
+-
+         $action= $this->createMethod($action_name);
+ 
+         if (
+@@ -630,19 +636,12 @@
+             $action_name = 'index';
+             $action= $this->createMethod($action_name);
+             if (!$action || $action->isStatic()) {
+-                throw new RoutingException(
+-                    'Cannot invoke default action, ``index" for this Route!',
+-                    'Method named ``index" is not defined in class: ' . $this->getClassName()
+-                );
++                throw new RoutingException('Cannot invoke default action, `index` for this Route!',
++                    'Method named `index` is not defined in class: `' . $this->getClassName() . '`');
+             }
+         }
+         $this->params['action'] = strtolower($action_name);
+         $this->template->assign('__action', $this->params['action']);
+-        // $this->logger->debug('Action:: ' . strtolower($action_name));
+-        // quickly load the common magick method.
+-        // if ($_common= $this->createMethod('__common')) {
+-        //     $_common->invoke($this);
+-        // }
+         // invoke the action.
+         $action->invoke($this);
+         if ($this->action_performed) return;
+@@ -685,17 +684,17 @@
+             $name= trim($name);
+             // try to create the method
+             if(!$filter= $this->createMethod( $name )) {
+-                $this->logger->warn(sprintf('[Medick] >> Cannot laod filter %s::%s, call to undefined method.',
+-                    $this->getClassName(),$name));
++                $this->logger->warn(sprintf('[Medick] >> Cannot laod filter `%s::%s`, call to undefined method.',
++                    $this->getClassName(), $name));
+                 continue;                
+             }
+             // a filter should be declared as protected.
+             if (!$filter->isProtected()) {
+-                $this->logger->warn('[Medick] >> Your filter, '. $name . ' is not declared as a
+-                    protected method for class ' . $this->getClassName() .', so it cannot be executed.');
++                $this->logger->warn('[Medick] >> Your filter, `'. $name . '` is not declared as a
++                    protected method for class `' . $this->getClassName() .'`, so it cannot be executed.');
+                 continue;
+             }
+-            $this->logger->debug('[Medick] >> Executing filter ' . $name. '.');
++            $this->logger->debug('[Medick] >> Executing filter: `' . $name. '`.');
+             $this->$name();
+             // $this->logger->debug('[Medick] >> Filter ' . $name . ' executed.');
+         }
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2007-07-20 14:31:48 UTC (rev 443)
++++ trunk/libs/action/controller/Injector.php	2007-07-20 17:57:43 UTC (rev 444)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+@@ -130,7 +130,7 @@
+     protected function injectModel( $name ) {
+         $location= $this->path['models'] . $name . '.php';
+         
+-        $this->logger->debug( '[Medick] >> Loading Model ' . ucfirst( $name ) . ' from ' . 
++        $this->logger->debug( '[Medick] >> Loading Model `' . ucfirst( $name ) . '` from ' . 
+             str_replace( $this->config->getApplicationPath(), '${'. $this->config->getApplicationName() .'}', $location) );
+ 
+         $this->includeFile($location, ucfirst($name));
+@@ -175,7 +175,7 @@
+         }
+ 
+         $file= $this->path['controllers'] . strtolower($name) . '_controller.php';
+-        $clazz= ucfirst($name)    . 'Controller';
++        $clazz= ucfirst($name) . 'Controller';
+ 
+         $this->includeFile($file, $clazz);
+ 
+@@ -214,7 +214,7 @@
+      */
+     protected function injectHelper($name) {
+         $helper_file= $this->path['helpers'] . $name . '_helper.php';
+-        $this->logger->debug('[Medick] >> Lading Helper ' . $name . ' from ' .
++        $this->logger->debug('[Medick] >> Loading Helper `' . $name . '` from ' .
+             str_replace( $this->config->getApplicationPath(), '${'. $this->config->getApplicationName() .'}', $helper_file) );
+         return $this->includeFile($helper_file, $name . '_helper.php');
+     }
+@@ -236,3 +236,4 @@
+         }
+     }
+ }
++
+
+Modified: trunk/libs/action/controller/http/Cookie.php
+===================================================================
+--- trunk/libs/action/controller/http/Cookie.php	2007-07-20 14:31:48 UTC (rev 443)
++++ trunk/libs/action/controller/http/Cookie.php	2007-07-20 17:57:43 UTC (rev 444)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ //////////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+@@ -140,3 +140,4 @@
+       );
+     }
+ }
++
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2007-07-20 14:31:48 UTC (rev 443)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2007-07-20 17:57:43 UTC (rev 444)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+@@ -38,12 +38,23 @@
+ /**
+  * A HTTPRequest
+  *
++ * This is known to work with PHP installed as mod_php with apache, 
++ * for other types of installation please contact me at aurelian [ at ] locknet [ 
++ * dot ] ro if you need advice!
++ *
++ * @todo unified Headers list (eg, convert all the headers to small caps)
++ * @todo use getHeader in isXhr method
++ * @todo maybe we need a URI Helper class?
++ * @todo test with php as cgi and with php with lighttpd
++ *
+  * @package medick.action.controller
+  * @subpackage http
+  * @author Aurelian Oancea
+  */
+ class HTTPRequest extends Request {
+ 
++    /** @var string
++        request method */
+     private $method;
+     
+     /** @var Session */
+@@ -62,11 +73,7 @@
+     private $cookies= array();
+     
+     /**
+-     * Constructor.
+      * It builds the HTTPRequest object
+-     *
+-     * @todo a URI Helper should be written.
+-     * @todo a Cookie class should be written.
+      */
+     public function HTTPRequest() {
+         $this->method= isset($_SERVER['REQUEST_METHOD']) ? strtoupper($_SERVER['REQUEST_METHOD']) : 'GET';
+@@ -77,18 +84,22 @@
+         foreach ($_COOKIE as $cookie_name=>$cookie_value) {
+             $this->cookies[$cookie_name]= new Cookie($cookie_name, $cookie_value);
+         }
+-        
+         unset($_REQUEST); unset($_GET); unset($_POST);
+ 
+-        if (array_key_exists('PATH_INFO', $_SERVER) && $_SERVER['PATH_INFO']!='' ) {
++        // setup requestUri
++        if (array_key_exists('PATH_INFO', $_SERVER) && $_SERVER['PATH_INFO'] != '' ) {
+             $this->requestUri= $_SERVER['PATH_INFO'];
+         }
+-        // TODO:
+-        //      -> this is for php as cgi, or where PATH_INFO is not available
+-        //      -> ORIG_PATH_INFO should also work
+-        //      -> should substract only the documnet root
+-        elseif (array_key_exists('REQUEST_URI', $_SERVER)) {
+-            $this->requestUri= substr($_SERVER['REQUEST_URI'],7);
++        // this is for php as cgi where PATH_INFO is not available
++        elseif (array_key_exists('ORIG_PATH_INFO', $_SERVER)) {
++            // todo: it should be also tested for non root locations eg:
++            // http://www.example.com/foo/medick/myapplication/project/create.html 
++            // should substract only /project/create.html!
++            // even if we don't use rewrite mode (rewrite=off in config file) this should work.
++            $this->requestUri= $_SERVER['ORIG_PATH_INFO']; 
++        } else {
++          // fallback to REQUEST_URI
++          $this->requestUri= substr($_SERVER['REQUEST_URI'],7);
+         }
+ 
+         $this->session = new Session();
+@@ -98,7 +109,7 @@
+     /**
+      * Get the current request method
+      *
+-     * @return string can be POST or GET
++     * @return string the method of this request (POST/GET/HEAD/DELETE/PUT)
+      */ 
+     public function getMethod() {
+         return $this->method;
+@@ -208,7 +219,12 @@
+     public function getRequestUri() {
+         return $this->requestUri;
+     }
+-
++    
++    /**
++     * Split the RequestURI by forward slash
++     *
++     * @return array with URI Parts
++     */  
+     public function getUriParts() {
+         if (is_null($this->requestUri)) return array();
+         return explode('/', trim($this->requestUri,'/'));
+@@ -223,9 +239,8 @@
+     }
+ 
+     // {{{ todos.
+-    public function getIP() {  }
+-    // public function getRequestURI() {  }
+-    public function getProtocol() {  }
++    public function getIP() { throw new MedickException('Method Not Implemented!'); }
++    public function getProtocol() { throw new MedickException('Method Not Implemented!'); }
+     // }}}
+ 
+     /**
+@@ -237,7 +252,7 @@
+     protected static function getAllHeaders() {
+         $headers= array();
+         if (function_exists('getallheaders')) {
+-            // this will work only for mod_php
++            // this will work only for mod_php!
+             $headers= getallheaders();
+         } else {
+             foreach($_SERVER as $header=>$value) {
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2007-07-20 14:31:48 UTC (rev 443)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2007-07-20 17:57:43 UTC (rev 444)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+@@ -35,6 +35,14 @@
+ /**
+  * HTTP Response Object 
+  *
++ * @todo: think of a cachable list of headers and how to send them.
++ *
++ * Caution: only 4 response statuses are implemented in Response::setStatus method:
++ *
++ * 200 OK, 304 Not Modified, 404 Not Found, 500 Internal Server Error
++ *
++ * Contact me if you need more.
++ *
+  * @package medick.action.controller
+  * @subpackage http
+  * @author Aurelian Oancea
+@@ -74,6 +82,14 @@
+     /**
+      * Sets the header $name with $value
+      *
++     * Caution: this method makes use of PHP function header() directly, meaning that 
++     * there is no instance variable to keep a list of all the headers that are build 
++     * during a Response sequence.
++     *
++     * <code>
++     *  $response->setHeader("X-Foo", "Bar");// <==> header("X-Foo: Bar");
++     * </code>
++     *
+      * @param string the name of the header
+      * @param mixed  the value of this header
+      */
+@@ -82,6 +98,43 @@
+     }
+ 
+     /**
++     * It gets the Response headers
++     *
++     * It gets only the headers that have been already sent, 
++     * eg. Content-Type header will not be on the list
++     *
++     * Caution: this method is not cachable, meaning that multiple calls on it
++     * will fetch the list of headers each time. There is no $headers instance 
++     * variable to keep a list that will be later sent with the Response.
++     *
++     * Caution: names and values are trimmed!
++     *
++     * <code>
++     * $response->setHeader("X-Foo", "Bar");
++     * $response->setHeader("X-Framework", "Medick "); // notice the space at the end
++     * $response->getHeaders(); // array("X-Foo"=>"Bar", "X-Framework"=>"Medick");
++     * </code>
++     */ 
++    public function getHeaders() {
++      $headers= array();
++      foreach(headers_list() as $header) {
++        list($name, $value) = explode(':', $header);
++        $headers[trim($name)]= trim($value);
++      }
++      return $headers;
++    }
++
++    public function getHeader( $name ) {
++      $headers= $this->getHeaders();
++      return isset($headers[trim($name)]) ? trim($headers[trim($name)]) : false;
++    }
++    
++    // bleah.
++    public function hasHeader( $name ) {
++      return in_array(trim($name), array_keys($this->getHeaders()));
++    }
++
++    /**
+      * Sets the content-type header
+      *
+      * @param string the content type
+@@ -89,7 +142,17 @@
+     public function setContentType($type) {
+         return $this->setHeader('Content-type', $type);
+     }
+-
++    
++    /**
++     * Sets a Cookie.
++     * 
++     * <code>
++     *  $response->setCookie(new Cookie("Foo", "Bar"));
++     * </code>
++     *
++     * @param Cookie Cookie
++     * @see Cookie
++     */ 
+     public function setCookie(Cookie $cookie) {
+         $this->setHeader('Set-Cookie', $cookie->toString());
+     }
+@@ -97,11 +160,9 @@
+     /**
+      * Sets the status of this response
+      *
+-     * @todo should choose between HTTP/1.1 and HTTP/1.0?
+-     * @todo add more cases in the switch
+      * @param HTTPResponse::SC_* the status of this response
+      */
+-    public function setStatus($status) {
++    public function setStatus( $status ) {
+         switch($status){
+             case HTTPResponse::SC_OK: // 200
+                 $message = 'OK';
+@@ -126,8 +187,9 @@
+      *
+      * @param string location, location to redirect to
+      */
+-    public function redirect($location) {
++    public function redirect( $location ) {
+         $this->setHeader('Location', $location);
+         $this->content = "<html><body>You are being <a href=\"$location\">redirected</a>.</body></html>";
+     }
+ }
++
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2007-07-20 14:31:48 UTC (rev 443)
++++ trunk/libs/action/view/Base.php	2007-07-20 17:57:43 UTC (rev 444)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2007-07-20 14:31:48 UTC (rev 443)
++++ trunk/libs/action/view/HTML.php	2007-07-20 17:57:43 UTC (rev 444)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+@@ -227,8 +227,8 @@
+         $config = Registry::get('__configurator');
+         $base   = (string)$config->getWebContext()->document_root;
+         $rewrite= (string)strtolower($config->getWebContext()->rewrite);
+-        if ($rewrite == 'false' or $rewrite == 'off' or $rewrite == '0') {
+-            $base .= '/index.php';
++        if ($rewrite == 'false' || $rewrite == 'off' || $rewrite == '0') {
++            $base .= 'index.php';
+         }
+         $buff= $base . '/';
+         if ($controller) $buff .= $controller . '/';
+
+Modified: trunk/libs/action/view/JSON.php
+===================================================================
+--- trunk/libs/action/view/JSON.php	2007-07-20 14:31:48 UTC (rev 443)
++++ trunk/libs/action/view/JSON.php	2007-07-20 17:57:43 UTC (rev 444)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ //////////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+@@ -48,7 +48,7 @@
+   
+   public static function decode($value) {
+       if(function_exists('json_decode')) return json_decode($value);
+-      throw new MedickException('JSON::decode(string $value) method is not implemented.')
++      throw new MedickException('JSON::decode(string $value) method is not implemented.');
+   }
+ 
+   public static function array_encode(Array $value) {
+@@ -84,3 +84,4 @@
+   }
+ 
+ }
++
+
+Modified: trunk/libs/context/ContextManager.php
+===================================================================
+--- trunk/libs/context/ContextManager.php	2007-07-20 14:31:48 UTC (rev 443)
++++ trunk/libs/context/ContextManager.php	2007-07-20 17:57:43 UTC (rev 444)
+@@ -32,7 +32,7 @@
+ //////////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-include_once('configurator/XMLConfigurator.php');
++include_once('context/configurator/XMLConfigurator.php');
+ 
+ /**
+  * 
+@@ -44,7 +44,6 @@
+     static protected $instance= NULL;
+ 
+     static public function load($stream, $environment) {
+-
+         if (ContextManager::$instance === NULL) {
+             ContextManager::$instance= new ContextManager($stream, $environment);
+         }
+@@ -59,4 +58,16 @@
+         return $this->configurator;
+     }
+     
++    public function getWebContext() {
++        
++    }
++    
++    public function getApplicationContext() {
++        
++    }
++    
++    public function getDatabaseContext() {
++        
++    }
++    
+ }
+
+Copied: trunk/libs/context/configurator (from rev 437, trunk/libs/configurator)
+
+Modified: trunk/libs/context/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2007-06-17 12:36:03 UTC (rev 437)
++++ trunk/libs/context/configurator/XMLConfigurator.php	2007-07-20 17:57:43 UTC (rev 444)
+@@ -32,7 +32,7 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-include_once('configurator/IConfigurator.php');
++include_once('context/configurator/IConfigurator.php');
+ 
+ /**
+  * XML file-based Configurator
+@@ -54,6 +54,8 @@
+         configuration file */
+     protected $config_file;
+     
++    /** @var string
++        environment */
+     protected $environment;
+     
+     /**
+@@ -70,7 +72,6 @@
+                 break;
+             }
+         }
+-
+         if ($this->sxe === NULL) {
+             throw new ConfiguratorException('Cannot find environment: ' . $env . ' in ' . $stream);
+         }
+@@ -186,7 +187,6 @@
+      *   $config->setProperty('application_path', 'C:\\Fast\\www\\medick\\app');
+      * </code>
+      *
+-     * Note: This method is used only in unittests.
+      * @param string, name, the name of the property.
+      * @param string, value, the value of the property.
+      * @throws ConfiguratorException if the property that we want to set don't exists in the xml file/string
+
+
+
+From aurelian at mail.berlios.de  Fri Jul 20 20:34:44 2007
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Fri, 20 Jul 2007 20:34:44 +0200
+Subject: [Medick-svn] r445 - trunk/bin
+Message-ID: <200707201834.l6KIYitB009424@sheep.berlios.de>
+
+Author: aurelian
+Date: 2007-07-20 20:34:44 +0200 (Fri, 20 Jul 2007)
+New Revision: 445
+
+Modified:
+   trunk/bin/medick.php
+Log:
+-- don't try to copy database.ini
+
+Modified: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2007-07-20 17:57:43 UTC (rev 444)
++++ trunk/bin/medick.php	2007-07-20 18:34:44 UTC (rev 445)
+@@ -114,8 +114,8 @@
+                               => 'scripts'. DIRECTORY_SEPARATOR . 'generator.php',
+   'skel' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'application.xml'
+                               => 'conf'   . DIRECTORY_SEPARATOR . $short_name.'.xml',
+-  'skel' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.ini'
+-                              => 'conf'   . DIRECTORY_SEPARATOR . 'database.ini',
++  // 'skel' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.ini'
++  //                               => 'conf'   . DIRECTORY_SEPARATOR . 'database.ini',
+   'skel' . DIRECTORY_SEPARATOR . 'db'     . DIRECTORY_SEPARATOR . 'schema.sql'
+                               => 'db'     . DIRECTORY_SEPARATOR . 'schema.sql',
+   'skel' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'index.html'
+
+
+
+From aurelian at mail.berlios.de  Sun Jul 22 00:02:16 2007
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Sun, 22 Jul 2007 00:02:16 +0200
+Subject: [Medick-svn] r446 - in trunk/libs: action/controller active/record
+Message-ID: <200707212202.l6LM2G4D024579@sheep.berlios.de>
+
+Author: aurelian
+Date: 2007-07-22 00:02:15 +0200 (Sun, 22 Jul 2007)
+New Revision: 446
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Field.php
+   trunk/libs/active/record/Validator.php
+Log:
+- Content-Type is set to application/json when rendering JSON
+- some typos and more on logger unification on ActiveRecord::Base
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2007-07-20 18:34:44 UTC (rev 445)
++++ trunk/libs/action/controller/Base.php	2007-07-21 22:02:15 UTC (rev 446)
+@@ -33,6 +33,7 @@
+ // }}}
+ 
+ include_once('action/view/Base.php');
++include_once('action/view/JSON.php');
+ 
+ /**
+  * Base Class For User Application Controllers
+@@ -429,9 +430,10 @@
+     }
+ 
+     protected function render_json($text, $status = NULL) {
+-        include_once('action/view/JSON.php');
+-        $this->response->setHeader('X-JSON', '('.JSON::encode($text).')');
+-        $this->render_text('', $status);
++        $this->response->setContentType('application/json');
++        $text= JSON::encode($text);
++        $this->response->setHeader('X-JSON', '('.$text.')');
++        $this->render_text($text, $status);
+     }
+ 
+     /**
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2007-07-20 18:34:44 UTC (rev 445)
++++ trunk/libs/active/record/Base.php	2007-07-21 22:02:15 UTC (rev 446)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+@@ -167,7 +167,7 @@
+             return Association::resolve($this, $name)->execute();
+         } catch (AssociationNotFoundException $anfEx) {
+             throw new ActiveRecordException(
+-                'Cannot Get the value of filed: `' . $name . '`. No such filed!', $anfEx->getMessage() );
++                'Cannot Get the value of field: `' . $name . '`. No such field!', $anfEx->getMessage() );
+         }
+     }
+     
+@@ -267,9 +267,9 @@
+     }
+     
+     /**
+-     * Check if it has a Filed with the given name
++     * Check if it has a Field with the given name
+      *
+-     * @param string Filed name
++     * @param string Field name
+      * @return bool
+      */ 
+     public function hasField($name) {
+@@ -296,7 +296,7 @@
+     }
+     
+     /**
+-     * It gets the Filed that is Primary Key on this table
++     * It gets the Field that is Primary Key on this table
+      *
+      * @return Field
+      */ 
+@@ -343,6 +343,7 @@
+         foreach ($this->fields as $field) {
+             if ($field->hasErrors()) {
+                 foreach($field->getErrors() as $error) {
++                    // $this->errors[$field->getName()][] = $error;
+                     $this->errors[] = $error;
+                 }
+                 // $this->errors= $field->getErrors();
+@@ -523,7 +524,7 @@
+         ActiveRecord::populateStmtValues($stmt, $this->getAffectedFields());
+         $af_rows = $stmt->executeUpdate();
+         $stmt->close();
+-        Registry::get('__logger')->debug('Query: ' . ActiveRecord::$conn->lastQuery);
++        Registry::get('__logger')->debug(sprintf("[Medick] >> SQLQuery\n\t%s", ActiveRecord::$conn->lastQuery));
+         // $this->_reset();
+         return $af_rows;
+     }
+@@ -604,7 +605,7 @@
+      */ 
+     protected static function execute($sql) {
+         $r= ActiveRecord::connection()->executeQuery($sql);
+-        Registry::get('__logger')->debug(ActiveRecord::$conn->lastQuery);
++        Registry::get('__logger')->debug( ActiveRecord::$conn->lastQuery );
+         return $r;
+     }
+ 
+@@ -653,7 +654,7 @@
+         if ($limit  = $builder->getLimit())  $stmt->setLimit($limit);
+         if ($offset = $builder->getOffset()) $stmt->setOffset($offset);
+         $rs= $stmt->executeQuery();
+-        Registry::get('__logger')->debug('Query: ' . ActiveRecord::$conn->lastQuery);
++        Registry::get('__logger')->debug(sprintf("[Medick] >> SQLQuery\n\t%s", ActiveRecord::$conn->lastQuery));
+         $stmt->close();
+         return $rs;
+     }
+
+Modified: trunk/libs/active/record/Field.php
+===================================================================
+--- trunk/libs/active/record/Field.php	2007-07-20 18:34:44 UTC (rev 445)
++++ trunk/libs/active/record/Field.php	2007-07-21 22:02:15 UTC (rev 446)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2007-07-20 18:34:44 UTC (rev 445)
++++ trunk/libs/active/record/Validator.php	2007-07-21 22:02:15 UTC (rev 446)
+@@ -316,7 +316,8 @@
+      * @see Validator::validates
+      */ 
+     public function validate(Field $field) {
+-        $supp= $this->record->getPrimaryKey()->getValue()===NULL ? '' : ' and ' . $this->record->getPrimaryKey()->getName() . '!=?';
++        $supp= $this->record->getPrimaryKey()->getValue()===NULL ? '' : 
++                ' and ' . $this->record->getPrimaryKey()->getName() . '!=?';
+         try {
+             ActiveRecord::build(
+                 new QueryBuilder($this->record->getClassName(), 
+
+
+
+From aurelian at mail.berlios.de  Mon Jul 23 19:53:07 2007
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Mon, 23 Jul 2007 19:53:07 +0200
+Subject: [Medick-svn] r448 - in trunk/libs/context: . configurator
+Message-ID: <200707231753.l6NHr7hv017041@sheep.berlios.de>
+
+Author: aurelian
+Date: 2007-07-23 19:53:06 +0200 (Mon, 23 Jul 2007)
+New Revision: 448
+
+Modified:
+   trunk/libs/context/ContextManager.php
+   trunk/libs/context/configurator/XMLConfigurator.php
+Log:
+ -- trimming space from XML file
+
+Modified: trunk/libs/context/ContextManager.php
+===================================================================
+--- trunk/libs/context/ContextManager.php	2007-07-23 17:44:43 UTC (rev 447)
++++ trunk/libs/context/ContextManager.php	2007-07-23 17:53:06 UTC (rev 448)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ //////////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+
+Modified: trunk/libs/context/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/context/configurator/XMLConfigurator.php	2007-07-23 17:44:43 UTC (rev 447)
++++ trunk/libs/context/configurator/XMLConfigurator.php	2007-07-23 17:53:06 UTC (rev 448)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+@@ -81,19 +81,19 @@
+     }
+ 
+     public function getEnvName() {
+-        return $this->environment;
++        return trim((string)$this->environment);
+     }
+     
+     public function getApplicationName() {
+-        return $this->application_name;
++        return trim((string)$this->application_name);
+     }
+     
+     public function getApplicationPath() {
+-        return $this->sxe->properties->path;
++        return trim((string)$this->sxe->properties->path);
+     }
+     
+     public function getWebContext() {
+-        return $this->sxe->web;
++        return trim((string)$this->sxe->web);
+     }
+     
+     public function getConfigFile() {
+@@ -230,5 +230,4 @@
+     public function toString() {
+         return $this->sxe->asXML();
+     }
+-
+ }
+
+
+
+From aurelian at mail.berlios.de  Mon Jul 23 19:56:28 2007
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Mon, 23 Jul 2007 19:56:28 +0200
+Subject: [Medick-svn] r449 - trunk/libs/context/configurator
+Message-ID: <200707231756.l6NHuSJp017255@sheep.berlios.de>
+
+Author: aurelian
+Date: 2007-07-23 19:56:27 +0200 (Mon, 23 Jul 2007)
+New Revision: 449
+
+Modified:
+   trunk/libs/context/configurator/IConfigurator.php
+   trunk/libs/context/configurator/INIConfigurator.php
+   trunk/libs/context/configurator/LoggerConfigurator.php
+   trunk/libs/context/configurator/XMLConfigurator.php
+Log:
+ -- don't convert everything to string :)
+
+Modified: trunk/libs/context/configurator/IConfigurator.php
+===================================================================
+--- trunk/libs/context/configurator/IConfigurator.php	2007-07-23 17:53:06 UTC (rev 448)
++++ trunk/libs/context/configurator/IConfigurator.php	2007-07-23 17:56:27 UTC (rev 449)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+
+Modified: trunk/libs/context/configurator/INIConfigurator.php
+===================================================================
+--- trunk/libs/context/configurator/INIConfigurator.php	2007-07-23 17:53:06 UTC (rev 448)
++++ trunk/libs/context/configurator/INIConfigurator.php	2007-07-23 17:56:27 UTC (rev 449)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/context/configurator/LoggerConfigurator.php
+===================================================================
+--- trunk/libs/context/configurator/LoggerConfigurator.php	2007-07-23 17:53:06 UTC (rev 448)
++++ trunk/libs/context/configurator/LoggerConfigurator.php	2007-07-23 17:56:27 UTC (rev 449)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+
+Modified: trunk/libs/context/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/context/configurator/XMLConfigurator.php	2007-07-23 17:53:06 UTC (rev 448)
++++ trunk/libs/context/configurator/XMLConfigurator.php	2007-07-23 17:56:27 UTC (rev 449)
+@@ -93,7 +93,7 @@
+     }
+     
+     public function getWebContext() {
+-        return trim((string)$this->sxe->web);
++        return $this->sxe->web;
+     }
+     
+     public function getConfigFile() {
+
+
+
+From aurelian at mail.berlios.de  Mon Jul 23 19:44:45 2007
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Mon, 23 Jul 2007 19:44:45 +0200
+Subject: [Medick-svn] r447 - trunk/libs/action/controller
+Message-ID: <200707231744.l6NHij89016622@sheep.berlios.de>
+
+Author: aurelian
+Date: 2007-07-23 19:44:43 +0200 (Mon, 23 Jul 2007)
+New Revision: 447
+
+Modified:
+   trunk/libs/action/controller/Dispatcher.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Response.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/Routing.php
+Log:
+ -- changed load order for http/request-response
+
+Modified: trunk/libs/action/controller/Dispatcher.php
+===================================================================
+--- trunk/libs/action/controller/Dispatcher.php	2007-07-21 22:02:15 UTC (rev 446)
++++ trunk/libs/action/controller/Dispatcher.php	2007-07-23 17:44:43 UTC (rev 447)
+@@ -63,6 +63,10 @@
+      * @return void.
+      */
+     public function dispatch() {
++      
++        include_once('action/controller/http/HTTPResponse.php');
++        include_once('action/controller/http/HTTPRequest.php');
++      
+         $request  = new HTTPRequest();
+         $response = new HTTPResponse();
+         try {
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2007-07-21 22:02:15 UTC (rev 446)
++++ trunk/libs/action/controller/Request.php	2007-07-23 17:44:43 UTC (rev 447)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+@@ -32,8 +32,6 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-include_once('action/controller/http/HTTPRequest.php');
+-
+ /**
+  * It is an incoming request from the user
+  * 
+
+Modified: trunk/libs/action/controller/Response.php
+===================================================================
+--- trunk/libs/action/controller/Response.php	2007-07-21 22:02:15 UTC (rev 446)
++++ trunk/libs/action/controller/Response.php	2007-07-23 17:44:43 UTC (rev 447)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2006 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+@@ -32,8 +32,6 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-include_once('action/controller/http/HTTPResponse.php');
+-
+ /**
+  * It is a Response that a medick application will always try to build.
+  * 
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2007-07-21 22:02:15 UTC (rev 446)
++++ trunk/libs/action/controller/Route.php	2007-07-23 17:44:43 UTC (rev 447)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2007 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2007-07-21 22:02:15 UTC (rev 446)
++++ trunk/libs/action/controller/Routing.php	2007-07-23 17:44:43 UTC (rev 447)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2006 Oancea Aurelian < aurelian [ at ] locknet [ dot ] ro >
++// Copyright (c) 2005 - 2006 Aurelian Oancea < aurelian [ at ] locknet [ dot ] ro >
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+
+
+
+From aurelian at mail.berlios.de  Mon Jul 23 20:19:54 2007
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Mon, 23 Jul 2007 20:19:54 +0200
+Subject: [Medick-svn] r450 - trunk/libs/action/controller
+Message-ID: <200707231819.l6NIJsVv018491@sheep.berlios.de>
+
+Author: aurelian
+Date: 2007-07-23 20:19:53 +0200 (Mon, 23 Jul 2007)
+New Revision: 450
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Injector.php
+Log:
+ -- catch the exception in Injector
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2007-07-23 17:56:27 UTC (rev 449)
++++ trunk/libs/action/controller/Base.php	2007-07-23 18:19:53 UTC (rev 450)
+@@ -380,17 +380,14 @@
+      * @return void
+      */
+     protected function render_file($template_file, $status = NULL) {
+-
+         if (!is_file($template_file)) {
+             throw new FileNotFoundException ('Cannot render unexistent template file:' . $template_file);
+         }
+-
+-        try {
+-            $this->injector->inject('helper', $this->params['controller']);
+-        } catch (FileNotFoundException $fnfEx) {
+-            $this->logger->info('Skiped helper: ' . $this->params['controller'] . '_helper.php');
+-        }
++        // load helper
++        $this->injector->inject('helper', $this->params['controller']);
++        // register flash
+         $this->register_flash();
++        
+         if ($this->use_layout) {
+             $layout= $this->use_layout === TRUE ? $this->params['controller'] : $this->use_layout;
+             $layout_file= $this->injector->getPath('layouts') . $layout . '.phtml';
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2007-07-23 17:56:27 UTC (rev 449)
++++ trunk/libs/action/controller/Injector.php	2007-07-23 18:19:53 UTC (rev 450)
+@@ -216,7 +216,11 @@
+         $helper_file= $this->path['helpers'] . $name . '_helper.php';
+         $this->logger->debug('[Medick] >> Loading Helper `' . $name . '` from ' .
+             str_replace( $this->config->getApplicationPath(), '${'. $this->config->getApplicationName() .'}', $helper_file) );
+-        return $this->includeFile($helper_file, $name . '_helper.php');
++        try {    
++          return $this->includeFile( $helper_file, $name . '_helper.php' );
++        } catch (FileNotFoundException $fnfEx) {
++          $this->logger->info( sprintf('[Medick] >> Skipped missing helper %s', $name) );
++        }
+     }
+ 
+     /**
+@@ -236,4 +240,3 @@
+         }
+     }
+ }
+-
+
+
+

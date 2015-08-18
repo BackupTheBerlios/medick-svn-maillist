@@ -1,0 +1,167 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r277 - trunk/libs/action/controller
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-November/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r277%20-%20trunk/libs/action/controller&In-Reply-To=%3C200511211943.jALJhfd3028485%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000072.html">
+   <LINK REL="Next"  HREF="000074.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r277 - trunk/libs/action/controller</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r277%20-%20trunk/libs/action/controller&In-Reply-To=%3C200511211943.jALJhfd3028485%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r277 - trunk/libs/action/controller">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Nov 21 20:43:41 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000072.html">[Medick-svn] r276 - trunk/libs/action/controller
+</A></li>
+        <LI>Next message: <A HREF="000074.html">[Medick-svn] r278 - trunk/libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#73">[ date ]</a>
+              <a href="thread.html#73">[ thread ]</a>
+              <a href="subject.html#73">[ subject ]</a>
+              <a href="author.html#73">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-11-21 20:43:39 +0100 (Mon, 21 Nov 2005)
+New Revision: 277
+
+Modified:
+   trunk/libs/action/controller/Base.php
+Log:
+ - [ ACBase ] Removed (clean-up) XMLConfigurator::getDefaultRoute calls in process_action (thanks Andrei for patch)
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-11-20 17:42:21 UTC (rev 276)
++++ trunk/libs/action/controller/Base.php	2005-11-21 19:43:39 UTC (rev 277)
+@@ -113,7 +113,7 @@
+      * @return Response
+      */
+     public static function process_with_exception(Request $request, Response $response, Exception $exception) {
+-        //@ob_end_clean();
++        @ob_end_clean();
+         $template = ActionViewBase::factory();
+         $template-&gt;error= $exception;
+         $text= $template-&gt;render_file(TOP_LOCATION . '/libs/action/controller/templates/error.phtml');
+@@ -322,26 +322,31 @@
+      */
+     private function perform_action($action_name) {
+         $forbidden_actions = array('process', '__construct', '__destruct', '__common');
+-
+-        // XXX. getDefaultRoute is not defined for XMLConfig.
+-        if( (is_null($action_name)) || (in_array($action_name, $forbidden_actions)) ) {
+-            $action_name = $this-&gt;config-&gt;getDefaultRoute()-&gt;action ? $this-&gt;config-&gt;getDefaultRoute()-&gt;action : 'index';
+-            $action = $this-&gt;createMethod($action_name);
+-            if (!$action || $action-&gt;isStatic()) throw new Exception('Cannot perform default action: ' . $action_name);
+-        } else {
+-            $action = $this-&gt;createMethod($action_name);
++        
++        $action= $this-&gt;createMethod($action_name);
++        
++        if (
++            is_null($action_name) || 
++            in_array($action_name, $forbidden_actions) || 
++            !$action || 
++            $action-&gt;isStatic() )
++        {
++            $action_name = 'index';
++            $action= $this-&gt;createMethod($action_name);
+             if (!$action || $action-&gt;isStatic()) {
+-                $action_name = $this-&gt;config-&gt;getDefaultRoute()-&gt;action ? $this-&gt;config-&gt;getDefaultRoute()-&gt;action : 'index';
+-                $this-&gt;perform_action($action_name);
+-                $this-&gt;action_performed = TRUE;
+-                return;
++                throw new RouteException(
++                    'Cannot invoke default action, \'index\' for this Route!',
++                    'Method named \'index\' is not defined in class: ' . $this-&gt;getClassName()
++                );
+             }
+         }
+-
++        
+         $this-&gt;params['action'] = strtolower($action_name);
+         $this-&gt;logger-&gt;debug('Incoming action:: ' . strtolower($action_name));
++        // invoke the action.
+         $action-&gt;invoke($this);
+         if ($this-&gt;action_performed) return;
++        // try to load the magick __common method.
+         if ($_common= $this-&gt;createMethod('__common')) {
+             $_common-&gt;invoke($this);
+         }
+@@ -371,11 +376,19 @@
+      */
+     private function add_before_filters() {
+         if (!is_array($this-&gt;before_filter)) {
+-            throw new Exception ($this-&gt;getClassName() . '\$before_filter should be an array of strings, each string representing a method name');
++            throw new MedickException(
++                $this-&gt;getClassName() . '-&gt;\$before_filter should be an array of strings, each string representing a method name');
+         }
+         foreach($this-&gt;before_filter as $filter_name) {
+-            $filter = $this-&gt;createMethod($filter_name);
+-            if (!$filter-&gt;isProtected()) throw new MedickException('Your filter is declared as public!');
++            if (!$filter= $this-&gt;createMethod($filter_name)) {
++                $this-&gt;logger-&gt;info('Could not create filter: `'.$filter_name.'`, skipping...');
++                continue;
++            }
++            // a filter should be declared as private.
++            if (!$filter-&gt;isProtected()) {
++                throw new MedickException(
++                    'Your filter,`'. $filter_name . '` is declared as a public method of class `' . $this-&gt;getClassName() .'` !');
++            }    
+             $this-&gt;$filter_name();
+         }
+     }
+@@ -385,7 +398,8 @@
+      */
+     private function add_models() {
+         if (!is_array($this-&gt;models)) {
+-            throw new Exception($this-&gt;getClassName . '-&gt;\$models should be an array of strings.');
++            throw new MedickException(
++                $this-&gt;getClassName . '-&gt;\$models should be an array of strings.');
+         }
+         $this-&gt;logger-&gt;debug('We have Models...');
+         foreach ($this-&gt;models as $model) {
+@@ -414,3 +428,4 @@
+         }
+     }
+ }
++
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000072.html">[Medick-svn] r276 - trunk/libs/action/controller
+</A></li>
+	<LI>Next message: <A HREF="000074.html">[Medick-svn] r278 - trunk/libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#73">[ date ]</a>
+              <a href="thread.html#73">[ thread ]</a>
+              <a href="subject.html#73">[ subject ]</a>
+              <a href="author.html#73">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

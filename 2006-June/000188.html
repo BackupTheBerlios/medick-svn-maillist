@@ -1,0 +1,185 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r405 - trunk/libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r405%20-%20trunk/libs/active/record&In-Reply-To=%3C200606091543.k59Fh97e027350%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000187.html">
+   <LINK REL="Next"  HREF="000189.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r405 - trunk/libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r405%20-%20trunk/libs/active/record&In-Reply-To=%3C200606091543.k59Fh97e027350%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r405 - trunk/libs/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Fri Jun  9 17:43:09 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000187.html">[Medick-svn] r404 - trunk/libs/action/view
+</A></li>
+        <LI>Next message: <A HREF="000189.html">[Medick-svn] r406 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#188">[ date ]</a>
+              <a href="thread.html#188">[ thread ]</a>
+              <a href="subject.html#188">[ subject ]</a>
+              <a href="author.html#188">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-06-09 17:43:08 +0200 (Fri, 09 Jun 2006)
+New Revision: 405
+
+Modified:
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/SQLCommand.php
+Log:
+ -- ActiveRecord:::Base, make some methods available only to child classes (protected)
+ -- ActiveRecord:::Base, try once before thwrowing a ReflectionException (speed improvment)
+ -- ActiveRecord:::SQLCommand separate array for joins
+
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-06-08 11:49:55 UTC (rev 404)
++++ trunk/libs/active/record/Base.php	2006-06-09 15:43:08 UTC (rev 405)
+@@ -536,7 +536,7 @@
+      * @param string sql query to execute
+      * @return ResultSet
+      */ 
+-    public static function execute($sql) {
++    protected static function execute($sql) {
+         $r= ActiveRecord::connection()-&gt;executeQuery($sql);
+         Registry::get('__logger')-&gt;debug(ActiveRecord::$conn-&gt;lastQuery);
+         return $r;
+@@ -567,9 +567,13 @@
+      *
+      * @return ReflectionClass
+      */
+-    public static function reflect_class($class_name) {
+-        Registry::get('__injector')-&gt;inject('model', strtolower($class_name));
+-        return new ReflectionClass($class_name);
++    protected static function reflect_class($class_name, $r=0) {
++        try {
++            return new ReflectionClass($class_name);
++        } catch (ReflectionException $rEx) {
++            Registry::get('__injector')-&gt;inject('model', strtolower($class_name));
++            if($r==0) return ActiveRecord::reflect_class($class_name, 1);
++        }
+     }
+     
+     /**
+@@ -577,7 +581,7 @@
+      *
+      * @return ResultSet
+      */
+-    public static function create_result_set(QueryBuilder $builder) {
++    protected static function create_result_set(QueryBuilder $builder) {
+         $stmt = ActiveRecord::connection()-&gt;prepareStatement($builder-&gt;compile()-&gt;getQueryString());
+         $i=1; foreach($builder-&gt;getBindings() as $binding) $stmt-&gt;set($i++, $binding);
+         if ($limit  = $builder-&gt;getLimit())  $stmt-&gt;setLimit($limit);
+@@ -594,7 +598,7 @@
+      * @throws RecordNotFoundException 
+      * @return ActiveRecord
+      */
+-    public static function fetch_one(ResultSet $rs, ReflectionClass $class) {
++    protected static function fetch_one(ResultSet $rs, ReflectionClass $class) {
+         if($rs-&gt;getRecordCount() != 1) {
+             $rs-&gt;close();
+             throw new RecordNotFoundException('Couldn\'t find a `' . $class-&gt;getName() . '` to match your query.');
+@@ -610,7 +614,7 @@
+      * Merge ResultSet into RowsAggregate
+      * @return RowsAggregate
+      */ 
+-    public static function fetch_all(ResultSet $rs, ReflectionClass $class) {
++    protected static function fetch_all(ResultSet $rs, ReflectionClass $class) {
+         $results= new RowsAggregate();
+         while($rs-&gt;next()) {
+             $results-&gt;add($class-&gt;newInstance($rs-&gt;getRow()));
+@@ -629,7 +633,7 @@
+         return ActiveRecord::connection();
+     }
+ 
+-    public static function connection() {
++    protected static function connection() {
+         if (ActiveRecord::$conn === NULL) {
+             ActiveRecord::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn());
+         }
+
+Modified: trunk/libs/active/record/SQLCommand.php
+===================================================================
+--- trunk/libs/active/record/SQLCommand.php	2006-06-08 11:49:55 UTC (rev 404)
++++ trunk/libs/active/record/SQLCommand.php	2006-06-09 15:43:08 UTC (rev 405)
+@@ -55,6 +55,8 @@
+ 
+     private $tables= array();
+ 
++    private $joins= array();
++    
+     private $wheres= array();
+ 
+     private $orderBy;
+@@ -90,7 +92,8 @@
+     }
+     
+     public function leftJoin($what) {
+-        $this-&gt;tables[]=$what;
++        // $this-&gt;tables[]=$what;
++        $this-&gt;joins[]= $what;
+         return $this;
+     }
+     
+@@ -100,6 +103,7 @@
+         $query .= $this-&gt;appendColumns();
+         // $query .= &quot; from &quot; . $this-&gt;from;
+         $query .= $this-&gt;appendFrom();
++        $query .= $this-&gt;appendJoins();
+         $query .= $this-&gt;appendWhere();
+         $query .= $this-&gt;appendOrderBy();
+         return $query;
+@@ -121,6 +125,11 @@
+         return $q;
+     }
+     
++    private function appendJoins() {
++        if (count($this-&gt;joins)) return &quot; &quot; . implode(&quot; &quot;, $this-&gt;joins);
++        else return &quot; &quot;;
++    }
++    
+     private function appendWhere() {
+         if (count($this-&gt;wheres)) return &quot; where &quot; . implode(&quot; and &quot;, $this-&gt;wheres);
+         else return &quot;&quot;;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000187.html">[Medick-svn] r404 - trunk/libs/action/view
+</A></li>
+	<LI>Next message: <A HREF="000189.html">[Medick-svn] r406 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#188">[ date ]</a>
+              <a href="thread.html#188">[ thread ]</a>
+              <a href="subject.html#188">[ subject ]</a>
+              <a href="author.html#188">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

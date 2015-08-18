@@ -1,0 +1,175 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r426 - in trunk: . bin libs/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-July/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r426%20-%20in%20trunk%3A%20.%20bin%20libs/medick&In-Reply-To=%3C200607231340.k6NDeFCX018332%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000205.html">
+   <LINK REL="Next"  HREF="000207.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r426 - in trunk: . bin libs/medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r426%20-%20in%20trunk%3A%20.%20bin%20libs/medick&In-Reply-To=%3C200607231340.k6NDeFCX018332%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r426 - in trunk: . bin libs/medick">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Sun Jul 23 15:40:15 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000205.html">[Medick-svn] r425 - applications/cookbook/conf	applications/eltodo/conf applications/testor/conf trunk	trunk/bin trunk/libs/active/record trunk/libs/configurator	trunk/skel trunk/skel/app trunk/skel/config trunk/skel/db	trunk/skel/public trunk/skel/public/stylesheet
+</A></li>
+        <LI>Next message: <A HREF="000207.html">[Medick-svn] r427 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#206">[ date ]</a>
+              <a href="thread.html#206">[ thread ]</a>
+              <a href="subject.html#206">[ subject ]</a>
+              <a href="author.html#206">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-07-23 15:40:13 +0200 (Sun, 23 Jul 2006)
+New Revision: 426
+
+Modified:
+   trunk/CHANGELOG
+   trunk/VERSION
+   trunk/bin/medick.php
+   trunk/libs/medick/Medick.php
+Log:
+ -- added overwrite feature to medick.php script, preparing to release pre2
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-07-23 12:20:32 UTC (rev 425)
++++ trunk/CHANGELOG	2006-07-23 13:40:13 UTC (rev 426)
+@@ -1,9 +1,9 @@
+ $Id$
+ (*) SVN version
+ 
+-0.3.0pre2-svn (*)
+-    - refactored bin/medick.php
++0.3.0pre2-svn (23.Jul.2006)
+     - moved database configuration settings from xml configuration file to database.ini  
++    - refactored bin/medick.php, now it also includes a overwrite feature
+ 
+ 0.3.0pre1 (08.Jul.2006)
+     - Implemented a new validation API
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-07-23 12:20:32 UTC (rev 425)
++++ trunk/VERSION	2006-07-23 13:40:13 UTC (rev 426)
+@@ -1 +1 @@
+-0.3.0pre2-svn
++0.3.0pre2
+
+Modified: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2006-07-23 12:20:32 UTC (rev 425)
++++ trunk/bin/medick.php	2006-07-23 13:40:13 UTC (rev 426)
+@@ -20,6 +20,15 @@
+ function write_file($contents, $to, $mode= FALSE) {
+     if (file_exists($to)) {
+         echo &quot;\texists {$to}\n&quot;;
++        echo &quot;Overwrite [Y/N]: &quot;;
++        $answer= trim(fgets(STDIN));
++        if (in_array(strtoupper($answer), array('Y','YES'))) {
++            if(@file_put_contents($to, $contents)) {
++                echo &quot;\toverwrote {$to}\n&quot;;
++            } else {
++                exit(&quot;Cannot overwrite {$to}, permissions?\n&quot;);
++            }
++        }
+     } else {
+         if(@file_put_contents($to, $contents)) {
+             echo &quot;\tcreate {$to}\n&quot;;
+@@ -61,6 +70,14 @@
+     }
+ }
+ 
++
++$app_name= isset($argv[1]) ? $argv[1] : exit(&quot;No Application Location Specified.\n&quot;);
++$x = explode(DIRECTORY_SEPARATOR,$app_name); $short_name = end($x);
++$app_location= getcwd() . DIRECTORY_SEPARATOR . $app_name;
++echo &quot;Creating application: $short_name\n&quot;;
++echo &quot;Location: $app_location\n\n&quot;;
++mk_dir($app_location);
++
+ $folders= array(
+     'app'         =&gt;'app',
+     'models'      =&gt;'app' . DIRECTORY_SEPARATOR . 'models',
+@@ -80,17 +97,6 @@
+     'img'         =&gt;'public' . DIRECTORY_SEPARATOR . 'images'
+   );
+ 
+-$app_name= isset($argv[1]) ? $argv[1] : exit(&quot;No Application Location Specified.\n&quot;);
+-
+-$x = explode(DIRECTORY_SEPARATOR,$app_name); $short_name = end($x);
+-
+-$app_location= getcwd() . DIRECTORY_SEPARATOR . $app_name;
+-
+-echo &quot;Creating application: $short_name\n&quot;;
+-echo &quot;Location:\n\t$app_location\n\n&quot;;
+-
+-mk_dir($app_location);
+-
+ foreach ($folders as $folder) {
+     mk_dir($app_location . DIRECTORY_SEPARATOR . $folder);
+ }
+@@ -98,7 +104,7 @@
+ copy_files($medick_core. DIRECTORY_SEPARATOR .
+             'skel'.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'javascript'.DIRECTORY_SEPARATOR,
+             $app_location.DIRECTORY_SEPARATOR.$folders['js']);
+-
++            
+ $files= array(
+   'skel' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'index.php'
+                               =&gt; 'public' . DIRECTORY_SEPARATOR . 'index.php',
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-07-23 12:20:32 UTC (rev 425)
++++ trunk/libs/medick/Medick.php	2006-07-23 13:40:13 UTC (rev 426)
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.3.0pre2-svn';
++        return '0.3.0pre2';
+     }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000205.html">[Medick-svn] r425 - applications/cookbook/conf	applications/eltodo/conf applications/testor/conf trunk	trunk/bin trunk/libs/active/record trunk/libs/configurator	trunk/skel trunk/skel/app trunk/skel/config trunk/skel/db	trunk/skel/public trunk/skel/public/stylesheet
+</A></li>
+	<LI>Next message: <A HREF="000207.html">[Medick-svn] r427 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#206">[ date ]</a>
+              <a href="thread.html#206">[ thread ]</a>
+              <a href="subject.html#206">[ subject ]</a>
+              <a href="author.html#206">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

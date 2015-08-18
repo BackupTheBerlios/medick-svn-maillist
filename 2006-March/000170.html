@@ -1,0 +1,776 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r386 - applications/testor/app/controllers applications/testor/app/views applications/testor/app/views/req applications/testor/conf applications/testor/db trunk trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r386%20-%20applications/testor/app/controllers%20applications/testor/app/views%20applications/testor/app/views/req%20applications/testor/conf%20applications/testor/db%20trunk%20trunk/libs/action/controller%20trunk/libs/action/controller/session%20trunk/libs/active/record&In-Reply-To=%3C200603271924.k2RJOESW031963%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000169.html">
+   <LINK REL="Next"  HREF="000171.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r386 - applications/testor/app/controllers applications/testor/app/views applications/testor/app/views/req applications/testor/conf applications/testor/db trunk trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r386%20-%20applications/testor/app/controllers%20applications/testor/app/views%20applications/testor/app/views/req%20applications/testor/conf%20applications/testor/db%20trunk%20trunk/libs/action/controller%20trunk/libs/action/controller/session%20trunk/libs/active/record&In-Reply-To=%3C200603271924.k2RJOESW031963%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r386 - applications/testor/app/controllers applications/testor/app/views applications/testor/app/views/req applications/testor/conf applications/testor/db trunk trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Mar 27 21:24:14 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000169.html">[Medick-svn] r385 - trunk/libs/active/record
+</A></li>
+        <LI>Next message: <A HREF="000171.html">[Medick-svn] r387 - applications/testor/app/models trunk trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/action/view
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#170">[ date ]</a>
+              <a href="thread.html#170">[ thread ]</a>
+              <a href="subject.html#170">[ subject ]</a>
+              <a href="author.html#170">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-03-27 21:24:03 +0200 (Mon, 27 Mar 2006)
+New Revision: 386
+
+Added:
+   applications/testor/app/controllers/req_controller.php
+   applications/testor/app/views/req/
+   applications/testor/app/views/req/index.phtml
+   trunk/libs/action/controller/session/CreoleSessionContainer.php
+Modified:
+   applications/testor/app/controllers/tone_controller.php
+   applications/testor/conf/testor.routes.php
+   applications/testor/db/schema.sql
+   trunk/boot.php
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/session/ISessionContainer.php
+   trunk/libs/action/controller/session/Session.php
+   trunk/libs/active/record/Base.php
+Log:
+ -- added Route Requirements;
+ -- initial import of CreoleSessionContainer;
+ -- minor changes on testor sample application.
+
+
+Added: applications/testor/app/controllers/req_controller.php
+===================================================================
+--- applications/testor/app/controllers/req_controller.php	2006-03-25 17:04:15 UTC (rev 385)
++++ applications/testor/app/controllers/req_controller.php	2006-03-27 19:24:03 UTC (rev 386)
+@@ -0,0 +1,21 @@
++&lt;?php
++/**
++ * @desc: Testing Route Requirements 
++ */ 
++class ReqController extends ApplicationController {
++    
++    protected $use_layout= 'main';
++    
++    /**
++     * @desc: see conf/testor.routes.php
++     */ 
++    public function index() {
++        if (!isset($this-&gt;params['number'])) {
++            $this-&gt;flash('notice', 'redirected');
++            return $this-&gt;redirect_to(NULL, 'req', array(rand()));
++        }
++        $this-&gt;number= $this-&gt;request-&gt;getParameter('number');
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/controllers/req_controller.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/testor/app/controllers/tone_controller.php
+===================================================================
+--- applications/testor/app/controllers/tone_controller.php	2006-03-25 17:04:15 UTC (rev 385)
++++ applications/testor/app/controllers/tone_controller.php	2006-03-27 19:24:03 UTC (rev 386)
+@@ -30,12 +30,8 @@
+      */
+     public function create() {
+         $this-&gt;tone= new Tone($this-&gt;request-&gt;getParameter('tone'));
+-        // status is a check-box
+-        if (!isset($this-&gt;params['tone']['status'])) {
+-          $this-&gt;tone-&gt;status= 0;
+-        } else {
+-          $this-&gt;tone-&gt;status=1;
+-        }
++        $this-&gt;set_status($this-&gt;tone);
++
+         if ($this-&gt;tone-&gt;save() === FALSE) {
+             $this-&gt;render('add');
+         } else {
+@@ -61,10 +57,8 @@
+      */
+     public function update() {
+         try {
+-            $this-&gt;tone= Tone::find($this-&gt;request-&gt;getParameter('id'));
+-            $this-&gt;tone-&gt;attributes($this-&gt;request-&gt;getParameter('tone'));
+-            if (!isset($this-&gt;params['tone']['status'])) $this-&gt;tone-&gt;status=0;
+-            $this-&gt;logger-&gt;debug($this-&gt;request-&gt;getParameter('tone'));
++            $this-&gt;tone= Tone::find($this-&gt;request-&gt;getParameter('id'))-&gt;attributes($this-&gt;request-&gt;getParameter('tone'));
++            $this-&gt;set_status($this-&gt;tone);
+             if ($this-&gt;tone-&gt;save() === FALSE) {
+                 $this-&gt;render('edit');
+             } else {
+@@ -78,6 +72,14 @@
+         }
+     }
+ 
++    private function set_status($tone) {
++        if (!isset($this-&gt;params['tone']['status'])) {
++          $tone-&gt;status=0;
++        } else {
++          $tone-&gt;status=1;
++        }
++    }
++    
+     /**
+      * @desc: removes a &lt;em&gt;tone&lt;/em&gt;
+      */
+@@ -85,7 +87,7 @@
+         try {
+             $tone= Tone::find($this-&gt;request-&gt;getParameter('id'));
+             $tone-&gt;delete();
+-            $this-&gt;flash('notice', $tone-&gt;name . ' succesfully removed');
++            $this-&gt;flash('notice', '&lt;em&gt;' . $tone-&gt;name . '&lt;/em&gt; succesfully removed');
+             $this-&gt;redirect_to('index');
+         } catch (ActiveRecordException $arEx) {
+             $this-&gt;flash('error', $arEx-&gt;getMessage());
+
+Added: applications/testor/app/views/req/index.phtml
+===================================================================
+--- applications/testor/app/views/req/index.phtml	2006-03-25 17:04:15 UTC (rev 385)
++++ applications/testor/app/views/req/index.phtml	2006-03-27 19:24:03 UTC (rev 386)
+@@ -0,0 +1,12 @@
++ReqController#index
++
++&lt;? if(isset($flash['notice'])): ?&gt;
++    &lt;div class=&quot;flash_notice&quot;&gt;
++        &lt;div class=&quot;label&quot;&gt;Note&lt;/div&gt;
++        &lt;div class=&quot;content&quot;&gt;&lt;?=$flash['notice'];?&gt;&lt;/div&gt;
++    &lt;/div&gt;
++&lt;? endif; ?&gt;
++
++&lt;br /&gt;
++Number: &lt;?=$number;?&gt;
++
+
+
+Property changes on: applications/testor/app/views/req/index.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/testor/conf/testor.routes.php
+===================================================================
+--- applications/testor/conf/testor.routes.php	2006-03-25 17:04:15 UTC (rev 385)
++++ applications/testor/conf/testor.routes.php	2006-03-27 19:24:03 UTC (rev 386)
+@@ -4,5 +4,12 @@
+ // @TODO: write some documentation about this file
+ 
+ $map= Map::getInstance();
++$map-&gt;add(new Route('/main/index', Route::WELCOME, array('controller'=&gt;'main', 'action'=&gt;'index')));
++
++$route= new Route(':controller/:number');
++$route-&gt;setDefault('action','index');
++$route-&gt;setRequirement('number', '/([0-9])/');
++$map-&gt;add($route);
++
+ $map-&gt;add(new Route(':controller/:action/:id'));
+ ?&gt;
+
+Modified: applications/testor/db/schema.sql
+===================================================================
+--- applications/testor/db/schema.sql	2006-03-25 17:04:15 UTC (rev 385)
++++ applications/testor/db/schema.sql	2006-03-27 19:24:03 UTC (rev 386)
+@@ -18,3 +18,8 @@
+ 
+ INSERT INTO `strones` (`id`,`inc`) VALUES (1,0);
+ 
++CREATE TABLE c_session (
++	`session_id` VARCHAR (255) PRIMARY KEY,
++	`session_data` TEXT,
++	`session_lastmodified` DATETIME
++) ENGINE=InnoDB;
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2006-03-25 17:04:15 UTC (rev 385)
++++ trunk/boot.php	2006-03-27 19:24:03 UTC (rev 386)
+@@ -53,4 +53,3 @@
+ include_once('medick/Medick.php');
+ set_error_handler(array(new ErrorHandler(), 'raiseError'));
+ include_once('action/controller/Dispatcher.php');
+-
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-03-25 17:04:15 UTC (rev 385)
++++ trunk/libs/action/controller/Base.php	2006-03-27 19:24:03 UTC (rev 386)
+@@ -56,12 +56,14 @@
+  * a method named &lt;i&gt;__common&lt;/i&gt; is always invoked before the action itself. You can use this
+  * method for assing template variables common to all your templates (like a menu with items from database).
+  *
+- * ActionController also defines some magic medick template variables. We will use &lt;i&gt;__&lt;/i&gt; to mark them.
++ * ActionController also defines some magic medick template variables. We will use &lt;b&gt;__&lt;/b&gt; to mark them.
+  * Predefined medick variables available in templates:
+  * &lt;ul&gt;
+  *  &lt;li&gt;__base: the document root&lt;/li&gt;
+  *  &lt;li&gt;__server_name: this server name&lt;/li&gt;
+  *  &lt;li&gt;__controller: incoming controller&lt;/li&gt;
++ *  &lt;li&gt;__action: curent action&lt;/li&gt;
++ *  &lt;li&gt;__version: medick version&lt;/li&gt;
+  * &lt;/ul&gt;
+  * 
+  * Other features:
+@@ -315,7 +317,6 @@
+         $this-&gt;request  = $request;
+         $this-&gt;response = $response;
+         $this-&gt;session  = $request-&gt;getSession();
+-        // $this-&gt;session-&gt;start();
+         $this-&gt;params   = $request-&gt;getParameters();
+ 
+         $this-&gt;logger   = Registry::get('__logger');
+@@ -329,11 +330,11 @@
+         // predefined variables:
+         // TODO: check if we have a / at the end, if not, add one
+         
+-        $this-&gt;template-&gt;assign('__base', $this-&gt;config-&gt;getWebContext()-&gt;document_root);
++        $this-&gt;template-&gt;assign('__base', (string)$this-&gt;config-&gt;getWebContext()-&gt;document_root);
+         $this-&gt;template-&gt;assign('__server', (string)$this-&gt;config-&gt;getWebContext()-&gt;server_name);
+-        
+         $this-&gt;template-&gt;assign('__controller', $this-&gt;params['controller']);
+         $this-&gt;template-&gt;assign('__version', Medick::getVersion());
++        
+         $this-&gt;logger-&gt;debug($this-&gt;request-&gt;toString());
+     }
+ 
+@@ -367,19 +368,23 @@
+      * @param string controller defaults to NULL, the current controller
+      * @param array params, additional parameters to pass with this redirect.
+      */
+-    protected function redirect_to($action, $controller= NULL, $params = array()) {
+-        // get the curent controller, if NULL is passed.
+-        if (is_null($controller)) {
++    protected function redirect_to($action, $controller= NULL, $params = array(), $ext='html') {
++        if ($controller === NULL) {
+             $controller= $this-&gt;params['controller'];
+         }
++        
++        $rewrite = strtolower($this-&gt;config-&gt;getWebContext()-&gt;rewrite);
++        
+         $redirect_to= $this-&gt;config-&gt;getWebContext()-&gt;server_name . $this-&gt;config-&gt;getWebContext()-&gt;document_root . '/';
+-        $rewrite = strtolower($this-&gt;config-&gt;getWebContext()-&gt;rewrite);
++        
+         if ($rewrite == 'false' || $rewrite == 'off' || $rewrite == '0') {
+             $redirect_to .= 'index.php/';
+         }
+-        $redirect_to .= $controller . '/' . $action;
+-        if (count($params)) $redirect_to .= '/' . implode('/', $params);
+-        $redirect_to .= '.html';
++        $redirect_to .= $controller;
++        if ($action !== NULL) $redirect_to .= '/' . $action;
++        if (count($params))   $redirect_to .= '/' . implode('/', $params);
++        $redirect_to .= '.' . $ext;
++        
+         $this-&gt;logger-&gt;debug('Redirecting to: ' . $redirect_to);
+         $this-&gt;response-&gt;redirect($redirect_to);
+         $this-&gt;action_performed = TRUE;
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2006-03-25 17:04:15 UTC (rev 385)
++++ trunk/libs/action/controller/Route.php	2006-03-27 19:24:03 UTC (rev 386)
+@@ -116,7 +116,6 @@
+  *  $request-&gt;getParameter('id'); // =&gt; 12
+  * &lt;/code&gt;
+  * @see Map, ActionControllerRouting, Component
+- * @todo Route Requirements
+  * @todo more docs
+  * @package medick.action.controller
+  * @subpackage routing
+@@ -156,6 +155,10 @@
+         a list with default values */
+     private $defaults;
+ 
++    /** @var array
++        a list with this route requirements */
++    private $requirements;
++    
+     /** @var bool
+         flag to indicate that this route is loaded.
+         on initial phase, we will use this flag for knowing 
+@@ -184,34 +187,16 @@
+      * @param array requirements the route requirements
+      */
+     public function Route($route_list, $name = '', /*Array*/ $defaults = array(), /*Array*/ $requirements = array()) {
+-        $this-&gt;components = new Collection();
+-        $this-&gt;route_list = $route_list;
+-        $this-&gt;defaults   = $defaults;
+-        $this-&gt;name       = $name==''?Route::AUTO:$name;
+-        $this-&gt;isLoaded   = false;
++        $this-&gt;components   = new Collection();
++        $this-&gt;route_list   = $route_list;
++        $this-&gt;defaults     = $defaults;
++        $this-&gt;requirements = $requirements;
++        $this-&gt;name         = $name=='' ? Route::AUTO : $name;
++        $this-&gt;isLoaded     = false;
+         $this-&gt;loadComponents();
+     }
+     
+     /**
+-     * Helper Method for loading the Route Components
+-     * 
+-     * @return void
+-     */ 
+-    private function loadComponents() {
+-        $parts= explode('/', trim($this-&gt;route_list, '/'));
+-        foreach ($parts as $key=&gt;$element) {
+-            if (preg_match('/:[a-z0-9_\-]+/',$element, $match)) {
+-                $c= new Component(substr(trim($match[0]), 1));
+-                $c-&gt;setDynamic(true);
+-            } else {
+-                $c= new Component($element);
+-                $c-&gt;setDynamic(false);
+-            }
+-            $this-&gt;components-&gt;add($c);
+-        }
+-    }
+-
+-    /**
+      * It gets the name of this Route.
+      * 
+      * @see Route::getNameToHuman
+@@ -250,6 +235,25 @@
+     }
+     
+     /**
++     * Sets an array of route requirements
++     * 
++     * @param array the list of requirements
++     */
++    public function setRequirements(/*Array*/ $requirements= array()) {
++        foreach ($requirements as $name=&gt;$value) $this-&gt;setRequirement($name, $value);
++    }
++
++    /**
++     * Sets a route requirement
++     * 
++     * @param string
++     * @param string
++     */
++    public function setRequirement($name, $value) {
++        $this-&gt;requirements[$name]=$value;
++    }
++    
++    /**
+      * Gets this Route List Definition
+      *
+      * @return string the route list definition
+@@ -301,6 +305,12 @@
+                 if (isset($parts[$it-&gt;key()])) {
+                     if (!$component-&gt;isDynamic() &amp;&amp; $component-&gt;getName() != $this-&gt;ignoreExtension($parts[$it-&gt;key()]) ) {
+                         return false;
++                    } elseif (
++                        isset($this-&gt;requirements[$component-&gt;getName()]) 
++                            &amp;&amp; 
++                        !preg_match($this-&gt;requirements[$component-&gt;getName()], $parts[$it-&gt;key()]) )
++                    {
++                        return false;
+                     } else {
+                         $this-&gt;merges[$component-&gt;getName()] = $this-&gt;ignoreExtension($parts[$it-&gt;key()]);
+                     }
+@@ -313,8 +323,36 @@
+         $this-&gt;load($request);
+         return true;
+     }
+-
++    
+     /**
++     * Creates a Controller Instance
++     * 
++     * @throws RoutingException
++     * @return ActionControllerBase
++     */ 
++    public function createControllerInstance(Request $request) {
++        if (!$this-&gt;isLoaded) $this-&gt;load($request);
++        try {
++            Registry::get('__logger')-&gt;debug($this-&gt;toString());
++            return Registry::put(new Injector(), '__injector')-&gt;inject('controller', $request-&gt;getParameter('controller'));
++        } catch (FileNotFoundException $fnfEx) {
++            throw new RoutingException('Cannot create a controller instance, ' . $fnfEx-&gt;getMessage());
++        }
++    }
++    
++    /**
++     * A String representation of this Route
++     *
++     * @return string
++     */ 
++    public function toString() {
++        return sprintf('{%s}--&gt;Name: %s; List: %s;', 
++                        $this-&gt;getClassName(), 
++                        $this-&gt;getNameToHuman(), 
++                        $this-&gt;route_list);
++    }
++    
++    /**
+      * Helper method, will remove everithing after . in parts
+      * 
+      * @param string
+@@ -384,29 +422,22 @@
+     }
+     
+     /**
+-     * Creates a Controller Instance
++     * Helper Method for loading the Route Components
+      * 
+-     * @throws RoutingException
+-     * @return ActionControllerBase
++     * @return void
+      */ 
+-    public function createControllerInstance(Request $request) {
+-        if (!$this-&gt;isLoaded) $this-&gt;load($request);
+-        try {
+-            Registry::get('__logger')-&gt;debug($this-&gt;toString());
+-            return Registry::put(new Injector(), '__injector')-&gt;inject('controller', $request-&gt;getParameter('controller'));
+-        } catch (FileNotFoundException $fnfEx) {
+-            throw new RoutingException('Cannot create a controller instance, ' . $fnfEx-&gt;getMessage());
++    private function loadComponents() {
++        $parts= explode('/', trim($this-&gt;route_list, '/'));
++        foreach ($parts as $key=&gt;$element) {
++            if (preg_match('/:[a-z0-9_\-]+/',$element, $match)) {
++                $c= new Component(substr(trim($match[0]), 1));
++                $c-&gt;setDynamic(true);
++            } else {
++                $c= new Component($element);
++                $c-&gt;setDynamic(false);
++            }
++            $this-&gt;components-&gt;add($c);
+         }
+     }
+-    
+-    /**
+-     * A String representation of this Route
+-     *
+-     * @return string
+-     */ 
+-    public function toString() {
+-        return sprintf(&quot;{%s}--&gt;Name: %s; List: %s;&quot;, $this-&gt;getClassName(), $this-&gt;getNameToHuman(), $this-&gt;route_list);
+-    }
+-    
++
+ }
+-
+
+Added: trunk/libs/action/controller/session/CreoleSessionContainer.php
+===================================================================
+--- trunk/libs/action/controller/session/CreoleSessionContainer.php	2006-03-25 17:04:15 UTC (rev 385)
++++ trunk/libs/action/controller/session/CreoleSessionContainer.php	2006-03-27 19:24:03 UTC (rev 386)
+@@ -0,0 +1,187 @@
++lo&lt;?php
++// {{{ License
++//////////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005, 2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++//////////////////////////////////////////////////////////////////////////////////
++// }}}
++
++include_once('action/controller/session/ISessionContainer.php');
++
++/**
++ * Creole Session Container.
++ * 
++ * It requires a Database table defined like this:
++ * &lt;code&gt;
++ * CREATE TABLE c_session (
++ *	`session_id` VARCHAR (255) PRIMARY KEY,
++ *	`session_data` TEXT,
++ *	`session_lastmodified` DATETIME
++ * );
++ * &lt;/code&gt;
++ * 
++ * &lt;b&gt;Warning:&lt;/b&gt; this class was tested only with mysql.
++ *  
++ * @package medick.action.controller
++ * @subpackage session
++ * @author Oancea Aurelian 
++ */
++class CreoleSessionContainer extends Object implements ISessionContainer {
++
++	/** @var CreoleConnection */
++	protected $conn=null;
++	
++	/** @var Logger */
++	protected $logger= null;
++	
++	/**
++	 * Constructor
++	 */
++	public function CreoleSessionContainer() {
++		$this-&gt;conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn());
++		$this-&gt;logger= Registry::get('__logger');
++	}
++
++	public function open($save_path, $session_name) {
++		$this-&gt;gc();
++		return true;
++	}
++	
++	public function close() {
++	    $this-&gt;conn-&gt;close();
++		return true;
++	}
++
++	public function read($id) {
++        $timeout = time() - ini_get('session.gc_maxlifetime');
++		$stmt = $this-&gt;conn-&gt;prepareStatement('SELECT session_data FROM c_session   
++											   WHERE session_id = ? AND session_lastmodified &gt; ' . $timeout);
++		$stmt-&gt;setString(1, $id);
++
++		try {
++			$rs = $stmt-&gt;executeQuery();
++			
++			if($rs-&gt;getRecordCount()==0) {
++				return '';
++			}
++			$rs-&gt;first();
++			return $rs-&gt;get('session_data');
++			
++		} catch (SQLException $sqlEx) {
++            $this-&gt;logger-&gt;debug($sqlEx-&gt;getMessage());
++			return false;
++		}
++	}
++
++
++	public function write($id,$session_data){
++		// 1. select
++		$stmt = $this-&gt;conn-&gt;prepareStatement('SELECT session_id FROM c_session WHERE session_id=?');
++		$stmt-&gt;setString(1,$id);
++		
++		try{
++			$rs = $stmt-&gt;executeQuery();
++			// 2. count results:
++			if($rs-&gt;getRecordCount()==1) {
++				// 3. update:
++				$stmt = $this-&gt;conn-&gt;prepareStatement('UPDATE c_session SET session_data=?,' . 
++													  ' session_lastmodified=now() WHERE session_id=?');
++				$stmt-&gt;setString(1,$session_data);
++				$stmt-&gt;setString(2,$id);
++
++				try{
++					$rs=$stmt-&gt;executeUpdate();
++					return true;
++				} catch (SQLException $sqlEx){
++					$this-&gt;logger-&gt;debug($sqlEx-&gt;getMessage());
++					return false;
++				}
++				
++			} else {
++				// 4. insert
++				$stmt = $this-&gt;conn-&gt;prepareStatement('INSERT INTO c_session (session_id,session_data,session_lastmodified) VALUES (?,?,now())');
++				$stmt-&gt;setString(1,$id);
++				$stmt-&gt;setString(2,$session_data);
++				try{
++					$rs = $stmt-&gt;executeUpdate();
++					return true;
++				} catch (SQLException $sqlEx){
++					$this-&gt;logger-&gt;debug($sqlEx-&gt;getMessage());
++					return false;
++				}
++			}
++		} catch (SQLException $sqlEx){
++			$this-&gt;logger-&gt;debug($sqlEx-&gt;getMessage());
++			return false;
++		}
++		
++
++	}
++
++	public function destroy($id) {
++        $stmt = $this-&gt;conn-&gt;prepareStatement('DELETE FROM c_session WHERE session_id = ?');
++        $stmt-&gt;setString(1,$id);
++        try {
++			$rs = $stmt-&gt;executeUpdate();
++			return true;
++		} catch (SQLException $sqlEx) {
++            $this-&gt;logger-&gt;debug($sqlEx-&gt;getMessage());
++			return false;
++		}
++	}
++
++	/**
++	 * Garbage Collection
++	 *
++	 * @param maxlifetime, after that the session will expire
++	 * @return boolean
++	 */
++	public function gc($maxlifetime=300) {
++//		if($maxlifetime==''){
++//			$c = LocknetConfig::singleton();
++//			$maxlifetime = $c-&gt;getSessionProperty('sess_time');
++//			if(!$maxlifetime){
++//				$maxlifetime = 0;
++//			}
++//		}
++		
++        $stmt = $this-&gt;conn-&gt;prepareStatement(
++			'DELETE FROM c_session WHERE `session_lastmodified` &lt; ?');
++		$stmt-&gt;setTimestamp(1,time()-$maxlifetime);
++        try {
++			$rs = $stmt-&gt;executeUpdate();
++			return true;
++		} catch (SQLException $sqlEx) {
++            $this-&gt;logger-&gt;debug($sqlEx-&gt;getMessage());
++			return false;
++		}
++	}
++	
++	
++}
+
+
+Property changes on: trunk/libs/action/controller/session/CreoleSessionContainer.php
+___________________________________________________________________
+Name: svn:executable
+   + *
+Name: svn:keywords
+   + Id
+
+Modified: trunk/libs/action/controller/session/ISessionContainer.php
+===================================================================
+--- trunk/libs/action/controller/session/ISessionContainer.php	2006-03-25 17:04:15 UTC (rev 385)
++++ trunk/libs/action/controller/session/ISessionContainer.php	2006-03-27 19:24:03 UTC (rev 386)
+@@ -71,4 +71,3 @@
+      */
+     public function gc($maxlifetime=300);
+ }
+-
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2006-03-25 17:04:15 UTC (rev 385)
++++ trunk/libs/action/controller/session/Session.php	2006-03-27 19:24:03 UTC (rev 386)
+@@ -32,6 +32,8 @@
+ //////////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
++include_once('action/controller/session/CreoleSessionContainer.php');
++
+ /**
+  * A wrapper around PHP session handling
+  *
+@@ -71,11 +73,20 @@
+         if ($this-&gt;isStarted) {
+             throw new IllegalStateException('Session already Started!');
+         }
++        
+         // TODO: more settings
+         // session_cache_limiter(&quot;nocache&quot;);
+         // session_write_close();
++        // $container= new CreoleSessionContainer();
++   		// session_set_save_handler(array($container, 'open'),
++        //                     array($container, 'close'),
++        //                     array($container, 'read'),
++        //                     array($container, 'write'),
++        //                     array($container, 'destroy'),
++        //                     array($container, 'gc'));
++                
+         session_start();
+-        session_regenerate_id(TRUE);
++        //session_regenerate_id(TRUE);
+         $this-&gt;isStarted= TRUE;
+     }
+ 
+@@ -164,4 +175,5 @@
+         }
+         return TRUE;
+     }
++      
+ }
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-03-25 17:04:15 UTC (rev 385)
++++ trunk/libs/active/record/Base.php	2006-03-27 19:24:03 UTC (rev 386)
+@@ -227,7 +227,6 @@
+ 
+     /** Prepare this Object for serialization */
+     public function __sleep() {
+-        ActiveRecord::close_connection();
+         return array('row', 'table_name', 'class_name','has_one', 'belongs_to', 'has_many', 'has_and_belongs_to_many');
+     }
+ 
+@@ -574,5 +573,6 @@
+         // release resources.
+         $rs-&gt;close();$stmt-&gt;close();
+         return $results;
+-    }
++    } 
++    
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000169.html">[Medick-svn] r385 - trunk/libs/active/record
+</A></li>
+	<LI>Next message: <A HREF="000171.html">[Medick-svn] r387 - applications/testor/app/models trunk trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/action/view
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#170">[ date ]</a>
+              <a href="thread.html#170">[ thread ]</a>
+              <a href="subject.html#170">[ subject ]</a>
+              <a href="author.html#170">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

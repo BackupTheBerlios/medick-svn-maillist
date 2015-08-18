@@ -1,0 +1,513 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r227 - in trunk: libs/active/record libs/medick test test/dummy test/dummy/controllers test/mock
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r227%20-%20in%20trunk%3A%20libs/active/record%20libs/medick%20test%20test/dummy%20test/dummy/controllers%20test/mock&In-Reply-To=%3C200510201854.j9KIsSfw002270%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000030.html">
+   <LINK REL="Next"  HREF="000032.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r227 - in trunk: libs/active/record libs/medick test test/dummy test/dummy/controllers test/mock</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r227%20-%20in%20trunk%3A%20libs/active/record%20libs/medick%20test%20test/dummy%20test/dummy/controllers%20test/mock&In-Reply-To=%3C200510201854.j9KIsSfw002270%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r227 - in trunk: libs/active/record libs/medick test test/dummy test/dummy/controllers test/mock">aurelian at berlios.de
+       </A><BR>
+    <I>Thu Oct 20 20:54:28 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000030.html">[Medick-svn] r226 - in trunk: libs/configurator test
+</A></li>
+        <LI>Next message: <A HREF="000032.html">[Medick-svn] r228 - in trunk/test: . dummy/models mock
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#31">[ date ]</a>
+              <a href="thread.html#31">[ thread ]</a>
+              <a href="subject.html#31">[ subject ]</a>
+              <a href="author.html#31">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-20 20:54:26 +0200 (Thu, 20 Oct 2005)
+New Revision: 227
+
+Added:
+   trunk/libs/medick/InvalidOffsetException.php
+   trunk/test/dummy/controllers/
+   trunk/test/dummy/controllers/application.php
+   trunk/test/dummy/controllers/foo_controller.php
+Modified:
+   trunk/libs/active/record/Base.php
+   trunk/libs/medick/Registry.php
+   trunk/test/ARBaseBasicsTest.php
+   trunk/test/ARBaseFindTest.php
+   trunk/test/RegistryTest.php
+   trunk/test/mock/MockConfigurator.php
+   trunk/test/testrunner.php
+Log:
+ -&gt; Registry: added two more methods, this way we can test better:
+# Registry::close() witch removes all the database contents
+# Registry::remove($key) removes the Object identified by the $key
+# InvalidOffsetException is thrown if the requested Object is not found
+
+ -&gt; ActiveRecordBase:
+# Added close() method, to force closing the database connection.
+# Some API docs.
+
+ -&gt; Tests: A test should not depend on another one nor on the order the tests are run
+# Closer clean-up for Registry and ActiveRecordBase
+# Moved Prequsites from the testrunner to UnitTests constructors
+
+ -&gt; Files added:
+# medick/InvalidOffsetException, the Registry Exception
+# dummy/controllers/*, some place holders for Routing Test Case (not in SNV yet)
+
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2005-10-18 18:48:49 UTC (rev 226)
++++ trunk/libs/active/record/Base.php	2005-10-20 18:54:26 UTC (rev 227)
+@@ -44,26 +44,43 @@
+  */
+ class ActiveRecordBase extends Object {
+ 
+-    /** DB Table Fields */
++    /** @var FieldsAggregate
++        DB Table Fields */
+     protected $fields;
+ 
+-    /** pk. name! */
++    /** @var string
++        primary key name! */
+     private $pk;
+ 
+     // {{{ static members
+-    /** database connection*/
++    
++    /** @var Connection
++        database connection*/
+     protected static $conn;
+-    /** table name */
++    
++    /** @var string 
++        current table name */
+     protected static $table_name;
++    
+     // }}}
+ 
++    /**
++     * Establish A Database Connection
++     */
+     public static function establish_connection () {
+         if (self::$conn === NULL) {
+             self::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn());
+         }
+     }
+-
++    
+     /**
++     * Force a closing of the database connection
++     */
++    public static function close() {
++        self::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn())-&gt;close();
++    }
++    
++    /**
+      * Constructor
+      *
+      * Is final, because there is no reason to overwrite in parent classes.
+
+Added: trunk/libs/medick/InvalidOffsetException.php
+===================================================================
+--- trunk/libs/medick/InvalidOffsetException.php	2005-10-18 18:48:49 UTC (rev 226)
++++ trunk/libs/medick/InvalidOffsetException.php	2005-10-20 18:54:26 UTC (rev 227)
+@@ -0,0 +1,38 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice, 
++//   this list of conditions and the following disclaimer. 
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation 
++//   and/or other materials provided with the distribution. 
++//   * Neither the name of locknet.ro nor the names of its contributors may 
++//   be used to endorse or promote products derived from this software without 
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++// 
++// $Id$
++// 
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * @package locknet7.medick
++ */
++class InvalidOffsetException extends MedickException { }
+
+
+Property changes on: trunk/libs/medick/InvalidOffsetException.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/libs/medick/Registry.php
+===================================================================
+--- trunk/libs/medick/Registry.php	2005-10-18 18:48:49 UTC (rev 226)
++++ trunk/libs/medick/Registry.php	2005-10-20 18:54:26 UTC (rev 227)
+@@ -32,6 +32,8 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
++include_once('medick/InvalidOffsetException.php');
++
+ /**
+  * @package locknet7.medick
+  */
+@@ -62,12 +64,35 @@
+      * It gets an Object from the registry database
+      * @param string key, the object identifier
+      * @return Object
++     * @throws NullPointerException
+      */
+     public static function get($key) {
+-        return self::$registry[$key];
++        if (isset(self::$registry[$key])) {
++            return self::$registry[$key];
++        }
++        throw new InvalidOffsetException('Cannot access the object identified by key: `' . $key . '` from Registry Database!');
+     }
+     
+     /**
++     * Removes an Object from the Registry Database
++     * @param string key, object identifier
++     * @return Object, the object removed.
++     * @throws NullPointerException
++     */
++    public static function remove($key) {
++        $obj= self::get($key);
++        unset(self::$registry[$key]);
++        return $obj;
++    }
++    
++    /**
++     * Closes and clean-up the registry database
++     */
++    public static function close() {
++        return self::$registry= array();
++    }
++    
++    /**
+      * It gets the Registry instance
+      * @return Registry
+      */
+@@ -79,4 +104,3 @@
+     }
+     // }}}
+ }
+-
+
+Modified: trunk/test/ARBaseBasicsTest.php
+===================================================================
+--- trunk/test/ARBaseBasicsTest.php	2005-10-18 18:48:49 UTC (rev 226)
++++ trunk/test/ARBaseBasicsTest.php	2005-10-20 18:54:26 UTC (rev 227)
+@@ -3,10 +3,40 @@
+ // $Id$
+     
+ include_once('dummy/models/author.php');
++include_once('mock/MockConfigurator.php');
++include_once('logger/Logger.php');
+ 
+ /** Tests insert, update, save (insert/update), delete. */
+ class ARBaseBasicsTest extends UnitTestCase {
+ 
++    /**
++     * Constructor Once/TestCase
++     * Prequsites for this TestCase to run: Create a sqlite DB
++     */
++    public function __construct() {
++        if (is_file('test.db')) unlink('test.db');
++        $query='
++            CREATE TABLE authors (
++                id INTEGER PRIMARY KEY,
++                name VARCHAR(100),
++                email VARCHAR(150)
++            );
++        ';
++        sqlite_query(sqlite_open('test.db'), $query);
++    }
++
++    /** set up */
++    public function setUp() {
++        Registry::put(new MockConfigurator(), '__configurator');
++        Registry::put(new Logger(), '__logger');
++        ActiveRecordBase::close();
++    }
++    
++    /** tearDown */
++    public function tearDown() {
++        Registry::close();
++    }
++
+     /** &lt;tt&gt;save &amp;&amp; delete test&lt;/tt&gt; */
+     public function testSave() {
+         $item= new Author();
+@@ -41,4 +71,3 @@
+         $this-&gt;assertEqual($item-&gt;delete(), 1);
+     }
+ }
+-
+
+Modified: trunk/test/ARBaseFindTest.php
+===================================================================
+--- trunk/test/ARBaseFindTest.php	2005-10-18 18:48:49 UTC (rev 226)
++++ trunk/test/ARBaseFindTest.php	2005-10-20 18:54:26 UTC (rev 227)
+@@ -3,15 +3,36 @@
+ // $Id$
+     
+ include_once('dummy/models/author.php');
+-
++include_once('mock/MockConfigurator.php');
++include_once('logger/Logger.php');
++  
+ /** Tests find */
+ class ARBaseFindTest extends UnitTestCase {
+-
++  
+     /** our authors container */
+     private $authors= array();
+-
+-    /** set up this test case, we insert 3 fileds in DB table */
+-    public function setUp() {
++     
++    /**
++     * Constructor Once/TestCase
++     * Prequsites for this TestCase to run: Create a sqlite DB
++     */
++    public function __construct() {
++        if (is_file('test.db')) unlink('test.db');
++        $query='
++            CREATE TABLE authors (
++                id INTEGER PRIMARY KEY,
++                name VARCHAR(100),
++                email VARCHAR(150)
++            );
++        ';
++        sqlite_query(sqlite_open('test.db'), $query);
++     }
++  
++     /** set up this test case, we insert 3 fileds in DB table */
++     public function setUp() {
++        Registry::put(new MockConfigurator(), '__configurator');
++        Registry::put(new Logger(), '__logger');
++        ActiveRecordBase::close();
+         $author= new Author();
+         $author-&gt;name= &quot;Andrei Cristescu&quot;;
+         $author-&gt;email= &quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">andrei.cristescu at foo-factory.info</A>&quot;;
+@@ -27,11 +48,12 @@
+         $author-&gt;insert();
+     }
+ 
+-    /** remove all the fields from DB */
++    /** remove all the fields from DB, clean-up the Registry */
+     public function tearDown() {
+         foreach ($this-&gt;authors as $author) {
+             $author-&gt;delete();
+         }
++        Registry::close();
+     }
+ 
+     /** find all syntax. */
+@@ -75,5 +97,4 @@
+         $authors= Author::find('all', array('offset'=&gt;2));
+         $this-&gt;assertEqual($authors-&gt;count(), 1);
+     }
+-
+ }
+
+Modified: trunk/test/RegistryTest.php
+===================================================================
+--- trunk/test/RegistryTest.php	2005-10-18 18:48:49 UTC (rev 226)
++++ trunk/test/RegistryTest.php	2005-10-20 18:54:26 UTC (rev 227)
+@@ -4,6 +4,8 @@
+     
+ include_once('mock/MockObject.php');
+ 
++
++
+ class RegistryTest extends UnitTestCase {
+ 
+     private $registry = NULL;
+@@ -22,5 +24,15 @@
+     function testRegistry() {
+         $this-&gt;assertEqual($this-&gt;obj-&gt;getClassName(), Registry::get('mock')-&gt;getClassName());
+     }
++    
++    function testDispose() {
++        Registry::remove('mock');
++        try {
++            Registry::get('mock');
++            $this-&gt;fail('InvalidOffsetException should be thrown!');
++        } catch (Exception $nEx) {
++            $this-&gt;assertIsA($nEx, 'InvalidOffsetException');
++        }
++    }
+ 
+ }
+
+Added: trunk/test/dummy/controllers/application.php
+===================================================================
+--- trunk/test/dummy/controllers/application.php	2005-10-18 18:48:49 UTC (rev 226)
++++ trunk/test/dummy/controllers/application.php	2005-10-20 18:54:26 UTC (rev 227)
+@@ -0,0 +1,4 @@
++&lt;?php
++    // $Id$
++    class ApplicationController extends ActionControllerBase{   }
++    
+
+
+Property changes on: trunk/test/dummy/controllers/application.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/test/dummy/controllers/foo_controller.php
+===================================================================
+--- trunk/test/dummy/controllers/foo_controller.php	2005-10-18 18:48:49 UTC (rev 226)
++++ trunk/test/dummy/controllers/foo_controller.php	2005-10-20 18:54:26 UTC (rev 227)
+@@ -0,0 +1,4 @@
++&lt;?php
++    // $Id$
++    class FooController extends ApplicationController {     }
++
+
+
+Property changes on: trunk/test/dummy/controllers/foo_controller.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/test/mock/MockConfigurator.php
+===================================================================
+--- trunk/test/mock/MockConfigurator.php	2005-10-18 18:48:49 UTC (rev 226)
++++ trunk/test/mock/MockConfigurator.php	2005-10-20 18:54:26 UTC (rev 227)
+@@ -2,22 +2,30 @@
+ 
+ // $Id$
+     
+-class MockConfigurator extends Object {
+-
++include_once('configurator/IConfigurator.php');
++ 
++class MockConfigurator extends Object implements IConfigurator {
++ 
+     public function getLoggerOutputters() {
+-        return array();    
++        return array();
+     }
+-
++  
+     public function getLoggerFormatter() {
+         return FALSE;
+     }
+-
+-    public function getDatabaseDsn() {
+-        return array(
+-             'phptype'  =&gt; 'sqlite',
+-             'database' =&gt; 'test.db');
++  
++    public function getProperty($name) {
++        switch ($name) {
++            case 'application_path':
++                return 'dummy' . DIRECTORY_SEPARATOR;
++            default:
++                throw new ConfiguratorException(__CLASS__ . ' Property `' . $name . '` not implemented!');
++         }
++     }
++ 
++     public function getDatabaseDsn($id=FALSE) {
++         return array(
++               'phptype'  =&gt; 'sqlite',
++               'database' =&gt; 'test.db');
+     }
+-
+ }
+-
+-?&gt;
+
+Modified: trunk/test/testrunner.php
+===================================================================
+--- trunk/test/testrunner.php	2005-10-18 18:48:49 UTC (rev 226)
++++ trunk/test/testrunner.php	2005-10-20 18:54:26 UTC (rev 227)
+@@ -27,22 +27,6 @@
+ include_once('simpletest/unit_tester.php');
+ include_once('simpletest/reporter.php');
+ 
+-if (is_file('test.db')) unlink('test.db');
+-
+-$query=&lt;&lt;&lt;__
+-    CREATE TABLE authors (
+-        id INTEGER PRIMARY KEY,
+-        name VARCHAR(100),
+-        email VARCHAR(150)
+-    );
+-__;
+-sqlite_query(sqlite_open('test.db'), $query);
+-
+-include_once('mock/MockConfigurator.php');
+-Registry::put(new MockConfigurator(), '__configurator');
+-include_once('logger/Logger.php');
+-Registry::put(new Logger(), '__logger');
+-
+ $test= new GroupTest('====== Medick Framework Unit Tests =====');
+ 
+ $it = new DirectoryIterator(dirname(__FILE__));
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000030.html">[Medick-svn] r226 - in trunk: libs/configurator test
+</A></li>
+	<LI>Next message: <A HREF="000032.html">[Medick-svn] r228 - in trunk/test: . dummy/models mock
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#31">[ date ]</a>
+              <a href="thread.html#31">[ thread ]</a>
+              <a href="subject.html#31">[ subject ]</a>
+              <a href="author.html#31">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

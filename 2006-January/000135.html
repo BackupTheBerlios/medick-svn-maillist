@@ -1,0 +1,180 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r343 - trunk/libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r343%20-%20trunk/libs/active/record&In-Reply-To=%3C200601291539.k0TFdip2022652%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000134.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r343 - trunk/libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r343%20-%20trunk/libs/active/record&In-Reply-To=%3C200601291539.k0TFdip2022652%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r343 - trunk/libs/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Jan 29 16:39:44 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000134.html">[Medick-svn] r342 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#135">[ date ]</a>
+              <a href="thread.html#135">[ thread ]</a>
+              <a href="subject.html#135">[ subject ]</a>
+              <a href="author.html#135">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-29 16:39:43 +0100 (Sun, 29 Jan 2006)
+New Revision: 343
+
+Modified:
+   trunk/libs/active/record/Association.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Validator.php
+Log:
+ -- minor changes on Active/Record.
+
+Modified: trunk/libs/active/record/Association.php
+===================================================================
+--- trunk/libs/active/record/Association.php	2006-01-28 15:16:55 UTC (rev 342)
++++ trunk/libs/active/record/Association.php	2006-01-29 15:39:43 UTC (rev 343)
+@@ -80,7 +80,9 @@
+     }
+ 
+     private function reload($what) {
+-        if ($this-&gt;getClassName() == 'HasAndBelongsToManyAssociation') {
++        if ($this-&gt;getClassName() == 'HasAndBelongsToManyAssociation'
++             || $this-&gt;getClassName() == 'HasManyAssociation'
++        ) {
+             return ActiveRecordBase::initialize(Inflector::singularize($what));
+         } else {
+             return ActiveRecordBase::initialize($what);
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-01-28 15:16:55 UTC (rev 342)
++++ trunk/libs/active/record/Base.php	2006-01-29 15:39:43 UTC (rev 343)
+@@ -55,10 +55,8 @@
+     /* database connection */
+     static protected $conn       = NULL;
+ 
+-    /** @var FieldsAggregate
+-        DB Table Fields */
+-    // protected $fields;
+-
++    /** @var DatabaseRow
++        our database row. */
+     protected $row;
+ 
+     /** @var string
+@@ -74,11 +72,14 @@
+ 
+     /**
+      * Establish A Database Connection
++     *
++     * @return Creole database connection
+      */
+     public static final function establish_connection () {
+         if (self::$conn === NULL) {
+             self::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn());
+         }
++        return self::$conn;
+     }
+ 
+     /**
+@@ -538,6 +539,18 @@
+             // all table fields and one arg.
+         } elseif ( $params[0] == 'all' &amp;&amp; $numargs == 2 &amp;&amp; is_array($params[1]) &amp;&amp; !empty($params[1]) ) {
+             $query-&gt;addArray($params[1]);
++        } elseif ( $params[0] == 'first' &amp;&amp; $numargs == 2 &amp;&amp; is_array($params[1]) &amp;&amp; !empty($params[1]) ) {
++            $query-&gt;addArray($params[1]);
++            $stmt = ActiveRecordBase::$conn-&gt;prepareStatement($query-&gt;buildQuery());
++            $rs   = $stmt-&gt;executeQuery();
++            if ($rs-&gt;getRecordCount() == 1) {
++                $rs-&gt;next();
++                $stmt-&gt;close();
++                return $class-&gt;newInstance($rs-&gt;getRow());
++            } else {
++                throw new RecordNotFoundException(
++                    'Couldn\'t find a `' . ActiveRecordBase::$class_name . '` to match your query.');
++            }
+         } elseif ( is_numeric($params[0])) {
+             // we expect only one row!
+             // we need the pk name.
+@@ -570,10 +583,12 @@
+         if ($limit = $query-&gt;getLimit())   $stmt-&gt;setLimit($limit);
+         if ($offset = $query-&gt;getOffset()) $stmt-&gt;setOffset($offset);
+         $rs = $stmt-&gt;executeQuery();
++        /*
+         if ($rs-&gt;getRecordCount() == 0) {
+             throw new RecordNotFoundException(
+                 'Couldn\'t find a ' . ActiveRecordBase::$class_name . ' The Result Set was empty!');
+         }
++        */
+         // build a list with objects of this type.
+         $results = new RowsAggregate();
+         while ($rs-&gt;next()) {
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2006-01-28 15:16:55 UTC (rev 342)
++++ trunk/libs/active/record/Validator.php	2006-01-29 15:39:43 UTC (rev 343)
+@@ -48,12 +48,13 @@
+     }
+ 
+     public function __call ($method, $args) {
++        $has_errors= FALSE;
+         foreach ($args as $argument) {
+             if ($field = $this-&gt;row-&gt;getFieldByName($argument)) {
+                 if ($method == &quot;presence_of&quot;) {
+-                    $this-&gt;isEmpty($field);
++                    $has_errors = $this-&gt;isEmpty($field);
+                 } elseif ($method == &quot;uniqueness_of&quot; ) {
+-                    $this-&gt;isNotUnique($field);
++                    $has_errors = $this-&gt;isNotUnique($field);
+                 } else {
+                     trigger_error('No such method validation method:' . $method, E_USER_ERROR);
+                 }
+@@ -61,6 +62,7 @@
+                 trigger_error('No such field to validate:' . $argument, E_USER_ERROR);
+             }
+         }
++        return $has_errors;
+     }
+ 
+     private function isEmpty(Field $field) {
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000134.html">[Medick-svn] r342 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#135">[ date ]</a>
+              <a href="thread.html#135">[ thread ]</a>
+              <a href="subject.html#135">[ subject ]</a>
+              <a href="author.html#135">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,248 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r228 - in trunk/test: . dummy/models mock
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r228%20-%20in%20trunk/test%3A%20.%20dummy/models%20mock&In-Reply-To=%3C200510211835.j9LIZRL4019995%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000031.html">
+   <LINK REL="Next"  HREF="000033.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r228 - in trunk/test: . dummy/models mock</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r228%20-%20in%20trunk/test%3A%20.%20dummy/models%20mock&In-Reply-To=%3C200510211835.j9LIZRL4019995%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r228 - in trunk/test: . dummy/models mock">aurelian at berlios.de
+       </A><BR>
+    <I>Fri Oct 21 20:35:27 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000031.html">[Medick-svn] r227 - in trunk: libs/active/record libs/medick test test/dummy test/dummy/controllers test/mock
+</A></li>
+        <LI>Next message: <A HREF="000033.html">[Medick-svn] r229 - trunk/docs/patches
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#32">[ date ]</a>
+              <a href="thread.html#32">[ thread ]</a>
+              <a href="subject.html#32">[ subject ]</a>
+              <a href="author.html#32">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-21 20:35:26 +0200 (Fri, 21 Oct 2005)
+New Revision: 228
+
+Added:
+   trunk/test/ARBaseAssocHas_OneTest.php
+   trunk/test/RoutingTest.php
+   trunk/test/dummy/models/book.php
+   trunk/test/mock/MockRequest.php
+Log:
+ [ tests ] initial import of ARBaseAssocHas_OneTest, RoutingTest and additional mock/dummy files.
+
+Added: trunk/test/ARBaseAssocHas_OneTest.php
+===================================================================
+--- trunk/test/ARBaseAssocHas_OneTest.php	2005-10-20 18:54:26 UTC (rev 227)
++++ trunk/test/ARBaseAssocHas_OneTest.php	2005-10-21 18:35:26 UTC (rev 228)
+@@ -0,0 +1,71 @@
++&lt;?php
++
++// $Id$
++    
++include_once('dummy/models/author.php');
++include_once('dummy/models/book.php');
++include_once('mock/MockConfigurator.php');
++include_once('logger/Logger.php');
++
++/** Test Has_One Association */
++class ARBaseAssocHas_OneTest extends UnitTestCase {
++
++    /**
++     * Constructor Once/TestCase
++     * Prequsites for this TestCase to run: Create a sqlite DB with 2 tables and a foreign key.
++     */
++    public function __construct() {
++        if (is_file('test.db')) unlink('test.db');
++        $tbd= sqlite_open('test.db');
++        $query='
++            CREATE TABLE AUTHORS (
++                id INTEGER PRIMARY KEY,
++                name VARCHAR(100),
++                email VARCHAR(150)
++            )';
++        $ex= sqlite_query($tbd, $query);
++        $_query='    
++            CREATE TABLE BOOKS (
++                id INTEGER PRIMARY KEY,
++                title VARCHAR(100),
++                author_id INTEGER NOT NULL CONSTRAINT fk_author_id REFERENCES AUTHORS(id) ON DELETE CASCADE
++            )';
++        $exp= sqlite_query($tbd, $_query);
++    }
++
++    /** set up */
++    public function setUp() {
++        Registry::put(new MockConfigurator(), '__configurator');
++        Registry::put(new Logger(), '__logger');
++        ActiveRecordBase::close();
++        
++        $author= new Author();
++        $author-&gt;name= 'Andrei Cristescu';
++        $author-&gt;email= '<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">andrei at foocompany.com</A>';
++        
++        $id= $author-&gt;save();
++        
++        $book = new Book();
++        $book-&gt;author_id= $id;
++        $book-&gt;title= 'The End is NEAR!';
++        $book-&gt;save();
++    }
++    
++    /** tearDown */
++    public function tearDown() {
++        Registry::close();
++    }
++
++    /** */
++    public function testHasOne() {
++        $books= Book::find();
++        foreach($books as $book) {
++            $this-&gt;assertIsA($book-&gt;author, 'Author');
++            $this-&gt;assertIsA($book, 'Book');
++        }
++        $this-&gt;assertEqual($book-&gt;author-&gt;name, 'Andrei Cristescu');
++        // TBD. This is not supported right now!
++        // $book-&gt;author-&gt;delete();
++        // $this-&gt;assertEqual(sizeof(Book::find()), 0);
++    }
++}
+
+
+Property changes on: trunk/test/ARBaseAssocHas_OneTest.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/test/RoutingTest.php
+===================================================================
+--- trunk/test/RoutingTest.php	2005-10-20 18:54:26 UTC (rev 227)
++++ trunk/test/RoutingTest.php	2005-10-21 18:35:26 UTC (rev 228)
+@@ -0,0 +1,38 @@
++&lt;?php
++
++// $Id$
++
++include_once('medick/Registry.php');
++include_once('logger/Logger.php');
++
++include_once('mock/MockConfigurator.php');
++include_once('mock/MockRequest.php');
++
++include_once('action/controller/Route.php');
++include_once('action/controller/Map.php');
++include_once('action/controller/Routing.php');
++include_once('action/controller/Base.php');
++
++class RoutingTest extends UnitTestCase {
++
++    private $map;
++
++    public function setUp() {
++        Registry::put(new MockConfigurator(), '__configurator');
++        Registry::put(new Logger(), '__logger');
++        $this-&gt;map= Registry::put(new Map(), '__map');
++    }
++    
++    public function tearDown() {
++        Registry::close();
++    }
++    
++    public function testRec() {
++        $route= new Route('foo', 'bar');
++        $request= new MockRequest();
++        $request-&gt;setParam('controller', 'foo');
++        $request-&gt;setParam('action', 'bar');
++        $this-&gt;map-&gt;add($route);
++        $this-&gt;assertIsA(ActionControllerRouting::recognize($request), 'ActionControllerBase');
++    }
++}
+
+
+Property changes on: trunk/test/RoutingTest.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/test/dummy/models/book.php
+===================================================================
+--- trunk/test/dummy/models/book.php	2005-10-20 18:54:26 UTC (rev 227)
++++ trunk/test/dummy/models/book.php	2005-10-21 18:35:26 UTC (rev 228)
+@@ -0,0 +1,11 @@
++&lt;?php
++
++// $Id$    
++
++include_once('active/record/Base.php');
++
++class Book extends ActiveRecordBase {
++
++    protected $has_one= array('author');
++
++}
+
+
+Property changes on: trunk/test/dummy/models/book.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/test/mock/MockRequest.php
+===================================================================
+--- trunk/test/mock/MockRequest.php	2005-10-20 18:54:26 UTC (rev 227)
++++ trunk/test/mock/MockRequest.php	2005-10-21 18:35:26 UTC (rev 228)
+@@ -0,0 +1,7 @@
++&lt;?php
++
++// $Id$
++
++include_once('action/controller/Request.php');
++
++class MockRequest extends Request {  }
+
+
+Property changes on: trunk/test/mock/MockRequest.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000031.html">[Medick-svn] r227 - in trunk: libs/active/record libs/medick test test/dummy test/dummy/controllers test/mock
+</A></li>
+	<LI>Next message: <A HREF="000033.html">[Medick-svn] r229 - trunk/docs/patches
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#32">[ date ]</a>
+              <a href="thread.html#32">[ thread ]</a>
+              <a href="subject.html#32">[ subject ]</a>
+              <a href="author.html#32">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

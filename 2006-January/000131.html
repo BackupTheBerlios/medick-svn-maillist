@@ -1,0 +1,122 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r339 - trunk/libs/action/controller
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r339%20-%20trunk/libs/action/controller&In-Reply-To=%3C200601211009.k0LA9IVS021509%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000130.html">
+   <LINK REL="Next"  HREF="000132.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r339 - trunk/libs/action/controller</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r339%20-%20trunk/libs/action/controller&In-Reply-To=%3C200601211009.k0LA9IVS021509%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r339 - trunk/libs/action/controller">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Jan 21 11:09:18 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000130.html">[Medick-svn] r336 - in trunk/libs: action/view active/record
+</A></li>
+        <LI>Next message: <A HREF="000132.html">[Medick-svn] r340 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/db applications/eltodo/public/images applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record trunk/libs/active/support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#131">[ date ]</a>
+              <a href="thread.html#131">[ thread ]</a>
+              <a href="subject.html#131">[ subject ]</a>
+              <a href="author.html#131">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-21 11:09:18 +0100 (Sat, 21 Jan 2006)
+New Revision: 339
+
+Modified:
+   trunk/libs/action/controller/Base.php
+Log:
+ -- magick __common method is invoked before invoking the action
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-01-18 19:21:12 UTC (rev 338)
++++ trunk/libs/action/controller/Base.php	2006-01-21 10:09:18 UTC (rev 339)
+@@ -255,11 +255,8 @@
+             return;
+         }
+         $status = $status === NULL ? Response::SC_OK : $status;
+-        /*
+-        if (is_null($status)) {
+-            $status = Response::SC_OK;
+-        }
+-        */
++        // try to load the magick __common method.
++
+         $this-&gt;response-&gt;setStatus($status);
+         $this-&gt;response-&gt;setContent($text);
+         $this-&gt;action_performed = TRUE;
+@@ -274,9 +271,7 @@
+     // }}}
+ 
+     protected final function flash($name, $value) {
+-        // $this-&gt;__flash[$name] = $this-&gt;session-&gt;$name=$value;
+-        $this-&gt;session-&gt;putValue('flash',array($name=&gt;$value));
+-        $this-&gt;logger-&gt;debug($this-&gt;session-&gt;dump());
++        $this-&gt;session-&gt;putValue('flash', array($name=&gt;$value));
+     }
+ 
+     /**
+@@ -373,16 +368,16 @@
+                 );
+             }
+         }
+-
+         $this-&gt;params['action'] = strtolower($action_name);
+         $this-&gt;logger-&gt;debug('Incoming action:: ' . strtolower($action_name));
+-        // invoke the action.
+-        $action-&gt;invoke($this);
+-        if ($this-&gt;action_performed) return;
+-        // try to load the magick __common method.
++        // quickly load the common magick method.
+         if ($_common= $this-&gt;createMethod('__common')) {
+             $_common-&gt;invoke($this);
+         }
++        // invoke the action.
++        $action-&gt;invoke($this);
++
++        if ($this-&gt;action_performed) return;
+         $this-&gt;render();
+     }
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000130.html">[Medick-svn] r336 - in trunk/libs: action/view active/record
+</A></li>
+	<LI>Next message: <A HREF="000132.html">[Medick-svn] r340 - applications/eltodo/app/controllers applications/eltodo/app/models applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/db applications/eltodo/public/images applications/eltodo/public/stylesheet trunk/libs/action/view trunk/libs/active/record trunk/libs/active/support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#131">[ date ]</a>
+              <a href="thread.html#131">[ thread ]</a>
+              <a href="subject.html#131">[ subject ]</a>
+              <a href="author.html#131">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

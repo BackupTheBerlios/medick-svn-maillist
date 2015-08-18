@@ -1,0 +1,108 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r411 - in trunk: . libs/action/controller libs/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r411%20-%20in%20trunk%3A%20.%20libs/action/controller%20libs/medick&In-Reply-To=%3C200606241816.k5OIGb26012784%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000193.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r411 - in trunk: . libs/action/controller libs/medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r411%20-%20in%20trunk%3A%20.%20libs/action/controller%20libs/medick&In-Reply-To=%3C200606241816.k5OIGb26012784%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r411 - in trunk: . libs/action/controller libs/medick">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Jun 24 20:16:37 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000193.html">[Medick-svn] r410 - tags
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#194">[ date ]</a>
+              <a href="thread.html#194">[ thread ]</a>
+              <a href="subject.html#194">[ subject ]</a>
+              <a href="author.html#194">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-06-24 20:16:34 +0200 (Sat, 24 Jun 2006)
+New Revision: 411
+
+Modified:
+   trunk/VERSION
+   trunk/libs/action/controller/Request.php
+   trunk/libs/medick/Medick.php
+Log:
+ -- fixed Request::toString when a request parameter is a multidimensional array &amp;&amp; go for 0.3.0pre1 version
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-06-24 09:51:11 UTC (rev 410)
++++ trunk/VERSION	2006-06-24 18:16:34 UTC (rev 411)
+@@ -1 +1 @@
+-0.2.3
++0.3.0pre1-svn
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2006-06-24 09:51:11 UTC (rev 410)
++++ trunk/libs/action/controller/Request.php	2006-06-24 18:16:34 UTC (rev 411)
+@@ -118,6 +118,10 @@
+                 $buff .= &quot;\n\t[Array:\n&quot;;
+                 foreach ($value as $k=&gt;$v) {
+                     $buff .= &quot;\t\t[{$k}=&quot;;
++                    if (is_array($v)) {
++                        $buff .= &quot;[Array]\n&quot;;
++                        continue;
++                    }
+                     if (strlen($v)&gt;75) {
+                         $buff .= substr(str_replace(&quot;&quot;,&quot;\n&quot;,$v),0,75) .&quot; .....]\n&quot;;
+                     } else {
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-06-24 09:51:11 UTC (rev 410)
++++ trunk/libs/medick/Medick.php	2006-06-24 18:16:34 UTC (rev 411)
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.2.3';
++        return '0.3.0pre1-svn';
+     }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000193.html">[Medick-svn] r410 - tags
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#194">[ date ]</a>
+              <a href="thread.html#194">[ thread ]</a>
+              <a href="subject.html#194">[ subject ]</a>
+              <a href="author.html#194">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

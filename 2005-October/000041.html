@@ -1,0 +1,129 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r237 - trunk/test
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r237%20-%20trunk/test&In-Reply-To=%3C200510231441.j9NEfeuY011963%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000040.html">
+   <LINK REL="Next"  HREF="000042.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r237 - trunk/test</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r237%20-%20trunk/test&In-Reply-To=%3C200510231441.j9NEfeuY011963%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r237 - trunk/test">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Oct 23 16:41:40 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000040.html">[Medick-svn] r236 - in trunk/test: . application mock test/active/record test/active/record/associations test/configurator tmp
+</A></li>
+        <LI>Next message: <A HREF="000042.html">[Medick-svn] r238 - trunk/libs/configurator
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#41">[ date ]</a>
+              <a href="thread.html#41">[ thread ]</a>
+              <a href="subject.html#41">[ subject ]</a>
+              <a href="author.html#41">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-23 16:41:39 +0200 (Sun, 23 Oct 2005)
+New Revision: 237
+
+Modified:
+   trunk/test/runner.php
+Log:
+ - [ test/* ] runner, better benchmark
+
+Modified: trunk/test/runner.php
+===================================================================
+--- trunk/test/runner.php	2005-10-23 14:38:23 UTC (rev 236)
++++ trunk/test/runner.php	2005-10-23 14:41:39 UTC (rev 237)
+@@ -5,26 +5,6 @@
+ 
+ // Script that runs all the *Test.php* files from the test folder.
+ 
+-class DirectoryTreeIterator extends RecursiveIteratorIterator
+-{
+-    /** Construct from a path.
+-     * @param $path directory to iterate
+-     */
+-    function __construct($path)
+-    {
+-        parent::__construct(
+-            new RecursiveCachingIterator(
+-                new RecursiveDirectoryIterator($path), CachingIterator::CALL_TOSTRING|CachingIterator::CATCH_GET_CHILD), 1);
+-    }
+-
+-    /** Aggregates the inner iterator
+-     */
+-    function __call($func, $params)
+-    {
+-        return call_user_func_array(array($this-&gt;getSubIterator(), $func), $params);
+-    }
+-}
+-
+ $time_start = microtime(true);
+ 
+ define('TOP_LOCATION', dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR);
+@@ -49,6 +29,26 @@
+ 
+ $test= new GroupTest('====== Medick Framework Unit Tests =====');
+ 
++class DirectoryTreeIterator extends RecursiveIteratorIterator
++{
++    /** Construct from a path.
++     * @param $path directory to iterate
++     */
++    function __construct($path)
++    {
++        parent::__construct(
++            new RecursiveCachingIterator(
++                new RecursiveDirectoryIterator($path), CachingIterator::CALL_TOSTRING|CachingIterator::CATCH_GET_CHILD), 1);
++    }
++
++    /** Aggregates the inner iterator
++     */
++    function __call($func, $params)
++    {
++        return call_user_func_array(array($this-&gt;getSubIterator(), $func), $params);
++    }
++}
++
+ foreach(new DirectoryTreeIterator(dirname(__FILE__) . DIRECTORY_SEPARATOR . 'test' . DIRECTORY_SEPARATOR) as $entry)
+ {
+     if ( (strpos($entry-&gt;getFilename(), 'Test.php')  !== FALSE) &amp;&amp;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000040.html">[Medick-svn] r236 - in trunk/test: . application mock test/active/record test/active/record/associations test/configurator tmp
+</A></li>
+	<LI>Next message: <A HREF="000042.html">[Medick-svn] r238 - trunk/libs/configurator
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#41">[ date ]</a>
+              <a href="thread.html#41">[ thread ]</a>
+              <a href="subject.html#41">[ subject ]</a>
+              <a href="author.html#41">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

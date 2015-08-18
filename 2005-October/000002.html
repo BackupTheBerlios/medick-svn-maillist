@@ -1,0 +1,164 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r198 - trunk/test
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r198%20-%20trunk/test&In-Reply-To=%3C200510141803.j9EI3cK1020521%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000001.html">
+   <LINK REL="Next"  HREF="000003.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r198 - trunk/test</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r198%20-%20trunk/test&In-Reply-To=%3C200510141803.j9EI3cK1020521%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r198 - trunk/test">aurelian at berlios.de
+       </A><BR>
+    <I>Fri Oct 14 20:03:38 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000001.html">[Medick-svn] r197 - branches/route.190
+</A></li>
+        <LI>Next message: <A HREF="000003.html">[Medick-svn] r199 - in trunk/test: . dummy dummy/models mock
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2">[ date ]</a>
+              <a href="thread.html#2">[ thread ]</a>
+              <a href="subject.html#2">[ subject ]</a>
+              <a href="author.html#2">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-14 20:03:36 +0200 (Fri, 14 Oct 2005)
+New Revision: 198
+
+Modified:
+   trunk/test/testrunner.php
+Log:
+ -[ test/runner.php ] removed bloated class
+
+Modified: trunk/test/testrunner.php
+===================================================================
+--- trunk/test/testrunner.php	2005-10-13 19:57:01 UTC (rev 197)
++++ trunk/test/testrunner.php	2005-10-14 18:03:36 UTC (rev 198)
+@@ -11,12 +11,12 @@
+ 
+ set_include_path( TOP_LOCATION . 'libs' . DIRECTORY_SEPARATOR . PATH_SEPARATOR .
+                   TOP_LOCATION . 'vendor' . DIRECTORY_SEPARATOR . PATH_SEPARATOR . 
+-                  TOP_LOCATION . 'app'  . DIRECTORY_SEPARATOR . 'models' . DIRECTORY_SEPARATOR . PATH_SEPARATOR .
+                   dirname(__FILE__) 
+                 );
+ 
+ error_reporting(E_ALL);
+ set_time_limit(0);
++ini_set('display_errors', 1);
+ 
+ include_once('medick/Object.php');
+ include_once('medick/Exception.php');
+@@ -27,53 +27,34 @@
+ include_once('simpletest/unit_tester.php');
+ include_once('simpletest/reporter.php');
+ 
++if (is_file('test.db')) unlink('test.db');
+ 
+-// {{{ RecursiveTestLoader
+-// loads the test
+-// TODO: refactor.
+-class RecursiveTestLoader extends RecursiveIteratorIterator {
++$query=&lt;&lt;&lt;__
++    CREATE TABLE todos (
++        id INTEGER PRIMARY KEY,
++        description VARCHAR(100),
++        done INTEGER(1)
++    );
++__;
++sqlite_query(sqlite_open('test.db'), $query);
+ 
+-    private static $test;
+-	
+-    /** Constructor */
+-	function __construct() {
+-		parent::__construct(
+-		  new CachingRecursiveIterator(
+-		      new RecursiveDirectoryIterator(
+-		          dirname(__FILE__)
+-		      ), 
+-		      CIT_CALL_TOSTRING|CIT_CATCH_GET_CHILD
+-		  ),
+-		1);   
+-		self::$test= new GroupTest('====== Routes :: Medick Framework Unit Tests =====');
+-        }
++include_once('mock/MockConfigurator.php');
++Registry::put(new MockConfigurator(), '__configurator');
++include_once('logger/Logger.php');
++Registry::put(new Logger(), '__logger');
+ 
+-	/** @return the current element valid element */
+-	function current() {
+-		$tree = '';
+-		for ($l=0; $l &lt; $this-&gt;getDepth(); $l++) {
+-			$tree .= $this-&gt;getSubIterator($l)-&gt;hasNext() ? '| ' : '  ';
+-		}
+-        if (preg_match(&quot;/Test.php/i&quot;, $this-&gt;key()) &amp;&amp; is_file($this-&gt;key()) &amp;&amp; !preg_match(&quot;/.svn/i&quot;, $this-&gt;key())) {
+-            self::$test-&gt;addTestFile($this-&gt;key());
+-        }
+-	}
++$test= new GroupTest('====== Medick Framework Unit Tests =====');
+ 
+-	/** Aggregates the inner iterator */
+-	function __call($func, $params) {
+-		return call_user_func_array(array($this-&gt;getSubIterator(), $func), $params);
+-	}
+-	
+-	public static function getTest() {
+-	   return self::$test;
+-	}
+-	
++$it = new DirectoryIterator(dirname(__FILE__));
++foreach($it as $file) {
++    if ($file-&gt;isDir()) continue;
++    if (preg_match(&quot;/Test.php/i&quot;, $file-&gt;getFileName())) $test-&gt;addTestFile($file-&gt;getFileName());
+ }
+ 
+-foreach(new RecursiveTestLoader() as $test) { }
++$test-&gt;run(new TextReporter());
+ 
+-RecursiveTestLoader::getTest()-&gt;run(new TextReporter());
+-
+ $time_end = microtime(true);
+ echo &quot;Done in &quot; . ($time_end - $time_start) . &quot; seconds\n&quot;;
+ 
++unlink('test.db');
++
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000001.html">[Medick-svn] r197 - branches/route.190
+</A></li>
+	<LI>Next message: <A HREF="000003.html">[Medick-svn] r199 - in trunk/test: . dummy dummy/models mock
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#2">[ date ]</a>
+              <a href="thread.html#2">[ thread ]</a>
+              <a href="subject.html#2">[ subject ]</a>
+              <a href="author.html#2">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

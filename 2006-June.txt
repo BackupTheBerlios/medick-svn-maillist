@@ -1,0 +1,1014 @@
+From aurelian at berlios.de  Fri Jun  2 19:36:38 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Fri, 2 Jun 2006 19:36:38 +0200
+Subject: [Medick-svn] r402 - in trunk/libs: action/controller/session action/view active/support
+Message-ID: <200606021736.k52HacAk019388@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-06-02 19:36:33 +0200 (Fri, 02 Jun 2006)
+New Revision: 402
+
+Modified:
+   trunk/libs/action/controller/session/Session.php
+   trunk/libs/action/view/HTML.php
+   trunk/libs/active/support/Inflector.php
+Log:
+ -- php 5.1.4 fix on Inflector::humanize (no BC!)
+ -- fix: removing a value from Session is done with session_unregister($name) inseard of unset($_SESSION[$name])
+ -- added Session::getValues() as Session::dump() alias
+ -- more options for ActiveRecordHelper::error_messages_for()
+ -- fix: URL::create() if controller is not given, do add the /
+
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2006-05-30 19:38:54 UTC (rev 401)
++++ trunk/libs/action/controller/session/Session.php	2006-06-02 17:36:33 UTC (rev 402)
+@@ -152,7 +152,8 @@
+      */
+     public function removeValue($name) {
+         $this->checkState();
+-        unset($_SESSION[$name]);
++        // unset($_SESSION[$name]);
++        session_unregister($name);
+     }
+ 
+     /**
+@@ -176,15 +177,25 @@
+     }
+ 
+     /**
+-     * It dumps the session contains
++     * It dumps the session
+      *
+      * @return array
+      */
+     public function dump() {
++        $this->checkState();
+         return $_SESSION;
+     }
+ 
+     /**
++     * Alias for Session::dump()
++     *
++     * @see Session::dump
++     */ 
++    public function getValues() {
++        return $this->dump();
++    }
++    
++    /**
+      * It checks the session state
+      *
+      * This method is called internally to ensure that the session is started before using it.
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-05-30 19:38:54 UTC (rev 401)
++++ trunk/libs/action/view/HTML.php	2006-06-02 17:36:33 UTC (rev 402)
+@@ -46,15 +46,30 @@
+      * <code>
+      *  <?=ActiveRecordHelper::error_messages_for($person);?>
+      * </code>
+-     * will show all the errors for the person object
++     * will show all the errors for the person object.
++     *
++     * Valid options:
++     * <ul>
++     *  <li>css_class [ default formErrors ] for: &lt;div id="" class="$css_class"&gt;</li>
++     *  <li>heading   [ default 2 1-->6    ] for: &lt;h$heading&gt;&lt2 errors prohibited this form from beeing saved;/h$heading&gt;
++     *  <li>singular  [ default error      ] for: 1 $singular prohibited this...</li>
++     *  <li>plural    [ default errors     ] for: 2 $plural prohibited this...</li>
++     *  <li>oname     [ default object name] for: the active record object name</li>
++     * </ul>
++     * 
+      * @param ActiveRecord object the ActiveRecord object to check for errors
+      * @param array options the options where we can cusomize the look and feel of the error message.
+      *                      this includes: css_class and heading
+      * @return string a HTML formatted string
+      */
+     public static function error_messages_for(ActiveRecord $object, $options=array()) {
++        
+         $css_class= isset($options['css_class']) ? $options['css_class'] : 'formErrors';
+         $heading  = isset($options['heading']) && (int)$options['heading'] > 0 && (int)$options['heading'] < 6 ? $options['heading'] : 2;
++        $singular = isset($options['singular']) ? $options['singular'] : 'error';
++        $plural   = isset($options['plural']) ? $options['plural'] : 'errors';
++        $oname    = isset($options['oname']) ? $options['oname'] : ucfirst($object->getClassName());
++
+         $buffer= '<div id="medickFormErrors" class="' . $css_class . '">';
+         $errors= 0;
+         $part = '';
+@@ -71,9 +86,9 @@
+             }
+         }
+         if ($errors > 0) {
+-            $st= $errors == 1 ? 'error' : 'errors';
++            $st= $errors == 1 ? $singular : $plural;
+             $buffer .= '<h'.$heading.'>'.$errors.' '.$st.' prohibited this ';
+-            $buffer .= ucfirst(get_class($object)).' from being saved</h'.$heading.'>';
++            $buffer .= $oname.' from being saved</h'.$heading.'>';
+             $buffer .= "\n<p>There were problems with the following fields:</p>\n";
+             $buffer .= $part;
+             return $buffer . '</div>';
+@@ -233,7 +248,9 @@
+         if ($rewrite == 'false' or $rewrite == 'off' or $rewrite == '0') {
+             $base .= '/index.php';
+         }
+-        $buff = $base . '/' . $controller . '/' . $action;
++        $buff= $base . '/';
++        if ($controller) $buff .= $controller . '/';
++        $buff .= $action;
+         foreach ($params as $key=>$value) {
+             $buff .= '/' . $value;
+         }
+
+Modified: trunk/libs/active/support/Inflector.php
+===================================================================
+--- trunk/libs/active/support/Inflector.php	2006-05-30 19:38:54 UTC (rev 401)
++++ trunk/libs/active/support/Inflector.php	2006-06-02 17:36:33 UTC (rev 402)
+@@ -131,7 +131,7 @@
+         return strtolower(preg_replace('/([a-z])([A-Z])/','\1_\2', $word));
+     }
+ 
+-   function humanize($lower_case_and_underscored_word) {
++   public static function humanize($lower_case_and_underscored_word) {
+       return ucwords(str_replace("_"," ",$lower_case_and_underscored_word));
+    }
+ 
+
+
+
+From aurelian at berlios.de  Wed Jun  7 10:37:58 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Wed, 7 Jun 2006 10:37:58 +0200
+Subject: [Medick-svn] r403 - in trunk: . libs/action/controller libs/action/controller/http libs/action/view libs/active/record
+Message-ID: <200606070837.k578bwdX004658@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-06-07 10:37:46 +0200 (Wed, 07 Jun 2006)
+New Revision: 403
+
+Modified:
+   trunk/CHANGELOG
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Map.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/view/HTML.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Validator.php
+Log:
+ -- ActionController (fix) merges flash values
+ -- ActionController added magic __self template variable
+ -- HTTPRequest, Map some API docs
+ -- Request printing first level array in toString
+
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/CHANGELOG	2006-06-07 08:37:46 UTC (rev 403)
+@@ -9,7 +9,8 @@
+     - added Field::toString, Field::length and Field::h methods
+     - HTTPRequest added new methods to get the current HTTPRequest method: getMethod, isPost, isGet
+     - ActionController ``beautiful"(TM) error template
+-    - ActionController will throw a medick exception when trying to load an unexistent before_filter  
++    - ActionController will throw a medick exception when trying to load an unexistent before_filter
++    - ActionController (fix) flash values are merged on the same run  
+     - FormHelper minor code clean-ups and added password_field method
+     - more API docs
+     
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/action/controller/Base.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -138,11 +138,11 @@
+ 
+     /** @var Configurator
+         configurator instance */
+-    private $config;
++    protected $config;
+ 
+     /** @var Injector
+         the injector. */
+-    private $injector;
++    protected $injector;
+ 
+     /**
+      * Process this Request when an exception occured
+@@ -233,10 +233,7 @@
+         try {
+             $this->injector->inject('helper', $this->params['controller']);
+         } catch (FileNotFoundException $fnfEx) {
+-            $this->logger->info(
+-                'skipping helper: '
+-                . $this->injector->getPath('helpers')
+-                . '_' . $this->params['controller'] . ' ' . $fnfEx->getMessage());
++            $this->logger->info('Skiped helper: ' . $this->params['controller'] . '_helper.php');
+         }
+         $this->register_flash();
+         if ($this->use_layout) {
+@@ -244,11 +241,9 @@
+             $layout_file= $this->injector->getPath('layouts') . $layout . '.phtml';
+             $this->logger->debug('Layout: ' . $layout_file);
+             if (!is_file($layout_file)) {
+-                $this->logger->debug('...failed.');
+                 return $this->render_without_layout($template_file, $status);
+             } else {
+                 $this->template->content_for_layout= $this->template->render_file($template_file);
+-                // $this->logger->debug('...done.');
+                 return $this->render_text($this->template->render_file($layout_file), $status);
+             }
+         } else {
+@@ -319,7 +314,11 @@
+     }
+ 
+     protected function flash($name, $value) {
+-        $this->session->putValue('flash', array($name=>$value));
++        if ($this->session->hasValue('flash')) {
++            $this->session->putValue('flash', array_merge($this->session->getValue('flash'), array($name=>$value)));
++        } else {
++            $this->session->putValue('flash', array($name=>$value));
++        }
+     }
+ 
+     /**
+@@ -365,7 +364,7 @@
+         $this->template->assign('__server',     (string)$this->config->getWebContext()->server_name);
+         $this->template->assign('__controller', $this->params['controller']);
+         $this->template->assign('__version',    Medick::getVersion());
+-        
++        $this->template->assign('__self', $this->__base . $this->request->getRequestUri());
+         $this->logger->debug($this->request->toString());
+     }
+ 
+
+Modified: trunk/libs/action/controller/Map.php
+===================================================================
+--- trunk/libs/action/controller/Map.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/action/controller/Map.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -43,10 +43,20 @@
+ 
+     private static $instance= NULL;
+ 
++    /**
++     * Hidden constructor
++     *
++     * Use Map::getInstance to get an instance
++     */ 
+     protected function Map() {
+         parent::Collection();
+     }
+ 
++    /**
++     * It gets this object instance
++     * 
++     * @return Map
++     */ 
+     public static function getInstance() {
+         if (Map::$instance===NULL) {
+             Map::$instance= new Map();
+@@ -54,6 +64,12 @@
+         return Map::$instance;
+     }
+     
++    /**
++     * Match the incoming Request against defined Routes
++     *
++     * @param Request incoming request
++     * @throws RoutingException if we cannot resolve this request to a route
++     */ 
+     public function match(Request $request) {
+         foreach ($this->elements as $element) {
+             if ($element->match($request)) return $element;
+@@ -61,6 +77,12 @@
+         throw new RoutingException('Cannot find a Route for this hash: ' . $request->getRequestURI());
+     }
+     
++    /**
++     * It gets a Route of this Map by the Route name
++     *
++     * @param string route name
++     * @throws RoutingException if we cannot find a Route by the givven name
++     */ 
+     public function getRouteByName($name) {
+         foreach ($this->elements as $element) {
+             if ($element->getName() == $name) return $element;
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/action/controller/Request.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -47,11 +47,11 @@
+     /** @var array
+         current request parameters */
+     private $params = array();
+-
++    
+     /** 
+      * Hidden Constructor 
+      */
+-    protected function Request() {  }
++     protected function Request() { }
+ 
+     /**
+      * It gets a Request Parameter
+@@ -111,9 +111,23 @@
+      * @return string
+      */ 
+     public function toString() {
+-        $buff = "{".$this->getClassName()."}-->";
++        $buff = "{".$this->getClassName()."}-->\n";
+         foreach ($this->getParameters() as $name=>$value) {
+-            $buff .= "[{$name}={$value}]";
++            $buff .= "[{$name}=";
++            if (is_array($value)) {
++                $buff .= "\n\t[Array:\n";
++                foreach ($value as $k=>$v) {
++                    $buff .= "\t\t[{$k}=";
++                    if (strlen($v)>75) {
++                        $buff .= substr(str_replace("","\n",$v),0,75) ." .....]\n";
++                    } else {
++                        $buff .= "$v]\n";
++                    }
++                }
++                $buff .= "]]\n";
++            } else {
++                $buff .= "{$value}]";
++            }
+         }
+         return $buff;
+     }
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/action/controller/Route.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -333,7 +333,7 @@
+     public function createControllerInstance(Request $request) {
+         if (!$this->isLoaded) $this->load($request);
+         try {
+-            Registry::get('__logger')->debug($this->toString());
++            // Registry::get('__logger')->debug($this->toString());
+             return Registry::put(new Injector(), '__injector')->inject('controller', $request->getParameter('controller'));
+         } catch (FileNotFoundException $fnfEx) {
+             throw new RoutingException('Cannot create a controller instance, ' . $fnfEx->getMessage());
+@@ -346,7 +346,6 @@
+      * @return string
+      */ 
+     public function toString() {
+-	return '';
+         return sprintf('{%s}-->Name: %s; List: %s;', 
+                         $this->getClassName(), 
+                         $this->getNameToHuman(), 
+@@ -374,12 +373,16 @@
+      * @param Request request, the request on witch we want to merge
+      */ 
+     private function doMerge(Request $request) {
++        // $l = Registry::get('__logger');
+         foreach ($this->merges as $name=>$value) {
+             if (isset(Route::$old_merges[$name])) unset(Route::$old_merges[$name]);
++            // $l->debug('+++++ ' . $name);
++            // $l->debug('+++++ ' . $value);
+             $request->setParameter($name, $value);
+         }
+         // discard previously route parameters.
+         foreach (Route::$old_merges as $name=>$value) {
++            // $l->debug('----- ' . $name);
+             $request->setParameter($name, NULL);
+         }
+         // cache merged parameters  
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -95,38 +95,87 @@
+         $this->headers = HTTPRequest::getAllHeaders();
+     }
+ 
++    /**
++     * Get the current request method
++     *
++     * @return string can be POST or GET
++     */ 
+     public function getMethod() {
+         return $this->method;
+     }
+     
++    /**
++     * Check if this request was made using POST
++     *
++     * @return bool true if it's a POST
++     */ 
+     public function isPost() {
+         return $this->method == 'POST';
+     }
+     
++    /**
++     * Check if this Request was made using GET
++     *
++     * @return bool true if it was GET
++     */ 
+     public function isGet() {
+         return $this->method == 'GET';
+     }
+     
++    /**
++     * Gets an array of Cookies
++     *
++     * @return array
++     */ 
+     public function getCookies() {
+         return $this->cookies;
+     }
+ 
++    /**
++     * Check if it has a Cookie with the specfied name
++     *
++     * @param string the Cookie name
++     * @return bool true if it has
++     */ 
+     public function hasCookie($name) {
+         return isset($this->cookies[$name]);
+     }
+ 
++    /**
++     * It gets a cookie by it's name
++     *
++     * @param string cookie name
++     * @return Cookie or FALSE if this Request don't have the requested cookie
++     */ 
+     public function getCookie($name) {
+         return $this->hasCookie($name) ? $this->cookies[$name] : FALSE;
+     }
+     
++    /**
++     * It gets an array of headers associated with this request
++     *
++     * @return array
++     */ 
+     public function getHeaders() {
+         return $this->headers;
+     }
+-
++    
++    /**
++     * It gets a header
++     * 
++     * @param strign name of the header to look for
++     * @return string header value or FALSE if it don't have the header
++     */ 
+     public function getHeader($name) {
+         return $this->hasHeader($name) ? $this->headers[ucfirst($name)] : FALSE;
+     }
+-
++    
++    /**
++     * Check if it has a specific header
++     *
++     * @param string name of the header to check for
++     * @return bool true if it has
++     */ 
+     public function hasHeader($name) {
+         return isset($this->headers[ucfirst($name)]);
+     }
+@@ -144,7 +193,7 @@
+ 
+     /**
+      * It gets a part of the path info associated with this request
+-     * @param int, key, the part index
++     *
+      * @return value of this part or NULL if this part is not defined
+      */
+     public function getRequestUri() {
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/action/view/HTML.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -219,17 +219,13 @@
+         $value= $object->$method === NULL ? 0: $object->$method;
+         
+         if ( (int)$value > 0 ) {
+-            $buff .= 'checked="checked"';// value="' . $value . '"';
+-        } else {
+-            // $buff .= 'value="0"';
++            $buff .= 'checked="checked"';
+         }
+         $buff .= ' />';
+         if ($errors) {
+             $buff .= '</div>';
+         }
+         return $buff;
+-        // . '<input name="' . $name . '" value="' . $value . '" type="hidden" />';
+-        // return $buff;
+     }
+ }
+ 
+@@ -251,10 +247,13 @@
+         $buff= $base . '/';
+         if ($controller) $buff .= $controller . '/';
+         $buff .= $action;
++        
+         foreach ($params as $key=>$value) {
+             $buff .= '/' . $value;
+         }
+-        return $buff . '.' . $ext;
++        
++        if ($ext=='') return $buff;
++        else return $buff . '.' . $ext;
+     }
+ }
+ 
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/active/record/Base.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -530,6 +530,12 @@
+         }
+     }
+     
++    /**
++     * Executes a plain sql query
++     *
++     * @param string sql query to execute
++     * @return ResultSet
++     */ 
+     public static function execute($sql) {
+         $r= ActiveRecord::connection()->executeQuery($sql);
+         Registry::get('__logger')->debug(ActiveRecord::$conn->lastQuery);
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/active/record/Validator.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -83,7 +83,7 @@
+                 } elseif ($method == "uniqueness_of" ) {
+                     $has_errors = $this->isNotUnique($field);
+                 } else {
+-                    trigger_error('No such method validation method:' . $method, E_USER_ERROR);
++                    trigger_error('No such method validation method: ' . $method, E_USER_ERROR);
+                 }
+             } else {
+                 // exception?
+
+
+
+From aurelian at berlios.de  Thu Jun  8 13:49:58 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Thu, 8 Jun 2006 13:49:58 +0200
+Subject: [Medick-svn] r404 - trunk/libs/action/view
+Message-ID: <200606081149.k58Bnwxq030380@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-06-08 13:49:55 +0200 (Thu, 08 Jun 2006)
+New Revision: 404
+
+Modified:
+   trunk/libs/action/view/Base.php
+Log:
+ -- added some debug methods for ActionView:::Base
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2006-06-07 08:37:46 UTC (rev 403)
++++ trunk/libs/action/view/Base.php	2006-06-08 11:49:55 UTC (rev 404)
+@@ -179,6 +179,18 @@
+         return array_key_exists($name,$this->vars) ?
+                  $this->vars[$name] : trigger_error("Undefined Template Variable: " . $name, E_USER_ERROR);
+     }
++    
++    public function dump($name='') {
++      echo '<div style="color:#000;background-color:#FFF;"><pre>';var_dump($name==''?$this->vars:$this->vars[$name]);echo '</pre></div>';
++    }
++    
++    public function defined_vars() {
++      echo '<div style="color:#000;background-color:#FFF;"><pre>';
++      foreach ($this->vars as $name=>$value) {
++        echo $name . "\n";
++      }
++      echo '</pre></div>';
++    }
+ 
+ }
+ 
+
+
+
+From aurelian at berlios.de  Fri Jun  9 17:43:09 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Fri, 9 Jun 2006 17:43:09 +0200
+Subject: [Medick-svn] r405 - trunk/libs/active/record
+Message-ID: <200606091543.k59Fh97e027350@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-06-09 17:43:08 +0200 (Fri, 09 Jun 2006)
+New Revision: 405
+
+Modified:
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/SQLCommand.php
+Log:
+ -- ActiveRecord:::Base, make some methods available only to child classes (protected)
+ -- ActiveRecord:::Base, try once before thwrowing a ReflectionException (speed improvment)
+ -- ActiveRecord:::SQLCommand separate array for joins
+
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-06-08 11:49:55 UTC (rev 404)
++++ trunk/libs/active/record/Base.php	2006-06-09 15:43:08 UTC (rev 405)
+@@ -536,7 +536,7 @@
+      * @param string sql query to execute
+      * @return ResultSet
+      */ 
+-    public static function execute($sql) {
++    protected static function execute($sql) {
+         $r= ActiveRecord::connection()->executeQuery($sql);
+         Registry::get('__logger')->debug(ActiveRecord::$conn->lastQuery);
+         return $r;
+@@ -567,9 +567,13 @@
+      *
+      * @return ReflectionClass
+      */
+-    public static function reflect_class($class_name) {
+-        Registry::get('__injector')->inject('model', strtolower($class_name));
+-        return new ReflectionClass($class_name);
++    protected static function reflect_class($class_name, $r=0) {
++        try {
++            return new ReflectionClass($class_name);
++        } catch (ReflectionException $rEx) {
++            Registry::get('__injector')->inject('model', strtolower($class_name));
++            if($r==0) return ActiveRecord::reflect_class($class_name, 1);
++        }
+     }
+     
+     /**
+@@ -577,7 +581,7 @@
+      *
+      * @return ResultSet
+      */
+-    public static function create_result_set(QueryBuilder $builder) {
++    protected static function create_result_set(QueryBuilder $builder) {
+         $stmt = ActiveRecord::connection()->prepareStatement($builder->compile()->getQueryString());
+         $i=1; foreach($builder->getBindings() as $binding) $stmt->set($i++, $binding);
+         if ($limit  = $builder->getLimit())  $stmt->setLimit($limit);
+@@ -594,7 +598,7 @@
+      * @throws RecordNotFoundException 
+      * @return ActiveRecord
+      */
+-    public static function fetch_one(ResultSet $rs, ReflectionClass $class) {
++    protected static function fetch_one(ResultSet $rs, ReflectionClass $class) {
+         if($rs->getRecordCount() != 1) {
+             $rs->close();
+             throw new RecordNotFoundException('Couldn\'t find a `' . $class->getName() . '` to match your query.');
+@@ -610,7 +614,7 @@
+      * Merge ResultSet into RowsAggregate
+      * @return RowsAggregate
+      */ 
+-    public static function fetch_all(ResultSet $rs, ReflectionClass $class) {
++    protected static function fetch_all(ResultSet $rs, ReflectionClass $class) {
+         $results= new RowsAggregate();
+         while($rs->next()) {
+             $results->add($class->newInstance($rs->getRow()));
+@@ -629,7 +633,7 @@
+         return ActiveRecord::connection();
+     }
+ 
+-    public static function connection() {
++    protected static function connection() {
+         if (ActiveRecord::$conn === NULL) {
+             ActiveRecord::$conn = Creole::getConnection(Registry::get('__configurator')->getDatabaseDsn());
+         }
+
+Modified: trunk/libs/active/record/SQLCommand.php
+===================================================================
+--- trunk/libs/active/record/SQLCommand.php	2006-06-08 11:49:55 UTC (rev 404)
++++ trunk/libs/active/record/SQLCommand.php	2006-06-09 15:43:08 UTC (rev 405)
+@@ -55,6 +55,8 @@
+ 
+     private $tables= array();
+ 
++    private $joins= array();
++    
+     private $wheres= array();
+ 
+     private $orderBy;
+@@ -90,7 +92,8 @@
+     }
+     
+     public function leftJoin($what) {
+-        $this->tables[]=$what;
++        // $this->tables[]=$what;
++        $this->joins[]= $what;
+         return $this;
+     }
+     
+@@ -100,6 +103,7 @@
+         $query .= $this->appendColumns();
+         // $query .= " from " . $this->from;
+         $query .= $this->appendFrom();
++        $query .= $this->appendJoins();
+         $query .= $this->appendWhere();
+         $query .= $this->appendOrderBy();
+         return $query;
+@@ -121,6 +125,11 @@
+         return $q;
+     }
+     
++    private function appendJoins() {
++        if (count($this->joins)) return " " . implode(" ", $this->joins);
++        else return " ";
++    }
++    
+     private function appendWhere() {
+         if (count($this->wheres)) return " where " . implode(" and ", $this->wheres);
+         else return "";
+
+
+
+From aurelian at berlios.de  Sat Jun 24 09:54:13 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 24 Jun 2006 09:54:13 +0200
+Subject: [Medick-svn] r406 - in trunk: . libs/medick
+Message-ID: <200606240754.k5O7sDj0008985@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-06-24 09:54:13 +0200 (Sat, 24 Jun 2006)
+New Revision: 406
+
+Modified:
+   trunk/README
+   trunk/TODO
+   trunk/VERSION
+   trunk/libs/medick/Medick.php
+Log:
+ -- preparing release 0.2.3
+
+Modified: trunk/README
+===================================================================
+--- trunk/README	2006-06-09 15:43:08 UTC (rev 405)
++++ trunk/README	2006-06-24 07:54:13 UTC (rev 406)
+@@ -6,6 +6,9 @@
+ ABOUT:
+ ------
+     Medick is an open-source software licensed under a BSD-style licence, see LICENSE file for details.
++    Medick is a php 5 web framework.
++    Medick is alpha stage project, use it on your own risk. Function names or framework workflow might change without prior notice.
++    This is the README file for version 0.2.3 of medick released on 24.06.2006.
+ 
+ REQUIREMENTS:
+ -------------
+@@ -28,10 +31,16 @@
+     Checkout Medick sources from svn:
+     
+         $ svn checkout svn://svn.berlios.de/medick medick
+-
++        
++    See docs for details.
++    
+ WHERE TO GET HELP:
+ -----------------
++    Web Home     : http://medick.locknet.ro
+     Documentation: http://medick.locknet.ro/documentation.html
++    API Docs     : http://medick.locknet.ro/api
++    Dev Blog     : http://www.locknet.ro/?c=medick
++    
+     Subscribe to our internals email lists: http://lists.berlios.de/mailman/listinfo/medick-devel
+     You can also read the archives: http://lists.berlios.de/pipermail/medick-devel
+     
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2006-06-09 15:43:08 UTC (rev 405)
++++ trunk/TODO	2006-06-24 07:54:13 UTC (rev 406)
+@@ -3,21 +3,16 @@
+ Medick TODO list.
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 
+-*Plan for 0.2 series*
+-    # 1. obsolete DatabaseRow (0.2.3)
+-    # 2. expandable validators (0.2.4)
+-    # 3. customizable error messages on validation (0.2.4)
+-    # 4. refactor && unit-test
+-    
+ *Plan for 0.3 series*
+-    # 1. context like (obsolete app.xml)
+-    # 2. cheap cache in ActiveRecord
+-    # 3. creole moveup: RowsAggregate implements IteratorAggregate vs. ResultSet implement IteratorAggregate
+-    # 4. write in associations
+-    # 5. scaffolding generator
+-    # 6. nice to have: RDBAC, i18n, l10n, caching
+-    # 7. refactor && unit-test
+ 
+-*To think about:*
+-    # 1. php 5.1.4
+-    
++    #  1. obsolete DatabaseRow (0.3.0)
++    #  2. expandable validators (0.3.0)
++    #  3. customizable error messages on validation (0.3.0)
++    #  4. context like (0.3.0)
++    #  5. cheap cache in ActiveRecord
++    #  6. creole moveup: RowsAggregate implements IteratorAggregate vs. ResultSet implement IteratorAggregate
++    #  7. write in associations
++    #  8. scaffolding generator
++    #  9. nice to have: RDBAC, i18n, l10n, caching
++    # 10. refactor && unit-test
++
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-06-09 15:43:08 UTC (rev 405)
++++ trunk/VERSION	2006-06-24 07:54:13 UTC (rev 406)
+@@ -1 +1 @@
+-0.2.3-svn
++0.2.3
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-06-09 15:43:08 UTC (rev 405)
++++ trunk/libs/medick/Medick.php	2006-06-24 07:54:13 UTC (rev 406)
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.2.3-svn';
++        return '0.2.3';
+     }
+ 
+ }
+
+
+
+From aurelian at berlios.de  Sat Jun 24 10:13:21 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 24 Jun 2006 10:13:21 +0200
+Subject: [Medick-svn] r407 - trunk
+Message-ID: <200606240813.k5O8DLY5010346@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-06-24 10:13:20 +0200 (Sat, 24 Jun 2006)
+New Revision: 407
+
+Modified:
+   trunk/CHANGELOG
+Log:
+ -- updated CHANGELOG
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-06-24 07:54:13 UTC (rev 406)
++++ trunk/CHANGELOG	2006-06-24 08:13:20 UTC (rev 407)
+@@ -1,16 +1,17 @@
+ $Id$
+ (*) SVN version
+ 
+-0.2.3(*)
+-    - ActiveRecord: class open by removing some final declarations
+-    - ActiveRecord::find is not declared as abstract, awaiting php 5.2 changes on abstract static syntax
++0.2.3(24.Jun.2006)
++    - ActiveRecord refactorings
++    - fix: Inflector::humanize to work with php 5.1.4
++    - fix: ActionController flash values are merged on the same run  
++    - fix: Removing a Session value is done via session_unregister
++    - fix: URL::create() when the controller is not given a / is added to URL  
+     - added ActiveRecord::isValid()
+-    - ActiveRecord::build() -> split this method in small pieces
+-    - added Field::toString, Field::length and Field::h methods
++    - new debugging methods to ActionView::Base  
+     - HTTPRequest added new methods to get the current HTTPRequest method: getMethod, isPost, isGet
+     - ActionController ``beautiful"(TM) error template
+     - ActionController will throw a medick exception when trying to load an unexistent before_filter
+-    - ActionController (fix) flash values are merged on the same run  
+     - FormHelper minor code clean-ups and added password_field method
+     - more API docs
+     
+
+
+
+From aurelian at berlios.de  Sat Jun 24 11:46:05 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 24 Jun 2006 11:46:05 +0200
+Subject: [Medick-svn] r408 - branches
+Message-ID: <200606240946.k5O9k5X6020195@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-06-24 11:46:04 +0200 (Sat, 24 Jun 2006)
+New Revision: 408
+
+Added:
+   branches/medick-0.1.1/
+Removed:
+   branches/release_0.1/
+Log:
+ -- repository admin
+
+Copied: branches/medick-0.1.1 (from rev 390, branches/release_0.1)
+
+
+
+From aurelian at berlios.de  Sat Jun 24 11:48:51 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 24 Jun 2006 11:48:51 +0200
+Subject: [Medick-svn] r409 - / tags
+Message-ID: <200606240948.k5O9mpQD020495@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-06-24 11:48:51 +0200 (Sat, 24 Jun 2006)
+New Revision: 409
+
+Added:
+   tags/
+   tags/medick-0.1.1/
+Removed:
+   branches/
+   tags/release_0.1/
+Log:
+ -- repo admin
+
+Copied: tags (from rev 390, branches)
+
+Copied: tags/medick-0.1.1 (from rev 408, branches/medick-0.1.1)
+
+
+
+From aurelian at berlios.de  Sat Jun 24 11:51:14 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 24 Jun 2006 11:51:14 +0200
+Subject: [Medick-svn] r410 - tags
+Message-ID: <200606240951.k5O9pESM020753@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-06-24 11:51:11 +0200 (Sat, 24 Jun 2006)
+New Revision: 410
+
+Added:
+   tags/medick-0.2.3/
+Log:
+ -- creating tag medick-0.2.3
+
+Copied: tags/medick-0.2.3 (from rev 409, trunk)
+
+
+
+From aurelian at berlios.de  Sat Jun 24 20:16:37 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 24 Jun 2006 20:16:37 +0200
+Subject: [Medick-svn] r411 - in trunk: . libs/action/controller libs/medick
+Message-ID: <200606241816.k5OIGb26012784@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-06-24 20:16:34 +0200 (Sat, 24 Jun 2006)
+New Revision: 411
+
+Modified:
+   trunk/VERSION
+   trunk/libs/action/controller/Request.php
+   trunk/libs/medick/Medick.php
+Log:
+ -- fixed Request::toString when a request parameter is a multidimensional array && go for 0.3.0pre1 version
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-06-24 09:51:11 UTC (rev 410)
++++ trunk/VERSION	2006-06-24 18:16:34 UTC (rev 411)
+@@ -1 +1 @@
+-0.2.3
++0.3.0pre1-svn
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2006-06-24 09:51:11 UTC (rev 410)
++++ trunk/libs/action/controller/Request.php	2006-06-24 18:16:34 UTC (rev 411)
+@@ -118,6 +118,10 @@
+                 $buff .= "\n\t[Array:\n";
+                 foreach ($value as $k=>$v) {
+                     $buff .= "\t\t[{$k}=";
++                    if (is_array($v)) {
++                        $buff .= "[Array]\n";
++                        continue;
++                    }
+                     if (strlen($v)>75) {
+                         $buff .= substr(str_replace("","\n",$v),0,75) ." .....]\n";
+                     } else {
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-06-24 09:51:11 UTC (rev 410)
++++ trunk/libs/medick/Medick.php	2006-06-24 18:16:34 UTC (rev 411)
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.2.3';
++        return '0.3.0pre1-svn';
+     }
+ 
+ }
+
+
+

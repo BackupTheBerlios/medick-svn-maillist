@@ -1,0 +1,109 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r395 - trunk/libs/action/view
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-April/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r395%20-%20trunk/libs/action/view&In-Reply-To=%3C200604161634.k3GGYSJx001942%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000177.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r395 - trunk/libs/action/view</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r395%20-%20trunk/libs/action/view&In-Reply-To=%3C200604161634.k3GGYSJx001942%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r395 - trunk/libs/action/view">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Apr 16 18:34:28 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000177.html">[Medick-svn] r393 - in trunk: . libs/medick
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#178">[ date ]</a>
+              <a href="thread.html#178">[ thread ]</a>
+              <a href="subject.html#178">[ subject ]</a>
+              <a href="author.html#178">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-04-16 18:34:20 +0200 (Sun, 16 Apr 2006)
+New Revision: 395
+
+Modified:
+   trunk/libs/action/view/HTML.php
+Log:
+ -- added FormHelper::password_field
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-04-16 08:58:44 UTC (rev 394)
++++ trunk/libs/action/view/HTML.php	2006-04-16 16:34:20 UTC (rev 395)
+@@ -133,6 +133,35 @@
+         return $buff;
+     }
+ 
++    public static function password_field(ActiveRecord $object, $method, $options = array()) {
++        if (!$field= $object-&gt;getRow()-&gt;getFieldByName($method)) {
++            return; // ex?
++        }
++        $id   = strtolower(get_class($object)) . '_'.$method;
++        $name = strtolower(get_class($object)).'['.$method.']';
++        $buff = '';
++        $errors= FALSE;
++        if($field-&gt;hasErrors()) {
++            $buff .= '&lt;div class=&quot;fieldWithErrors&quot;&gt;';
++            $errors= TRUE;
++        }
++
++        $buff .= '&lt;input type=&quot;password&quot; id=&quot;' . $id . '&quot; ';
++        $buff .= 'name=&quot;'.$name . '&quot; ';
++        $buff .= 'value=&quot;'.$object-&gt;$method.'&quot; ';
++        foreach ($options as $key=&gt;$value) {
++            $buff .= $key . '=&quot;'.$value.'&quot; ';
++        }
++        $buff .= ' /&gt;';
++        if ($errors) {
++            $buff .= '&lt;/div&gt;';
++        }
++        return $buff;
++    }
++
++
++    
++
+     public static function text_area(ActiveRecord $object, $method, $options=array()) {
+         if (!$field= $object-&gt;getRow()-&gt;getFieldByName($method)) {
+             return; // ex?
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000177.html">[Medick-svn] r393 - in trunk: . libs/medick
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#178">[ date ]</a>
+              <a href="thread.html#178">[ thread ]</a>
+              <a href="subject.html#178">[ subject ]</a>
+              <a href="author.html#178">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,952 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r454 - in exp/ar5: . db libs libs/active	libs/active/record libs/active/record/drivers	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite libs/active/support
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-August/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r454%20-%20in%20exp/ar5%3A%20.%20db%20libs%20libs/active%0A%09libs/active/record%20libs/active/record/drivers%0A%09libs/active/record/drivers/abstract%0A%09libs/active/record/drivers/sqlite%20libs/active/support&In-Reply-To=%3C200708201319.l7KDJ2gD011357%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000233.html">
+   <LINK REL="Next"  HREF="000235.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r454 - in exp/ar5: . db libs libs/active	libs/active/record libs/active/record/drivers	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite libs/active/support</H1>
+    <B>aurelian at mail.berlios.de</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r454%20-%20in%20exp/ar5%3A%20.%20db%20libs%20libs/active%0A%09libs/active/record%20libs/active/record/drivers%0A%09libs/active/record/drivers/abstract%0A%09libs/active/record/drivers/sqlite%20libs/active/support&In-Reply-To=%3C200708201319.l7KDJ2gD011357%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r454 - in exp/ar5: . db libs libs/active	libs/active/record libs/active/record/drivers	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite libs/active/support">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Mon Aug 20 15:19:02 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000233.html">[Medick-svn] r453 - in exp: . ar5
+</A></li>
+        <LI>Next message: <A HREF="000235.html">[Medick-svn] r455 - in exp/ar5: . libs libs/context	libs/context/configurator
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#234">[ date ]</a>
+              <a href="thread.html#234">[ thread ]</a>
+              <a href="subject.html#234">[ subject ]</a>
+              <a href="author.html#234">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-08-20 15:18:56 +0200 (Mon, 20 Aug 2007)
+New Revision: 454
+
+Added:
+   exp/ar5/db/
+   exp/ar5/db/sqlite.schema
+   exp/ar5/libs/
+   exp/ar5/libs/active/
+   exp/ar5/libs/active/record/
+   exp/ar5/libs/active/record/drivers/
+   exp/ar5/libs/active/record/drivers/abstract/
+   exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php
+   exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php
+   exp/ar5/libs/active/record/drivers/sqlite/
+   exp/ar5/libs/active/record/drivers/sqlite/sqlite.php
+   exp/ar5/libs/active/support/
+   exp/ar5/libs/active/support/Inflector.php
+Modified:
+   exp/ar5/ar5.php
+   exp/ar5/ar5_base.php
+   exp/ar5/ar5_sql.php
+Log:
+ -- added PreparedStatements
+
+Modified: exp/ar5/ar5.php
+===================================================================
+--- exp/ar5/ar5.php	2007-08-17 14:20:56 UTC (rev 453)
++++ exp/ar5/ar5.php	2007-08-20 13:18:56 UTC (rev 454)
+@@ -2,28 +2,105 @@
+ // $Id$
+ 
+ include_once('ar5_base.php');
++include_once('libs/active/record/drivers/abstract/SQLConnection.php');
++include_once('libs/active/record/drivers/abstract/SQLPreparedStatement.php');
++
+ include_once('ar5_sql.php');
++
++include_once('libs/active/record/drivers/sqlite/sqlite.php');
++
+ include_once('libs/active/support/Inflector.php');
+ 
++class ActiveRecordException extends MedickException { }
++
+ class ActiveRecord extends Object {
+ 
+   protected $__class_name;
+-
+   protected $__table_name;
+-
+   protected $__fields;
++  protected $__primary_key;
+ 
+-  public function ActiveRecord(  ) {
+-    $this-&gt;__class_name= $this-&gt;getClassName();
+-    $this-&gt;__table_name= Inflector::tabelize( $this-&gt;__class_name );
+-    $this-&gt;__fields    = ActiveRecord::connection()-&gt;getTableInfo( $this-&gt;__table_name )-&gt;getFields();
++  public function ActiveRecord( $params=array() ) {
++    $this-&gt;__class_name  = $this-&gt;getClassName();
++    $this-&gt;__table_name  = Inflector::tabelize( $this-&gt;__class_name );
++    $this-&gt;__fields      = ActiveRecord::connection()-&gt;getTableInfo( $this-&gt;__table_name )-&gt;getFields();
++    $this-&gt;__primary_key = current( array_filter( $this-&gt;__fields, array($this,'__pk') ));
++    foreach($params as $key=&gt;$value) {
++      $this-&gt;$key= $value;
++    }
+   }
+ 
++  public function __set($name, $value) {
++    if(isset($this-&gt;__fields[$name])) return $this-&gt;__fields[$name]-&gt;alter( $value );
++    throw new ActiveRecordException('No such field &quot;' . $name . '&quot;');
++  }
+ 
++  public function save() {
++    if($this-&gt;__primary_key-&gt;isAffected()) return $this-&gt;update();
++    else $this-&gt;insert();
++  }
++
++  public function insert() {
++    $fields= $this-&gt;getAffectedFields();
++    $sql= 'insert into ' . $this-&gt;__table_name
++          . ' (' . implode(',', array_keys($fields)) . ')'
++          . ' values (' . substr(str_repeat('?,', count($fields)), 0, -1) . ')';
++    $this-&gt;performQuery($sql, $fields);
++    $this-&gt;__primary_key-&gt;alter( self::connection()-&gt;nextId() );
++  }
++
++  public function update() {
++    $fields= $this-&gt;getAffectedFields();
++    if(sizeof($fields)&lt;1) return 0;
++    $sql= 'update ' . $this-&gt;__table_name . ' set ';
++    $sql .= implode('=?, ', array_keys($fields)) . '=? ';
++    $sql .= 'where ' . $this-&gt;__primary_key-&gt;getName() . '=' . $this-&gt;__primary_key-&gt;getValue();
++    $this-&gt;performQuery($sql, $fields);
++  }
++
++  private function performQuery( $sql, $fields ) {
++    $stmt= self::connection()-&gt;prepare( $sql );
++    $stmt-&gt;populateValues( $fields );
++    $r= $stmt-&gt;executeUpdate();
++    $stmt-&gt;close();
++    $this-&gt;reset();
++    return $r;
++  }
++
++ 
++  public function getPrimaryKey() {
++    return $this-&gt;__primary_key;
++  }
++
++  protected function getAffectedFields() {
++    return array_filter( $this-&gt;__fields, array($this, '__affectedField') );
++  }
++
++  protected function reset() {
++    return array_walk( $this-&gt;__fields, array($this,'__notAffected'));
++  }
++
++  // callback for array_filter
++  private function __affectedField( Field $field ) {
++    return $field-&gt;isAffected();
++  }
++  // callback for array_filter
++  private function __pk( Field $field ) {
++    return $field-&gt;isPk();
++  }
++
++  // callback for array_walk
++  private function __notAffected( Field $field ) {
++    if( $field-&gt;isAffected() &amp;&amp; !$field-&gt;isPk() ) $field-&gt;setAffected(false);
++  }
++
+   protected static $__table_info = null;
+-
+   protected static $__connection = null;
+ 
++  public static function find() {
++    throw new MedickException('ActiveRecord::find() must be implemented in child class.');
++  }
++
+   public static function connection() {
+     if(self::$__connection===null) {
+       self::$__connection= new SQLiteConnection();
+@@ -36,12 +113,27 @@
+ 
+ class User extends ActiveRecord { 
+ 
++  public static function find() {
++    $args= func_get_args();
++    return self::build(new QueryBuilder(__CLASS__, $args));
++  }
++
+ }
+ 
+ $u = new User();
+ $u-&gt;firstname= 'aurelian';
+-$u-&gt;insert();
++$u-&gt;lastname = 'oancea';
++$u-&gt;email= '<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">oancea at gmail.com</A>';
++$u-&gt;password=md5('foo');
++$u-&gt;save();
+ 
+-// $ar= ActiveRecord::connection()-&gt;execute('select * from users');
++$u-&gt;password=md5('bar');
++$u-&gt;save();
++$u-&gt;save();
+ 
++$user = new User(array('firstname'=&gt;'oancea', 'lastname'=&gt;'mandinga'));
++$user-&gt;email= '<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">oancea at yahoo.com</A>';
++$user-&gt;password= md5('bau-bau');
++$user-&gt;save();
++
+ ?&gt;
+
+Modified: exp/ar5/ar5_base.php
+===================================================================
+--- exp/ar5/ar5_base.php	2007-08-17 14:20:56 UTC (rev 453)
++++ exp/ar5/ar5_base.php	2007-08-20 13:18:56 UTC (rev 454)
+@@ -43,7 +43,6 @@
+     throw new Error( $errstr, $errno, $errfile, $errline, $trace );
+   }
+ }
++
+ set_error_handler( array(new ErrorHandler(), 'raise') );
+ 
+-
+-
+
+Modified: exp/ar5/ar5_sql.php
+===================================================================
+--- exp/ar5/ar5_sql.php	2007-08-17 14:20:56 UTC (rev 453)
++++ exp/ar5/ar5_sql.php	2007-08-20 13:18:56 UTC (rev 454)
+@@ -3,44 +3,50 @@
+ 
+ class SQLException extends MedickException {  }
+ 
+-class Field extends Object {
++// xxx.
++class SQLType extends Object {
+ 
+-  private $name, $value, $pk, $type;
+-
+-  public function Field($name, $pk=0, $type='int', $value=null) {
+-    $this-&gt;name= $name;
+-    $this-&gt;value=$value;
+-    $this-&gt;pk= $pk;
+-    $this-&gt;type=$type;
++  // sql type to php type
++  public static function getPhpType( $type ) {
++    if( $type == 'integer' || $type == 'int') return 'Integer';
++    else return 'String';
++    // elseif( $type == 'varchar' || $type == 'string' || $type == 'text') return 'String';
++    // elseif( $type == 'timestamp' || $type == 'time' || $type == 'date') return 'Time';
++    // else throw new SQLException('Unknow type: &quot;' . $type . '&quot;');
+   }
+ 
+-  public function getName() { return $this-&gt;name; }
+-  public function getValue() { return $this-&gt;value; }
+-  public function isPk() { return (bool)$this-&gt;pk; }
+-  public function getType() { return $this-&gt;type; }
+-
+ }
+ 
+-abstract class SQLConnection extends Object {
++class Field extends Object {
+ 
+-  protected $resource, $database, $lastQuery;
++  private $name, $value, $pk, $type, $size, $affected;
+ 
+-  public function getDatabase() { return $this-&gt;database; }
+-  public function setDatabase( $database ) { $this-&gt;database=$database;}
+-  public function getResource() { return $this-&gt;resource; }
+-  public function setResource( $resource ) { $this-&gt;resource= $resource; }
+-  public function getLastQuery() { return $this-&gt;lastQuery; }
++  public function Field($name, $pk=false, $type='int', $size=0, $value= null, $affected=false) {
++    $this-&gt;name=  $name;
++    $this-&gt;value= $value;
++    $this-&gt;pk= (bool)$pk;
++    $this-&gt;size= (int)$size;
++    $this-&gt;type= SQLType::getPhpType( strtolower($type) );
++    $this-&gt;affected= (bool)$affected;
++  }
+ 
+-  abstract public function connect();
++  public function getName() { return $this-&gt;name; }
+ 
+-  abstract public function close(); 
++  public function getValue() { return $this-&gt;value; }
++  public function setValue($value) { $this-&gt;value= $value;}
+ 
+-  abstract public function execute($sql);
++  public function setAffected($val) { $this-&gt;affected= (bool)$val; }
++  public function isAffected() { return (bool)$this-&gt;affected; }
+ 
+-  abstract protected function getLastErrorMessage();
++  public function isPk() { return (bool)$this-&gt;pk; }
+ 
+-  abstract public function getTableInfo($name);
++  public function getType() { return $this-&gt;type; }
+ 
++  public function alter( $value ) {
++    $this-&gt;value    = $value;
++    $this-&gt;affected = true;
++  }
++
+ }
+ 
+ abstract class SQLResultSet extends Object {
+@@ -64,18 +70,10 @@
+ 
+ }
+ 
+-class SQLiteResultSet extends SQLResultSet {
+-
+-  public function next() {
+-    $this-&gt;row= sqlite_fetch_array( $this-&gt;result );
+-    return $this-&gt;row ? true : false;
+-  }
+-
+-}
+-
+ abstract class SQLTableInfo extends Object {
+ 
+-  protected $fields, $name, $connection;
++  protected $name, $connection;
++  private $fields;
+ 
+   public function SQLTableInfo($name, SQLConnection $connection) {
+     $this-&gt;name= $name;
+@@ -83,64 +81,13 @@
+     $this-&gt;fields= array();
+   }
+ 
++  public function add(Field $field) {
++    $this-&gt;fields[$field-&gt;getName()]= $field;
++  }
++
+   public function getFields() { return $this-&gt;fields; }
+ 
+   abstract public function initFields( );
+ 
+ }
+ 
+-class SQLiteTableInfo extends SQLTableInfo {
+-
+-  public function initFields() {
+-    $sql= 'PRAGMA table_info('.$this-&gt;name.')';
+-    $rs= $this-&gt;connection-&gt;execute( $sql );
+-    while( $rs-&gt;next() ) {
+-      // xxx: type.
+-      $f= new Field( $rs-&gt;name, $rs-&gt;pk, $rs-&gt;type );
+-    }
+-  }
+-
+-}
+-
+-class SQLiteConnection extends SQLConnection {
+-
+-  public function SQLiteConnection() {
+-    $this-&gt;database= 'db/aymo.sqlite';
+-  }
+-
+-  public function connect() {
+-    try {
+-      $this-&gt;resource= sqlite_open( $this-&gt;database );
+-    } catch (Error $err) {
+-      throw new SQLException( $err-&gt;getMessage() );
+-    }
+-  }
+-
+-  public function execute($sql) {
+-    $this-&gt;lasQuery= $sql;
+-    try {
+-      $result= sqlite_query( $this-&gt;resource, $sql, SQLITE_ASSOC );
+-    } catch (Error $err) {
+-      throw new SQLException( $err-&gt;getMessage() );
+-    }
+-    return new SQLiteResultSet($result, $this);
+-  }
+-
+-  public function close() {
+-    sqlite_close( $this-&gt;resource );
+-  }
+-
+-  public function getLastErrorMessage() {
+-    return sqlite_error_string( sqlite_last_error($this-&gt;resource) );
+-  }
+-  
+-  // xxx. cache.
+-  public function getTableInfo( $name ) {
+-    $table_info= new SQLiteTableInfo( $name, $this );
+-    $table_info-&gt;initFields();
+-  }
+-
+-}
+-
+-
+-
+
+Added: exp/ar5/db/sqlite.schema
+===================================================================
+--- exp/ar5/db/sqlite.schema	2007-08-17 14:20:56 UTC (rev 453)
++++ exp/ar5/db/sqlite.schema	2007-08-20 13:18:56 UTC (rev 454)
+@@ -0,0 +1,39 @@
++--
++-- $Id$
++--
++-- SQLite3 Database schema for aymo
++-- 
++
++create table users (
++  id         INTEGER PRIMARY KEY,
++  firstname  varchar(255) not null,
++  lastname   varchar(255) not null,
++  email      varchar(255) not null,
++  password   varchar(255) not null,
++  role       int(11) not null default 2048,
++  state      int(11) not null default 0,
++  created_at timestamp default CURRENT_TIMESTAMP
++);
++
++CREATE TRIGGER insert_users_created_at AFTER INSERT ON users
++BEGIN
++  UPDATE users SET created_at = strftime('%s','now')  WHERE rowid = new.rowid;
++END;
++
++create table agents (
++  id INTEGER PRIMARY KEY,
++  user_id int(11) not null
++);
++
++create table estates (
++  id INTEGER PRIMARY KEY,
++  name varchar(255) not null,
++  description text not null
++);
++
++create table agents_estates (
++  id        INTEGER PRIMARY KEY,
++  estate_id int(11) not null,
++  agent_id  int(11) not null
++);
++
+
+
+Property changes on: exp/ar5/db/sqlite.schema
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php	2007-08-17 14:20:56 UTC (rev 453)
++++ exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php	2007-08-20 13:18:56 UTC (rev 454)
+@@ -0,0 +1,47 @@
++&lt;?php
++// $Id$
++
++abstract class SQLConnection extends Object {
++
++  protected $resource, $database, $lastQuery;
++
++  public function getDatabase() { return $this-&gt;database; }
++  public function setDatabase( $database ) { $this-&gt;database=$database;}
++  public function getResource() { return $this-&gt;resource; }
++  public function setResource( $resource ) { $this-&gt;resource= $resource; }
++  public function getLastQuery() { return $this-&gt;lastQuery; }
++
++  abstract public function connect();
++
++  abstract public function close(); 
++
++  // return int
++  abstract public function nextId();
++
++  // return string
++  abstract protected function getLastErrorMessage();
++
++  // return TableInfo
++  abstract public function getTableInfo($name);
++  
++  // return PreparedStatement
++  abstract public function prepare( $sql );
++  
++  // return ResultSet
++  abstract public function execute( $sql );
++
++  // return Resource
++  abstract public function exec( $sql );
++  
++  // return int
++  abstract public function getUpdateCount( $rs=null );
++  
++  // return int
++  public function executeUpdate( $sql ) {
++    return $this-&gt;getUpdateCount( $this-&gt;exec($sql) );
++  }
++
++}
++
++
++
+
+
+Property changes on: exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php	2007-08-17 14:20:56 UTC (rev 453)
++++ exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php	2007-08-20 13:18:56 UTC (rev 454)
+@@ -0,0 +1,130 @@
++&lt;?php
++// $Id$
++
++abstract class SQLPreparedStatement extends Object {
++
++  protected $conn, $sql;
++
++  protected $positions=0;
++  protected $positionsCount=0;
++  protected $sql_cache='';
++  protected $sql_cache_valid= false;
++  protected $boundInVars= array();
++
++  public function SQLPreparedStatement(SQLConnection $conn, $sql) {
++    $this-&gt;conn= $conn;
++    $this-&gt;sql= $sql;
++    $this-&gt;positions = $this-&gt;parseQuery ( $sql );
++    // save processing later in cases where we may repeatedly exec statement
++    $this-&gt;positionsCount = count ( $this-&gt;positions );
++  }
++
++  /**
++   * Parse the SQL query for ? positions
++   *
++   * @param string $sql The query to process
++   * @return array Positions from the start of the string that ?'s appear at
++   */
++  protected function parseQuery ( $sql ) {
++    $positions = array();
++    // match anything ? ' &quot; or \ in $sql with an early out if we find nothing
++    if ( preg_match_all ( '([\?]|[\']|[\&quot;]|[\\\])', $sql, $matches, PREG_OFFSET_CAPTURE ) !== 0 ) {
++      $matches = $matches['0'];
++      $open = NULL;
++      // go thru all our matches and see what we can find
++      for ( $i = 0, $j = count ( $matches ); $i &lt; $j; $i++ ) {
++        switch ( $matches[$i]['0'] ) {
++          // if we already have an open &quot; or ' then check if this is the end to close it or not
++          case $open:
++            $open = NULL;
++            break;
++          // we have a quote, set ourselves open
++          case '&quot;':
++          case &quot;'&quot;:
++            $open = $matches[$i]['0'];
++            break;
++          // check if it is an escaped quote and skip if it is
++          case '\\':
++            $next_match = $matches[$i+1]['0'];
++            if ( $next_match === '&quot;' || $next_match === &quot;'&quot; ) {
++              $i++;
++            }
++            unset ( $next_match );
++            break;
++				  // we found a ?, check we arent in an open &quot;/' first and
++				  // add it to the position list if we arent
++          default:
++            if ( $open === NULL ) {
++              $positions[] = $matches[$i]['1'];
++            }
++        } // switch
++        unset ( $matches[$i] );
++      } // for
++      unset ( $open, $matches, $i, $j );
++    } // if
++	  return $positions;
++  }
++
++  /**
++   * Replaces placeholders with the specified parameter values in the SQL.
++   * 
++   * This is for emulated prepared statements.
++   * 
++   * @return string New SQL statement with parameters replaced.
++   * @throws SQLException - if param not bound.
++   */
++  protected function replaceParams() {
++    // early out if we still have the same query ready
++    if ( $this-&gt;sql_cache_valid === true ) return $this-&gt;sql_cache;
++    // Default behavior for this function is to behave in 'emulated' mode.    
++    $sql = '';    
++    $last_position = 0;
++
++    for ($position = 0; $position &lt; $this-&gt;positionsCount; $position++) {
++      if (!isset($this-&gt;boundInVars[$position + 1])) {
++        throw new SQLException('Replace params: undefined query param: ' . ($position + 1));
++      }
++      $current_position = $this-&gt;positions[$position];            
++      $sql .= substr($this-&gt;sql, $last_position, $current_position - $last_position);
++      $sql .= $this-&gt;boundInVars[$position + 1];                    
++      $last_position = $current_position + 1;            
++    }
++    // append the rest of the query
++    $sql .= substr($this-&gt;sql, $last_position);
++    // just so we dont touch anything with a blob/clob
++    if ( strlen ( $sql ) &gt; 2048 ) { 
++		  $this-&gt;sql_cache = $sql;
++      $this-&gt;sql_cache_valid = true;
++		  return $this-&gt;sql_cache;
++	  } else {
++		  return $sql;
++	  }
++  }
++
++  public function setString($idx, $value) {
++    $this-&gt;boundInVars[$idx] = &quot;'&quot; . $this-&gt;escape((string)$value) . &quot;'&quot;;
++  }
++
++  public function setInteger($idx, $value) {
++    $this-&gt;boundInVars[$idx]= (int)$value;
++  }
++
++  public function populateValues(Array $fields) {
++    $i=1; foreach($fields as $field) {
++      if(!$field instanceof Field) throw new SQLException('Wrong argument Type, it should be an instance of &quot;Field&quot;');
++      call_user_func( array($this, 'set'.ucfirst($field-&gt;getType())), $i++, $field-&gt;getValue() );
++    }
++  }
++
++  public function executeUpdate() {
++    $sql= $this-&gt;replaceParams();
++    return $this-&gt;conn-&gt;executeUpdate( $sql );
++  }
++
++  public function close() {
++  }
++
++  abstract protected function escape($value);
++
++}
++
+
+
+Property changes on: exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/ar5/libs/active/record/drivers/sqlite/sqlite.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/sqlite/sqlite.php	2007-08-17 14:20:56 UTC (rev 453)
++++ exp/ar5/libs/active/record/drivers/sqlite/sqlite.php	2007-08-20 13:18:56 UTC (rev 454)
+@@ -0,0 +1,103 @@
++&lt;?php
++// $Id$
++
++class SQLiteResultSet extends SQLResultSet {
++
++  public function next() {
++    $this-&gt;row= sqlite_fetch_array( $this-&gt;result );
++    return (bool)$this-&gt;row;
++    // return $this-&gt;row ? true : false;
++  }
++
++}
++
++class SQLiteTableInfo extends SQLTableInfo {
++
++  public function initFields() {
++    $sql= 'PRAGMA table_info('.$this-&gt;name.')';
++    $rs= $this-&gt;connection-&gt;execute( $sql );
++    while( $rs-&gt;next() ) {
++      // xxx: type.
++      $fulltype= $rs-&gt;type; // varchar(255);
++      $size=0;
++      if (preg_match('/^([^\(]+)\(\s*(\d+)\s*,\s*(\d+)\s*\)$/', $fulltype, $matches)) {
++        $type = $matches[1];
++        $size = $matches[2];
++        // $scale = $matches[3]; // aka precision    
++      } elseif (preg_match('/^([^\(]+)\(\s*(\d+)\s*\)$/', $fulltype, $matches)) {
++        $type = $matches[1];
++        $size = $matches[2];
++      } else {
++        $type = $fulltype;
++      }
++      // add field
++      $this-&gt;add( new Field( $rs-&gt;name, $rs-&gt;pk, $type, $size ) );
++    }
++  }
++
++}
++
++class SQLitePreparedStatement extends SQLPreparedStatement {
++
++  protected function escape( $value ) {
++    return sqlite_escape_string( $value );
++  }
++
++}
++
++class SQLiteConnection extends SQLConnection {
++
++  public function SQLiteConnection() {
++    $this-&gt;database= 'db/aymo.sqlite';
++  }
++
++  public function connect() {
++    try {
++      $this-&gt;resource= sqlite_open( $this-&gt;database );
++    } catch (Error $err) {
++      throw new SQLException( $err-&gt;getMessage() );
++    }
++  }
++
++  public function exec( $sql ) {
++   $this-&gt;lastQuery= $sql;
++    try {
++      return sqlite_query( $this-&gt;resource, $sql, SQLITE_ASSOC );
++    } catch (Error $err) {
++      throw new SQLException( $err-&gt;getMessage() );
++    }
++  }
++
++  public function execute( $sql ) {
++    return new SQLiteResultSet( $this-&gt;exec( $sql ), $this );
++  }
++
++  public function getUpdateCount( $rs=null ) {
++    return sqlite_changes( $this-&gt;resource );
++  }
++
++  public function nextId() {
++    return sqlite_last_insert_rowid( $this-&gt;resource );
++  }
++
++  public function close() {
++    sqlite_close( $this-&gt;resource );
++  }
++
++  public function getLastErrorMessage() {
++    return sqlite_error_string( sqlite_last_error($this-&gt;resource) );
++  }
++  
++  // xxx. cache.
++  public function getTableInfo( $name ) {
++    $table_info= new SQLiteTableInfo( $name, $this );
++    $table_info-&gt;initFields();
++    return $table_info;
++  }
++
++  public function prepare( $sql ) {
++    return new SQLitePreparedStatement($this, $sql);
++  }
++
++}
++
+
+
+Property changes on: exp/ar5/libs/active/record/drivers/sqlite/sqlite.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/ar5/libs/active/support/Inflector.php
+===================================================================
+--- exp/ar5/libs/active/support/Inflector.php	2007-08-17 14:20:56 UTC (rev 453)
++++ exp/ar5/libs/active/support/Inflector.php	2007-08-20 13:18:56 UTC (rev 454)
+@@ -0,0 +1,160 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: Inflector.php 431 2007-06-12 14:37:19Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * Convenient methods to work on english words 
++ * Based on: <A HREF="http://dev.rubyonrails.com/file/trunk/activesupport/lib/active_support/inflections.rb">http://dev.rubyonrails.com/file/trunk/activesupport/lib/active_support/inflections.rb</A>
++ * @package medick.active.support
++ * @author Aurelian Oancea
++ */
++
++class Inflector extends Object {
++
++    /**
++     * Transform word from singular to plural
++     * 
++     * @param string word, the word we want to pluralize
++     */
++    public static function pluralize($word) {
++        $rules = array(
++            '/(quiz)$/i'               =&gt; '\1zes',
++            '/^(ox)$/i'                =&gt; '\1en',
++            '/([m|l])ouse$/i'          =&gt; '\1ice',
++            '/(matr|vert|ind)ix|ex$/i' =&gt; '\1ices',
++            '/(x|ch|ss|sh)$/i'         =&gt; '\1es',
++            '/([^aeiouy]|qu)ies$/i'    =&gt; '\1y',
++            '/([^aeiouy]|qu)y$/i'      =&gt; '\1ies',
++            '/(hive)$/i'               =&gt; '\1s',
++            '/(?:([^f])fe|([lr])f)$/i' =&gt; '\1\2ves',
++            '/sis$/i'                  =&gt; 'ses',
++            '/([ti])um$/i'             =&gt; '\1a',
++            '/(buffal|tomat)o$/i'      =&gt; '\1oes',
++            '/(bu)s$/i'                =&gt; '\1ses',
++            '/(alias|status)/i'        =&gt; '\1es',
++            '/(octop|vir)us$/i'        =&gt; '\1i',
++            '/(ax|test)is$/i'          =&gt; '\1es',
++            '/s$/i'                    =&gt; 's',
++            '/$/'                      =&gt; 's'
++        );
++
++        foreach ($rules AS $rule =&gt; $replacement) {
++            if (preg_match($rule, $word)) {
++                return preg_replace($rule, $replacement, $word);
++            }
++        }
++        return $word;
++    }
++
++    /**
++     * Transform word from plural to singular
++     * 
++     * @param string word, the word we want to singularize
++     */
++    public static function singularize($word) {
++        $rules = array(
++            '/s$/i'                 =&gt; '',
++            '/(n)ews$/i'            =&gt; '\1ews',
++            '/([ti])a$/i'           =&gt; '\1um',
++            '/((a)naly|(b)a|(d)iagno|(p)arenthe|(p)rogno|(s)ynop|(t)he)ses$/i' =&gt; '\1\2sis',
++            '/(^analy)ses$/i'       =&gt; '\1sis',
++            '/([^f])ves$/i'         =&gt; '\1fe',
++            '/(hive)s$/i'           =&gt; '\1',
++            '/(tive)s$/i'           =&gt; '\1',
++            '/([lr])ves$/i'         =&gt; '\1f',
++            '/([^aeiouy]|qu)ies$/i' =&gt; '\1y',
++            '/(s)eries$/i'          =&gt; '\1eries',
++            '/(m)ovies$/i'          =&gt; '\1ovie',
++            '/(x|ch|ss|sh)es$/i'    =&gt; '\1',
++            '/([m|l])ice$/i'        =&gt; '\1ouse',
++            '/(bus)es$/i'           =&gt; '\1',
++            '/(o)es$/i'             =&gt; '\1',
++            '/(shoe)s$/i'           =&gt; '\1',
++            '/(cris|ax|test)es$/i'  =&gt; '\1is',
++            '/([octop|vir])i$/i'    =&gt; '\1us',
++            '/(alias|status)es$/i'  =&gt; '\1',
++            '/^(ox)en/i'            =&gt; '\1',
++            '/(vert|ind)ices$/i'    =&gt; '\1ex',
++            '/(matr)ices$/i'        =&gt; '\1ix',
++            '/(quiz)zes$/i'         =&gt; '\1'
++        );
++
++        foreach (array_reverse($rules) as $rule =&gt; $replacement) {
++            if (preg_match($rule, $word)) {
++                return preg_replace($rule, $replacement, $word);
++            }
++        }
++        return $word;
++    }
++
++    public static function tabelize($class) {
++        $s= strtolower(Inflector::pluralize($class));
++        return $s;
++    }
++    
++    // {{{ based on cake.
++    public static function camelize($word) {
++        return str_replace(&quot; &quot;, &quot;&quot;, ucwords(str_replace(&quot;_&quot;, &quot; &quot;, $word)));
++    }
++
++    public static function underscore($word) {
++        $word = preg_replace('/([A-Z]+)([A-Z])/','\1_\2', $word);
++        return strtolower(preg_replace('/([a-z])([A-Z])/','\1_\2', $word));
++    }
++
++    public static function humanize($lower_case_and_underscored_word) {
++        return ucwords(str_replace(&quot;_&quot;,&quot; &quot;,$lower_case_and_underscored_word));
++    }
++
++    // }}}
++
++    public static function sanitize($word) {
++        $word = strip_tags($word);
++        $word = htmlentities( $word, ENT_NOQUOTES );
++        // Keep only one char in emtities!
++        $word = preg_replace( '/&amp;(.).+?;/', '$1', $word );
++        // Remove non acceptable chars
++        $word = preg_replace( '/[^A-Za-z0-9]+/', '_', $word );
++        $word = preg_replace( '/^_+/', '', $word );
++        $word = preg_replace( '/_+$/', '', $word );
++        // Uppercase the first character of each word in a string
++        $word = strtolower( $word );
++        preg_match( '/^(.*?)(_[0-9]+)?$/', $word, $matches );
++        $base = substr( $matches[1], 0, 40 );
++        $word = $base;
++        if( isset( $matches[2] ) ) {
++            $word = $base . $matches[2];
++        }
++        return $word;
++    }
++}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000233.html">[Medick-svn] r453 - in exp: . ar5
+</A></li>
+	<LI>Next message: <A HREF="000235.html">[Medick-svn] r455 - in exp/ar5: . libs libs/context	libs/context/configurator
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#234">[ date ]</a>
+              <a href="thread.html#234">[ thread ]</a>
+              <a href="subject.html#234">[ subject ]</a>
+              <a href="author.html#234">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

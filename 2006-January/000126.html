@@ -1,0 +1,212 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r331 - in trunk: . libs/configurator libs/medick skel/public skel/scripts
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r331%20-%20in%20trunk%3A%20.%20libs/configurator%20libs/medick%20skel/public%20skel/scripts&In-Reply-To=%3C200601111833.k0BIX2fK006654%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000125.html">
+   <LINK REL="Next"  HREF="000127.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r331 - in trunk: . libs/configurator libs/medick skel/public skel/scripts</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r331%20-%20in%20trunk%3A%20.%20libs/configurator%20libs/medick%20skel/public%20skel/scripts&In-Reply-To=%3C200601111833.k0BIX2fK006654%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r331 - in trunk: . libs/configurator libs/medick skel/public skel/scripts">aurelian at berlios.de
+       </A><BR>
+    <I>Wed Jan 11 19:33:02 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000125.html">[Medick-svn] r330 - in trunk: bin libs/action/controller libs/active/record libs/medick skel/config skel/scripts test/application/models test/mock test/test/active/record test/test/active/record/associations test/test/medick
+</A></li>
+        <LI>Next message: <A HREF="000127.html">[Medick-svn] r332 - trunk/skel/scripts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#126">[ date ]</a>
+              <a href="thread.html#126">[ thread ]</a>
+              <a href="subject.html#126">[ subject ]</a>
+              <a href="author.html#126">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-11 19:32:58 +0100 (Wed, 11 Jan 2006)
+New Revision: 331
+
+Modified:
+   trunk/CHANGELOG
+   trunk/boot.php
+   trunk/libs/configurator/XMLConfigurator.php
+   trunk/libs/medick/util.php
+   trunk/skel/public/default.htaccess
+   trunk/skel/public/index.php
+   trunk/skel/scripts/generator.php
+Log:
+ -- updated changelog
+ -- removed never-used option from XMLConfigurator to use an xml string in constructor
+ -- XMLConfigurator more specialized exceptions
+ -- fix skel/scripts/generator.php to use the right application path
+ -- boot.php is not prepended anymore, it`s included in application/index.php
+
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-01-09 19:55:37 UTC (rev 330)
++++ trunk/CHANGELOG	2006-01-11 18:32:58 UTC (rev 331)
+@@ -5,8 +5,9 @@
+ 
+ 0.0.4 (09.Jan.2006)
+     - added medick application generator (bin/medick.php).
++    - re-wrote scripts/generator.php, will create dummy files (controllers with associated views and models)
+     - added medick.util, base package for medick collections.
+-    - rewrite the Routing System (more like RoR), it`s not completly done, but we have a nice working version.
++    - rewrite the Routing System (more like RoR), it`s not completly done (20%), but we have a nice working version.
+     - minor refactorings in ActiveRecordBase  
+     - code improvements in Logger:
+         - removed heavy backtrace witch was attached to every Logging Events.
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2006-01-09 19:55:37 UTC (rev 330)
++++ trunk/boot.php	2006-01-11 18:32:58 UTC (rev 331)
+@@ -37,9 +37,11 @@
+  * @package locknet7.boot
+  */
+ 
+-define( 'MEDICK_PATH', dirname(__FILE__)  . DIRECTORY_SEPARATOR );
+ // medick path.
++define( 'MEDICK_PATH', dirname(__FILE__) . DIRECTORY_SEPARATOR );
++// rewrite system include path
+ set_include_path( MEDICK_PATH . 'libs'   . DIRECTORY_SEPARATOR  );
++
+ // this should depend on environment
+ error_reporting(E_ALL|E_STRICT);
+ // php 5.1 strict sdandards.
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2006-01-09 19:55:37 UTC (rev 330)
++++ trunk/libs/configurator/XMLConfigurator.php	2006-01-11 18:32:58 UTC (rev 331)
+@@ -50,13 +50,17 @@
+      * @param string/file xml
+      */
+     public function __construct($xml) {
+-        if (is_file($xml)) {
+-            $this-&gt;sxe = simplexml_load_file($xml, 'SimpleXMLIterator');
++        if (file_exists($xml)) {
++            if (is_readable($xml)) {
++                $this-&gt;sxe = simplexml_load_file($xml, 'SimpleXMLIterator');
++            } else {
++                throw new IOException(&quot;Cannot read: &quot; . $xml . &quot; Permission deny&quot;);
++            }
+         } else {
+-            $this-&gt;sxe = @simplexml_load_string($xml, 'SimpleXMLIterator');
++            throw new FileNotFoundException(&quot;No such file or directory: &quot; . $xml);
+         }
+-        if ($this-&gt;sxe===false) {
+-            throw new ConfiguratorException(&quot;Cannot read\n&lt;br /&gt;&quot; . $xml . &quot;\n&lt;br /&gt;Bad Format!&quot;);
++        if ($this-&gt;sxe === false) {
++            throw new ConfiguratorException(&quot;Cannot read: &quot; . $xml . &quot; Bad Format!&quot;);
+         }
+     }
+ 
+
+Modified: trunk/libs/medick/util.php
+===================================================================
+--- trunk/libs/medick/util.php	2006-01-09 19:55:37 UTC (rev 330)
++++ trunk/libs/medick/util.php	2006-01-11 18:32:58 UTC (rev 331)
+@@ -175,8 +175,8 @@
+      * @param array elements defaults to an empty array
+      */
+     public function Collection($elements=array()) {
+-        foreach ($elements as $element) {
+-            $this-&gt;add($element);
++        foreach ($elements as $key=&gt;$element) {
++            $this-&gt;offsetSet($element, $key);
+         }
+     }
+ 
+
+Modified: trunk/skel/public/default.htaccess
+===================================================================
+--- trunk/skel/public/default.htaccess	2006-01-09 19:55:37 UTC (rev 330)
++++ trunk/skel/public/default.htaccess	2006-01-11 18:32:58 UTC (rev 331)
+@@ -2,7 +2,6 @@
+ # $Id$
+ 
+ # Configuration
+-php_value auto_prepend_file ${CORE}/boot.php
+ 
+ SetEnv MEDICK_APPLICATION_PATH ${APP_PATH}
+ SetEnv MEDICK_APPLICATION_NAME ${APP_NAME}
+
+Modified: trunk/skel/public/index.php
+===================================================================
+--- trunk/skel/public/index.php	2006-01-09 19:55:37 UTC (rev 330)
++++ trunk/skel/public/index.php	2006-01-11 18:32:58 UTC (rev 331)
+@@ -32,5 +32,7 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-/** Main Entry Point */
++// load medick core
++include_once( &quot;${CORE}&quot; . DIRECTORY_SEPARATOR . &quot;boot.php&quot; );
++// Dispatch this request.
+ Dispatcher::dispatch();
+
+Modified: trunk/skel/scripts/generator.php
+===================================================================
+--- trunk/skel/scripts/generator.php	2006-01-09 19:55:37 UTC (rev 330)
++++ trunk/skel/scripts/generator.php	2006-01-11 18:32:58 UTC (rev 331)
+@@ -1,13 +1,18 @@
+ &lt;?php
++/**
++ * Medick generator.
++ * $Id$
++ */
++ 
+ $type= isset($argv[1]) ? $argv[1] : exit(&quot;Use one of controller or model for generator.\n&quot;);
+ $name= isset($argv[2]) ? strtolower($argv[2]) : exit($argv[0] . &quot; needs a &quot; . $argv[1] . &quot; name.\n&quot;);
+ 
+ switch ($type) {
+     case &quot;controller&quot;:
+-        generate_controller($name, &quot;/wwwroot/medick/applications/mytodo&quot;);
++        generate_controller($name, &quot;${APP_PATH}&quot;);
+         break;
+     case &quot;model&quot;:
+-        generate_model($name, &quot;/wwwroot/medick/applications/mytodo&quot;);
++        generate_model($name, &quot;${APP_PATH}&quot;);
+          break;
+      default:
+          exit(&quot;Use one of controller or model for generator.\n&quot;);
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000125.html">[Medick-svn] r330 - in trunk: bin libs/action/controller libs/active/record libs/medick skel/config skel/scripts test/application/models test/mock test/test/active/record test/test/active/record/associations test/test/medick
+</A></li>
+	<LI>Next message: <A HREF="000127.html">[Medick-svn] r332 - trunk/skel/scripts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#126">[ date ]</a>
+              <a href="thread.html#126">[ thread ]</a>
+              <a href="subject.html#126">[ subject ]</a>
+              <a href="author.html#126">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

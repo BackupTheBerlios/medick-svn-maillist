@@ -1,0 +1,348 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r336 - in trunk/libs: action/view active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r336%20-%20in%20trunk/libs%3A%20action/view%20active/record&In-Reply-To=%3C200601151859.k0FIxbM3004515%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000129.html">
+   <LINK REL="Next"  HREF="000131.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r336 - in trunk/libs: action/view active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r336%20-%20in%20trunk/libs%3A%20action/view%20active/record&In-Reply-To=%3C200601151859.k0FIxbM3004515%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r336 - in trunk/libs: action/view active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Jan 15 19:59:37 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000129.html">[Medick-svn] r335 - in trunk: bin libs/action/controller libs/action/controller/session libs/active/support
+</A></li>
+        <LI>Next message: <A HREF="000131.html">[Medick-svn] r339 - trunk/libs/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#130">[ date ]</a>
+              <a href="thread.html#130">[ thread ]</a>
+              <a href="subject.html#130">[ subject ]</a>
+              <a href="author.html#130">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-15 19:59:22 +0100 (Sun, 15 Jan 2006)
+New Revision: 336
+
+Added:
+   trunk/libs/active/record/Validator.php
+Modified:
+   trunk/libs/action/view/HTML.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Field.php
+Log:
+ -- added FormHelper, ActiveRecordHelper classes
+ -- added errors on fields
+ -- added ActiveRecord:::Validator
+
+
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-01-15 14:38:09 UTC (rev 335)
++++ trunk/libs/action/view/HTML.php	2006-01-15 18:59:22 UTC (rev 336)
+@@ -32,11 +32,91 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
++
++class ActiveRecordHelper extends Object {
++
++    public static function error_messages_for(ActiveRecordBase $object) {
++        $r= '&lt;div id=&quot;form_errors&quot;&gt;';
++        $errors= 0;
++        $p = '';
++        $it= $object-&gt;getRow()-&gt;iterator();
++        while ($it-&gt;hasNext()) {
++            $current= $it-&gt;next();
++            if ($current-&gt;hasErrors()) {
++                $p .= '&lt;ul&gt;';
++                foreach ($current-&gt;getErrors() as $error) {
++                    $p .= '&lt;li&gt;' . ucfirst($current-&gt;getName()) .' ' . $error . '&lt;/li&gt;';
++                    $errors++;
++                }
++                $p .= '&lt;/ul&gt;';
++                // $r[$current-&gt;getName()]= $current-&gt;getErrors();
++            }
++        }
++        if ($errors &gt; 0) {
++            $r .= '&lt;h2&gt;' . $errors . ' errors prohibited this ' . ucfirst(get_class($object)) . ' from being saved&lt;/h2&gt;';
++            $r .= '&lt;p&gt;There were problems with the following fields:&lt;/p&gt;';
++            $r .= $p;
++            return $r . '&lt;/div&gt;';
++        }
++    }
++
++}
++
++/** @see <A HREF="http://api.rubyonrails.com/classes/ActionView/Helpers/FormHelper.html">http://api.rubyonrails.com/classes/ActionView/Helpers/FormHelper.html</A> */
++
++class FormHelper extends Object {
++
++    public static function text_field(Object $object, $method, $options = array()) {
++        $buff = '&lt;input type=&quot;text&quot; id=&quot;' . strtolower(get_class($object)) . '_'.$method.'&quot; ';
++        $buff .= 'name=&quot;'.strtolower(get_class($object)).'['.$method.']&quot; ';
++        $buff .= 'value=&quot;'.$object-&gt;$method.'&quot; ';
++        foreach ($options as $key=&gt;$value) {
++            $buff .= $key . '=&quot;'.$value.'&quot; ';
++        }
++        return $buff . ' /&gt;';
++    }
++
++    public static function text_area(Object $object, $method, $options=array()) {
++        $buff = '&lt;textarea ';
++        $buff .= 'id=&quot;' . strtolower(get_class($object)) . '_'.$method.'&quot; ';
++        $buff .= 'name=&quot;'.strtolower(get_class($object)).'['.$method.']&quot; ';
++        foreach ($options as $key=&gt;$value) {
++            $buff .= $key . '=&quot;'.$value.'&quot; ';
++        }
++        $buff .= '&gt;';
++        $buff .= $object-&gt;$method;
++        $buff .= '&lt;/textarea&gt;';
++        return $buff;
++    }
++
++    public static function check_box(
++            Object $object,
++            $method,
++            $options = array(),
++            $checked_value = &quot;1&quot;,
++            $unchecked_value = &quot;0&quot;) {
++        $buff = '&lt;input type=&quot;checkbox&quot; id=&quot;';
++        $buff .= strtolower(get_class($object)) . '_'.$method.'&quot; ';
++        $buff .= 'name=&quot;'.strtolower(get_class($object)).'['.$method.']&quot; ';
++        foreach ($options as $key=&gt;$value) {
++            $buff .= $key . '=&quot;'.$value.'&quot; ';
++        }
++        if ((int)$object-&gt;$method &gt; 0) {
++            $buff .= 'value=&quot;1&quot; checked=&quot;checked&quot; ';
++        } else {
++            $buff .= 'value=&quot;0&quot;';
++        }
++
++        $buff .= ' /&gt;';
++        // $buff .= '&lt;input name=&quot;'.strtolower(get_class($object)).'['.$method.']&quot; type=&quot;hidden&quot; ';
++        return $buff;
++    }
++}
++
+ /**
+  * This package will be deprecated at one point and replaced with a modern view.
+  * @package locknet7.action.view.HTML
+  */
+-
+ class HTMLElement extends Object {
+     public function __construct() {     }
+ }
+@@ -61,7 +141,7 @@
+     }
+ }
+ 
+-
++/** @deprecated USE FormHelper! */
+ class Form extends Object {
+ 
+     public function __construct($action, $method) {  }
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-01-15 14:38:09 UTC (rev 335)
++++ trunk/libs/active/record/Base.php	2006-01-15 18:59:22 UTC (rev 336)
+@@ -39,6 +39,7 @@
+ include_once('active/record/QueryBuilder.php');
+ include_once('active/support/Inflector.php');
+ include_once('active/record/Association.php');
++include_once('active/record/Validator.php');
+ // 3-rd party.
+ include_once('creole/Creole.php');
+ 
+@@ -56,7 +57,7 @@
+ 
+     /** @var FieldsAggregate
+         DB Table Fields */
+-    protected $fields;
++    // protected $fields;
+ 
+     protected $row;
+ 
+@@ -101,7 +102,7 @@
+ 
+         $table_info   = self::$conn-&gt;getDatabaseInfo()-&gt;getTable(self::$table_name);
+         $this-&gt;pk     = $table_info-&gt;getPrimaryKey()-&gt;getName();
+-        //$this-&gt;fields = new FieldsAggregate();
++
+         $this-&gt;row = new DatabaseRow();
+         foreach( $table_info-&gt;getColumns() as $col) {
+             $field = new Field( $col-&gt;getName() );
+@@ -119,7 +120,6 @@
+             } else {
+                 $field-&gt;isFK = false;
+             }
+-            // $this-&gt;fields-&gt;add( $field );
+             $this-&gt;row[] = $field;
+         }
+ 
+@@ -226,6 +226,14 @@
+ 
+     // }}}
+ 
++    public final function getRow() {
++        return $this-&gt;row;
++    }
++
++    public final function validates () {
++        return new Validator($this-&gt;row);
++    }
++
+     // {{{ filters:
+     /**
+      * Before Insert Filter.
+@@ -441,11 +449,11 @@
+         }
+         $sql  = 'UPDATE ' . ActiveRecordBase::$table_name . ' SET ';
+         // $sql .= implode(' = ?, ', $this-&gt;row-&gt;getAffectedFieldsNames());
+-        
++
+         foreach($this-&gt;row-&gt;getAffectedFields() as $field) {
+             $sql .= $field-&gt;getName() . ' = ?, ';
+         }
+-        
++
+         return substr($sql, 0, -2) . $sqlSnippet;
+     }
+ 
+@@ -553,7 +561,7 @@
+     }
+     // }}}
+ 
+-    public static final function initialize($table) {
++    protected static final function initialize($table) {
+         ActiveRecordBase::$table_name= strtolower(Inflector::pluralize($table));
+         ActiveRecordBase::$class_name= ucfirst($table);
+     }
+
+Modified: trunk/libs/active/record/Field.php
+===================================================================
+--- trunk/libs/active/record/Field.php	2006-01-15 14:38:09 UTC (rev 335)
++++ trunk/libs/active/record/Field.php	2006-01-15 18:59:22 UTC (rev 336)
+@@ -73,14 +73,29 @@
+         the foreign key table */
+     public $fkTable;
+ 
++    protected $errors;
++
+     /**
+      * Creates a new Field Object
+      * @param string the name of this Field
+      */
+-    public function __construct($name) {
++    public function Field($name) {
+         $this-&gt;name = $name;
++        $this-&gt;errors= array();
+     }
+ 
++    public function addError($message) {
++        $this-&gt;errors[]=$message;
++    }
++
++    public function getErrors() {
++        return $this-&gt;errors;
++    }
++
++    public function hasErrors() {
++        return count($this-&gt;errors) &gt; 0;
++    }
++
+     /**
+      * It gets the name of this field
+      * @return string name
+
+Added: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2006-01-15 14:38:09 UTC (rev 335)
++++ trunk/libs/active/record/Validator.php	2006-01-15 18:59:22 UTC (rev 336)
+@@ -0,0 +1,38 @@
++&lt;?php
++
++class ValidationException extends MedickException {     }
++
++class Validator extends Object {
++
++    private $row;
++
++    public function Validator(DatabaseRow $row) {
++        $this-&gt;row= $row;
++    }
++
++    // pass a separated array list:
++    // presence_of('title','body')
++    public function presence_of() {
++        $args= func_get_args();
++        $has_errors= FALSE;
++        foreach ($args as $argument) {
++            if ($field=$this-&gt;row-&gt;getFieldByName($argument)) {
++                if ($field-&gt;getValue() == '') {
++                    $field-&gt;addError('is empty');
++                    $has_errors= TRUE;
++                }
++            }
++        }
++        if ($has_errors) {
++            throw new ValidationException('Validation failed!');
++        } else {
++            return TRUE;
++        }
++    }
++
++    public function uniqueness_of() {
++
++    }
++
++
++}
+
+
+Property changes on: trunk/libs/active/record/Validator.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000129.html">[Medick-svn] r335 - in trunk: bin libs/action/controller libs/action/controller/session libs/active/support
+</A></li>
+	<LI>Next message: <A HREF="000131.html">[Medick-svn] r339 - trunk/libs/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#130">[ date ]</a>
+              <a href="thread.html#130">[ thread ]</a>
+              <a href="subject.html#130">[ subject ]</a>
+              <a href="author.html#130">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

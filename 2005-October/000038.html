@@ -1,0 +1,537 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r234 - in trunk: libs/active/record libs/medick test/dummy/models
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r234%20-%20in%20trunk%3A%20libs/active/record%20libs/medick%20test/dummy/models&In-Reply-To=%3C200510231120.j9NBKNtP027800%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000037.html">
+   <LINK REL="Next"  HREF="000039.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r234 - in trunk: libs/active/record libs/medick test/dummy/models</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r234%20-%20in%20trunk%3A%20libs/active/record%20libs/medick%20test/dummy/models&In-Reply-To=%3C200510231120.j9NBKNtP027800%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r234 - in trunk: libs/active/record libs/medick test/dummy/models">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Oct 23 13:20:23 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000037.html">[Medick-svn] r233 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000039.html">[Medick-svn] r235 - in trunk/test: . application application/models test test/action test/action/controller test/active test/active/record test/active/record/associations test/active/support test/configurator test/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#38">[ date ]</a>
+              <a href="thread.html#38">[ thread ]</a>
+              <a href="subject.html#38">[ subject ]</a>
+              <a href="author.html#38">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-23 13:20:20 +0200 (Sun, 23 Oct 2005)
+New Revision: 234
+
+Added:
+   trunk/libs/active/record/Association.php
+Modified:
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/FieldsAggregate.php
+   trunk/libs/active/record/QueryBuilder.php
+   trunk/libs/medick/Dispatcher.php
+   trunk/libs/medick/Exception.php
+   trunk/test/dummy/models/author.php
+   trunk/test/dummy/models/book.php
+Log:
+!!! Major Changes on Models:
+# due to the php inheritance in static context, a dummy method should be added to the models:
+ public static function find() {
+    $args= func_get_args();
+    self::setTable(__CLASS__);
+    return self::__find($args);
+ }
+
+ -&gt; ActiveRecordBase renamed find() to __find()
+ -&gt; added active/record/Association.php, a class to handle ActiveRecord Association
+ -&gt; ActiveRecordBase ready-only has_and_belongs_to_many association type
+ -&gt; active/record/QueryBuilder.php added API docs, added `left join` modifier
+ -&gt; medick/Exception.php added `getType` witch retrun the Exception type
+ -&gt; tests/* fixed dummy models to take care of the new way of writing Models
+ -&gt; medick/Dispatcher, Exception Types (our MedickException`s and other types of Exceptions) are handle differently
+
+
+Added: trunk/libs/active/record/Association.php
+===================================================================
+--- trunk/libs/active/record/Association.php	2005-10-23 09:16:24 UTC (rev 233)
++++ trunk/libs/active/record/Association.php	2005-10-23 11:20:20 UTC (rev 234)
+@@ -0,0 +1,82 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice, 
++//   this list of conditions and the following disclaimer. 
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation 
++//   and/or other materials provided with the distribution. 
++//   * Neither the name of locknet.ro nor the names of its contributors may 
++//   be used to endorse or promote products derived from this software without 
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++// 
++// $Id$
++// 
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * Association base abstract class
++ * @package locknet7.active.record
++ */
++
++abstract class Association extends Object {
++
++    public $owner= NULL;
++
++    public $class= NULL;
++
++    public $pk   = NULL;
++
++    abstract public function execute();
++
++    protected function pre_execution() {
++        ActiveRecordBase::setTable(Inflector::pluralize($this-&gt;class));
++    }
++
++    protected function post_execution() {
++        ActiveRecordBase::setTable(Inflector::pluralize($this-&gt;owner));
++    }
++}
++
++/**
++ * HasAndBelongsToManyAssociation
++ * @package locknet7.active.record.association
++ */
++class HasAndBelongsToManyAssociation extends Association {
++    public function execute() {
++        $this-&gt;pre_execution();
++        $join_table= Inflector::pluralize($this-&gt;class) . '_' . Inflector::pluralize($this-&gt;owner);
++        $ret= ActiveRecordBase::__find(
++                            array(
++                                array(
++                                    'include'  =&gt; Inflector::pluralize($this-&gt;class) . '.*',
++                                    'left join'=&gt;
++                                              $join_table . ' ON ' .
++                                              Inflector::pluralize($this-&gt;class) .
++                                              '.id=' . $join_table . '.' . $this-&gt;class . '_id',
++                                     'condition'=&gt; $join_table . '.' . $this-&gt;owner . '_id=' . $this-&gt;pk
++                                    )
++                                )
++                            );
++        $this-&gt;post_execution();
++        return $ret;
++    }
++}
+
+
+Property changes on: trunk/libs/active/record/Association.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2005-10-23 09:16:24 UTC (rev 233)
++++ trunk/libs/active/record/Base.php	2005-10-23 11:20:20 UTC (rev 234)
+@@ -37,6 +37,9 @@
+ include_once('active/record/QueryBuilder.php');
+ include_once('active/record/ActiveRecordException.php');
+ include_once('active/support/Inflector.php');
++
++include_once('active/record/Association.php');
++
+ include_once('creole/Creole.php');
+ 
+ /**
+@@ -52,6 +55,10 @@
+         primary key name! */
+     private $pk;
+ 
++    /** @var Logger
++        a Logger instance */
++    protected $logger;
++
+     // {{{ static members
+     
+     /** @var Connection
+@@ -88,6 +95,7 @@
+      * @param array, params, parameters as pair of `field name` =&gt; `value`
+      */
+     public final function __construct($params = array()) {
++        $this-&gt;logger= Registry::get('__logger');
+         self::establish_connection();
+         $this-&gt;fields = new FieldsAggregate();
+         self::$table_name = Inflector::pluralize(strtolower(get_class($this)));
+@@ -153,19 +161,44 @@
+                 return $it-&gt;current()-&gt;isAffected ? $it-&gt;current()-&gt;getValue() : NULL;
+             }
+         }
+-        if ($this-&gt;has_one AND in_array($field_name, $this-&gt;has_one)) {
++        // Associations:
++        // 1. has_one, the syntax: protected $has_one= array('__FIELD_NAME__');
++        if (isset($this-&gt;has_one) &amp;&amp; $this-&gt;has_one &amp;&amp; in_array($field_name, $this-&gt;has_one)) {
+             $fk= $field_name.'_id';
+             for($it = $this-&gt;fields-&gt;getIterator(); $it-&gt;valid(); $it-&gt;next()) {
+                 if ( $it-&gt;current()-&gt;getName() == $fk ) {
+                     $_table= Inflector::singularize(self::$table_name);
+                     self::setTable($field_name);
+-                    $ret= self::find($it-&gt;current()-&gt;getValue());
++                    $ret= self::__find(array($it-&gt;current()-&gt;getValue()));
+                     self::setTable($_table);
+                     return $ret;
+                 }
+             }
+         }
+-        throw new ActiveRecordException ('Cannot Get the value of filed: ' . $field_name . '. No such filed!');
++        // 2. has_and_belongs_to_many
++        if (
++            (isset($this-&gt;has_and_belongs_to_many))
++              &amp;&amp;
++              (
++                  (
++                      (is_array($this-&gt;has_and_belongs_to_many))
++                      &amp;&amp;
++                      (in_array($field_name, $this-&gt;has_and_belongs_to_many))
++                  )
++                  ||
++                  (
++                      $this-&gt;has_and_belongs_to_many == Inflector::pluralize($field_name)
++                  )
++              )
++            )
++        {
++            $assoc = new HasAndBelongsToManyAssociation();
++            $assoc-&gt;owner= Inflector::singularize(self::$table_name);
++            $assoc-&gt;pk   = $this-&gt;fields-&gt;getPrimaryKey()-&gt;getValue();
++            $assoc-&gt;class= Inflector::singularize($field_name);
++            return $assoc-&gt;execute();
++        }
++        throw new ActiveRecordException ('Cannot Get the value of filed: `' . $field_name . '`. No such filed!');
+     }
+ 
+     /** removes some duplicate code */
+@@ -313,14 +346,12 @@
+     // }}}
+ 
+     // {{{ find monster
+-    public static function find() {
+-        $numargs = func_num_args();
+-        if($numargs == 0) return self::find('all');
+-        $params = func_get_args();
++    public static final function __find($params= array()) {
++        $numargs = sizeof($params);
++        if($numargs == 0) return self::__find(array('all'));
+ 
+         // $class = new ReflectionClass(Inflector::singularize(ucfirst(self::$table_name)));
+         $_klazz = Inflector::singularize(ucfirst(self::$table_name));
+-
+         $query = new QuerryBuilder(self::$table_name);
+ 
+         if ( $params[0] == 'all' &amp;&amp; $numargs == 1 ) {
+
+Modified: trunk/libs/active/record/FieldsAggregate.php
+===================================================================
+--- trunk/libs/active/record/FieldsAggregate.php	2005-10-23 09:16:24 UTC (rev 233)
++++ trunk/libs/active/record/FieldsAggregate.php	2005-10-23 11:20:20 UTC (rev 234)
+@@ -142,4 +142,3 @@
+         return $affected_fields;
+     }
+ }
+-
+
+Modified: trunk/libs/active/record/QueryBuilder.php
+===================================================================
+--- trunk/libs/active/record/QueryBuilder.php	2005-10-23 09:16:24 UTC (rev 233)
++++ trunk/libs/active/record/QueryBuilder.php	2005-10-23 11:20:20 UTC (rev 234)
+@@ -33,26 +33,49 @@
+ // }}}
+ 
+ /**
+- * It builds SQL querys
++ * It builds Select SQL querys
+  * @package locknet7.active.record
+  */
+ class QuerryBuilder extends Object {
+-    
+-    private $select  = array();
+-    private $from;
+-    private $where   = array();
++
++    /** @var array
++        select, used in include modifier */
++    private $select = array();
++
++    /** @var array
++        from clause, this includes the table name and joins */
++    private $fromClause = array();
++
++    /** @var array
++        where clause */
++    private $whereClause = array();
++
++    /** @var string
++        adds an order by */
+     private $orderBy;
+ 
+-    private $table;
++    /** @var int limit */
++    private $limit  = FALSE;
+ 
+-    private $limit  = FALSE;
++    /** @var int offset */
+     private $offset = FALSE;
+ 
+-    
++    /**
++     * Creates a new QueryBuilder
++     * @param string table
++     */
+     public function __construct($table) {
+-        $this-&gt;table = $table;
++        $this-&gt;fromClause[]= $table;
+     }
+ 
++    /**
++     * It adds a modifier to this select
++     *
++     * @param string type of this modifier
++     * @param string value of this modifier
++     * @throws ActiveRecordException when the type is unknown
++     * @return void
++     */
+     public function add($type, $value) {
+         switch ($type) {
+             case 'include':
+@@ -61,6 +84,9 @@
+             case 'condition':
+                 $this-&gt;addWhere($value);
+                 break;
++            case 'left join':
++                $this-&gt;addJoin('LEFT', $value);
++                break;
+             case 'limit':
+                 $this-&gt;limit = (int)$value;
+                 break;
+@@ -71,47 +97,83 @@
+                 $this-&gt;orderBy = $value;
+                 break;
+             default:
+-                throw new ActiveRecordException ('Call to unknow modifier: ' . $type);
++                throw new ActiveRecordException ('Call to unknow modifier: `' . $type . '`');
+                 break;
+         }
+     }
+ 
++    /**
++     * Adds modifiers as array
++     * @param array the array of parameters to pass
++     */
+     public function addArray(/*array*/ $params) {
+         foreach ($params AS $type=&gt;$value) {
+             $this-&gt;add($type, $value);
+         }
+     }
+-    
++
++    /**
++     * It gets the limit
++     * @return int the limit or FALSE if the limit was not changed
++     */
+     public function getLimit() {
+         return $this-&gt;limit;
+     }
+ 
++    /**
++     * It gets the offset
++     * @return int the offset or FALSE if the offset was not changed
++     */
+     public function getOffset() {
+         return $this-&gt;offset;
+     }
+-    
++
++    /**
++     * It buils the select query based on the modifiers passed.
++     * @return string the sql querys
++     */
+     public function buildQuery() {
+-        return  &quot;SELECT &quot;
++        $query =  &quot;SELECT &quot;
+                  . ($this-&gt;select ? implode(&quot; &quot;, $this-&gt;select) . &quot; &quot; : &quot; * &quot;)
+                  // .implode(&quot;, &quot;, $selectClause)
+                  // . &quot; FROM &quot; . implode(&quot;, &quot;, $fromClause)
+-                 . &quot; FROM &quot; . $this-&gt;table
+-                 . ($this-&gt;where ? &quot; WHERE &quot; . implode(&quot; AND &quot;, $this-&gt;where) : &quot;&quot;)
++                 // . &quot; FROM &quot; . $this-&gt;table
++                 . &quot; FROM &quot; . implode(&quot; &quot;, $this-&gt;fromClause)
++                 . ($this-&gt;whereClause ? &quot; WHERE &quot; . implode(&quot; AND &quot;, $this-&gt;whereClause) : &quot;&quot;)
+                  // .($groupByClause ? &quot; GROUP BY &quot;.implode(&quot;,&quot;, $groupByClause) : &quot;&quot;)
+                  // .($havingString ? &quot; HAVING &quot;.$havingString : &quot;&quot;)
+                  // . ($this-&gt;orderBy ? &quot; ORDER BY &quot; . implode(&quot;,&quot;, $this-&gt;orderBy) : &quot;&quot;);
+                  . ($this-&gt;orderBy ? &quot; ORDER BY &quot; . $this-&gt;orderBy : &quot;&quot;);
++        Registry::get('__logger')-&gt;debug('Trying to run sql query:');
++        Registry::get('__logger')-&gt;debug($query);
++        return $query;
+                  
+ 
+     }
+-    
+-    public function addSelect($select) {
++
++    // {{{ internal helpers.
++    /**
++     * Adds a select clause
++     * @param string select clause to add
++     */
++    private function addSelect($select) {
+         $this-&gt;select[] = $select;
+     }
+ 
+-    public function addWhere($where) {
+-        $this-&gt;where[] = $where;
++    /**
++     * Adds a where clause
++     * @param string where clause to add
++     */
++    private function addWhere($where) {
++        $this-&gt;whereClause[] = $where;
+     }
+ 
++    /**
++     * Adds a join clause
++     * @param string join clause to add
++     */
++    private function addJoin($args, $value) {
++        $this-&gt;fromClause[] = $args . &quot; JOIN &quot; . $value;
++    }
++    // }}}
+ }
+-
+
+Modified: trunk/libs/medick/Dispatcher.php
+===================================================================
+--- trunk/libs/medick/Dispatcher.php	2005-10-23 09:16:24 UTC (rev 233)
++++ trunk/libs/medick/Dispatcher.php	2005-10-23 11:20:20 UTC (rev 234)
+@@ -57,9 +57,14 @@
+         }
+         try {
+             ActionControllerRouting::recognize($request)-&gt;process($request, $response)-&gt;dump();
++        } catch (MedickException $mEx) {
++            Registry::get('__logger')-&gt;warn($mEx-&gt;getMessage());
++            echo '&lt;div style=&quot;border:1px solid red&quot;&gt;&lt;h1 style=&quot;text-align:center&quot;&gt;Cannot process your request due to a MedickException&lt;/h1&gt;';
++            echo '&lt;span style=&quot;color:red&quot;&gt;' . $mEx-&gt;getMessage() . '&lt;/span&gt;';
++            echo '&lt;pre&gt;' . $mEx-&gt;getTraceAsString() . '&lt;/pre&gt;&lt;br /&gt;&lt;h3&gt;Exception Type: ' . $mEx-&gt;getType() . '&lt;/h3&gt;&lt;/div&gt;';
+         } catch (Exception $e) {
+             Registry::get('__logger')-&gt;warn($e-&gt;getMessage());
+-            echo '&lt;div style=&quot;border:1px solid red&quot;&gt;&lt;h1 style=&quot;text-align:center&quot;&gt;Cannot process your request due to an exception&lt;/h1&gt;';
++            echo '&lt;div style=&quot;border:1px solid red&quot;&gt;&lt;h1 style=&quot;text-align:center&quot;&gt;Internal Server Error.&lt;/h1&gt;';
+             echo '&lt;span style=&quot;color:red&quot;&gt;' . $e-&gt;getMessage() . '&lt;/span&gt;';
+             echo '&lt;pre&gt;' . $e-&gt;getTraceAsString() . '&lt;/pre&gt;&lt;/div&gt;';
+         }
+
+Modified: trunk/libs/medick/Exception.php
+===================================================================
+--- trunk/libs/medick/Exception.php	2005-10-23 09:16:24 UTC (rev 233)
++++ trunk/libs/medick/Exception.php	2005-10-23 11:20:20 UTC (rev 234)
+@@ -37,5 +37,8 @@
+  * Our base Exception Class
+  * @package locknet7.medick
+  */
+-class MedickException extends Exception {       }
++class MedickException extends Exception {
+ 
++    public function getType() { return __CLASS__; }
++
++}
+
+Modified: trunk/test/dummy/models/author.php
+===================================================================
+--- trunk/test/dummy/models/author.php	2005-10-23 09:16:24 UTC (rev 233)
++++ trunk/test/dummy/models/author.php	2005-10-23 11:20:20 UTC (rev 234)
+@@ -4,5 +4,11 @@
+ 
+ include_once('active/record/Base.php');
+ 
+-class Author extends ActiveRecordBase {   }
++class Author extends ActiveRecordBase {
++    public static function find() {
++        $args= func_get_args();
++        self::setTable(__CLASS__);
++        return self::__find($args);
++    }
++}
+ 
+
+Modified: trunk/test/dummy/models/book.php
+===================================================================
+--- trunk/test/dummy/models/book.php	2005-10-23 09:16:24 UTC (rev 233)
++++ trunk/test/dummy/models/book.php	2005-10-23 11:20:20 UTC (rev 234)
+@@ -7,5 +7,11 @@
+ class Book extends ActiveRecordBase {
+ 
+     protected $has_one= array('author');
++    
++    public static function find() {
++        $args= func_get_args();
++        self::setTable(__CLASS__);
++        return self::__find($args);
++    }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000037.html">[Medick-svn] r233 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000039.html">[Medick-svn] r235 - in trunk/test: . application application/models test test/action test/action/controller test/active test/active/record test/active/record/associations test/active/support test/configurator test/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#38">[ date ]</a>
+              <a href="thread.html#38">[ thread ]</a>
+              <a href="subject.html#38">[ subject ]</a>
+              <a href="author.html#38">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

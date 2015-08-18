@@ -1,0 +1,162 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r238 - trunk/libs/configurator
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r238%20-%20trunk/libs/configurator&In-Reply-To=%3C200510240508.j9O58v7V010723%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000041.html">
+   <LINK REL="Next"  HREF="000043.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r238 - trunk/libs/configurator</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r238%20-%20trunk/libs/configurator&In-Reply-To=%3C200510240508.j9O58v7V010723%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r238 - trunk/libs/configurator">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Oct 24 07:08:57 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000041.html">[Medick-svn] r237 - trunk/test
+</A></li>
+        <LI>Next message: <A HREF="000043.html">[Medick-svn] r239 - in trunk: config libs/action/controller libs/action/controller/templates libs/action/view libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#42">[ date ]</a>
+              <a href="thread.html#42">[ thread ]</a>
+              <a href="subject.html#42">[ subject ]</a>
+              <a href="author.html#42">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-24 07:08:52 +0200 (Mon, 24 Oct 2005)
+New Revision: 238
+
+Added:
+   trunk/libs/configurator/INIConfigurator.php
+Log:
+ - [ configurator/INIConfigurator ] initial import.
+
+Added: trunk/libs/configurator/INIConfigurator.php
+===================================================================
+--- trunk/libs/configurator/INIConfigurator.php	2005-10-23 14:41:39 UTC (rev 237)
++++ trunk/libs/configurator/INIConfigurator.php	2005-10-24 05:08:52 UTC (rev 238)
+@@ -0,0 +1,80 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++include_once('configurator/IConfigurator.php');
++
++/**
++ * ini file-based Configurator.
++ * @package locknet7.config
++ */
++
++class INIConfigurator extends Object implements IConfigurator {
++
++    private $handler;
++    
++    public function __construct($file) {
++      $this-&gt;handler= parse_ini_file($file, TRUE);
++    }
++
++    public function getLoggerOutputters() {
++        $ret= array();
++        $ret[0]=$this-&gt;handler['logger.file.outputter'];
++        $ret[0]['name'] = 'file';
++        $ret[1]=$this-&gt;handler['logger.mail.outputter'];
++        $ret[1]['name']= 'mail';
++        $ret[2]=$this-&gt;handler['logger.stdout.outputter'];
++        $ret[2]['name']= 'stdout';
++        $ao = new ArrayObject($ret);
++        return $ao-&gt;getIterator();
++    }
++    
++    public function getLoggerFormatter() {
++        return ucfirst($this-&gt;handler['logger']['formatter']) . 'Formatter';
++    }
++
++    public function getProperty($name) {
++        if (isset($this-&gt;handler['properties'][$name])) {
++            return $this-&gt;handler['properties'][$name];
++        } else {
++            throw new Exception('Property: ' . $name . ' not found!');
++        }
++    }
++
++    public function getDatabaseDsn($id = FALSE) {
++        if (!$id) $id= $this-&gt;handler['database']['default'];
++        return $this-&gt;handler['database.' . $id];
++    }
++
++}
++
+
+
+Property changes on: trunk/libs/configurator/INIConfigurator.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000041.html">[Medick-svn] r237 - trunk/test
+</A></li>
+	<LI>Next message: <A HREF="000043.html">[Medick-svn] r239 - in trunk: config libs/action/controller libs/action/controller/templates libs/action/view libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#42">[ date ]</a>
+              <a href="thread.html#42">[ thread ]</a>
+              <a href="subject.html#42">[ subject ]</a>
+              <a href="author.html#42">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

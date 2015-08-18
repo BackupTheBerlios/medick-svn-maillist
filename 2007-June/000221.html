@@ -1,0 +1,113 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r441 - in trunk: . libs/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r441%20-%20in%20trunk%3A%20.%20libs/medick&In-Reply-To=%3C200706171344.l5HDiGYX013644%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000220.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r441 - in trunk: . libs/medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r441%20-%20in%20trunk%3A%20.%20libs/medick&In-Reply-To=%3C200706171344.l5HDiGYX013644%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r441 - in trunk: . libs/medick">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Sun Jun 17 15:44:16 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000220.html">[Medick-svn] r440 - tags/medick-0.4.0
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#221">[ date ]</a>
+              <a href="thread.html#221">[ thread ]</a>
+              <a href="subject.html#221">[ subject ]</a>
+              <a href="author.html#221">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-06-17 15:44:15 +0200 (Sun, 17 Jun 2007)
+New Revision: 441
+
+Modified:
+   trunk/CHANGELOG
+   trunk/VERSION
+   trunk/libs/medick/Medick.php
+Log:
+ -- bumped revision to 0.4.1
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2007-06-17 13:41:53 UTC (rev 440)
++++ trunk/CHANGELOG	2007-06-17 13:44:15 UTC (rev 441)
+@@ -1,11 +1,13 @@
+ $Id$
+-(*) SVN version
+ 
+-0.4 (*)
++0.4.1-svn
++
++0.4.0 (17.Jun.2007)
+     - added HTTPRequest::is_xhr() method
+     - added JSON decode / encode
+     - added after filters for ActionController
+     - changed before_filter to before_filters for ActionController
++    - reverted database settings to XML config file
+     - skeleton for docs in ActionController
+ 
+ 0.3.0pre2 (23.Jul.2006)
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2007-06-17 13:41:53 UTC (rev 440)
++++ trunk/VERSION	2007-06-17 13:44:15 UTC (rev 441)
+@@ -1 +1 @@
+-0.4.0
++0.4.1-svn
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2007-06-17 13:41:53 UTC (rev 440)
++++ trunk/libs/medick/Medick.php	2007-06-17 13:44:15 UTC (rev 441)
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.4.0';
++        return '0.4.1-svn';
+     }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000220.html">[Medick-svn] r440 - tags/medick-0.4.0
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#221">[ date ]</a>
+              <a href="thread.html#221">[ thread ]</a>
+              <a href="subject.html#221">[ subject ]</a>
+              <a href="author.html#221">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

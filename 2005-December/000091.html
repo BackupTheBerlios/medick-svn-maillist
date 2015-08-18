@@ -1,0 +1,292 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r295 - in trunk/libs: action/controller configurator logger logger/outputter medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r295%20-%20in%20trunk/libs%3A%20action/controller%20configurator%20logger%20logger/outputter%20medick&In-Reply-To=%3C200512111944.jBBJiJQj017913%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000090.html">
+   <LINK REL="Next"  HREF="000092.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r295 - in trunk/libs: action/controller configurator logger logger/outputter medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r295%20-%20in%20trunk/libs%3A%20action/controller%20configurator%20logger%20logger/outputter%20medick&In-Reply-To=%3C200512111944.jBBJiJQj017913%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r295 - in trunk/libs: action/controller configurator logger logger/outputter medick">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Dec 11 20:44:19 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000090.html">[Medick-svn] r294 - trunk/libs/action/controller/templates
+</A></li>
+        <LI>Next message: <A HREF="000092.html">[Medick-svn] r296 - trunk/config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#91">[ date ]</a>
+              <a href="thread.html#91">[ thread ]</a>
+              <a href="subject.html#91">[ subject ]</a>
+              <a href="author.html#91">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-12-11 20:43:41 +0100 (Sun, 11 Dec 2005)
+New Revision: 295
+
+Modified:
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/configurator/XMLConfigurator.php
+   trunk/libs/logger/Logger.php
+   trunk/libs/logger/outputter/FileOutputter.php
+   trunk/libs/logger/outputter/MailOutputter.php
+   trunk/libs/logger/outputter/Outputter.php
+   trunk/libs/logger/outputter/StdoutOutputter.php
+   trunk/libs/medick/Exception.php
+Log:
+ - [ MException ] added InvalidArgumentException
+ - [ ACInjector ] removed application_path from the configuration options, using $_SERVER[MEDICK_APPLICATION_PATH]
+ - [ CXMLConfigurator ] rewrite getLoggerOutputters method, to make use of the 
+        new configuration properties added for Logging system
+ - [ Logger ] reading new configuration properties
+ - [ LOutputters ] using the new configuration options
+
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/action/controller/Injector.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -61,7 +61,7 @@
+     public function __construct() {
+         $this-&gt;config = Registry::get('__configurator');
+         $this-&gt;logger = Registry::get('__logger');
+-        $app_path = $this-&gt;config-&gt;getProperty('application_path') . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR;
++        $app_path = $_SERVER['MEDICK_APPLICATION_PATH'] . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR;
+         $this-&gt;path['__base']      = $app_path;
+         $this-&gt;path['models']      = $app_path . 'models'      . DIRECTORY_SEPARATOR;
+         $this-&gt;path['controllers'] = $app_path . 'controllers' . DIRECTORY_SEPARATOR;
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/configurator/XMLConfigurator.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -108,12 +108,16 @@
+     public function getLoggerOutputters() {
+         $i=0; $ret= array();
+         if (is_null($this-&gt;sxe-&gt;logger-&gt;outputters)) return $ret;
+-        foreach(new RecursiveIteratorIterator($this-&gt;sxe-&gt;logger-&gt;outputters) as $outputter) {
++        foreach ($this-&gt;sxe-&gt;logger-&gt;outputters-&gt;outputter as $outputter) {
+             $ret[$i]['name']    = (string)trim($outputter['name']);
+             $ret[$i]['level']   = (string)trim($outputter['level']);
+-            $ret[$i++]['value'] = (string)trim($outputter['value']);
++            foreach ($outputter-&gt;property as $property) {
++                $ret[$i]['properties'][(string)trim($property['name'])]= (string)trim($property['value']);
++            }
++            $i++;
+         }
+         return $ret;
++        
+     }
+     
+     /** @see IConfigurator::getLoggerFormatter */
+
+Modified: trunk/libs/logger/Logger.php
+===================================================================
+--- trunk/libs/logger/Logger.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/logger/Logger.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -75,7 +75,6 @@
+     public function __construct() {
+         $configurator = Registry::get('__configurator');
+         $outputters   = $configurator-&gt;getLoggerOutputters();
+-
+         if (sizeof($outputters) != 0) {
+             $this-&gt;load($outputters);
+         }
+@@ -165,7 +164,12 @@
+             @include_once($class_file);
+             try {
+                 $class= new ReflectionClass($class_name);
+-                $this-&gt;attach($class-&gt;newInstance($outputter['level'],$outputter['value']));
++                $instance= $class-&gt;newInstance($outputter['level']);
++                if (isset($outputter['properties'])) {
++                    $instance-&gt;setProperties($outputter['properties']);
++                }
++                $instance-&gt;initialize();
++                $this-&gt;attach($instance);
+             } catch (ReflectionException $rEx) {
+                 $this-&gt;warn($rEx-&gt;getMessage());
+             }
+
+Modified: trunk/libs/logger/outputter/FileOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/FileOutputter.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/logger/outputter/FileOutputter.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -43,16 +43,16 @@
+     private $handler;
+ 
+     /**
+-     * It builds this outputter
++     * Initialize this outputter
+      * @param int, level, this outputter individual level
+      * @param string the file to write on
+      */
+-    public function __construct($level, $file) {
++    public function initialize() {
++        $file= $this-&gt;getProperty('path');
+         if (!is_file($file)) {
+             touch($file);
+         }
+         $this-&gt;handler = fopen($file, 'a');
+-        $this-&gt;level = $level;
+     }
+ 
+     /**
+
+Modified: trunk/libs/logger/outputter/MailOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/MailOutputter.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/logger/outputter/MailOutputter.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -45,10 +45,9 @@
+     /** email subject */
+     private $subject;
+ 
+-    public function __construct($level, $email, $subject='Fatality...') {
+-        $this-&gt;level   = $level;
+-        $this-&gt;email   = $email;
+-        $this-&gt;subject = $subject;
++    public function initialize() {
++        $this-&gt;email   = $this-&gt;getProperty('address');
++        $this-&gt;subject = $this-&gt;getProperty('subject');
+     }
+ 
+     protected function write($message) {
+
+Modified: trunk/libs/logger/outputter/Outputter.php
+===================================================================
+--- trunk/libs/logger/outputter/Outputter.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/logger/outputter/Outputter.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -42,17 +42,48 @@
+     /** individual outputter level*/
+     protected $level;
+ 
++    private $properties= array();
++
++    public function __construct($level) {
++        $this-&gt;level= $level;
++    }
++
++    public function hasProperty($property) {
++        if (isset($this-&gt;properties[$property]) &amp;&amp; $this-&gt;properties[$property] != '') {
++            return TRUE;
++        } else {
++            throw new InvalidOffsetException('Outputter::properties dosent have `' . $property . '` as property');
++        }
++    }
++
++    public function getProperty($property) {
++        return $this-&gt;hasProperty($property) ? $this-&gt;properties[$property] : NULL;
++    }
++
++    public function setProperty($property, $value) {
++        $this-&gt;properties[$property]= $value;
++    }
++
++    public function setProperties(/* Array */ $properties) {
++        if (!is_array($properties)) {
++            throw new 
++                IllegalArgumentException('\$properties should be an array in ' . __FILE__ . ' at line: ' . (int)(__LINE__-3));
++        }
++        $this-&gt;properties= $properties;
++    }
++
+     /**
+      * Receive the Logger update
+      * and writes the log event using to the formatter
+      */
+     public function update(ILogger $logger) {
+-        if ($this-&gt;level &lt;= $logger-&gt;getMessageLevel()){
++        if ($this-&gt;level &lt;= $logger-&gt;getMessageLevel()) {
+             $this-&gt;write($logger-&gt;getFormatter()-&gt;format($logger-&gt;getEvent()));
+         }
+     }
+ 
+     // {{{ abstract methods
++    public abstract function initialize();
+     /** it writes the message */
+     protected abstract function write($message);
+     // }}}
+
+Modified: trunk/libs/logger/outputter/StdoutOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/StdoutOutputter.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/logger/outputter/StdoutOutputter.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -50,7 +50,7 @@
+      * It builds a new StdOutputter
+      * @param int, level, logger level.
+      */
+-    public function __construct($level) {
++    public function initialize() {
+         if (php_sapi_name() == 'cli') {
+             $this-&gt;isCLI = TRUE;
+             $this-&gt;eol = &quot;\n&quot;;
+@@ -59,7 +59,6 @@
+             $this-&gt;output .= '&lt;table border=&quot;1&quot; style=&quot;font-family: verdana;font-size: 0.7em;&quot; width=&quot;100%&quot;&gt;&lt;tr&gt;&lt;td&gt;';
+             $this-&gt;eol =  '&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;';
+         }
+-        $this-&gt;level = $level;
+     }
+ 
+     /** It flushes (echoes) the output buffer on exit */
+
+Modified: trunk/libs/medick/Exception.php
+===================================================================
+--- trunk/libs/medick/Exception.php	2005-12-11 14:21:01 UTC (rev 294)
++++ trunk/libs/medick/Exception.php	2005-12-11 19:43:41 UTC (rev 295)
+@@ -93,6 +93,17 @@
+  */
+ class InvalidOffsetException extends MedickException { }
+ // }}}
++
++// {{{ InvalidArgumentException
++if (!class_exists('InvalidArgumentException')) {
++    /**
++     * Exception that denotes invalid arguments were passed
++     * @package locknet7.medick
++     */
++    class InvalidArgumentException extends MedickException {    }
++}
++// }}}
++
+ // {{{ IOException
+ /**
+  * General Input/Output Exception
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000090.html">[Medick-svn] r294 - trunk/libs/action/controller/templates
+</A></li>
+	<LI>Next message: <A HREF="000092.html">[Medick-svn] r296 - trunk/config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#91">[ date ]</a>
+              <a href="thread.html#91">[ thread ]</a>
+              <a href="subject.html#91">[ subject ]</a>
+              <a href="author.html#91">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

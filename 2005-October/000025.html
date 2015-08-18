@@ -1,0 +1,107 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r221 - trunk/docs/patches
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r221%20-%20trunk/docs/patches&In-Reply-To=%3C200510161656.j9GGudDB016502%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000024.html">
+   <LINK REL="Next"  HREF="000026.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r221 - trunk/docs/patches</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r221%20-%20trunk/docs/patches&In-Reply-To=%3C200510161656.j9GGudDB016502%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r221 - trunk/docs/patches">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Oct 16 18:56:39 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000024.html">[Medick-svn] r220 - trunk/test
+</A></li>
+        <LI>Next message: <A HREF="000026.html">[Medick-svn] r222 - trunk/config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#25">[ date ]</a>
+              <a href="thread.html#25">[ thread ]</a>
+              <a href="subject.html#25">[ subject ]</a>
+              <a href="author.html#25">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-16 18:56:38 +0200 (Sun, 16 Oct 2005)
+New Revision: 221
+
+Modified:
+   trunk/docs/patches/creole.sqlite.patch
+Log:
+ - [docs/patches/creole.sqlite ] workaround php bug <A HREF="http://bugs.php.net/bug.php?id=34884">http://bugs.php.net/bug.php?id=34884</A>
+
+Modified: trunk/docs/patches/creole.sqlite.patch
+===================================================================
+--- trunk/docs/patches/creole.sqlite.patch	2005-10-16 16:48:58 UTC (rev 220)
++++ trunk/docs/patches/creole.sqlite.patch	2005-10-16 16:56:38 UTC (rev 221)
+@@ -1,17 +1,18 @@
+ ? LICENSE
+-? creole.patch
+ Index: drivers/sqlite/SQLiteConnection.php
+ ===================================================================
+ RCS file: /cvs/creole/creole/classes/creole/drivers/sqlite/SQLiteConnection.php,v
+ retrieving revision 1.12
+ diff -u -r1.12 SQLiteConnection.php
+ --- drivers/sqlite/SQLiteConnection.php	1 Sep 2004 14:00:29 -0000	1.12
+-+++ drivers/sqlite/SQLiteConnection.php	14 Oct 2005 19:12:08 -0000
+-@@ -165,9 +165,10 @@
+++++ drivers/sqlite/SQLiteConnection.php	16 Oct 2005 16:55:00 -0000
++@@ -164,10 +164,11 @@
++      */
+      public function executeQuery($sql, $fetchmode = null)
+      {    
+-         ini_set('sqlite.assoc_case', $this-&gt;sqliteAssocCase);
++-        ini_set('sqlite.assoc_case', $this-&gt;sqliteAssocCase);
+ -        $result = @sqlite_query($this-&gt;dblink, $sql);
+++        // ini_set('sqlite.assoc_case', $this-&gt;sqliteAssocCase);
+ +        $this-&gt;lastQuery = $sql;
+ +        $result = @sqlite_query($this-&gt;dblink, $this-&gt;lastQuery);
+          if (!$result) {
+@@ -46,7 +47,7 @@
+ retrieving revision 1.7
+ diff -u -r1.7 SQLiteTableInfo.php
+ --- drivers/sqlite/metadata/SQLiteTableInfo.php	29 Nov 2004 13:40:12 -0000	1.7
+-+++ drivers/sqlite/metadata/SQLiteTableInfo.php	14 Oct 2005 19:12:10 -0000
+++++ drivers/sqlite/metadata/SQLiteTableInfo.php	16 Oct 2005 16:55:02 -0000
+ @@ -72,7 +72,7 @@
+              
+              $this-&gt;columns[$name] = new ColumnInfo($this, $name, SQLiteTypes::getType($type), $type, $size, $scale, $is_nullable, $default_val);
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000024.html">[Medick-svn] r220 - trunk/test
+</A></li>
+	<LI>Next message: <A HREF="000026.html">[Medick-svn] r222 - trunk/config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#25">[ date ]</a>
+              <a href="thread.html#25">[ thread ]</a>
+              <a href="subject.html#25">[ subject ]</a>
+              <a href="author.html#25">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

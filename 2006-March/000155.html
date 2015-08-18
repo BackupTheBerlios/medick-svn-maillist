@@ -1,0 +1,845 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r365 - applications/eltodo/conf trunk/libs/action/controller trunk/libs/action/controller/http trunk/test/mock trunk/test/test/action/controller
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r365%20-%20applications/eltodo/conf%20trunk/libs/action/controller%20trunk/libs/action/controller/http%20trunk/test/mock%20trunk/test/test/action/controller&In-Reply-To=%3C200603011945.k21JjLXm030062%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000156.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r365 - applications/eltodo/conf trunk/libs/action/controller trunk/libs/action/controller/http trunk/test/mock trunk/test/test/action/controller</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r365%20-%20applications/eltodo/conf%20trunk/libs/action/controller%20trunk/libs/action/controller/http%20trunk/test/mock%20trunk/test/test/action/controller&In-Reply-To=%3C200603011945.k21JjLXm030062%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r365 - applications/eltodo/conf trunk/libs/action/controller trunk/libs/action/controller/http trunk/test/mock trunk/test/test/action/controller">aurelian at berlios.de
+       </A><BR>
+    <I>Wed Mar  1 20:45:21 CET 2006</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000156.html">[Medick-svn] r366 - trunk/libs/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#155">[ date ]</a>
+              <a href="thread.html#155">[ thread ]</a>
+              <a href="subject.html#155">[ subject ]</a>
+              <a href="author.html#155">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-03-01 20:44:55 +0100 (Wed, 01 Mar 2006)
+New Revision: 365
+
+Modified:
+   applications/eltodo/conf/eltodo.routes.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/Routing.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/test/mock/MockRequest.php
+   trunk/test/test/action/controller/RoutingTest.php
+Log:
+ -- working on named Routes and dymanic Routes Components
+
+Modified: applications/eltodo/conf/eltodo.routes.php
+===================================================================
+--- applications/eltodo/conf/eltodo.routes.php	2006-02-27 20:56:33 UTC (rev 364)
++++ applications/eltodo/conf/eltodo.routes.php	2006-03-01 19:44:55 UTC (rev 365)
+@@ -3,6 +3,7 @@
+ // $Id$
+ 
+ $map= Map::getInstance();
++$map-&gt;add(new Route('/project/all', Route::WELCOME, array('controller'=&gt;'project', 'action'=&gt;'all')));
+ $map-&gt;add(new Route(':controller/:action/:id'));
+ 
+ ?&gt;
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2006-02-27 20:56:33 UTC (rev 364)
++++ trunk/libs/action/controller/Request.php	2006-03-01 19:44:55 UTC (rev 365)
+@@ -43,11 +43,14 @@
+         current request parameters */
+     private $params = array();
+ 
+-    /** Hidden Constructor */
++    /** 
++     * Hidden Constructor 
++     */
+     protected function Request() {  }
+ 
+     /**
+-     * It gets the param
++     * It gets a Request Parameter
++     * 
+      * @param mixed, param, the paremeter name
+      * @return the param value of NULL if this param was not passed with this Resuest
+      */
+@@ -57,6 +60,7 @@
+ 
+     /**
+      * Check if the current Request has the parameter with the specified name
++     * 
+      * @param string param_name the parameter name
+      * @return bool TRUE if the parameter_name is included in this request, FALSE otherwise
+      */
+@@ -66,6 +70,7 @@
+ 
+     /**
+      * It gets all the parameters of this Request
++     * 
+      * @return array this request parameters.
+      */
+     public function getParameters() {
+@@ -73,7 +78,8 @@
+     }
+ 
+     /**
+-     * It sets a param.
++     * It sets a Request Parameter
++     *
+      * @param string, name, the name of the param to set
+      * @param mixed, value, value of the param
+      * @return void
+@@ -83,6 +89,18 @@
+     }
+ 
+     /**
++     * It adds an array of parameters on this Request
++     *
++     * @param array parameters, parameters name/value pairs
++     * @return void
++     */ 
++    public function setParameters(/*Array*/ $parameters=array()) {
++        foreach ($parameters as $name=&gt;$value) {
++            $this-&gt;setParameter($name, $value);
++        }
++    }
++    
++    /**
+      * Gets a string representation of this Object
+      *
+      * @return string
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2006-02-27 20:56:33 UTC (rev 364)
++++ trunk/libs/action/controller/Route.php	2006-03-01 19:44:55 UTC (rev 365)
+@@ -35,24 +35,42 @@
+ /**
+  * A Route Component
+  *
+- * @package locknet7.action.controller.route
++ * @see locknet7.action.controller.Route
++ * @package locknet7.action.controller
+  */
+ class Component extends Object {
+ 
++    /** @var string
++        the component name */
+     private $name;
+ 
++    /** @var boolean
++        true if this is a dynamic component */
+     private $dynamic;
+ 
+-    private $position;
+-
++    /**
++     * Creates a new Route Component with the given name
++     *
++     * @param string name the component name
++     */ 
+     public function Component($name) {
+         $this-&gt;name= $name;
+     }
+ 
++    /**
++     * It gets this component name
++     *
++     * @return string
++     */ 
+     public function getName() {
+         return $this-&gt;name;
+     }
+ 
++    /**
++     * Mark this component as dynamic
++     *
++     * @param boolean dynamic
++     */ 
+     public function setDynamic($dynamic) {
+         $this-&gt;dynamic= (bool)$dynamic;
+     }
+@@ -60,34 +78,56 @@
+     public function isDynamic() {
+         return $this-&gt;dynamic;
+     }
+-
+-    public function setPosition($position) {
+-        $this-&gt;position= (int)$position;
+-    }
+-
+-    public function getPosition() {
+-        return $this-&gt;position;
+-    }
+-
++    
+     public function toString() {
+-        return sprintf('{%s}---&gt;name=%s[dynamic=%s]', $this-&gt;getClassName(), $this-&gt;name, $this-&gt;dynamic ? 'TRUE':'FALSE');
++        return sprintf('{%s}--&gt;name=%s[dynamic=%s]', $this-&gt;getClassName(), $this-&gt;name, $this-&gt;dynamic ? 'TRUE':'FALSE');
+     }
+ 
+ }
+ 
+ /**
+  * Route class.
++ * 
++ * A Route resolves the incoming Request URI to a known Controller/Action,
++ * also, it will merge Route Components Names to Request parameters
++ * Usually, a Map holds the Route Definitions for an Web Application
++ * and the Recogition is performed inside the ActionControllerRouting::recognize(Request $request) method
++ * Routes are defined inside __APPLICATION__PATH/conf/__APPLICATION__NAME__.routes.php file,
++ * a plain php code file
+  *
+- * @package locknet7.action.controller.route
++ * @see locknet7.action.controller.Map
++ * @see locknet7.action.controller.Routing
++ * @see locknet7.action.controller.Component
++ *
++ * @TODO:
++ *      -&gt; Route Requirements
++ * 
++ * @package locknet7.action.controller
+  */
+ class Route extends Object {
+ 
++    // {{{ predefined Route Names
++    // default route name
++    const AUTO     = 0x000;
++    // welcome route, it`s used as an entry point of the application
+     const WELCOME  = 0x200;
+-
++    // used when you want to write your custom error route
+     const ERROR    = 0x500;
+-
++    // used when the page is not found
+     const NOTFOUND = 0x400;
+-
++    // }}}
++    
++    /** @var array
++        this route parameters witch will be merged to request parameters */ 
++    private $merges=array();
++    
++    /** @var array
++        cheap cache, this way we can remove request parameters 
++        between 2 route recogitions */
++    static private $old_merges= array();
++    
++    static private $old_defaults= array();
++    
+     /** @var string
+         incoming Route Definition list. */
+     private $route_list;
+@@ -96,6 +136,12 @@
+         a list with default values */
+     private $defaults;
+ 
++    /** @var bool
++        flag to indicate that this route is loaded.
++        on initial phase, we will use this flag for knowing 
++        if we already loaded the defaults values */
++    private $isLoaded;
++    
+     /** @var string
+         the route name */
+     private $name;
+@@ -113,19 +159,27 @@
+      *
+      * @param string route_list the route list
+      * @param string name route name
+-     * @param array
++     * @param array defaults a list of defaults values
++     * @param array requirements the route requirements
+      */
+     public function Route($route_list, $name = '', /*Array*/ $defaults = array(), /*Array*/ $requirements = array()) {
+-
+         $this-&gt;components = new Collection();
+         $this-&gt;route_list = $route_list;
+         $this-&gt;defaults   = $defaults;
+-        $this-&gt;name       = $name;
+-
++        $this-&gt;name       = $name==''?Route::AUTO:$name;
++        $this-&gt;isLoaded   = false;
++        $this-&gt;loadComponents();
++    }
++    
++    /**
++     * Helper Method for loading the Route Components
++     * 
++     * @return void
++     */ 
++    private function loadComponents() {
+         $parts= explode('/', trim($this-&gt;route_list, '/'));
+ 
+         foreach ($parts as $key=&gt;$element) {
+-            // Registry::get('__logger')-&gt;debug('Parts:: [' . $key . '] '. $element);
+             if (preg_match('/:[a-z0-9_\-]+/',$element, $match)) {
+                 $c= new Component(substr(trim($match[0]), 1));
+                 $c-&gt;setDynamic(TRUE);
+@@ -133,14 +187,15 @@
+                 $c= new Component($element);
+                 $c-&gt;setDynamic(FALSE);
+             }
+-            $c-&gt;setPosition($key);
++            // $c-&gt;setPosition($key);
+             $this-&gt;components-&gt;add($c);
+         }
+     }
+ 
+     /**
+      * It gets the name of this Route.
+-     *
++     * 
++     * @see: locknet7.action.controller.Route#getNameToHuman
+      * @return string name.
+      */
+     public function getName() {
+@@ -161,72 +216,164 @@
+      *
+      * @param array an array witch holds defaults values for this Route.
+      */
+-    public function setDefaults(/*Array*/ $defaults) {
++    public function setDefaults(/*Array*/ $defaults=array()) {
+         $this-&gt;defaults= $defaults;
+     }
+-
+-    // match the current Route against incoming URL.
++    
++    /**
++     * Adds only a default pair name/value on to the defaults
++     *
++     * @param string name
++     * @param string value
++     */ 
++    public function setDefault($name, $value) {
++        $this-&gt;defaults[$name]= $value;
++    }
++    
++    /**
++     * Gets this Route List Definition
++     *
++     * @return string the route list definition
++     */ 
++    public function getRouteList() {
++        return $this-&gt;route_list;
++    }
++    
++    /**
++     * It gets a human readable route name for predefined Route Names
++     *
++     * @return string the route name
++     */ 
++    public function getNameToHuman() {
++        switch ($this-&gt;name) {
++            case Route::NOTFOUND:
++                return 'NOTFOUND';
++            case Route::ERROR:
++                return 'ERROR';
++            case Route::WELCOME:
++                return 'WELCOME';
++            case Route::AUTO:
++                return 'AUTO';
++            default:
++                return $this-&gt;name;
++        }
++    }
++    
++    // match the current Route against incoming URI.
+     // @TODO: refactor.
+     // @return bool
+     public function match(Request $request) {
+-        $parts= $request-&gt;getPathInfoParts();
+-
+-        // also if we have more parameters passed, as expected.
+-        if ( count($parts) &gt; $this-&gt;components-&gt;size()) {
+-            return FALSE;
++        $parts= $request-&gt;getUriParts();
++        
++        // if we have more parameters passed, as expected.
++        if (count($parts) &gt; $this-&gt;components-&gt;size()) {
++            return false;
+         }
+         // if / was requested, just skip this part.
+         if ( count($parts) != 0 ) {
+             $it= $this-&gt;components-&gt;iterator();
++            $this-&gt;merges= array();
+             while($it-&gt;hasNext()) {
+-                $name= $it-&gt;next()-&gt;getName();
+-
++                $component = $it-&gt;next();
+                 if (isset($parts[$it-&gt;key()])) {
+-
+-                    if (FALSE===strpos($parts[$it-&gt;key()], '.html')) {
+-                        $part= $parts[$it-&gt;key()];
++                    if (!$component-&gt;isDynamic() &amp;&amp; $component-&gt;getName() != $this-&gt;ignoreExtension($parts[$it-&gt;key()]) ) {
++                        return false;
+                     } else {
+-                        list($part)= explode('.', $parts[$it-&gt;key()]);
++                        $this-&gt;merges[$component-&gt;getName()] = $this-&gt;ignoreExtension($parts[$it-&gt;key()]);
+                     }
+-                    $request-&gt;setParameter($name, $part);
+                 }
+-
+             }
+         }
++    
++        // preparing to return true.
++        $this-&gt;doMerge($request);
++        $this-&gt;load($request);
++        return true;
++    }
+ 
+-        // more to be done.
++    /**
++     * Helper method, will remove everithing after . in parts
++     * 
++     * @param string
++     * @return string
++     */ 
++    private function ignoreExtension($on) {
++        if (false === strpos($on, '.html')) {
++            $part = $on;
++        } else {
++            list($part)= explode('.', $on);
++        }
++        return $part;
++    }
++    
++    /**
++     * Merges this Route Parameters into Request Parameters
++     *
++     * @param Request, request, the request on witch we want to merge
++     */ 
++    private function doMerge(Request $request) {
++        foreach ($this-&gt;merges as $name=&gt;$value) {
++            if (isset(Route::$old_merges[$name])) unset(Route::$old_merges[$name]);
++            $request-&gt;setParameter($name, $value);
++        }
++        // discard previously route parameters.
++        foreach (Route::$old_merges as $name=&gt;$value) {
++            $request-&gt;setParameter($name, NULL);
++        }
++        // cache merged parameters  
++        Route::$old_merges= $this-&gt;merges;
++    }
+ 
++    /**
++     * Trigger method to load defaults values and for setting a propper action and controller
++     */ 
++    private function load(Request $request) {
++        $this-&gt;loadDefaults($request);
++        $this-&gt;loadActionAndController($request);
++        $this-&gt;isLoaded= true;
++    }
++    
++    private function loadDefaults(Request $request) {
++        // var_dump(Route::$old_defaults);
++        foreach ($this-&gt;defaults as $name=&gt;$value) {
++            if (isset(Route::$old_defaults[$name])) unset(Route::$old_defaults[$name]);
++            $request-&gt;setParameter($name, $value);
++        }
++        foreach (Route::$old_defaults as $name=&gt;$value) {
++            $request-&gt;setParameter($name, NULL);
++        }
++        Route::$old_defaults= $this-&gt;defaults;
++        // var_dump(Route::$old_defaults);
++    }
++    
++    /**
++     * Loads Special Parameters: Controller and Action
++     *
++     * @throws RoutingException if a controller cannot be resolved for this route
++     */ 
++    private function loadActionAndController(Request $request) {
+         // check if we have a controller.
+-        if (!$request-&gt;hasParameter('controller')) {
+-            if (array_key_exists('controller', $this-&gt;defaults)) {
+-                $request-&gt;setParameter('controller', $this-&gt;defaults['controller']);
+-            } else { // we don`t have a controller for this route (?), exit.
+-                return FALSE;
+-            }
++        if (!$request-&gt;hasParameter('controller') &amp;&amp; !$request-&gt;getParameter('controller')) {
++            throw new RoutingException('Cannot Resolve A Controller for this Route!');
+         }
+-
+         // check for an action
+         if (!$request-&gt;hasParameter('action')) {
+-            if (array_key_exists('action', $this-&gt;defaults)) {
+-                $request-&gt;setParameter('action', $this-&gt;defaults['action']);
+-            } else {
+-                $request-&gt;setParameter('action','index');
+-            }
++            $request-&gt;setParameter('action','index');
+         }
+-
+-        $this-&gt;controller= $request-&gt;getParameter('controller');
+-        Registry::get('__logger')-&gt;debug($this-&gt;toString());
+-        return TRUE;
+     }
+-
+-    public function createControllerInstance() {
+-        if ($this-&gt;controller === NULL) {
+-            throw new RoutingException('Cannot resolve a controller for this Route!');
+-        }
++    
++    /**
++     * Creates a Controller Instance
++     *
++     * @return ActionControllerBase
++     */ 
++    public function createControllerInstance(Request $request) {
++        if (!$this-&gt;isLoaded) $this-&gt;load($request);
+         try {
+-            return Registry::put(new Injector(), '__injector')-&gt;inject('controller', $this-&gt;controller);
++            Registry::get('__logger')-&gt;debug($this-&gt;toString());
++            return Registry::put(new Injector(), '__injector')-&gt;inject('controller', $request-&gt;getParameter('controller'));
+         } catch (FileNotFoundException $fnfEx) {
+-            throw new RoutingException('Cannot create a controller instance,' . $fnfEx-&gt;getMessage());
++            throw new RoutingException('Cannot create a controller instance, ' . $fnfEx-&gt;getMessage());
+         }
+     }
+     
+@@ -236,7 +383,7 @@
+      * @return string
+      */ 
+     public function toString() {
+-        return &quot;{&quot;.$this-&gt;getClassName().&quot;}--&gt;{$this-&gt;route_list}&quot;;
++        return sprintf(&quot;{%s}--&gt;Name: %s; List: %s;&quot;, $this-&gt;getClassName(), $this-&gt;getNameToHuman(), $this-&gt;route_list);
+     }
+     
+ }
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2006-02-27 20:56:33 UTC (rev 364)
++++ trunk/libs/action/controller/Routing.php	2006-03-01 19:44:55 UTC (rev 365)
+@@ -53,15 +53,15 @@
+         $r= new ActionControllerRouting($request);
+         try {
+             $route = $r-&gt;findRoute($request);
+-            return   $route-&gt;createControllerInstance();
++            return   $route-&gt;createControllerInstance($request);
+         } catch (RoutingException $rEx) {
+             // exception thrown by findRoute if we dont match any of the registered route.
+             // load 404 route, if fails too try the default route, this are named routes.
+             // echo $rEx;
+             try {
+-                return Map::getInstance()-&gt;getRouteByName(Route::NOTFOUND)-&gt;createControllerInstance();
++                return Map::getInstance()-&gt;getRouteByName(Route::NOTFOUND)-&gt;createControllerInstance($request);
+             } catch (RoutingException $rEx2) {
+-                return Map::getInstance()-&gt;getRouteByName(Route::WELCOME)-&gt;createControllerInstance();
++                return Map::getInstance()-&gt;getRouteByName(Route::WELCOME)-&gt;createControllerInstance($request);
+             }
+         }
+     }
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-02-27 20:56:33 UTC (rev 364)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-03-01 19:44:55 UTC (rev 365)
+@@ -44,7 +44,7 @@
+ 
+     /** @var string
+         path_info_parts */
+-    private $path_info= NULL;
++    private $requestUri= NULL;
+ 
+     /** @var array
+         the list of headers associated with this HTTPRequest */
+@@ -53,6 +53,8 @@
+     /**
+      * Constructor.
+      * It builds the HTTPRequest object
++     *
++     * TODO: a URI Helper should be written.
+      */
+     public function HTTPRequest() {
+         foreach ($_REQUEST as $key=&gt;$value) {
+@@ -62,13 +64,14 @@
+         unset($_REQUEST); unset($_GET); unset($_POST);
+ 
+         if (array_key_exists('PATH_INFO', $_SERVER) &amp;&amp; $_SERVER['PATH_INFO']!='' ) {
+-            $this-&gt;path_info= $_SERVER['PATH_INFO'];
++            $this-&gt;requestUri= $_SERVER['PATH_INFO'];
+         }
+         // TODO:
+-        //      -&gt; this is for php as cgi
++        //      -&gt; this is for php as cgi, or where PATH_INFO is not available
++        //      -&gt; ORIG_PATH_INFO should also work
+         //      -&gt; should substract the documnet root
+         elseif (array_key_exists('REQUEST_URI', $_SERVER)) {
+-            $this-&gt;path_info= substr($_SERVER['REQUEST_URI'],7);
++            $this-&gt;requestUri= substr($_SERVER['REQUEST_URI'],7);
+         }
+         
+         $this-&gt;session = new Session();
+@@ -88,17 +91,27 @@
+     }
+ 
+     /**
++     * Sets this Request URI
++     *
++     * Usefull for testing
++     * @return void
++     */
++    public function setRequestUri($uri) {
++      $this-&gt;requestUri= $uri;
++    }
++    
++    /**
+      * It gets a part of the path info associated with this request
+      * @param int, key, the part index
+      * @return value of this part or NULL if this part is not defined
+      */
+-    public function getPathInfo() {
+-        return $this-&gt;path_info;
++    public function getRequestUri() {
++        return $this-&gt;requestUri;
+     }
+ 
+-    public function getPathInfoParts() {
+-        if (is_null($this-&gt;path_info)) return array();
+-        return explode('/', trim($this-&gt;path_info,'/'));
++    public function getUriParts() {
++        if (is_null($this-&gt;requestUri)) return array();
++        return explode('/', trim($this-&gt;requestUri,'/'));
+     }
+ 
+     /**
+@@ -111,7 +124,7 @@
+ 
+     // {{{ todos.
+     public function getIP() {  }
+-    public function getRequestURI() {  }
++    // public function getRequestURI() {  }
+     public function getProtocol() {  }
+     // }}}
+     
+
+Modified: trunk/test/mock/MockRequest.php
+===================================================================
+--- trunk/test/mock/MockRequest.php	2006-02-27 20:56:33 UTC (rev 364)
++++ trunk/test/mock/MockRequest.php	2006-03-01 19:44:55 UTC (rev 365)
+@@ -4,4 +4,10 @@
+ 
+ include_once('action/controller/Request.php');
+ 
+-class MockRequest extends Request {  }
++class MockRequest extends HTTPRequest {
++
++    /** Just overwrite HTTPRequest Constructor */
++    public function MockRequest(){  }
++
++}
++
+
+Modified: trunk/test/test/action/controller/RoutingTest.php
+===================================================================
+--- trunk/test/test/action/controller/RoutingTest.php	2006-02-27 20:56:33 UTC (rev 364)
++++ trunk/test/test/action/controller/RoutingTest.php	2006-03-01 19:44:55 UTC (rev 365)
+@@ -10,29 +10,149 @@
+ 
+ include_once('action/controller/Route.php');
+ include_once('action/controller/Map.php');
+-include_once('action/controller/Routing.php');
+-include_once('action/controller/Base.php');
++// include_once('action/controller/Routing.php');
++// include_once('action/controller/Base.php');
+ 
+ class RoutingTest extends UnitTestCase {
+ 
+-    private $map;
++    // private $map;
+ 
++    // set-up the registry
+     public function setUp() {
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
+-        $this-&gt;map= Registry::put(new Map(), '__map');
++        Registry::put($configurator= new MockConfigurator(), '__configurator');
++        Registry::put(new Logger($configurator), '__logger');
++        // $this-&gt;map= Map::getInstance();
+     }
+     
++    // clean-up
+     public function tearDown() {
+         Registry::close();
+     }
+     
+-    public function _test_Rec() {
+-        $route= new Route('foo', 'bar');
++    // tests default route:
++    // :controller/:action/:id
++    public function testDefaultRoute() {
++        // internal setup
++        $r= $this-&gt;getDefaultRoute();
+         $request= new MockRequest();
+-        $request-&gt;setParam('controller', 'foo');
+-        $request-&gt;setParam('action', 'bar');
+-        $this-&gt;map-&gt;add($route);
+-        $this-&gt;assertIsA(ActionControllerRouting::recognize($request), 'ActionControllerBase');
++        $request-&gt;setRequestUri('/project/delete/3.html');
++        
++        $this-&gt;assertTrue($r-&gt;match($request));
++        $this-&gt;assertEqual($request-&gt;getParameter('controller'), 'project');
++        $this-&gt;assertEqual($request-&gt;getParameter('action'), 'delete');
++        $this-&gt;assertEqual($request-&gt;getParameter('id'), 3);
++        
++        // basically, after a new URI try, the old request parameters should be discarded
++        $request-&gt;setRequestUri('/task/list.html');
++        $this-&gt;assertTrue($r-&gt;match($request));
++        $this-&gt;assertEqual($request-&gt;getParameter('controller'), 'task');
++        $this-&gt;assertEqual($request-&gt;getParameter('action'),'list');
++        $this-&gt;assertFalse($request-&gt;hasParameter('id'));
++
++        $request-&gt;setRequestUri('/mdk');
++        $this-&gt;assertTrue($r-&gt;match($request));
++        $this-&gt;assertEqual($request-&gt;getParameter('controller'), 'mdk');
++        $this-&gt;assertEqual($request-&gt;getParameter('action'), 'index');
++
++        $request-&gt;setRequestUri('news.html');
++        $this-&gt;assertTrue($r-&gt;match($request));
++        $this-&gt;assertEqual($request-&gt;getParameter('controller'), 'news');
++
++        $request-&gt;setRequestUri('/news/details/5.html/foo');
++        $this-&gt;assertFalse($r-&gt;match($request));
++
+     }
++
++    public function testSimpleStaticComponents() {
++        $r= new Route('/project/all');
++        
++        $r-&gt;setDefaults(
++            array(
++                'controller'=&gt;'project',
++                'action'=&gt;'all'
++            )
++        );
++        $request= new MockRequest();
++        
++        $request-&gt;setRequestUri('/project/all.html');
++        $this-&gt;assertTrue($r-&gt;match($request));
++        $this-&gt;assertEqual($request-&gt;getParameter('controller'),'project');
++        $this-&gt;assertEqual($request-&gt;getParameter('action'),'all');
++
++        $request-&gt;setRequestUri('/project/index.html');
++        $this-&gt;assertFalse($r-&gt;match($request));
++        $request-&gt;setRequestUri('/project/delete/3.html');
++        $this-&gt;assertFalse($r-&gt;match($request));
++    }
++    
++    public function testSimpleStaticAndDynamic() {
++        $routes= array();
++        $routes[]= new Route('/project/all');
++        $routes[]= new Route(':controller/:action/:id');
++        $request= new MockRequest();
++        
++        $routes[0]-&gt;setDefaults(array('controller'=&gt;'project','action'=&gt;'all'));
++        
++        $request-&gt;setRequestUri('/news/details/1.html');
++        $this-&gt;assertFalse($routes[0]-&gt;match($request));
++        $this-&gt;assertTrue($routes[1]-&gt;match($request));
++
++        $request-&gt;setRequestUri('/project/overview/1.html');
++        $this-&gt;assertFalse($routes[0]-&gt;match($request));
++        $this-&gt;assertTrue($routes[1]-&gt;match($request));
++        $this-&gt;assertEqual($request-&gt;getParameter('controller'), 'project');
++        $this-&gt;assertEqual($request-&gt;getParameter('action'), 'overview');
++
++        $request-&gt;setRequestUri('/project/index.html');
++        $this-&gt;assertFalse($routes[0]-&gt;match($request));
++        $this-&gt;assertTrue($routes[1]-&gt;match($request));
++
++        $request-&gt;setRequestUri('/project/all.html');
++        foreach ($routes as $route) {
++            if ($route-&gt;match($request)) break;
++        }
++        $this-&gt;assertEqual('/project/all', $route-&gt;getRouteList());
++    }
++    
++    public function testDynamicAndStaticWithDefaults() {
++        $r= new Route('/project/overview/:id');
++        $r-&gt;setDefault('controller', 'project');
++        $r-&gt;setDefault('action', 'overview');
++        
++        $request= new MockRequest();
++        $request-&gt;setRequestUri('/project/overview/5.html');
++        
++        $this-&gt;assertTrue($r-&gt;match($request));
++        $this-&gt;assertEqual($request-&gt;getParameter('id'), 5);
++
++        $request-&gt;setRequestUri('/project/overview.html');
++        $this-&gt;assertTrue($r-&gt;match($request));
++        $this-&gt;assertFalse($request-&gt;hasParameter('id'));
++        
++        // $r= new Route('/blog/archive/:year/:month/:day');
++        
++    }
++    
++    public function testSimpleNamedRoutes() {
++        $map= Map::getInstance();
++        $map-&gt;add(new Route('/project/all', Route::WELCOME, array('controller'=&gt;'project', 'action'=&gt;'all')));
++        $map-&gt;add($this-&gt;getDefaultRoute());
++        $request= new MockRequest();
++        
++        $request-&gt;setRequestUri('/project/all.html');
++        $this-&gt;assertTrue($map-&gt;getRouteByName(Route::WELCOME));
++        $this-&gt;assertTrue($route= $map-&gt;match($request));
++        $this-&gt;assertEqual(Route::WELCOME, $route-&gt;getName());
++        /*
++        foreach ($routes as $route) {
++            if ($route-&gt;match($request)) break;
++        }
++        */
++    }
++    
++    private function getDefaultRoute() {
++        return new Route(':controller/:action/:id');
++    }
++    
+ }
++
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000156.html">[Medick-svn] r366 - trunk/libs/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#155">[ date ]</a>
+              <a href="thread.html#155">[ thread ]</a>
+              <a href="subject.html#155">[ subject ]</a>
+              <a href="author.html#155">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

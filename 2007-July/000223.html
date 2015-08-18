@@ -1,0 +1,84 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r443 - applications/eltodo/app/views/project
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r443%20-%20applications/eltodo/app/views/project&In-Reply-To=%3C200707201431.l6KEVsZF011823%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000222.html">
+   <LINK REL="Next"  HREF="000224.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r443 - applications/eltodo/app/views/project</H1>
+    <B>aurelian at mail.berlios.de</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r443%20-%20applications/eltodo/app/views/project&In-Reply-To=%3C200707201431.l6KEVsZF011823%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r443 - applications/eltodo/app/views/project">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Fri Jul 20 16:31:54 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000222.html">[Medick-svn] r442 - tags
+</A></li>
+        <LI>Next message: <A HREF="000224.html">[Medick-svn] r444 - in trunk: . libs libs/action/controller	libs/action/controller/http libs/action/view libs/context	libs/context/configurator
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#223">[ date ]</a>
+              <a href="thread.html#223">[ thread ]</a>
+              <a href="subject.html#223">[ subject ]</a>
+              <a href="author.html#223">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-07-20 16:31:48 +0200 (Fri, 20 Jul 2007)
+New Revision: 443
+
+Modified:
+   applications/eltodo/app/views/project/overview.phtml
+Log:
+ -- using URL helper
+
+Modified: applications/eltodo/app/views/project/overview.phtml
+===================================================================
+--- applications/eltodo/app/views/project/overview.phtml	2007-07-01 17:31:07 UTC (rev 442)
++++ applications/eltodo/app/views/project/overview.phtml	2007-07-20 14:31:48 UTC (rev 443)
+@@ -4,7 +4,7 @@
+ &lt;div id=&quot;project_name&quot; style=&quot;font-weight:bold;font-size:1.8em&quot;&gt;&lt;?=$project-&gt;name;?&gt;&lt;/div&gt;
+ 
+ &lt;script language=&quot;JavaScript&quot;&gt;
+-    new Ajax.InPlaceEditor('project_name', '/eltodo/project/update_name',
++    new Ajax.InPlaceEditor('project_name','&lt;?=URL::create('project','update_name')?&gt;',
+     { callback: function(form, value) { return 'id=&lt;?=$project-&gt;id;?&gt;&amp;name=' + value }});
+ &lt;/script&gt;
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000222.html">[Medick-svn] r442 - tags
+</A></li>
+	<LI>Next message: <A HREF="000224.html">[Medick-svn] r444 - in trunk: . libs libs/action/controller	libs/action/controller/http libs/action/view libs/context	libs/context/configurator
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#223">[ date ]</a>
+              <a href="thread.html#223">[ thread ]</a>
+              <a href="subject.html#223">[ subject ]</a>
+              <a href="author.html#223">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

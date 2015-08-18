@@ -1,0 +1,110 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r271 - applications/eltodo/db
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-November/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r271%20-%20applications/eltodo/db&In-Reply-To=%3C200511131706.jADH6toW002535%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000068.html">
+   <LINK REL="Next"  HREF="000070.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r271 - applications/eltodo/db</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r271%20-%20applications/eltodo/db&In-Reply-To=%3C200511131706.jADH6toW002535%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r271 - applications/eltodo/db">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Nov 13 18:06:55 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000068.html">[Medick-svn] r270 - in trunk/docs: . dev
+</A></li>
+        <LI>Next message: <A HREF="000070.html">[Medick-svn] r273 - applications/eltodo/app/models
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#69">[ date ]</a>
+              <a href="thread.html#69">[ thread ]</a>
+              <a href="subject.html#69">[ subject ]</a>
+              <a href="author.html#69">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-11-13 18:06:54 +0100 (Sun, 13 Nov 2005)
+New Revision: 271
+
+Modified:
+   applications/eltodo/db/schema.sql
+Log:
+ - [ eltodo.db.schema ] added project table
+
+Modified: applications/eltodo/db/schema.sql
+===================================================================
+--- applications/eltodo/db/schema.sql	2005-11-11 21:28:02 UTC (rev 270)
++++ applications/eltodo/db/schema.sql	2005-11-13 17:06:54 UTC (rev 271)
+@@ -1,7 +1,22 @@
+-DROP TABLE IF EXISTS `todos`;
+-CREATE TABLE IF NOT EXISTS `todos` (
+-  `id` int(11) NOT NULL auto_increment,
+-  `description` varchar(100) NOT NULL default '',
+-  `done` tinyint(4) NOT NULL default '0',
+-  PRIMARY KEY  (`id`)
++-- ------------------------
++-- eltodo database schema.
++-- $Id$
++-- ------------------------
++
++DROP TABLE IF EXISTS projects;
++CREATE TABLE projects (
++	id 	int(11) 	not null auto_increment,
++	name 	varchar(255) 	not null,
++	primary key (id)
+ );
++
++DROP TABLE IF EXISTS todos;
++CREATE TABLE IF NOT EXISTS todos (
++	id 		int(11) 	not null auto_increment,
++	project_id	int(11)		not null,
++	description 	varchar(100) 	not null default '',
++	done 		tinyint(4) 	not null default '0',
++	constraint fk_todos_project foreign key (project_id) references projects(id),
++	primary key (id)
++);
++
+
+
+Property changes on: applications/eltodo/db/schema.sql
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000068.html">[Medick-svn] r270 - in trunk/docs: . dev
+</A></li>
+	<LI>Next message: <A HREF="000070.html">[Medick-svn] r273 - applications/eltodo/app/models
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#69">[ date ]</a>
+              <a href="thread.html#69">[ thread ]</a>
+              <a href="subject.html#69">[ subject ]</a>
+              <a href="author.html#69">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

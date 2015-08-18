@@ -1,0 +1,1015 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r330 - in trunk: bin libs/action/controller libs/active/record libs/medick skel/config skel/scripts test/application/models test/mock test/test/active/record test/test/active/record/associations test/test/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r330%20-%20in%20trunk%3A%20bin%20libs/action/controller%20libs/active/record%20libs/medick%20skel/config%20skel/scripts%20test/application/models%20test/mock%20test/test/active/record%20test/test/active/record/associations%20test/test/medick&In-Reply-To=%3C200601091955.k09JtgMl015294%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000124.html">
+   <LINK REL="Next"  HREF="000126.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r330 - in trunk: bin libs/action/controller libs/active/record libs/medick skel/config skel/scripts test/application/models test/mock test/test/active/record test/test/active/record/associations test/test/medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r330%20-%20in%20trunk%3A%20bin%20libs/action/controller%20libs/active/record%20libs/medick%20skel/config%20skel/scripts%20test/application/models%20test/mock%20test/test/active/record%20test/test/active/record/associations%20test/test/medick&In-Reply-To=%3C200601091955.k09JtgMl015294%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r330 - in trunk: bin libs/action/controller libs/active/record libs/medick skel/config skel/scripts test/application/models test/mock test/test/active/record test/test/active/record/associations test/test/medick">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Jan  9 20:55:42 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000124.html">[Medick-svn] r329 - in trunk: . libs/action/controller libs/action/view libs/active/record libs/medick skel/config
+</A></li>
+        <LI>Next message: <A HREF="000126.html">[Medick-svn] r331 - in trunk: . libs/configurator libs/medick skel/public skel/scripts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#125">[ date ]</a>
+              <a href="thread.html#125">[ thread ]</a>
+              <a href="subject.html#125">[ subject ]</a>
+              <a href="author.html#125">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-09 20:55:37 +0100 (Mon, 09 Jan 2006)
+New Revision: 330
+
+Modified:
+   trunk/bin/medick.php
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Map.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/Routing.php
+   trunk/libs/active/record/Association.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/medick/util.php
+   trunk/skel/config/application.xml
+   trunk/skel/scripts/generator.php
+   trunk/test/application/models/author.php
+   trunk/test/application/models/book.php
+   trunk/test/mock/MockCollection.php
+   trunk/test/test/active/record/DBOperationsTest.php
+   trunk/test/test/active/record/FindTest.php
+   trunk/test/test/active/record/associations/HasOneTest.php
+   trunk/test/test/medick/CollectionTest.php
+Log:
+ -- fix Collection::isEmpty (andrei)
+ -- fix Associations, ActiveRecordBase wrong method calls (andrei)
+ -- fix Unit-Tests (andrei)
+ -- re-wrote skel/scripts/generator.php
+ -- minor fixes in bin/medick.php
+ -- refactorings in Routing System (suggested by andrei)
+
+
+Modified: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/bin/medick.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -1,6 +1,7 @@
+ &lt;?php
+ // $Id$
+-$medick_core=dirname(dirname(__FILE__));
++$medick_core    = dirname(dirname(__FILE__));
++$medick_version = str_replace(&quot;\n&quot;,&quot;&quot;,file_get_contents($medick_core.DIRECTORY_SEPARATOR.'VERSION'));
+ 
+ function mk_dir($dir) {
+     if (!is_dir($dir)) {
+@@ -12,7 +13,7 @@
+     } else {
+         echo &quot;\texists &quot;;
+     }
+-    
++
+     echo &quot;{$dir}\n&quot;;
+ }
+ 
+@@ -39,6 +40,7 @@
+     'views'       =&gt;'app' . DIRECTORY_SEPARATOR . 'views',
+     'layouts'     =&gt;'app' . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . 'layouts',
+     'conf'        =&gt;'conf',
++    'scripts'     =&gt;'scripts',
+     'db'          =&gt;'db',
+     'libs'        =&gt;'libs',
+     'doc'         =&gt;'doc',
+@@ -65,13 +67,15 @@
+ }
+ 
+ $files= array(
+-  'skel' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'index.php' 
++  'skel' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'index.php'
+                               =&gt; 'public' . DIRECTORY_SEPARATOR . 'index.php',
+-  'skel' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'default.htaccess'  
++  'skel' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'default.htaccess'
+                               =&gt; 'public' . DIRECTORY_SEPARATOR . '.htaccess',
+-  'skel' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'application.xml'        
++  'skel' . DIRECTORY_SEPARATOR . 'scripts'. DIRECTORY_SEPARATOR . 'generator.php'
++                              =&gt; 'scripts'. DIRECTORY_SEPARATOR . 'generator.php',
++  'skel' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'application.xml'
+                               =&gt; 'conf'   . DIRECTORY_SEPARATOR . $short_name.'.xml',
+-  'skel' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'application.routes.php' 
++  'skel' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'application.routes.php'
+                               =&gt; 'conf'   . DIRECTORY_SEPARATOR . $short_name.'.routes.php'
+ );
+ 
+@@ -79,14 +83,16 @@
+             '${LOG}',
+             '${CORE}',
+             '${APP_PATH}',
+-            '${APP_NAME}'
++            '${APP_NAME}',
++            '${MEDICK_V}'
+           );
+ 
+ $replace= array(
+-            $app_location.DIRECTORY_SEPARATOR.$folders['log'].DIRECTORY_SEPARATOR.$app_name.'.log',
++            $app_location.DIRECTORY_SEPARATOR.$folders['log'].DIRECTORY_SEPARATOR.$short_name.'.log',
+             $medick_core,
+             $app_location,
+-            $app_name
++            $short_name,
++            $medick_version
+           );
+ 
+ foreach ($files as $from=&gt;$file) {
+@@ -100,28 +106,46 @@
+ 
+ $schema_sql=&lt;&lt;&lt;EOSQL
+ -- \$Id$
+--- Database Schema for $app_name
++-- Database Schema for $short_name project
+ 
+ EOSQL;
+ 
++$css=&lt;&lt;&lt;EOCSS
++/* stylesheet for $short_name project */
++/* \$Id$ */
++
++body {
++    margin: 20px;
++    padding: 20px;
++    border: 1px solid black;
++    font-family:verdana, arial, helvetica, sans-serif;
++}
++EOCSS;
++
+ $index_html=&lt;&lt;&lt;EOHTML
+ &lt;html&gt;
+   &lt;head&gt;
+     &lt;!-- \$Id$ --&gt;
+     &lt;title&gt;Welcome to Medick!&lt;/title&gt;
++    &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
++    &lt;style&gt;
++      body { margin: 20px; padding: 20px; border: 1px solid black; font-family:verdana, arial, helvetica, sans-serif; }
++    &lt;/style&gt;
+   &lt;/head&gt;
+   &lt;body&gt;
+     &lt;h3&gt;&lt;center&gt;Welcome To Medick&lt;/center&gt;&lt;/h3&gt;
+     &lt;p&gt;&lt;b&gt;Application:&lt;/b&gt; $short_name&lt;/p&gt;
+-    &lt;p&gt;&lt;b&gt;Develop $app_name on : &lt;/b&gt;$app_location&lt;/p&gt;
+-    &lt;p&gt;Setup a default controller in &lt;i&gt;$app_location/config/$short_name.routes.php&lt;/i&gt;, and remove this file.&lt;/p&gt;
++    &lt;p&gt;&lt;b&gt;Develop $short_name on: &lt;/b&gt;$app_location&lt;/p&gt;
++    &lt;p&gt;Setup a default controller in
++        &lt;i&gt;$app_location/config/$short_name.routes.php&lt;/i&gt;, &lt;br /&gt;
++        and remove this file ($app_location/public/index.html).
++    &lt;/p&gt;
+     &lt;p&gt;Ask for support on medick &lt;a href=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-devel">https://lists.berlios.de/mailman/listinfo/medick-devel</A>&quot;&gt;development list&lt;/a&gt;.&lt;/p&gt;
+   &lt;/body&gt;
+ &lt;/html&gt;
+ 
+ EOHTML;
+ 
+-
+ $application_controller=&lt;&lt;&lt;EOCLASS
+ &lt;?php
+ 
+@@ -135,14 +159,17 @@
+   class ApplicationController extends ActionControllerBase {
+ 
+   }
+-    
++
+ EOCLASS;
+ 
+ write_file($index_html, $app_location.DIRECTORY_SEPARATOR.$folders['public'].DIRECTORY_SEPARATOR.'index.html');
+ 
+ write_file($application_controller, $app_location.DIRECTORY_SEPARATOR.$folders['controllers'].DIRECTORY_SEPARATOR.'application.php');
+ 
++write_file($css, $app_location.DIRECTORY_SEPARATOR.$folders['css'].DIRECTORY_SEPARATOR.'medick.css');
++
+ write_file($schema_sql,$app_location.DIRECTORY_SEPARATOR.$folders['db'].DIRECTORY_SEPARATOR.'schema.sql');
+ 
+-echo &quot;\nmedick (\$v:&quot; . str_replace(&quot;\n&quot;,&quot;&quot;,file_get_contents($medick_core.DIRECTORY_SEPARATOR.'VERSION')) . &quot;) done.\n&quot;;
++echo &quot;\nMedick (\$v: $medick_version) [ DONE ].\n&quot;;
+ 
++?&gt;
+\ No newline at end of file
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/libs/action/controller/Base.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -280,7 +280,9 @@
+ 
+         $this-&gt;template = ActionViewBase::factory('php');
+         // $this-&gt;template = new ActionView:::Base();
+-        $this-&gt;template-&gt;__base= $this-&gt;config-&gt;getProperty('document_root');
++        // predefined variables:
++        $this-&gt;template-&gt;__base   = $this-&gt;config-&gt;getProperty('document_root');
++        $this-&gt;template-&gt;__server = $this-&gt;config-&gt;getProperty('server_name');
+     }
+ 
+     // XXX: not-done!
+
+Modified: trunk/libs/action/controller/Map.php
+===================================================================
+--- trunk/libs/action/controller/Map.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/libs/action/controller/Map.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -49,4 +49,18 @@
+         }
+         return Map::$instance;
+     }
++    
++    public function match(Request $request) {
++        foreach ($this-&gt;elements as $element) {
++            if ($element-&gt;match($request)) return $element;
++        }
++        throw new RoutingException('Cannot find a Route for this hash: ' . $request-&gt;getPathInfo());    
++    }
++    
++    public function getRouteByName($name) {
++        foreach ($this-&gt;elements as $element) {
++            if ($element-&gt;getName() == $name) return $element;
++        }
++        throw new RoutingException('Cannot find a Route with this name: ' . $name); 
++    }
+ }
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/libs/action/controller/Route.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -82,23 +82,37 @@
+     /** @var string
+         incoming Route Definition list. */
+     private $route_list;
+-
++    
++    /** @var array
++        a list with default values */
+     private $defaults;
+-
++    
++    /** @var string 
++        the route name */
+     private $name;
+ 
++    /** @var Collection
++        route components */
+     private $components;
+ 
++    /** @var string
++        Route Controller */
++    private $controller;
+ 
++    /**
++     * Creates a new Route
++     *
++     * @param string route_list the route list
++     * @param string name route name
++     * @param array 
++     */
+     public function Route($route_list, $name = '', /*Array*/ $defaults = array(), /*Array*/ $requirements = array()) {
+ 
+-        $this-&gt;components= new Collection();
++        $this-&gt;components = new Collection();
++        $this-&gt;route_list = $route_list;
++        $this-&gt;defaults   = $defaults;
++        $this-&gt;name       = $name;
+ 
+-        $this-&gt;route_list= $route_list;
+-        $this-&gt;defaults= $defaults;
+-
+-        $this-&gt;name= $name;
+-
+         $parts= explode('/', trim($this-&gt;route_list, '/'));
+ 
+         foreach ($parts as $key=&gt;$element) {
+@@ -188,7 +202,14 @@
+                 $request-&gt;setParameter('action','index');
+             }
+         }
++        
++        $this-&gt;controller= $request-&gt;getParameter('controller');
++        
+         return TRUE;
+     }
++    
++    public function createControllerInstance() {
++        return Registry::put(new Injector(), '__injector')-&gt;inject('controller', $this-&gt;controller);
++    }
+ 
+ }
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/libs/action/controller/Routing.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -43,35 +43,27 @@
+     // @return Route.
+     // @throws RoutingException
+     private function findRoute(Request $request) {
+-        $it= Map::getInstance()-&gt;iterator();
+-        while($it-&gt;hasNext()) {
+-            $current= $it-&gt;next();
+-            if ($current-&gt;match($request)) return $current;
+-        }
+-        throw new RoutingException('Cannot find a Route for this hash: ' . $request-&gt;getPathInfo());
++        return Map::getInstance()-&gt;match($request);
+     }
+ 
+-    private function createControllerInstance($controller) {
+-        return Registry::put(new Injector(), '__injector')-&gt;inject('controller', $controller);
+-    }
+-
+     /**
+      * Recognize a Route Based on the Request.
+      */
+     public static function recognize(Request $request) {
+         $r= new ActionControllerRouting($request);
+-        // try {
++        try {
+         $route = $r-&gt;findRoute($request);
+-        return   $r-&gt;createControllerInstance($request-&gt;getParameter('controller'));
+-        // } catch (RoutingException $rEx) {
++        return   $route-&gt;createControllerInstance();
++        } catch (RoutingException $rEx) {
+             // exception thrown by findRoute if we dont match any of the registered route.
+             // load 404 route, if fails too try the default route, this are named routes.
+             // echo $rEx;
+-        // } catch (FileNotFoundException $fnfEx) {
++            return Map::getInstance()-&gt;getRouteByName('404')-&gt;createControllerInstance();
++        } catch (FileNotFoundException $fnfEx) {
+             // exception thrown by Injector::injectController
+             // when the requested controller is not at the expected location.
+             // echo $fnfEx;
+-        // }
++        }
+     }
+ }
+ 
+
+Modified: trunk/libs/active/record/Association.php
+===================================================================
+--- trunk/libs/active/record/Association.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/libs/active/record/Association.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -178,11 +178,13 @@
+      * @see Association#execute
+      */
+     public function execute() {
+-        $fk= $this-&gt;class.'_id';
+-        for($it = $this-&gt;fields-&gt;getIterator(); $it-&gt;valid(); $it-&gt;next()) {
+-            if ( $it-&gt;current()-&gt;getName() == $fk ) {
++        $fk= $this-&gt;class.'_id'; // foreign key name: the class name+&quot;_id&quot; suffix&quot;
++        $it= $this-&gt;fields-&gt;iterator();
++        while($it-&gt;hasNext()) {
++            $current= $it-&gt;next();
++            if ($current-&gt;getName() == $fk) {
+                 $this-&gt;pre_execution();
+-                $ret= ActiveRecordBase::__find(array($it-&gt;current()-&gt;getValue()));
++                $ret= ActiveRecordBase::__find(array($current-&gt;getValue()));
+                 $this-&gt;post_execution();
+                 return $ret;
+             }
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/libs/active/record/Base.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -437,15 +437,15 @@
+     private function getUpdateSql() {
+         $sqlSnippet = '';
+         if ($this-&gt;pk !== NULL) {
+-            $sqlSnippet = ' WHERE ' . $this-&gt;pk . ' = ' . $this-&gt;fields-&gt;getPrimaryKey()-&gt;getValue();
++            $sqlSnippet = ' WHERE ' . $this-&gt;pk . ' = ' . $this-&gt;row-&gt;getPrimaryKey()-&gt;getValue();
+         }
+         $sql  = 'UPDATE ' . ActiveRecordBase::$table_name . ' SET ';
+-        $sql .= implode(' = ?, ', $this-&gt;row-&gt;getAffectedFieldsNames());
+-        /*
+-        foreach($this-&gt;fields-&gt;getAffectedFields() as $field) {
++        // $sql .= implode(' = ?, ', $this-&gt;row-&gt;getAffectedFieldsNames());
++        
++        foreach($this-&gt;row-&gt;getAffectedFields() as $field) {
+             $sql .= $field-&gt;getName() . ' = ?, ';
+         }
+-        */
++        
+         return substr($sql, 0, -2) . $sqlSnippet;
+     }
+ 
+
+Modified: trunk/libs/medick/util.php
+===================================================================
+--- trunk/libs/medick/util.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/libs/medick/util.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -277,7 +277,7 @@
+      * @return bool, TRUE if the Collection is empty
+      */
+     public function isEmpty() {
+-        return $this-&gt;size() &gt; 0;
++        return $this-&gt;size() == 0;
+     }
+ 
+     /**
+
+Modified: trunk/skel/config/application.xml
+===================================================================
+--- trunk/skel/config/application.xml	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/skel/config/application.xml	2006-01-09 19:55:37 UTC (rev 330)
+@@ -21,7 +21,7 @@
+             &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
+               &lt;property name=&quot;path&quot; value=&quot;${LOG}&quot; /&gt;
+             &lt;/outputter&gt;
+-            &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt;
++            &lt;!-- &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt; --&gt;
+             &lt;outputter name=&quot;mail&quot; level=&quot;3&quot;&gt;
+                 &lt;property name=&quot;subject&quot; value=&quot;Fatality on ${APP_NAME}&quot; /&gt;
+                 &lt;property name=&quot;address&quot; value=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">user at example.com</A>&quot; /&gt;
+
+Modified: trunk/skel/scripts/generator.php
+===================================================================
+--- trunk/skel/scripts/generator.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/skel/scripts/generator.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -1,283 +1,129 @@
+ &lt;?php
+-// {{{ License
+-//////////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-//////////////////////////////////////////////////////////////////////////////////
+-// }}}
++$type= isset($argv[1]) ? $argv[1] : exit(&quot;Use one of controller or model for generator.\n&quot;);
++$name= isset($argv[2]) ? strtolower($argv[2]) : exit($argv[0] . &quot; needs a &quot; . $argv[1] . &quot; name.\n&quot;);
+ 
+-// exec('rm -rf app/');
++switch ($type) {
++    case &quot;controller&quot;:
++        generate_controller($name, &quot;/wwwroot/medick/applications/mytodo&quot;);
++        break;
++    case &quot;model&quot;:
++        generate_model($name, &quot;/wwwroot/medick/applications/mytodo&quot;);
++         break;
++     default:
++         exit(&quot;Use one of controller or model for generator.\n&quot;);
++  }
+ 
+-error_reporting(E_ALL);
++exit (&quot;\nMedick (\$v: ${MEDICK_V}) [ DONE ].\n&quot;);
+ 
+-// main TOP_LOCATION.
+-define('TOP_LOCATION', dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR);
+-set_include_path( TOP_LOCATION . 'libs'   . DIRECTORY_SEPARATOR . PATH_SEPARATOR . 
+-                  TOP_LOCATION . 'vendor' . DIRECTORY_SEPARATOR . PATH_SEPARATOR . dirname(__FILE__)
+-                );
+-                
+-define('VERBOSE', FALSE);
++function generate_controller($name, $app_location) {
++    $controller_class_name= ucfirst(strtolower($name)) . 'Controller';
++    echo &quot;Creating controller class $controller_class_name from $name\n&quot;;
++    $methods= array_slice($_SERVER['argv'], 3);
+ 
+-include_once('MedickException.php');
++    $controller_class_text=&quot;&lt;?php\nclass $controller_class_name extends ApplicationController {\n&quot;;
+ 
+-// {{{ integrity chck
+-include_once('targets/integrity.php');
+-// }}}
+-
+-include_once('configurator/XMLConfigurator.php');
+-$config = Configurator::factory('XML');//, TOP_LOCATION . 'config' . DIRECTORY_SEPARATOR . 'application.xml');
+-
+-
+-$model = $argv[1];
+-
+-print_header('Scaffolding ' . ucfirst($model) .' Model');
+-include_once('creole/Creole.php');
+-include_once('active/support/Inflector.php');
+-try {
+-    if(VERBOSE) echo &quot;Establish a DB Connection&quot;;
+-    $conn = Creole::getConnection($config-&gt;getDatabaseDsn());
+-} catch (SQLException $sqlEx) {
+-    echo &quot;..........[ FAILED ]\n&quot;;
+-    done ($sqlEx-&gt;getMessage(), 255);
+-}
+-if(VERBOSE) echo &quot;..........[ OK ]\n&quot;;
+-
+-
+-$Umodel = ucfirst($model);
+-$models = Inflector::pluralize($model);
+-$table_info = $conn-&gt;getDatabaseInfo()-&gt;getTable($models);
+-$pk = $table_info-&gt;getPrimaryKey()-&gt;getName();
+-$date = strftime(&quot;%d/%m/%Y %H:%M:%S&quot;, time());
+-$pattern = '/^(.*)_id$/';
+-
+-$startscript=&quot;scripts/generator.php&quot;;
+-$fileowneruid=fileowner($startscript);
+-$fileownerarray=posix_getpwuid($fileowneruid);
+-$user=$fileownerarray['name'];
+-
+-$app_php = $config-&gt;getProperty('application_path') . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR . 'application.php';
+-echo &quot; -- creating ApplicationController: &quot; . $app_php;
+-if (is_file($app_php)) {
+-    echo &quot;.....[ FILE EXISTS - SKIPING ]\n&quot;;
+-} else {
+-    if (!is_dir($config-&gt;getProperty('application_path'))) {
+-        generate_application_skeleton($config-&gt;getProperty('application_path'));
++    $views=$app_location.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'views'.DIRECTORY_SEPARATOR;
++    if (!is_dir($views.$name)) {
++        mkdir($views. $name);
++        echo &quot;\tcreate &quot; . $views.$name . &quot;\n&quot;;
++    } else {
++        echo &quot;\texists &quot; . $views.$name . &quot;\n&quot;;
+     }
+-    $_app = file_get_contents('scripts/templates/application.txt');
+-    $s1 = str_replace('${__USER__}', $user, $_app);
+-    $s2 = str_replace('${__DATE__}', $date, $s1);
+-    file_put_contents($app_php, $s2);
+-    echo &quot;.....[ OK ]\n&quot;;
+-}
+ 
+-$file = $config-&gt;getProperty('application_path') . DIRECTORY_SEPARATOR . 'models' . DIRECTORY_SEPARATOR . $model . '.php';
+-echo &quot; -- creating &quot; . $Umodel . &quot; Model: &quot; . $file;
+-if (is_file($file)) {
+-    echo &quot;.....[ FILE EXISTS - SKIPING ]\n&quot;;
+-} else {
+-    $_app = file_get_contents('scripts/templates/model.txt');
+-    $s1 = str_replace('${__USER__}', $user, $_app);
+-    $s2 = str_replace('${__DATE__}', $date, $s1);
+-    $s3 = str_replace('${Model}', $Umodel, $s2);
+-    file_put_contents($file, $s3);
+-    echo &quot;.....[ OK ]\n&quot;;
+-}
+-
+-$file = $config-&gt;getProperty('application_path') . DIRECTORY_SEPARATOR . 'helpers' . DIRECTORY_SEPARATOR . $model . '_helper.php';
+-echo &quot; -- creating &quot; . $model . &quot; Helper: &quot; . $file;
+-if (is_file($file)) {
+-    echo &quot;.....[ FILE EXISTS - SKIPING ]\n&quot;;
+-} else {
+-    $_app = file_get_contents('scripts/templates/helper.txt');
+-    $s1 = str_replace('${__USER__}', $user, $_app);
+-    $s2 = str_replace('${__DATE__}', $date, $s1);
+-    $s3 = str_replace('${model}', $model, $s2);
+-    file_put_contents($file, $s3);
+-    echo &quot;.....[ OK ]\n&quot;;
+-}
+-
+-$file = $config-&gt;getProperty('application_path') . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR . $model . '_controller.php';
+-echo &quot; -- creating &quot; . $model . &quot; Controller: &quot; . $file;
+-if (is_file($file)) {
+-    echo &quot;.....[ FILE EXISTS - SKIPING ]\n&quot;;
+-} else {
+-    $_app = file_get_contents('scripts/templates/controller.txt');
+-    $s1 = str_replace('${__USER__}', $user, $_app);
+-    $s2 = str_replace('${__DATE__}', $date, $s1);
+-    
+-    $buff = '';
+-    foreach( $table_info-&gt;getColumns() as $col) {
+-        if ($col-&gt;getName() == $pk) continue;
+-        if ( preg_match($pattern, $col-&gt;getName(), $matches) ) continue;
+-        $buff .= &quot;\$${model}-&gt;&quot; . $col-&gt;getName() . &quot; = \$this-&gt;params['&quot; . $col-&gt;getName() . &quot;'];\n\t\t&quot;;
++    if (!file_exists($views.'layouts'.DIRECTORY_SEPARATOR.$name.'.phtml')) {
++    $layout =&lt;&lt;&lt;LAYOUT
++&lt;html xmlns=&quot;<A HREF="http://www.w3.org/1999/xhtml">http://www.w3.org/1999/xhtml</A>&quot; lang=&quot;en&quot; xml:lang=&quot;en&quot;&gt;
++     &lt;head&gt;
++         &lt;title&gt;$name&lt;/title&gt;
++         &lt;base href=&quot;&lt;?=\$__server;?&gt;&lt;?=\$__base;?&gt;/&quot; /&gt;
++         &lt;link rel=&quot;stylesheet&quot; href=&quot;stylesheet/medick.css&quot; /&gt;
++         &lt;meta http-equiv=&quot;Content-Type&quot; content=&quot;text/html; charset=UTF-8&quot; /&gt;
++     &lt;/head&gt;
++     &lt;body&gt;&lt;?=\$content_for_layout;?&gt;&lt;/body&gt;
++&lt;/html&gt;
++LAYOUT;
++        file_put_contents($views.'layouts'.DIRECTORY_SEPARATOR.$name.'.phtml',$layout);
++        echo &quot;\tcreate &quot;.$views.&quot;layouts&quot;.DIRECTORY_SEPARATOR.$name.&quot;.phtml\n&quot;;
++    } else {
++        echo &quot;\texists &quot;.$views.&quot;layouts&quot;.DIRECTORY_SEPARATOR.$name.&quot;.phtml\n&quot;;
+     }
+-    
+-    $s21 = str_replace('${__FIELDS__}', $buff, $s2);
+-    
+-    $s22 = str_replace('${__PK__}', $pk, $s21);
+ 
+-    $s3 = str_replace('${model}', $model, $s22);
+-    $s4 = str_replace('${Model}', $Umodel, $s3);
+-    $s5 = str_replace('${models}', $models, $s4);
+-    file_put_contents($file, $s5);
+-    echo &quot;.....[ OK ]\n&quot;;
+-}
+-
+-$views_dir = $config-&gt;getProperty('application_path') . DIRECTORY_SEPARATOR . 'views' . DIRECTORY_SEPARATOR . $model;
+-if (!is_dir($views_dir)) {
+-    mkdir($views_dir, 0755);
+-}
+-
+-// ------------------------- ALL
+-$file = $views_dir . DIRECTORY_SEPARATOR . 'all.phtml';
+-echo &quot; -- creating all &quot; . $model . &quot; view: &quot; . $file;
+-if (is_file($file)) {
+-    echo &quot;.....[ FILE EXISTS - SKIPING ]\n&quot;;
+-} else {
+-    $_app = file_get_contents('scripts/templates/all.txt');
+-    $s1 = str_replace('${__USER__}', $user, $_app);
+-    $s2 = str_replace('${__DATE__}', $date, $s1);
+-
+-    $buff = '&lt;br /&gt;';
+-
+-    foreach( $table_info-&gt;getColumns() as $col) {
+-        if ($col-&gt;getName() == $pk) continue;       
+-        if ( preg_match($pattern, $col-&gt;getName(), $matches) ) continue;
+-        $buff .= ucfirst($col-&gt;getName()) . &quot;: &lt;?=\$${model}-&gt;&quot; . $col-&gt;getName() . &quot;;?&gt;&lt;br /&gt;&quot;;
++    $helper  = $app_location.DIRECTORY_SEPARATOR.'app';
++    $helper .= DIRECTORY_SEPARATOR.'helpers'.DIRECTORY_SEPARATOR.$name.'_helper.php';
++    if (!file_exists($helper)) {
++        touch($helper);
++        echo &quot;\tcreate $helper\n&quot;;
++    } else {
++        echo &quot;\texists $helper\n&quot;;
+     }
+-    
+-    // $buff = substr($buff, 0, -4) . &quot;&lt;br /&gt;&quot;;
+-    
+-    $s21 = str_replace('${__BUFFER__}', $buff, $s2);
+-    
+-    $s3 = str_replace('${model}', $model, $s21);
+-    $s4 = str_replace('${Model}', $Umodel, $s3);
+-    $s5 = str_replace('${models}', $models, $s4);
+-    $s6 = str_replace('${__PK__}', $pk, $s5);
+-    
+-    file_put_contents($file, $s6);
+-    echo &quot;.....[ OK ]\n&quot;;
+-}
+ 
+-// ------------------------- ANEW
+-$file = $views_dir . DIRECTORY_SEPARATOR . 'anew.phtml';
+-echo &quot; -- creating all &quot; . $model . &quot; view: &quot; . $file;
+-if (is_file($file)) {
+-    echo &quot;.....[ FILE EXISTS - SKIPING ]\n&quot;;
+-} else {
+-    $_app = file_get_contents('scripts/templates/anew.txt');
+-    $s1 = str_replace('${__USER__}', $user, $_app);
+-    $s2 = str_replace('${__DATE__}', $date, $s1);
++    $forbidden_method_names= array('__construct', '__destruct');
++    if (count($methods)) {
++         foreach ($methods as $method) {
++             if (in_array($method,$forbidden_method_names)) {
++                 echo &quot;Skipping method, $method is a forbidden name\n&quot;;
++                 continue;
++             }
++             echo &quot;\tadding method: $method \n&quot;;
++             $controller_class_text .= &quot;\t\tpublic function $method() {    }\n\n&quot;;
++             $view_location = $views.$name.DIRECTORY_SEPARATOR.$method.'.phtml';
++             if (file_exists($view_location)) {
++                 echo &quot;\texists $view_location\n&quot;;
++                 continue;
++             }
++             $view_text     = &quot;$controller_class_name#$method&quot;;
++             file_put_contents($view_location, $view_text);
++             echo &quot;\tcreate: $view_location\n&quot;;
++         }
++     }
++     $controller_class_text.= &quot;\n}\n&quot;;
++     $controller_location =
++         $app_location.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'controllers'.DIRECTORY_SEPARATOR.$name.'_controller.php';
++     if (file_exists($controller_location)) {
++         echo &quot;\toverwrote &quot;;
++     } else {
++         echo &quot;\tcreate &quot;;
++     }
++     file_put_contents($controller_location, $controller_class_text);
++     echo &quot;$controller_location\n&quot;;
++  }
+ 
+-    $buff = '&lt;br /&gt;';
+-    
+-    foreach( $table_info-&gt;getColumns() as $col) {
+-        if ($col-&gt;getName() == $pk) continue;
+-        if ( preg_match($pattern, $col-&gt;getName(), $matches) ) continue;
+-        $name = $col-&gt;getName();
+-        $size = $col-&gt;getSize();
+-        $type = CreoleTypes::getCreoleName($col-&gt;getType());
+-        switch ($type) {
+-            case 'INT':
+-            case 'INTEGER':
+-            case 'VARCHAR':
+-            default:
+-                $buff .= '&lt;label&gt;' . ucfirst($name) . ': &lt;/label&gt;' .
+-            '&lt;?= Form::text(\'' . $name . '\', NULL, array(\'maxlength\'=&gt;' . $size . ',\'size\'=&gt;' . $size . ')); ?&gt;&lt;br /&gt;';
+-                break;
+-        }
+-    }
+-    
+-    $s21 = str_replace('${__BUFFER__}', $buff, $s2);
+-    
+-    $s3 = str_replace('${model}', $model, $s21);
+-    $s4 = str_replace('${Model}', $Umodel, $s3);
+-    $s5 = str_replace('${models}', $models, $s4);
+-    
+-    
+-    file_put_contents($file, $s5);
+-    echo &quot;.....[ OK ]\n&quot;;
+-}
++ function generate_model($name, $app_location) {
++     $model_class_name = ucfirst(strtolower($name));
++     $model_location   = $app_location.DIRECTORY_SEPARATOR.'app'.DIRECTORY_SEPARATOR.'models'.DIRECTORY_SEPARATOR.$name.'.php';
++     echo &quot;Generating model $model_class_name from $name\n&quot;;
++     if (file_exists($model_location)) {
++         echo &quot;\texits $model_location\n&quot;;
++         return;
++     }
++     $model_class_text =&lt;&lt;&lt;EOCLASS
++&lt;?php
+ 
++ /**
++  * This class is part of ${APP_NAME} project
++  *
++  * @package ${APP_NAME}.models
++  * \$Id$
++  */
++class $model_class_name extends ActiveRecordBase {
+ 
+-// ------------------------- EDIT
+-$file = $views_dir . DIRECTORY_SEPARATOR . 'edit.phtml';
+-echo &quot; -- creating edit form for &quot; . $model . &quot; : &quot; . $file;
+-if (is_file($file)) {
+-    echo &quot;.....[ FILE EXISTS - SKIPING ]\n&quot;;
+-} else {
+-    $_app = file_get_contents('scripts/templates/edit.txt');
+-    $s1 = str_replace('${__USER__}', $user, $_app);
+-    $s2 = str_replace('${__DATE__}', $date, $s1);
++     /**
++      * Finds a $model_class_name
++      *
++      * @see ActiveRecordBase::__find()
++      * @return mixed
++      */
++     public static function find() {
++         ActiveRecordBase::initialize(__CLASS__);
++         return ActiveRecordBase::__find(func_get_arguments());
++     }
+ 
+-    $buff = '&lt;br /&gt;';
+-    
+-    foreach( $table_info-&gt;getColumns() as $col) {
+-        if ($col-&gt;getName() == $pk) continue;
++  }
+ 
+-        if ( preg_match($pattern, $col-&gt;getName(), $matches) ) continue;
+-        $name = $col-&gt;getName();
+-        $size = $col-&gt;getSize();
+-        $type = CreoleTypes::getCreoleName($col-&gt;getType());
+-        switch ($type) {
+-            case 'INT':
+-            case 'INTEGER':
+-            case 'VARCHAR':
+-            default:
+-                $buff .= '&lt;label&gt;' . ucfirst($name) . ': &lt;/label&gt;' . 
+-            '&lt;?= Form::text(\'' . $name . '\', $${model}-&gt;' . $name . ', array(\'maxlength\'=&gt;' . $size . ',\'size\'=&gt;' . $size . ')); ?&gt;&lt;br /&gt;';
+-                break;
+-        }
+-    }
+-    
+-    $s21 = str_replace('${__BUFFER__}', $buff, $s2);
+-    $s22 = str_replace('${__PK__}', $pk, $s21);
+-    $s3 = str_replace('${model}', $model, $s22);
+-    $s4 = str_replace('${Model}', $Umodel, $s3);
+-    $s5 = str_replace('${models}', $models, $s4);
+-    
+-    
+-    file_put_contents($file, $s5);
+-    echo &quot;.....[ OK ]\n&quot;;
+-}
++EOCLASS;
+ 
+-function generate_application_skeleton($path) {
+-    $top = $path . DIRECTORY_SEPARATOR;
+-    mkdir($top . 'controllers', 0755, TRUE);
+-    mkdir($top . 'helpers',0755);
+-    mkdir($top . 'models',0755);
+-    mkdir($top . 'views',0755);
+-}
+-function print_header($text) {
+-    echo &quot;======&gt; $text.\n&quot;;
+-}
+-function done ($message = '', $error_code = 0) {
+-    echo $message . &quot;\n&quot;;
+-    exit ($error_code);
+-}
++    file_put_contents($model_location, $model_class_text);
++    echo &quot;\tcreate $model_location\n&quot;;
++  }
++
++ ?&gt;
+
+Modified: trunk/test/application/models/author.php
+===================================================================
+--- trunk/test/application/models/author.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/test/application/models/author.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -6,9 +6,8 @@
+ 
+ class Author extends ActiveRecordBase {
+     public static function find() {
+-        $args= func_get_args();
+-        self::setTable(__CLASS__);
+-        return self::__find($args);
++        ActiveRecordBase::initialize(__CLASS__);
++        return ActiveRecordBase::__find(func_get_args());
+     }
+ }
+ 
+
+Modified: trunk/test/application/models/book.php
+===================================================================
+--- trunk/test/application/models/book.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/test/application/models/book.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -9,9 +9,8 @@
+     protected $has_one= array('author');
+     
+     public static function find() {
+-        $args= func_get_args();
+-        self::setTable(__CLASS__);
+-        return self::__find($args);
++        ActiveRecordBase::initialize(__CLASS__);
++        return ActiveRecordBase::__find(func_get_args());
+     }
+ 
+ }
+
+Modified: trunk/test/mock/MockCollection.php
+===================================================================
+--- trunk/test/mock/MockCollection.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/test/mock/MockCollection.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -2,7 +2,5 @@
+ 
+ // $Id$
+     
+-    class MockCollection extends AbstractCollection {
+-    
+-    }
++class MockCollection extends Collection {  }
+ 
+
+Modified: trunk/test/test/active/record/DBOperationsTest.php
+===================================================================
+--- trunk/test/test/active/record/DBOperationsTest.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/test/test/active/record/DBOperationsTest.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -29,7 +29,7 @@
+     public function setUp() {
+         Registry::put(new MockConfigurator(), '__configurator');
+         Registry::put(new Logger(), '__logger');
+-        ActiveRecordBase::close();
++        ActiveRecordBase::close_connection();
+     }
+     
+     /** tearDown */
+
+Modified: trunk/test/test/active/record/FindTest.php
+===================================================================
+--- trunk/test/test/active/record/FindTest.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/test/test/active/record/FindTest.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -32,7 +32,7 @@
+      public function setUp() {
+         Registry::put(new MockConfigurator(), '__configurator');
+         Registry::put(new Logger(), '__logger');
+-        ActiveRecordBase::close();
++        ActiveRecordBase::close_connection();
+         $author= new Author();
+         $author-&gt;name= &quot;Andrei Cristescu&quot;;
+         $author-&gt;email= &quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">andrei.cristescu at foo-factory.info</A>&quot;;
+
+Modified: trunk/test/test/active/record/associations/HasOneTest.php
+===================================================================
+--- trunk/test/test/active/record/associations/HasOneTest.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/test/test/active/record/associations/HasOneTest.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -37,7 +37,7 @@
+     public function setUp() {
+         Registry::put(new MockConfigurator(), '__configurator');
+         Registry::put(new Logger(), '__logger');
+-        ActiveRecordBase::close();
++        ActiveRecordBase::close_connection();
+         
+         $author= new Author();
+         $author-&gt;name= 'Andrei Cristescu';
+
+Modified: trunk/test/test/medick/CollectionTest.php
+===================================================================
+--- trunk/test/test/medick/CollectionTest.php	2006-01-08 18:37:55 UTC (rev 329)
++++ trunk/test/test/medick/CollectionTest.php	2006-01-09 19:55:37 UTC (rev 330)
+@@ -23,8 +23,8 @@
+     }
+     
+     function testAdd() {
+-        // $f= $this-&gt;col-&gt;add(new Foo());
+-        // $this-&gt;assertEqual('Foo', $f-&gt;getClassName());
++        $f= $this-&gt;col-&gt;add(new Foo());
++        $this-&gt;assertEqual('Foo', $f-&gt;getClassName());
+     }
+     
+     function testEmpty() {
+@@ -33,10 +33,10 @@
+     }
+     
+     function testRemove() {
+-         // $f= new Foo();
+-         // $this-&gt;col-&gt;add($f);
+-         // $this-&gt;col-&gt;remove($f);
+-         // $this-&gt;assertTrue($this-&gt;col-&gt;isEmpty());
++         $f= new Foo();
++         $this-&gt;col-&gt;add($f);
++         $this-&gt;col-&gt;remove($f);
++         $this-&gt;assertTrue($this-&gt;col-&gt;isEmpty());
+     }
+     
+     function testSize() {
+@@ -58,10 +58,10 @@
+     }
+ 
+     function testArray() {
+-        // $this-&gt;col[] = new Foo();
+-        // $this-&gt;col[] = new Bar();
+-        // $this-&gt;col[] = new Baz();
+-        // $this-&gt;assertEqual($this-&gt;col-&gt;size(), 3);
++        $this-&gt;col[] = new Foo();
++        $this-&gt;col[] = new Bar();
++        $this-&gt;col[] = new Baz();
++         $this-&gt;assertEqual($this-&gt;col-&gt;size(), 3);
+     }
+ 
+     function testOffsetExists() {
+@@ -70,9 +70,9 @@
+    }
+ 
+    function testContains() {
+-       // $f= new Foo();
+-       // $this-&gt;col[] = $f;
+-       // $this-&gt;assertTrue($this-&gt;col-&gt;contains($f)); 
++       $f= new Foo();
++       $this-&gt;col[] = $f;
++       $this-&gt;assertTrue($this-&gt;col-&gt;contains($f)); 
+    }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000124.html">[Medick-svn] r329 - in trunk: . libs/action/controller libs/action/view libs/active/record libs/medick skel/config
+</A></li>
+	<LI>Next message: <A HREF="000126.html">[Medick-svn] r331 - in trunk: . libs/configurator libs/medick skel/public skel/scripts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#125">[ date ]</a>
+              <a href="thread.html#125">[ thread ]</a>
+              <a href="subject.html#125">[ subject ]</a>
+              <a href="author.html#125">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

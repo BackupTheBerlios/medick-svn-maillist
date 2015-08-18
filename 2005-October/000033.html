@@ -1,0 +1,646 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r229 - trunk/docs/patches
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r229%20-%20trunk/docs/patches&In-Reply-To=%3C200510221710.j9MHAw9M019133%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000032.html">
+   <LINK REL="Next"  HREF="000034.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r229 - trunk/docs/patches</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r229%20-%20trunk/docs/patches&In-Reply-To=%3C200510221710.j9MHAw9M019133%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r229 - trunk/docs/patches">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Oct 22 19:10:58 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000032.html">[Medick-svn] r228 - in trunk/test: . dummy/models mock
+</A></li>
+        <LI>Next message: <A HREF="000034.html">[Medick-svn] r230 - trunk/scripts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#33">[ date ]</a>
+              <a href="thread.html#33">[ thread ]</a>
+              <a href="subject.html#33">[ subject ]</a>
+              <a href="author.html#33">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-22 19:10:57 +0200 (Sat, 22 Oct 2005)
+New Revision: 229
+
+Removed:
+   trunk/docs/patches/creole.sqlite.patch
+   trunk/docs/patches/patch-006.diff
+   trunk/docs/patches/patch-007.diff
+   trunk/docs/patches/patch-008.diff
+Log:
+ - removed old patchs + creole patch (changes where added into creole cvs tree)
+
+Deleted: trunk/docs/patches/creole.sqlite.patch
+===================================================================
+--- trunk/docs/patches/creole.sqlite.patch	2005-10-21 18:35:26 UTC (rev 228)
++++ trunk/docs/patches/creole.sqlite.patch	2005-10-22 17:10:57 UTC (rev 229)
+@@ -1,59 +0,0 @@
+-? LICENSE
+-Index: drivers/sqlite/SQLiteConnection.php
+-===================================================================
+-RCS file: /cvs/creole/creole/classes/creole/drivers/sqlite/SQLiteConnection.php,v
+-retrieving revision 1.12
+-diff -u -r1.12 SQLiteConnection.php
+---- drivers/sqlite/SQLiteConnection.php	1 Sep 2004 14:00:29 -0000	1.12
+-+++ drivers/sqlite/SQLiteConnection.php	16 Oct 2005 16:55:00 -0000
+-@@ -164,10 +164,11 @@
+-      */
+-     public function executeQuery($sql, $fetchmode = null)
+-     {    
+--        ini_set('sqlite.assoc_case', $this-&gt;sqliteAssocCase);
+--        $result = @sqlite_query($this-&gt;dblink, $sql);
+-+        // ini_set('sqlite.assoc_case', $this-&gt;sqliteAssocCase);
+-+        $this-&gt;lastQuery = $sql;
+-+        $result = @sqlite_query($this-&gt;dblink, $this-&gt;lastQuery);
+-         if (!$result) {
+--            throw new SQLException('Could not execute query', $php_errormsg, $sql); //sqlite_error_string(sqlite_last_error($this-&gt;dblink))
+-+            throw new SQLException('Could not execute query', $php_errormsg, $this-&gt;lastQuery); //sqlite_error_string(sqlite_last_error($this-&gt;dblink))
+-         }
+-         require_once 'creole/drivers/sqlite/SQLiteResultSet.php';
+-         return new SQLiteResultSet($this, $result, $fetchmode);    
+-@@ -178,9 +179,10 @@
+-      */
+-     function executeUpdate($sql)
+-     {
+--        $result = @sqlite_query($this-&gt;dblink, $sql);
+-+        $this-&gt;lastQuery = $sql;
+-+        $result = @sqlite_query($this-&gt;dblink, $this-&gt;lastQuery);
+-         if (!$result) {            
+--            throw new SQLException('Could not execute update', $php_errormsg, $sql); //sqlite_error_string(sqlite_last_error($this-&gt;dblink))
+-+            throw new SQLException('Could not execute update', $php_errormsg, $this-&gt;lastQuery); //sqlite_error_string(sqlite_last_error($this-&gt;dblink))
+-         }
+-         return (int) @sqlite_changes($this-&gt;dblink);
+-     }
+-@@ -235,4 +237,4 @@
+-         return (int) @sqlite_changes($this-&gt;dblink);
+-     }
+-     
+--}
+-\ No newline at end of file
+-+}
+-Index: drivers/sqlite/metadata/SQLiteTableInfo.php
+-===================================================================
+-RCS file: /cvs/creole/creole/classes/creole/drivers/sqlite/metadata/SQLiteTableInfo.php,v
+-retrieving revision 1.7
+-diff -u -r1.7 SQLiteTableInfo.php
+---- drivers/sqlite/metadata/SQLiteTableInfo.php	29 Nov 2004 13:40:12 -0000	1.7
+-+++ drivers/sqlite/metadata/SQLiteTableInfo.php	16 Oct 2005 16:55:02 -0000
+-@@ -72,7 +72,7 @@
+-             
+-             $this-&gt;columns[$name] = new ColumnInfo($this, $name, SQLiteTypes::getType($type), $type, $size, $scale, $is_nullable, $default_val);
+-             
+--            if (strtolower($type) == 'integer primary key') {
+-+            if (($row['pk'] == 1) or (strtolower($type) == 'integer primary key')) {
+-                 if ($this-&gt;primaryKey === null) {
+-                     $this-&gt;primaryKey = new PrimaryKeyInfo($name);
+-                 }
+
+Deleted: trunk/docs/patches/patch-006.diff
+===================================================================
+--- trunk/docs/patches/patch-006.diff	2005-10-21 18:35:26 UTC (rev 228)
++++ trunk/docs/patches/patch-006.diff	2005-10-22 17:10:57 UTC (rev 229)
+@@ -1,257 +0,0 @@
+-Index: public_html/default.htaccess
+-===================================================================
+---- public_html/default.htaccess	(revision 98)
+-+++ public_html/default.htaccess	(working copy)
+-@@ -1,3 +1,17 @@
+- # default.htaccess file for Medick framework.
+- # rename-it to .htaccess
+- # $Id$
+-+
+-+RewriteEngine on
+-+
+-+RewriteCond    %{REQUEST_FILENAME}  -d
+-+RewriteRule    ^(.+[^/])$           $1/  [R]
+-+
+-+RewriteRule ^([A-Za-z]+)/?([A-Za-z]+)/?\.html$ index.php?controller=$1&amp;action=$2 [NS]
+-+RewriteRule ^([A-Za-z]+)/([A-Za-z]+)/([0-9]+)\.html?$ index.php?controller=$1&amp;action=$2&amp;id=$3 [L]
+-+
+-+# ##
+-+#RewriteRule ^todo/edit/(.*)$ /index.php?controller=todo&amp;action=edit&amp;id=$1 [NE,L]
+-+#RewriteRule ^todo/(.*)$ /index.php?controller=todo&amp;action=$1 [NE,L]
+-+# ##
+-+
+-Index: config/application.xml
+-===================================================================
+---- config/application.xml	(revision 98)
+-+++ config/application.xml	(working copy)
+-@@ -8,9 +8,10 @@
+-     &lt;!--  ====================== --&gt;
+-     &lt;!--   General properties    --&gt;
+-     &lt;!--  ====================== --&gt;
+--    &lt;property name=&quot;server_name&quot;      value=&quot;<A HREF="http://localhost">http://localhost</A>&quot; /&gt;
+--    &lt;property name=&quot;document_root&quot;    value=&quot;/locknet7/public_html&quot; /&gt;
+-+    &lt;property name=&quot;server_name&quot;      value=&quot;<A HREF="http://morgan:8091">http://morgan:8091</A>&quot; /&gt;
+-+    &lt;property name=&quot;document_root&quot;    value=&quot;/&quot; /&gt;
+-     &lt;property name=&quot;application_path&quot; value=&quot;/wwwroot/htdocs/locknet7/app&quot; /&gt;
+-+    &lt;property name=&quot;rewrite&quot;          value=&quot;on&quot; /&gt;
+-      
+-     &lt;!--  ====================== --&gt;
+-     &lt;!--     Logger System       --&gt;
+-@@ -39,9 +40,9 @@
+-         &lt;dsn id = &quot;one&quot;
+-              phptype  = &quot;mysql&quot;
+-              hostspec = &quot;localhost&quot;
+--             database = &quot;todo2&quot;
+-+             database = &quot;todo&quot;
+-              username = &quot;root&quot;
+--             password = &quot;virus&quot; /&gt;
+-+             password = &quot;sacosica&quot; /&gt;
+-         &lt;dsn id = &quot;two&quot;
+-              phptype  = &quot;pgsql&quot;
+-              hostspec = &quot;192.18.1.1&quot;
+-Index: VERSION
+-===================================================================
+---- VERSION	(revision 0)
+-+++ VERSION	(revision 0)
+-@@ -0,0 +1 @@
+-+0.0.1
+-Index: scripts/generator.php
+-===================================================================
+---- scripts/generator.php	(revision 98)
+-+++ scripts/generator.php	(working copy)
+-@@ -206,8 +206,8 @@
+-             case 'INTEGER':
+-             case 'VARCHAR':
+-             default:
+--                $buff .= ucfirst($name) . 
+--                    ': &lt;?= Form::text(\'' . $name . '\', NULL, array(\'size\'=&gt;' . $size . ')); ?&gt;&lt;br /&gt;';
+-+                $buff .= '&lt;label&gt;' . ucfirst($name) . ': &lt;/label&gt;' .
+-+            '&lt;?= Form::text(\'' . $name . '\', NULL, array(\'maxlength\'=&gt;' . $size . ',\'size\'=&gt;' . $size . ')); ?&gt;&lt;br /&gt;';
+-                 break;
+-         }
+-     }
+-@@ -248,8 +248,8 @@
+-             case 'INTEGER':
+-             case 'VARCHAR':
+-             default:
+--                $buff .= ucfirst($name) . 
+--                    ': &lt;?= Form::text(\'' . $name . '\', $${model}-&gt;' . $name . ', array(\'size\'=&gt;' . $size . ')); ?&gt;&lt;br /&gt;';
+-+                $buff .= '&lt;label&gt;' . ucfirst($name) . ': &lt;/label&gt;' . 
+-+            '&lt;?= Form::text(\'' . $name . '\', $${model}-&gt;' . $name . ', array(\'maxlength\'=&gt;' . $size . ',\'size\'=&gt;' . $size . ')); ?&gt;&lt;br /&gt;';
+-                 break;
+-         }
+-     }
+-Index: libs/action/controller/Base.php
+-===================================================================
+---- libs/action/controller/Base.php	(revision 98)
+-+++ libs/action/controller/Base.php	(working copy)
+-@@ -181,11 +181,19 @@
+-     protected function redirect_to($action, $params = array(), $controller = NULL) {
+-         // get the curent controller, if NULL is passed.
+-         if (is_null($controller)) $controller= $this-&gt;params['controller'];
+--        $this-&gt;response-&gt;redirect(
+-+        
+-+        if ($this-&gt;config-&gt;getProperty('rewrite')) {
+-+            $this-&gt;response-&gt;redirect(
+-+                $this-&gt;config-&gt;getProperty('server_name') . $this-&gt;config-&gt;getProperty('document_root') . 
+-+                $controller . '/' . $action);
+-+        } else {
+-+            // rewrite-off
+-+            $this-&gt;response-&gt;redirect(
+-                 $this-&gt;config-&gt;getProperty('server_name') . 
+-                 $this-&gt;config-&gt;getProperty('document_root') . 
+-                 '/index.php?controller=' . $controller . '&amp;action=' . $action
+-             );
+-+        }
+-         $this-&gt;action_performed = TRUE;
+-     }
+-     
+-Index: libs/action/view/HTML.php
+-===================================================================
+---- libs/action/view/HTML.php	(revision 98)
+-+++ libs/action/view/HTML.php	(working copy)
+-@@ -40,19 +40,34 @@
+- class HTMLElement {
+-     public function __construct() {     }
+- }
+-+
+- // NLT!
+- class URL {
+-     public static function create($controller, $action, $params=array()) {
+--        $buff = 'index.php?controller=' . $controller . '&amp;action=' . $action;
+--        if (!empty($params)) {
+--            foreach ($params AS $key=&gt;$value) {
+--                $buff .= '&amp;' . $key . '=' . $value;
+-+        if (!Configurator::getInstance()-&gt;getProperty('rewrite')) {
+-+            // rewrite-off:
+-+            $buff = 'index.php?controller=' . $controller . '&amp;action=' . $action;
+-+            if (!empty($params)) {
+-+                foreach ($params AS $key=&gt;$value) {
+-+                    $buff .= '&amp;' . $key . '=' . $value;
+-+                }
+-             }
+-+            return $buff;
+-+        } else {
+-+            // rewrite-on:
+-+            $buff= '/' . $controller . '/' . $action;
+-+            if (!empty($params)) {
+-+                foreach ($params AS $key=&gt;$value) {
+-+                    $buff .= '/' . $value;
+-+                }
+-+                $buff .= '.html';
+-+            }
+-+            return $buff;
+-         }
+--        return $buff;
+-     }
+- }
+- 
+-+
+- class Form {
+-     
+-     public function __construct($action, $method) {  }
+-@@ -89,7 +104,7 @@
+-         $buff = '';
+-         if (is_array($attr)) {
+-             foreach ($attr AS $atribute=&gt;$val) {
+--                $buff .= '&quot;' . $atribute . '&quot;=&quot;' . $val . '&quot; ';
+-+                $buff .= $atribute . '=&quot;' . $val . '&quot; ';
+-             }
+-         } elseif($attr != '') {
+-             $buff .= $attr;
+-Index: README
+-===================================================================
+---- README	(revision 98)
+-+++ README	(working copy)
+-@@ -0,0 +1,91 @@
+-+============================
+-+Medick :: One PHP Framework
+-+$Id:$
+-+============================
+-+
+-+ABOUT:
+-+------
+-+    Medick is a free software licensed under BSD License, see LICENSE file for details.
+-+    Medick is a PHP Framework and the main task is to ease the work of programmers 
+-+    by providing a ground for rapid and clean development.
+-+
+-+    At this point, the project is on pre-alpha stage.
+-+    The stable version will require at least php 5.1.0 and it will be released around 1.february.2006
+-+
+-+REQUIREMENTS:
+-+-------------
+-+    1. php 5.0.3 or higher (<A HREF="http://php.net/downloads">http://php.net/downloads</A>).
+-+        The fallowing PHP extensions are required: simplexml and spl.
+-+        For changing application settings on runtime you will also need domxml.
+-+        This extensions are enbled by default on every php installation.
+-+        
+-+    2. for web application you will need, of course a web server, Apache is recommended.
+-+    
+-+    3. Apache recomanded settings: 
+-+            3.1 AllowOverride directive from httpd.conf must be set to All, to allow .htaccess files
+-+                and of course, mod_access must be turned on.
+-+            3.2 for nice URL`s mod_rewrite should be installed and turnded on.
+-+            Usualy, all Web Hosters provide this settings.
+-+            
+-+    3. to use a Database Engine you need to install one of the RDBMS suported by Creole:
+-+        - MySQL, SQLite, PostgreSQL or MS SQL Server
+-+
+-+INSTALL:
+-+--------
+-+    1. checkout Medick sources from svn:
+-+    
+-+        $ svn checkout <A HREF="svn://svn.berlios.de/medick/trunk">svn://svn.berlios.de/medick/trunk</A> medick
+-+
+-+    this will create the medick folder and will download the source code from svn.
+-+    The folder layout after the checkout (ignoring .svn folders and the content of docs and libs):
+-+    
+-+        medick/
+-+            config/
+-+                application.xml
+-+                bootstrap.php
+-+            docs/
+-+                ...............
+-+            scripts/
+-+                updater.sh
+-+                generator.php
+-+            public_html/
+-+                images/
+-+                javascript/
+-+                stylesheet/
+-+                index.php
+-+                default.htaccess
+-+            libs/
+-+                .................
+-+            README
+-+            LICENSE
+-+            VERSION
+-+
+-+    2. Install Medick dependencies:
+-+    
+-+        $ cd medick/
+-+        $ scripts/updater.sh
+-+
+-+        This script will checkout Creole (database abstraction layer for PHP5) and SimpleTest (PHP Test Framework)
+-+    from their CVS repositories into the vendor folder:
+-+    
+-+        medick/
+-+            vendor/
+-+                creole/
+-+                    ..........
+-+                simpletest/
+-+                    ..........
+-+
+-+    More details about creole and simpletest:
+-+    simpletest: <A HREF="http://www.lastcraft.com/simple_test.php">http://www.lastcraft.com/simple_test.php</A>
+-+    creole:     <A HREF="http://creole.phpdb.org/wiki">http://creole.phpdb.org/wiki</A>
+-+    
+-+    3. There is no step 3, just start to code.
+-+
+-+GETTING STARTED.
+-+----------------
+-+  To be Done
+-+  
+-+CONTACT:
+-+--------
+-+    aurelian [ AT ] locknet [ DOT ] ro
+-+
+
+Deleted: trunk/docs/patches/patch-007.diff
+===================================================================
+--- trunk/docs/patches/patch-007.diff	2005-10-21 18:35:26 UTC (rev 228)
++++ trunk/docs/patches/patch-007.diff	2005-10-22 17:10:57 UTC (rev 229)
+@@ -1,120 +0,0 @@
+-Index: scripts/templates/controller.txt
+-===================================================================
+---- scripts/templates/controller.txt	(revision 101)
+-+++ scripts/templates/controller.txt	(working copy)
+-@@ -3,9 +3,9 @@
+- /** This file was autogenerated on ${__DATE__} by ${__USER__} */
+- 
+- class ${Model}Controller extends ApplicationController {
+-+    
+-+    protected $model = array('${model}');
+- 
+--	protected $model = array('${model}');
+--
+-     /** List all items */
+-     public function all() {
+-         $this-&gt;template-&gt;${models} = ${Model}::find('all');
+-@@ -31,14 +31,13 @@
+- 
+-     /** Print the form for adding editing the ${model} */
+-     public function edit() {
+--    	$this-&gt;template-&gt;${model} = ${Model}::find($this-&gt;params['${__PK__}']);
+-+        $this-&gt;template-&gt;${model} = ${Model}::find($this-&gt;params['${__PK__}']);
+-     }
+- 
+--	/** Process the edit form */
+--	public function update() {
+--	    $${model} = new ${Model}(array('${__PK__}'=&gt;$this-&gt;params['${__PK__}']));
+-+	  /** Process the edit form */
+-+  	public function update() {
+-+	      $${model} = new ${Model}(array('${__PK__}'=&gt;$this-&gt;params['${__PK__}']));
+-         ${__FIELDS__}
+--        // $item-&gt;description=$this-&gt;params['description'];
+-         // $${model}-&gt;author_id  = 1;
+-         try {
+-             $${model}-&gt;save();
+-@@ -47,7 +46,7 @@
+-             $this-&gt;logger-&gt;warn('SQLException caught!' . $sqlEx-&gt;getMessage());
+-             $this-&gt;render_text('Cannot Save!');
+-         }
+--	}
+-+	  }
+- 
+-     /** removes an item from the DB */
+-     public function delete() {
+-@@ -60,5 +59,5 @@
+-             $this-&gt;render_text('Cannot Delete!');
+-         }
+-     }
+--
+- }
+-+
+-Index: scripts/templates/all.txt
+-===================================================================
+---- scripts/templates/all.txt	(revision 101)
+-+++ scripts/templates/all.txt	(working copy)
+-@@ -11,13 +11,11 @@
+- 
+-   &lt;body&gt;
+-   	&lt;h2&gt;All ${models}&lt;/h2&gt;
+--    &lt;div&gt;
+--	  &lt;a href=&quot;&lt;?= URL::create('${model}', 'anew');?&gt;&quot;&gt;Add a new ${Model}&lt;/a&gt;
+--    &lt;/div&gt;
+-+    &lt;div&gt;&lt;a href=&quot;&lt;?= URL::create('${model}', 'anew');?&gt;&quot;&gt;Add a new ${Model}&lt;/a&gt;&lt;/div&gt;
+-     &lt;hr /&gt;
+-     
+-     &lt;? foreach ($${models} AS $${model}): ?&gt;
+--	  &lt;p&gt;
+-+	    &lt;p&gt;
+-         &lt;a href=&quot;&lt;?= URL::create('${model}', 'edit', array('id'=&gt;$${model}-&gt;${__PK__}));?&gt;&quot;&gt;Edit&lt;/a&gt;
+-         &lt;a href=&quot;&lt;?= URL::create('${model}', 'delete', array('id'=&gt;$${model}-&gt;${__PK__}));?&gt;&quot;&gt;Distroy&lt;/a&gt;
+-         ${__BUFFER__}
+-@@ -31,3 +29,4 @@
+-     
+-   &lt;/body&gt;
+- &lt;/html&gt;
+-+
+-Index: scripts/templates/anew.txt
+-===================================================================
+---- scripts/templates/anew.txt	(revision 101)
+-+++ scripts/templates/anew.txt	(working copy)
+-@@ -13,9 +13,10 @@
+-     &lt;h2&gt;Add a new ${model}&lt;/h2&gt;
+-   	&lt;form action=&quot;&lt;?= URL::create('${model}','create');?&gt;&quot; method=&quot;post&quot;&gt;
+-   		&lt;p&gt;
+--  		${__BUFFER__}
+--  		&lt;?= Form::submit('submit', 'Add New ${Model}') ?&gt;
+-+  		  ${__BUFFER__}
+-+  		  &lt;?= Form::submit('submit', 'Add New ${Model}') ?&gt;
+-   		&lt;/p&gt;
+- 	&lt;/form&gt;
+-   &lt;/body&gt;  
+--&lt;/html&gt;
+-\ No newline at end of file
+-+&lt;/html&gt;
+-+
+-Index: scripts/templates/helper.txt
+-===================================================================
+---- scripts/templates/helper.txt	(revision 101)
+-+++ scripts/templates/helper.txt	(working copy)
+-@@ -3,3 +3,4 @@
+- /** This file was autogenerated on ${__DATE__} by ${__USER__} */
+- 
+- // ${model}_helper.php
+-+
+-Index: libs/active/record/Base.php
+-===================================================================
+---- libs/active/record/Base.php	(revision 101)
+-+++ libs/active/record/Base.php	(working copy)
+-@@ -254,9 +254,9 @@
+-         }
+-         $sql = 'UPDATE ' . self::$table_name . ' SET ';
+-         foreach($this-&gt;fields-&gt;getAffectedFields() as $field) {
+--            $sql .= $field-&gt;getName() . ' = ?,';
+-+            $sql .= $field-&gt;getName() . ' = ?, ';
+-         }
+--        return substr($sql, 0, -1) . $sqlSnippet;
+-+        return substr($sql, 0, -2) . $sqlSnippet;
+-         
+-     }
+- 
+
+Deleted: trunk/docs/patches/patch-008.diff
+===================================================================
+--- trunk/docs/patches/patch-008.diff	2005-10-21 18:35:26 UTC (rev 228)
++++ trunk/docs/patches/patch-008.diff	2005-10-22 17:10:57 UTC (rev 229)
+@@ -1,113 +0,0 @@
+-Index: config/bootstrap.php
+-===================================================================
+---- config/bootstrap.php	(revision 107)
+-+++ config/bootstrap.php	(working copy)
+-@@ -40,20 +40,15 @@
+-  */
+- 
+- error_reporting(E_ALL);
+--
+- // main TOP_LOCATION.
+- define('TOP_LOCATION', dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR);
+--
+- // include_path, rewrite the existing one
+- set_include_path( TOP_LOCATION . 'libs'   . DIRECTORY_SEPARATOR . PATH_SEPARATOR . 
+-                   TOP_LOCATION . 'vendor' . DIRECTORY_SEPARATOR
+-                 );
+--
+- include_once('MedickException.php');
+-+include_once('configurator/XMLConfigurator.php');
+- 
+--include_once('configurator/Configurator.php');
+--
+--Configurator::factory('XML', TOP_LOCATION . 'config' . DIRECTORY_SEPARATOR . 'application.xml');
+--
+-+Configurator::factory();
+- include_once('logger/Logger.php');
+- include_once('Dispatcher.php');
+-Index: libs/logger/Logger.php
+-===================================================================
+---- libs/logger/Logger.php	(revision 107)
+-+++ libs/logger/Logger.php	(working copy)
+-@@ -78,7 +78,8 @@
+-             foreach($outputters-&gt;getChildren() as $outputter) {
+-                 try {
+-                     $class= new ReflectionClass(ucfirst((string)trim($outputter['name'])) . 'Outputter');
+--                    $this-&gt;attach( $class-&gt;newInstance( (string)trim($outputter['level']), (string)trim($outputter['value']) ));
+-+                    $this-&gt;attach( 
+-+                        $class-&gt;newInstance( (string)trim($outputter['level']), (string)trim($outputter['value']) ));
+-                 } catch (ReflectionException $rEx) {
+-                     $this-&gt;warn($rEx-&gt;getMessage());
+-                 }
+-Index: libs/configurator/ConfiguratorException.php
+-===================================================================
+---- libs/configurator/ConfiguratorException.php	(revision 107)
+-+++ libs/configurator/ConfiguratorException.php	(working copy)
+-@@ -32,7 +32,6 @@
+- // ///////////////////////////////////////////////////////////////////////////////
+- // }}}
+- 
+--
+- /**
+-  * Cofigurator Exception
+-  * @package locknet7.config
+-Index: libs/configurator/Configurator.php
+-===================================================================
+---- libs/configurator/Configurator.php	(revision 107)
+-+++ libs/configurator/Configurator.php	(working copy)
+-@@ -46,18 +46,16 @@
+-     /** A factory witch builds configurator object 
+-      * TODO: this is just to pass the tests
+-      */
+--    public static function factory($type, $file) {
+-+    public static function factory($type) {
+-         if (!is_null(self::$instance)) return self::$instance;
+-         $_klazz = $type . 'Configurator';
+--        include_once('configurator/' . $_klazz . '.php');
+--        self::$instance = new $_klazz($file);
+-+        self::$instance = new $_klazz();
+-         return self::$instance;
+-     }
+-     
+-     public static function getInstance($type = 'XML') {
+-         if (self::$instance === NULL) {
+--            self::$instance = self::factory($type, 
+--                TOP_LOCATION . 'config' . DIRECTORY_SEPARATOR . 'application.xml');
+-+            self::$instance = self::factory($type);
+-         }
+-         return self::$instance;
+-     }
+-Index: libs/configurator/XMLConfigurator.php
+-===================================================================
+---- libs/configurator/XMLConfigurator.php	(revision 107)
+-+++ libs/configurator/XMLConfigurator.php	(working copy)
+-@@ -32,6 +32,9 @@
+- // ///////////////////////////////////////////////////////////////////////////////
+- // }}}
+- 
+-+
+-+include_once('configurator/Configurator.php');
+-+
+- /**
+-  * xml file-based Configurator.
+-  * @package locknet7.config
+-@@ -45,7 +48,7 @@
+-      * Constructor.
+-      * @param string, xml, configuration file/string
+-      */
+--    public function __construct($xml) {
+-+    public function __construct($xml= TOP_LOCATION . 'config' . DIRECTORY_SEPARATOR . 'application.xml') {
+-         if (is_file($xml)) $this-&gt;sxe = simplexml_load_file($xml, 'SimpleXMLIterator');
+-         else $this-&gt;sxe = simplexml_load_string($xml, 'SimpleXMLIterator');
+-         if ($this-&gt;sxe===false) throw new ConfiguratorException('Cannot read ' . $xml . '\n&lt;br /&gt; Bad Format!');
+-@@ -53,7 +56,9 @@
+- 
+-     /** @see Configurator::getSectionProperty() */
+-     public function getSectionProperty($section, $property) {
+--        if(!$this-&gt;sxe-&gt;$section) throw new ConfiguratorException('Cannot find ' . $section . ' section in your Configuration!');
+-+        if(!$this-&gt;sxe-&gt;$section) {
+-+            throw new ConfiguratorException('Cannot find ' . $section . ' section in your Configuration!');
+-+        }
+-         $_sys   = $this-&gt;sxe-&gt;$section-&gt;$property;
+-         $_query = (string)trim($_sys['value']);
+-         if( ($_query=='') OR ($_query=='false') OR ($_query=='off') OR ($_query == 0) ){
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000032.html">[Medick-svn] r228 - in trunk/test: . dummy/models mock
+</A></li>
+	<LI>Next message: <A HREF="000034.html">[Medick-svn] r230 - trunk/scripts
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#33">[ date ]</a>
+              <a href="thread.html#33">[ thread ]</a>
+              <a href="subject.html#33">[ subject ]</a>
+              <a href="author.html#33">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

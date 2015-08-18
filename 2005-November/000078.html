@@ -1,0 +1,231 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r282 - in trunk/libs/action/controller: . http session
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-November/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r282%20-%20in%20trunk/libs/action/controller%3A%20.%20http%20session&In-Reply-To=%3C200511281928.jASJS2Wk011776%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000077.html">
+   <LINK REL="Next"  HREF="000079.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r282 - in trunk/libs/action/controller: . http session</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r282%20-%20in%20trunk/libs/action/controller%3A%20.%20http%20session&In-Reply-To=%3C200511281928.jASJS2Wk011776%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r282 - in trunk/libs/action/controller: . http session">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Nov 28 20:28:02 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000077.html">[Medick-svn] r281 - in trunk: . libs/medick
+</A></li>
+        <LI>Next message: <A HREF="000079.html">[Medick-svn] r283 - in trunk/libs: action/controller action/view active/record active/support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#78">[ date ]</a>
+              <a href="thread.html#78">[ thread ]</a>
+              <a href="subject.html#78">[ subject ]</a>
+              <a href="author.html#78">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-11-28 20:28:01 +0100 (Mon, 28 Nov 2005)
+New Revision: 282
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/session/Session.php
+Log:
+ - initial support for Session's
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-11-28 18:33:29 UTC (rev 281)
++++ trunk/libs/action/controller/Base.php	2005-11-28 19:28:01 UTC (rev 282)
+@@ -137,8 +137,8 @@
+      */
+     public function process(Request $request, Response $response) {
+         $this-&gt;instantiate($request, $response);
++        $this-&gt;add_models();
+         $this-&gt;add_before_filters();
+-        $this-&gt;add_models();
+         $this-&gt;perform_action($request-&gt;getParam('action'));
+         return $response;
+     }
+@@ -257,6 +257,17 @@
+     // }}}
+ 
+     /**
++     * It sets the value a template entry
++     * @see <A HREF="http://php.net/manual/en/language.oop5.overloading.php">http://php.net/manual/en/language.oop5.overloading.php</A>
++     * @param string, name,  name
++     * @param mixed, value, value
++     * @throw Error if using a reserved word
++     */
++    public function __set($name, $value) {
++        $this-&gt;template-&gt;$name= $value;
++    }
++
++    /**
+      * Act as an internal constructor.
+      * @param Request request, the request
+      * @param Response response, the response
+@@ -266,6 +277,7 @@
+         $this-&gt;request  = $request;
+         $this-&gt;response = $response;
+         $this-&gt;session  = $request-&gt;getSession();
++        $this-&gt;session-&gt;start();
+         $this-&gt;params   = $request-&gt;getParams();
+ 
+         $this-&gt;logger   = Registry::get('__logger');
+@@ -390,7 +402,7 @@
+                 $this-&gt;logger-&gt;info('Could not create filter: `'.$filter_name.'`, skipping...');
+                 continue;
+             }
+-            // a filter should be declared as private.
++            // a filter should be declared as protected.
+             if (!$filter-&gt;isProtected()) {
+                 throw new MedickException(
+                     'Your filter,`'. $filter_name . '` is declared as a public method of class `' . $this-&gt;getClassName() .'` !');
+@@ -404,13 +416,13 @@
+      */
+     private function add_models() {
+         if (!is_array($this-&gt;models)) {
+-            throw new MedickException(
+-                $this-&gt;getClassName . '-&gt;\$models should be an array of strings.');
++            $this-&gt;models= explode(',',$this-&gt;models);
+         }
+-        $this-&gt;logger-&gt;debug('We have Models...');
+         foreach ($this-&gt;models as $model) {
+-            $this-&gt;logger-&gt;debug('Injecting Model:: ' . $model);
+-            $this-&gt;injector-&gt;inject('model', $model);
++            if ( trim($model) != '' ) {
++                $this-&gt;logger-&gt;debug('Injecting Model:: ' . $model);
++                $this-&gt;injector-&gt;inject('model', trim($model));
++            }
+         }
+     }
+ 
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2005-11-28 18:33:29 UTC (rev 281)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2005-11-28 19:28:01 UTC (rev 282)
+@@ -32,6 +32,8 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
++include_once('action/controller/session/Session.php');
++
+ /** 
+  * @package locknet7.action.controller.request
+  */
+@@ -67,6 +69,7 @@
+                 }
+             }
+         }
++        $this-&gt;session= new Session();
+     }
+ 
+     /**
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2005-11-28 18:33:29 UTC (rev 281)
++++ trunk/libs/action/controller/session/Session.php	2005-11-28 19:28:01 UTC (rev 282)
+@@ -37,38 +37,47 @@
+  */
+ class Session extends Object {
+ 
+-    private $container;
+-
+     private $isStarted = FALSE;
+ 
+     /**
+      * Constructor.
+      */
+     public function __construct() {
+-
++        if ($this-&gt;isStarted) {
++            throw new IllegalStateException('Session already Started!');
++        }
+     }
+ 
+     public function start() {
+         if ($this-&gt;isStarted) {
+-            throw new IllegalStateException();
++            throw new IllegalStateException('Session already Started!');
+         }
+-        return session_start();
++        $this-&gt;isStarted= TRUE;
++        // session_cache_limiter(&quot;nocache&quot;);
++        // session_write_close();
++        session_start();
++        session_regenerate_id(TRUE);
+     }
+ 
+-    public function __set($name, $value) {
+-        $_SESSION[$name] = $value;
++    public function putValue($name, $value) {
++        if (!$this-&gt;isStarted) {
++            throw new IllegalStateException('Session is not Started!');
++        }
++        $_SESSION[$name]=$value;
+     }
+ 
+-    public function __get() {
+-        return session_is_registered($name) ? $_SESSION[$name] : false;
++    public function getValue($name) {
++        if (!$this-&gt;isStarted) {
++            throw new IllegalStateException('Session is not Started!');
++        }
++        return isset($_SESSION[$name]) ? $_SESSION[$name] : NULL;
+     }
+-
+-    public function putValue($name, $value) {
+-        $this-&gt;__set($name, $value);
+-    }
+-
++    
+     public function hasValue($name) {
+-        return session_is_registered($name);
++        if (!$this-&gt;isStarted) {
++            throw new IllegalStateException('Session is not Started!');
++        }
++        return isset($_SESSION[$name]);
+     }
+ 
+     public function removeValue($name) {
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000077.html">[Medick-svn] r281 - in trunk: . libs/medick
+</A></li>
+	<LI>Next message: <A HREF="000079.html">[Medick-svn] r283 - in trunk/libs: action/controller action/view active/record active/support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#78">[ date ]</a>
+              <a href="thread.html#78">[ thread ]</a>
+              <a href="subject.html#78">[ subject ]</a>
+              <a href="author.html#78">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

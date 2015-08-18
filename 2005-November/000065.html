@@ -1,0 +1,425 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r266 - in trunk/libs: action/controller/route active/record medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-November/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r266%20-%20in%20trunk/libs%3A%20action/controller/route%20active/record%20medick&In-Reply-To=%3C200511112056.jABKuYkF032175%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000064.html">
+   <LINK REL="Next"  HREF="000066.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r266 - in trunk/libs: action/controller/route active/record medick</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r266%20-%20in%20trunk/libs%3A%20action/controller/route%20active/record%20medick&In-Reply-To=%3C200511112056.jABKuYkF032175%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r266 - in trunk/libs: action/controller/route active/record medick">aurelian at berlios.de
+       </A><BR>
+    <I>Fri Nov 11 21:56:34 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000064.html">[Medick-svn] r260 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000066.html">[Medick-svn] r267 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#65">[ date ]</a>
+              <a href="thread.html#65">[ thread ]</a>
+              <a href="subject.html#65">[ subject ]</a>
+              <a href="author.html#65">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-11-11 21:56:34 +0100 (Fri, 11 Nov 2005)
+New Revision: 266
+
+Modified:
+   trunk/libs/action/controller/route/RouteParam.php
+   trunk/libs/active/record/FieldsAggregate.php
+   trunk/libs/medick/Object.php
+Log:
+ - [ ar.FieldsAggregate ] removed &quot;implements IteratorAggregate&quot; from the class decalration, added some comments.
+ - [ ac.route.RouteParam ] removed unused methods, finished contains method, some apidocs.
+ - [ medick.Object ] added getClass method  
+
+
+Modified: trunk/libs/action/controller/route/RouteParam.php
+===================================================================
+--- trunk/libs/action/controller/route/RouteParam.php	2005-11-10 21:43:55 UTC (rev 265)
++++ trunk/libs/action/controller/route/RouteParam.php	2005-11-11 20:56:34 UTC (rev 266)
+@@ -7,13 +7,13 @@
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+ //
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+@@ -26,9 +26,9 @@
+ // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
++//
+ // $Id$
+-// 
++//
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+@@ -38,13 +38,16 @@
+  */
+ class RouteParam extends Object {
+ 
+-    /** @var string param name */
++    /** @var string
++        Route Parameter name */
+     private $name;
+-    /** @var string param value */
++
++    /** @var string
++        Route Parameter value */
+     private $value;
+-    /** XXX. NotUsed */
+-    private $type;
+-    /** @var IValidators[] param validators */
++
++    /** @var IValidators[]
++        Route Parameter validators */
+     private $validators;
+ 
+     /**
+@@ -56,22 +59,6 @@
+         $this-&gt;validators = array();
+     }
+ 
+-    /** XXX. NotUsed.
+-     * Sets this parameter Type
+-     * @param string type
+-     */
+-    public function setType($type) {
+-        $this-&gt;type= $type;
+-    }
+-
+-    /** XXX. NotUsed
+-     * It gets this param type
+-     * @return string type
+-     */
+-    public function getType() {
+-        return $this-&gt;type;
+-    }
+-
+     /**
+      * Adds a validator for this parameter
+      * @param IValidator validators
+@@ -80,7 +67,7 @@
+         if ($this-&gt;contains($validator)) return;
+         $this-&gt;validators[]= $validator;
+     }
+-    
++
+     /**
+      * It gets the list of Validators
+      * @return IValidators[]
+@@ -88,23 +75,23 @@
+     public function getValidators() {
+         return $this-&gt;validator;
+     }
+-    
++
+     /**
+-     * Check if this parameter hav attached Validators
++     * Check if this parameter have Validators attached
+      * @return bool, TRUE if the parameter has at least one IValidator attached, FALSE otherwise
+      */
+     public function hasValidators() {
+       return sizeof($this-&gt;validators) &gt; 0;
+     }
+-    
+-    /** XXX. NotDone.
++
++    /**
+      * Check if the parameter contains the given Validator
+      * @param IValidator validator to check if is already in the stack of IValidators elements
+      * @return IValidator if this parameter has the IValidator attached or FALSE if the stack of IValidator dont contains this IValidator
+      */
+-    public function contains (IValidator $validator) {
+-        foreach ($this-&gt;validators AS $_validator) {
+-
++    protected function contains (IValidator $validator) {
++        foreach ($this-&gt;validators as $_validator) {
++            if ($_validator-&gt;getClassName() == $validator-&gt;getClassName()) return TRUE;
+         }
+         return FALSE;
+     }
+@@ -114,7 +101,7 @@
+      * @param string value
+      */
+     public function setValue($value) {
+-        $this-&gt;value= $value;
++        $this-&gt;value = $value;
+     }
+ 
+     /**
+@@ -133,4 +120,3 @@
+         return $this-&gt;name;
+     }
+ }
+-
+
+Modified: trunk/libs/active/record/FieldsAggregate.php
+===================================================================
+--- trunk/libs/active/record/FieldsAggregate.php	2005-11-10 21:43:55 UTC (rev 265)
++++ trunk/libs/active/record/FieldsAggregate.php	2005-11-11 20:56:34 UTC (rev 266)
+@@ -7,13 +7,13 @@
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+ //
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+@@ -26,32 +26,33 @@
+ // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
++//
+ // $Id$
+-// 
++//
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+ include_once('active/record/Field.php');
+ 
+ /**
++ * It represents a Row from the Database, generic named here FieldsAggregate
+  * @package locknet7.active.record
+  */
+ 
+-class FieldsAggregate extends Object implements IteratorAggregate {
+-    
++class FieldsAggregate extends Object {
++
+     /** @var ArrayObject
+         fields container */
+     private $fields;
+-    
++
+     /** @var Field
+         pk field*/
+     private $pk_filed = NULL;
+-    
+-    /** @var bool 
++
++    /** @var bool
+         affected flag. */
+     private $affected = FALSE;
+-    
++
+     /**
+      * FieldsAggregate Constructor
+      */
+@@ -59,16 +60,16 @@
+         $this-&gt;fields = new ArrayObject();
+     }
+ 
+-    /** 
+-     * Add a new Field on the fields container 
++    /**
++     * Add a new Field on the fields container
+      */
+     public function add(Field $field) {
+         if (!$this-&gt;contains($field)) $this-&gt;fields[] = $field;
+         if ($field-&gt;isPk) $this-&gt;pk_field = $field;
+         return $field;
+     }
+-    
+-    /** 
++
++    /**
+      * Check if the container contains the given Field
+      * @return bool, TRUE if it contains this Field, FALSE otherwise
+      */
+@@ -81,7 +82,7 @@
+         return FALSE;
+     }
+ 
+-    /** 
++    /**
+      * It gets the iterator
+      * @return Iterator
+      */
+@@ -89,15 +90,15 @@
+         return $this-&gt;fields-&gt;getIterator();
+     }
+ 
+-    /** 
+-     * Set the affected modifier 
++    /**
++     * Set the affected modifier
+      * @param bool affected
+      */
+     public function setAffected($affected) {
+         $this-&gt;affected = (bool)$affected;
+     }
+ 
+-    /** 
++    /**
+      * It checks if it has affected fields by this run
+      * @return bool TRUE if it has, FALSE otherwise
+      */
+@@ -112,9 +113,9 @@
+     public function getPrimaryKey() {
+         return $this-&gt;pk_field;
+     }
+-    
+-    /** 
+-     * It gets an array with the names of the affected fields 
++
++    /**
++     * It gets an array with the names of the affected fields
+      * @return array
+      */
+     public function getAffectedFieldsNames() {
+@@ -127,7 +128,7 @@
+         return $names;
+     }
+ 
+-    /** 
++    /**
+      * Get an array of objects Field[] that are affected(changed) by this run
+      * @return Field[]
+      */
+
+Modified: trunk/libs/medick/Object.php
+===================================================================
+--- trunk/libs/medick/Object.php	2005-11-10 21:43:55 UTC (rev 265)
++++ trunk/libs/medick/Object.php	2005-11-11 20:56:34 UTC (rev 266)
+@@ -7,13 +7,13 @@
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+ //
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+@@ -26,9 +26,9 @@
+ // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
++//
+ // $Id$
+-// 
++//
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+@@ -36,9 +36,9 @@
+  * Base Framework Object
+  * @package locknet7.medick
+  */
+- 
++
+ class Object {
+-    
++
+     /**
+      * It gets the class name
+      * @return string
+@@ -46,15 +46,24 @@
+     public function getClassName() {
+         return get_class($this);
+     }
+-    
++
+     /**
++     *
++     * @return ReflectionClass
++     * @throws ReflectionException
++     */
++    public function getClass() {
++        return new ReflectionClass($this-&gt;getClassName());
++    }
++
++    /**
+      * Compare two Medick Objects
+      * @return bool
+      */
+     public function equals(Object $obj) {
+         return $this===$obj;
+     }
+-    
++
+     /**
+      * Magick __toString method, returns a string representation of this object
+      * &lt;code&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000064.html">[Medick-svn] r260 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000066.html">[Medick-svn] r267 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#65">[ date ]</a>
+              <a href="thread.html#65">[ thread ]</a>
+              <a href="subject.html#65">[ subject ]</a>
+              <a href="author.html#65">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

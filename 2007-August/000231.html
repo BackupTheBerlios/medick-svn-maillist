@@ -1,0 +1,217 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r451 - in trunk: . libs/action/controller	libs/action/controller/http
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-August/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r451%20-%20in%20trunk%3A%20.%20libs/action/controller%0A%09libs/action/controller/http&In-Reply-To=%3C200708011457.l71EvLuO024905%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   
+   <LINK REL="Next"  HREF="000232.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r451 - in trunk: . libs/action/controller	libs/action/controller/http</H1>
+    <B>aurelian at mail.berlios.de</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r451%20-%20in%20trunk%3A%20.%20libs/action/controller%0A%09libs/action/controller/http&In-Reply-To=%3C200708011457.l71EvLuO024905%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r451 - in trunk: . libs/action/controller	libs/action/controller/http">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Wed Aug  1 16:57:21 CEST 2007</I>
+    <P><UL>
+        
+        <LI>Next message: <A HREF="000232.html">[Medick-svn] r452 - in trunk: . libs/action/controller	libs/action/view libs/active/record libs/context/configurator	libs/creole/drivers/sqlite libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#231">[ date ]</a>
+              <a href="thread.html#231">[ thread ]</a>
+              <a href="subject.html#231">[ subject ]</a>
+              <a href="author.html#231">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-08-01 16:57:17 +0200 (Wed, 01 Aug 2007)
+New Revision: 451
+
+Modified:
+   trunk/CHANGELOG
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+Log:
+ * Added ETag support
+ * Consistency in the web server request headers
+
+
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2007-07-23 18:19:53 UTC (rev 450)
++++ trunk/CHANGELOG	2007-08-01 14:57:17 UTC (rev 451)
+@@ -4,8 +4,9 @@
+     - (bug) fixed URL::create when rewrite is off (still needs more testing)
+     - (bug) fixed a syntax error in JSON
+     - moved configurator to context
+-    - start to work on ETag
+-    - start to unify logger messages
++    - added support for ETag
++    - unifyed logger messages
++    - unifyed HTTPReqest Headers (If-None-Match for Apache was If_None_March on non Apache Web servers)
+     - added methods to allow more control of HTTPResponse headers
+     - some docs on HTTPResponse
+     - using ORIG_PATH_INFO in HTTPRequest so it can work with lighttpd
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2007-07-23 18:19:53 UTC (rev 450)
++++ trunk/libs/action/controller/Base.php	2007-08-01 14:57:17 UTC (rev 451)
+@@ -268,6 +268,10 @@
+         the layout to use */
+     protected $use_layout= TRUE;
+ 
++    /** @var bool  
++        etag flag, set to true to use the Etag caching, false to disable-it */
++    protected $use_etag= TRUE;
++
+     /** @var ActiveViewBase
+         Template Engine */
+     protected $template;
+@@ -449,32 +453,48 @@
+      */
+     protected function render_text($text = '', $status = NULL) {
+         if ($this-&gt;action_performed) {
+-            $this-&gt;logger-&gt;info('Action already performed...');
++            $this-&gt;logger-&gt;warn('[Medick] &gt;&gt; Action already performed...');
+             return;
+         }
++        
+         $status = $status === NULL ? HTTPResponse::SC_OK : $status;
++
+         // add ETag header
+-        // if( $status == HTTPResponse::SC_OK &amp;&amp; strlen($text) &gt; 0 ) { 
+-        //   $this-&gt;response-&gt;setHeader('ETag', md5($text));
+-        //   if( $this-&gt;request-&gt;getHeader('HTTP_IF_NONE_MATCH') == md5($text) ) {
+-        //     $this-&gt;response-&gt;setStatus(HTTPResponse::SC_NOT_MODIFIED);
+-        //     $this-&gt;response-&gt;setContent('');
+-        //   } else {
+-            $this-&gt;response-&gt;setStatus($status);
+-            $this-&gt;response-&gt;setContent($text);
+-        //   }
+-        // } else {
+-        //   $this-&gt;response-&gt;setStatus($status);
+-        //   $this-&gt;response-&gt;setContent($text);
+-        // }
+-        $this-&gt;action_performed = TRUE;
+-        $this-&gt;logger-&gt;debug('Action performed.');
++        if( $this-&gt;use_etag &amp;&amp; $status == HTTPResponse::SC_OK &amp;&amp; strlen($text) &gt; 0 ) {
++            $this-&gt;set_etag_headers( $text );
++            if( $this-&gt;request-&gt;getHeader('If-None-Match') == md5($text) ) {
++                $this-&gt;logger-&gt;debug( '[Medick] &gt;&gt; Got response from browser cache (code=304, body=&quot;&quot;).' );
++                $this-&gt;_perform( HTTPResponse::SC_NOT_MODIFIED, '' );
++            } else {
++                $this-&gt;_perform($status, $text);
++            }
++        }  else {
++            $this-&gt;_perform($status, $text);
++        }
+ 
++        $this-&gt;action_performed= TRUE;
++        $this-&gt;logger-&gt;debug( '[Medick] &gt;&gt; Action performed.' );
++
+         if ($this-&gt;session-&gt;hasValue('flash')) {
+             $this-&gt;session-&gt;removeValue('flash');
+         }
+     }
++  
++    // move to response
++    private function _perform($status, $text) {
++      $this-&gt;response-&gt;setStatus($status);
++      $this-&gt;response-&gt;setContent($text);
++    }
+ 
++    private function set_etag_headers( $text ) {
++      $this-&gt;response-&gt;setHeader('ETag', md5($text));
++      $this-&gt;logger-&gt;debug( sprintf('[Medick] &gt;&gt; ETag set to %s.', md5($text)) );
++      // get around PHP session
++      $this-&gt;response-&gt;setHeader('Cache-Control', null, false);
++      $this-&gt;response-&gt;setHeader('Expires', null, false);
++      $this-&gt;response-&gt;setHeader('Pragma', null, false);
++    }
++
+     // }}}
+ 
+     private function register_flash() {
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2007-07-23 18:19:53 UTC (rev 450)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2007-08-01 14:57:17 UTC (rev 451)
+@@ -256,8 +256,14 @@
+             $headers= getallheaders();
+         } else {
+             foreach($_SERVER as $header=&gt;$value) {
+-                if(ereg('HTTP_(.+)',$header,$hp)) {
+-                    $headers[ucfirst(strtolower($hp[1]))] = $value;
++              if(preg_match('/HTTP_(.+)/',$header,$hp)) {
++                  $h= preg_replace_callback(
++                    '/(^|_)(.)/', 
++                    create_function(  
++                        '$matches', 
++                        'return $matches[1] ? &quot;-&quot;.ucfirst( $matches[2] ) : ucfirst( $matches[2] );'), 
++                    strtolower($hp[1]));
++                  $headers[$h] = $value;
+                 }
+             }
+         }
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2007-07-23 18:19:53 UTC (rev 450)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2007-08-01 14:57:17 UTC (rev 451)
+@@ -77,7 +77,7 @@
+     const SC_SERVICE_UNAVAILABLE = 503;
+ 
+     /** Constructor */
+-    public function HTTPResponse() {    }
++    public function HTTPResponse() {  }
+     
+     /**
+      * Sets the header $name with $value
+@@ -189,7 +189,7 @@
+      */
+     public function redirect( $location ) {
+         $this-&gt;setHeader('Location', $location);
+-        $this-&gt;content = &quot;&lt;html&gt;&lt;body&gt;You are being &lt;a href=\&quot;$location\&quot;&gt;redirected&lt;/a&gt;.&lt;/body&gt;&lt;/html&gt;&quot;;
++        $this-&gt;content = '&lt;html&gt;&lt;body&gt;You are being &lt;a href=&quot;'.$location.'&quot;&gt;redirected&lt;/a&gt;.&lt;/body&gt;&lt;/html&gt;';
+     }
+ }
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	
+	<LI>Next message: <A HREF="000232.html">[Medick-svn] r452 - in trunk: . libs/action/controller	libs/action/view libs/active/record libs/context/configurator	libs/creole/drivers/sqlite libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#231">[ date ]</a>
+              <a href="thread.html#231">[ thread ]</a>
+              <a href="subject.html#231">[ subject ]</a>
+              <a href="author.html#231">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

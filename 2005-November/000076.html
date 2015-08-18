@@ -1,0 +1,256 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r280 - in trunk/libs/action/controller: . http
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-November/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r280%20-%20in%20trunk/libs/action/controller%3A%20.%20http&In-Reply-To=%3C200511262102.jAQL291x002335%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000075.html">
+   <LINK REL="Next"  HREF="000077.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r280 - in trunk/libs/action/controller: . http</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r280%20-%20in%20trunk/libs/action/controller%3A%20.%20http&In-Reply-To=%3C200511262102.jAQL291x002335%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r280 - in trunk/libs/action/controller: . http">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Nov 26 22:02:09 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000075.html">[Medick-svn] r279 - in trunk: . config libs/medick public_html
+</A></li>
+        <LI>Next message: <A HREF="000077.html">[Medick-svn] r281 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#76">[ date ]</a>
+              <a href="thread.html#76">[ thread ]</a>
+              <a href="subject.html#76">[ subject ]</a>
+              <a href="author.html#76">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-11-26 22:02:09 +0100 (Sat, 26 Nov 2005)
+New Revision: 280
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Routing.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+Log:
+ -- clean up the Routing sistem to use the PATH_INFO
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-11-26 13:00:33 UTC (rev 279)
++++ trunk/libs/action/controller/Base.php	2005-11-26 21:02:09 UTC (rev 280)
+@@ -112,11 +112,17 @@
+      * @param Exception $exception
+      * @return Response
+      */
+-    public static function process_with_exception(Request $request, Response $response, Exception $exception) {
+-        @ob_end_clean();
++    public static function process_with_exception(
++                                                    Request $request, 
++                                                    Response $response, 
++                                                    Exception $exception)
++    {
++        if(ob_get_length()) {
++            ob_end_clean();
++        }
+         $template = ActionViewBase::factory();
+         $template-&gt;error= $exception;
+-        $text= $template-&gt;render_file(TOP_LOCATION . '/libs/action/controller/templates/error.phtml');
++        $text= $template-&gt;render_file(MEDICK_PATH . '/libs/action/controller/templates/error.phtml');
+         $status = Response::SC_INTERNAL_SERVER_ERROR;
+         $response-&gt;setStatus($status);
+         $response-&gt;setContent($text);
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2005-11-26 13:00:33 UTC (rev 279)
++++ trunk/libs/action/controller/Routing.php	2005-11-26 21:02:09 UTC (rev 280)
+@@ -41,58 +41,38 @@
+ 
+     /**
+      * Check if the application Map contains the current Route.
++     *
++     * If so, we add the route parameters into the current request.
++     *
++     * @param locknet7.action.controller.Request
++     * @return locknet7.action.controller.Base
+      */
+     public static function recognize(Request $request) {
+         $map   = Registry::get('__map');
+         $logger= Registry::get('__logger');
+-        // do we know this Route?
+-        if ($route= $map-&gt;contains(new Route($request-&gt;getParam('controller'), $request-&gt;getParam('action')))) {
+-            $logger-&gt;debug('Route Recognized:' . $route-&gt;getName());
+-            $is_failure= FALSE;
++        // do we know this route?
++        if ($route= $map-&gt;contains(
++                                new Route(
++                                    $request-&gt;getParam('controller'), 
++                                    $request-&gt;getParam('action')))
++                                  )
++        {
++            $logger-&gt;debug('Route Recognized: ' . $route-&gt;getName());
+             $params= $route-&gt;getParams();
+-            // {{{ loop throught the Route Parameters
+-            foreach ($params as $param) {
+-                $logger-&gt;debug('Validating Route Parameter:' . $param-&gt;getName());
+-                // {{{ if this Request has the current parameter, try to validate him.
+-                if (!$request-&gt;hasParam($param-&gt;getName()) || ($request-&gt;getParam($param-&gt;getName()) == '')) {
+-                    // XXX. load failure due to missing parameters.
+-                    $logger-&gt;info('Validation failed on RouteParameter: `' . $param-&gt;getName() . '`
+-                        [User Info: parametter missing or empty].');
+-                    $is_failure= TRUE;
+-                    // XXX. failure message.
+-                    // break;
+-                } // }}}
+-                // {{{ if this parameter has attached validators,
+-                if ($param-&gt;hasValidators()) {
+-                    // loop throught the validators and validate this parameter value.
+-                    foreach($param-&gt;getValidators() as $validator) {
+-                        $validator-&gt;setValue($request-&gt;getParam($param-&gt;getName()));
+-                        if (!$validator-&gt;validate()) {
+-                          // XXX. validation failed, handle automatically and break(?)
+-                          throw new RouteException('Route validation failed!');
+-                        }
+-                    }
+-                } // }}}
+-                $param-&gt;setValue($request-&gt;getParam($param-&gt;getName()));
+-            } // end foreach. }}}
+-            if ($is_failure) {
+-                $route= $map-&gt;getRouteByName($route-&gt;getFailure()-&gt;getName());
+-                $route-&gt;addFromArray($params);
++            foreach ($params as $key=&gt;$param) {
++                $request-&gt;setParam($param-&gt;getName(), $request-&gt;getPathInfo($key));
+             }
+         } else {
+             $logger-&gt;debug('Unknown Route! Loading default...');
+             $route= $map-&gt;getRouteByName('default');
++            $request-&gt;setParam('controller', $route-&gt;getController());
++            $request-&gt;setParam('action', $route-&gt;getAction());
+         }
+-
+-        // overwrite incoming core parameters.
+-        $request-&gt;setParam('controller', $route-&gt;getController());
+-        $request-&gt;setParam('action', $route-&gt;getAction());
+         $logger-&gt;debug(
+             'Running on Route: ' . $route-&gt;getName() .
+             ' ctrller: ' . $route-&gt;getController() .
+             ' act: ' . $route-&gt;getAction());
+         $map-&gt;setCurrentRoute($route);
+-        $injector= Registry::put(new Injector(), '__injector');
+-        return $injector-&gt;inject('controller', $route-&gt;getController());
++        return Registry::put(new Injector(), '__injector')-&gt;inject('controller', $route-&gt;getController());
+     }
+ }
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2005-11-26 13:00:33 UTC (rev 279)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2005-11-26 21:02:09 UTC (rev 280)
+@@ -36,38 +36,55 @@
+  * @package locknet7.action.controller.request
+  */
+ class HTTPRequest extends Request {
+-
+-    /** HTTP method */
+-    protected $method;
+     
+-    /** HTTP Session */
++    /** @var Session */
+     protected $session;
+ 
++    /** @var array
++        path_info_parts */
++    protected $path_info= array();
++
+     /**
+      * Constructor.
+      * It builds the HTTPRequest object
+      */
+     public function __construct() {
+-        $this-&gt;method = strtoupper($_SERVER['REQUEST_METHOD']) == 'POST' ? 'POST' : 'GET';
+-        $this-&gt;params  = $_REQUEST; // to test!
+-        unset($_REQUEST); // hack or feature? :)
++        foreach ($_REQUEST as $key=&gt;$value) {
++            $this-&gt;params[$key] = $value;
++        }
++        
++        unset($_REQUEST); unset($_GET); unset($_POST);
++        
++        if (array_key_exists('PATH_INFO', $_SERVER)) {
++            $parts= explode('/', trim($_SERVER['PATH_INFO'], '/'));
++            foreach ($parts as $key=&gt;$part) {
++                if ($key == 0) {
++                    $this-&gt;params['controller'] = current(explode('.', $part));
++                } elseif ($key == 1) {
++                    $this-&gt;params['action']     = current(explode('.', $part));
++                } else {
++                    $this-&gt;path_info[]          = current(explode('.', $part));
++                }
++            }
++        }
+     }
+ 
+     /**
++     * It gets a part of the path info associated with this request
++     * @param int, key, the part index
++     * @return value of this part or NULL if this part is not defined
++     */
++    public function getPathInfo($key) {
++        return isset($this-&gt;path_info[$key]) ? $this-&gt;path_info[$key] : NULL;
++    }
++
++    /**
+      * It gets the Session
+      * @return Session, the curent Session
+      */
+     public function getSession() {
+         return $this-&gt;session;
+     }
+-
+-    /**
+-     * It get the method name used for this Request (GET or POST)
+-     * @return string method name (GET/POST)
+-     */
+-    public function getMethod() {
+-        return $this-&gt;method;
+-    }
+     
+     // {{{ todos.
+     
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000075.html">[Medick-svn] r279 - in trunk: . config libs/medick public_html
+</A></li>
+	<LI>Next message: <A HREF="000077.html">[Medick-svn] r281 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#76">[ date ]</a>
+              <a href="thread.html#76">[ thread ]</a>
+              <a href="subject.html#76">[ subject ]</a>
+              <a href="author.html#76">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

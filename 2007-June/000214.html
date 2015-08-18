@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r435 - in trunk/libs: configurator creole/drivers/mysql
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-June/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r435%20-%20in%20trunk/libs%3A%20configurator%20creole/drivers/mysql&In-Reply-To=%3C200706150903.l5F93jMB015384%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000213.html">
+   <LINK REL="Next"  HREF="000216.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r435 - in trunk/libs: configurator creole/drivers/mysql</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r435%20-%20in%20trunk/libs%3A%20configurator%20creole/drivers/mysql&In-Reply-To=%3C200706150903.l5F93jMB015384%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r435 - in trunk/libs: configurator creole/drivers/mysql">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Fri Jun 15 11:03:45 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000213.html">[Medick-svn] r434 - applications/cookbook/conf	applications/eltodo/conf applications/testor/conf	trunk/libs/active/record trunk/libs/configurator trunk/skel/config
+</A></li>
+        <LI>Next message: <A HREF="000216.html">[Medick-svn] r436 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#214">[ date ]</a>
+              <a href="thread.html#214">[ thread ]</a>
+              <a href="subject.html#214">[ subject ]</a>
+              <a href="author.html#214">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-06-15 11:03:43 +0200 (Fri, 15 Jun 2007)
+New Revision: 435
+
+Modified:
+   trunk/libs/configurator/XMLConfigurator.php
+   trunk/libs/creole/drivers/mysql/MySQLConnection.php
+Log:
+ -- fixed XMLConfigurator
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2007-06-15 08:51:46 UTC (rev 434)
++++ trunk/libs/configurator/XMLConfigurator.php	2007-06-15 09:03:43 UTC (rev 435)
+@@ -122,17 +122,17 @@
+     public function getDatabaseDsn($id = FALSE) {
+         if (!$id) $id = $this-&gt;sxe-&gt;database['default'];
+         foreach( $this-&gt;sxe-&gt;database-&gt;dsn as  $dsn ) {
+-            if($dsn['id']==$id){
++            if( trim($dsn['id']) == trim($id) ){
+                 return array (
+-                    'phptype'  =&gt; (string)trim($dsn['phptype']),
+-                    'hostspec' =&gt; (string)trim($dsn['hostspec']),
+-                    'username' =&gt; (string)trim($dsn['username']),
+-                    'password' =&gt; (string)trim($dsn['password']),
+-                    'database' =&gt; (string)trim($dsn['database'])
++                        'phptype'  =&gt; (string)trim($dsn['phptype']),
++                        'hostspec' =&gt; (string)trim($dsn['hostspec']),
++                        'username' =&gt; (string)trim($dsn['username']),
++                        'password' =&gt; (string)trim($dsn['password']),
++                        'database' =&gt; (string)trim($dsn['database'])
+                 );
+             }
+         }
+-        throw new ConfiguratorException('Database Id ' . $id . 'not found!');
++        throw new ConfiguratorException('Database Id ' . $id . ' not found!');
+     }    
+     
+     /**
+
+Modified: trunk/libs/creole/drivers/mysql/MySQLConnection.php
+===================================================================
+--- trunk/libs/creole/drivers/mysql/MySQLConnection.php	2007-06-15 08:51:46 UTC (rev 434)
++++ trunk/libs/creole/drivers/mysql/MySQLConnection.php	2007-06-15 09:03:43 UTC (rev 435)
+@@ -187,7 +187,7 @@
+     function executeQuery($sql, $fetchmode = null)
+     {
+         $this-&gt;lastQuery = $sql;
+-        if ($this-&gt;database) {
++        if (!$this-&gt;database) {
+             if (!@mysql_select_db($this-&gt;database, $this-&gt;dblink)) {
+                 throw new SQLException('No database selected', mysql_error($this-&gt;dblink));
+             }
+@@ -206,7 +206,7 @@
+     {    
+         $this-&gt;lastQuery = $sql;
+ 
+-        if ($this-&gt;database) {
++        if (!$this-&gt;database) {
+             if (!@mysql_select_db($this-&gt;database, $this-&gt;dblink)) {
+                     throw new SQLException('No database selected', mysql_error($this-&gt;dblink));
+             }
+@@ -240,7 +240,7 @@
+      */
+     protected function commitTrans()
+     {
+-        if ($this-&gt;database) {
++        if (!$this-&gt;database) {
+             if (!@mysql_select_db($this-&gt;database, $this-&gt;dblink)) {
+                  throw new SQLException('No database selected', mysql_error($this-&gt;dblink));
+             }
+@@ -259,7 +259,7 @@
+      */
+     protected function rollbackTrans()
+     {
+-        if ($this-&gt;database) {
++        if (!$this-&gt;database) {
+             if (!@mysql_select_db($this-&gt;database, $this-&gt;dblink)) {
+                 throw new SQLException('No database selected', mysql_error($this-&gt;dblink));
+             }
+@@ -282,4 +282,4 @@
+         return (int) @mysql_affected_rows($this-&gt;dblink);
+     }
+     
+-}
+\ No newline at end of file
++}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000213.html">[Medick-svn] r434 - applications/cookbook/conf	applications/eltodo/conf applications/testor/conf	trunk/libs/active/record trunk/libs/configurator trunk/skel/config
+</A></li>
+	<LI>Next message: <A HREF="000216.html">[Medick-svn] r436 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#214">[ date ]</a>
+              <a href="thread.html#214">[ thread ]</a>
+              <a href="subject.html#214">[ subject ]</a>
+              <a href="author.html#214">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

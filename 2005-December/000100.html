@@ -1,0 +1,484 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r304 - in trunk: config libs/action/controller libs/action/controller/http libs/logger libs/logger/formatter libs/logger/outputter public_html
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r304%20-%20in%20trunk%3A%20config%20libs/action/controller%20libs/action/controller/http%20libs/logger%20libs/logger/formatter%20libs/logger/outputter%20public_html&In-Reply-To=%3C200512201941.jBKJfOIQ022842%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000099.html">
+   <LINK REL="Next"  HREF="000101.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r304 - in trunk: config libs/action/controller libs/action/controller/http libs/logger libs/logger/formatter libs/logger/outputter public_html</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r304%20-%20in%20trunk%3A%20config%20libs/action/controller%20libs/action/controller/http%20libs/logger%20libs/logger/formatter%20libs/logger/outputter%20public_html&In-Reply-To=%3C200512201941.jBKJfOIQ022842%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r304 - in trunk: config libs/action/controller libs/action/controller/http libs/logger libs/logger/formatter libs/logger/outputter public_html">aurelian at berlios.de
+       </A><BR>
+    <I>Tue Dec 20 20:41:24 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000099.html">[Medick-svn] r303 - in trunk: . bin
+</A></li>
+        <LI>Next message: <A HREF="000101.html">[Medick-svn] r305 - trunk/bin
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#100">[ date ]</a>
+              <a href="thread.html#100">[ thread ]</a>
+              <a href="subject.html#100">[ subject ]</a>
+              <a href="author.html#100">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-12-20 20:41:09 +0100 (Tue, 20 Dec 2005)
+New Revision: 304
+
+Modified:
+   trunk/config/application.routes.php
+   trunk/config/application.xml
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/action/controller/Map.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/Routing.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/logger/Logger.php
+   trunk/libs/logger/LoggingEvent.php
+   trunk/libs/logger/formatter/SimpleFormatter.php
+   trunk/libs/logger/outputter/StdoutOutputter.php
+   trunk/public_html/default.htaccess
+Log:
+ -- added medick variables (used in application generator)
+       on application.xml and public_html/default.htaccess
+ -- Logger clean-up: 
+     * removed backtrace from LoggingEvent (it was so cool, but the performace and debugging objects with var_dump was so painfull)
+     * minor layout changes on StdoutOutputter
+     * using REMOTE_ADDR in LoggingEvent (later on we can set a ignore multiple errors from the same ip?)
+ -- Request clean-up:
+     * removed unused (deprecated) methods/members from HTTPRequest and Request (Route related)
+     * using list() inseard current($x=extract())
+ -- Injector: only libs folder from user space is added to the include_path
+ -- Route: 
+    * removed unused(deprecated) methods related to controller(*name,*path)
+    * overwriting the Route::id when one sets an action via Route::setAction(string name)
+ -- Routing:
+    * fix: do not overwrite a Request::parameter if it already exists.
+    * the prev. fix will lead us to more clean-up in routing system: 
+         you should register parameters in Map only they come from PATH_INFO and not from _REQUEST(!!!)
+
+
+Modified: trunk/config/application.routes.php
+===================================================================
+--- trunk/config/application.routes.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/config/application.routes.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -1,45 +1,12 @@
+ &lt;?php
+ // routes.php
+ // $Id$
+-// @TODO: write some documentation about this file :)
++// @TODO: write some documentation about this file
+ 
+-// an example of route configuration in medick.
+-
+-// $map= MedickRegistry::get('__map');
+-
+ {
+-    { // /todo/edit/id.html
+-        $route= new Route('todo', 'edit');
+-        $route-&gt;setAccess(1);
+-        $route-&gt;add(new RouteParam('id'));
+-        $map-&gt;add($route);
+-    }
+-    
+-    { // /todo/create.html
+-        $route= new Route('todo', 'create');
+-        $route-&gt;setAccess(1);
+-        $param= new RouteParam('description');
+-        $route-&gt;add($param);
+-        $param= new RouteParam('done');
+-        $route-&gt;add($param);
+-        $map-&gt;add($route);
+-    }
++    {
+ 
+-    { // /todo/update.html
+-        $route= new Route('todo', 'update');
+-        $route-&gt;setAccess(1);
+-        $param= new RouteParam('description');
+-        $route-&gt;add($param);
+-        $param= new RouteParam('done');
+-        $route-&gt;add($param);
+-        $map-&gt;add($route);
+     }
+-    
+-    { // /todo/delete.html
+-        $route= new Route('todo', 'delete');
+-        $route-&gt;setAccess(1);
+-        $route-&gt;add(new RouteParam('id'));
+-        $map-&gt;add($route);
+-    }
+ }
++
+ ?&gt;
+
+Modified: trunk/config/application.xml
+===================================================================
+--- trunk/config/application.xml	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/config/application.xml	2005-12-20 19:41:09 UTC (rev 304)
+@@ -19,11 +19,11 @@
+         &lt;formatter&gt;simple&lt;/formatter&gt;
+         &lt;outputters&gt;
+             &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
+-                &lt;property name=&quot;path&quot; value=&quot;/wwwroot/htdocs/locknet7/log/locknet7.log&quot; /&gt;
++              &lt;property name=&quot;path&quot; value=&quot;${LOG}&quot; /&gt;
+             &lt;/outputter&gt;
+             &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt;
+-            &lt;outputter name=&quot;&quot; level=&quot;3&quot;&gt;
+-                &lt;property name=&quot;subject&quot; value=&quot;Fatality on {$server}&quot; /&gt;
++            &lt;outputter name=&quot;mail&quot; level=&quot;3&quot;&gt;
++                &lt;property name=&quot;subject&quot; value=&quot;Fatality on ${server}&quot; /&gt;
+                 &lt;property name=&quot;address&quot; value=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">user at example.com</A>&quot; /&gt;
+             &lt;/outputter&gt;
+         &lt;/outputters&gt;
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/action/controller/Injector.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -102,13 +102,11 @@
+ 
+ 
+     /**
+-     * Adds user folders, `vendor' and `libs` to the include_path
++     * Adds user 3-rd party libs folder under include_path
++     * @return void
+      */
+     public function injectInclude_path() {
+         $top= $this-&gt;path['__base'] . '..' . DIRECTORY_SEPARATOR;
+-        if (is_dir($top . 'vendor')) {
+-            set_include_path(get_include_path() . PATH_SEPARATOR . $top . 'vendor');
+-        }
+         if (is_dir($top . 'libs')) {
+             set_include_path(get_include_path() . PATH_SEPARATOR . $top . 'libs');
+         }
+@@ -226,3 +224,4 @@
+         }
+     }
+ }
++
+
+Modified: trunk/libs/action/controller/Map.php
+===================================================================
+--- trunk/libs/action/controller/Map.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/action/controller/Map.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -97,8 +97,8 @@
+      * @return Route or FALSE if this map don`t contain this route.
+      */
+     public function contains(Route $route) {
+-        foreach ($this-&gt;routes AS $_route) {
+-            if ($_route-&gt;getId()==$route-&gt;getId()) {
++        foreach ($this-&gt;routes as $_route) {
++            if ($_route-&gt;getId() == $route-&gt;getId()) {
+                 return $_route;
+             }
+         }
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/action/controller/Request.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -43,9 +43,6 @@
+         current request parameters */
+     private $params = array();
+ 
+-    /** @var Route current request Route */ // XXX. is this used anymore?
+-    protected $route;
+-
+     /**
+      * It gets the param
+      * @param mixed, param, the paremeter name
+@@ -81,19 +78,5 @@
+     public function setParam($name, $value) {
+         $this-&gt;params[$name] = $value;
+     }
+-
+-    /** XXX. is this used anymore?
+-     * It sets the Request Route
+-     * @param Route route, the route to set on this Request
+-     * @return void
+-     */
+-    public function setRoute(IRoute $route) {
+-        $this-&gt;route = $route;
+-    }
+-
+-    /** It gets the Route */
+-    public function getRoute() {
+-        return $this-&gt;route;
+-    }
+ }
+ 
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/action/controller/Route.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -85,8 +85,8 @@
+      * Set the failure Route name
+      * @param string name, the name of the failure route.
+      */
+-    public function setFailure(Route $name) {
+-        $this-&gt;failure = $name;
++    public function setFailure(Route $route) {
++        $this-&gt;failure = $route;
+     }
+ 
+     /**
+@@ -128,6 +128,7 @@
+      */
+     public function setAction($action) {
+         $this-&gt;action= $action;
++        $this-&gt;id= md5($this-&gt;controller . $this-&gt;action);
+     }
+ 
+     /**
+@@ -147,35 +148,6 @@
+     }
+ 
+     /**
+-     * The controller name like 'TodoController'
+-     * @return string controller name
+-     */
+-    public function getControllerName() {
+-      return ucfirst($this-&gt;controller) . 'Controller';
+-    }
+-
+-    /**
+-     * It gets the controller path
+-     * like /home/user/app/controllers/
+-     * @deprecated, this method should be merged with getControllerFile.
+-     * @return string the controller path
+-     */
+-    public function getControllerPath() {
+-        return
+-            Registry::get('__configurator')-&gt;getProperty('application_path') . DIRECTORY_SEPARATOR . 'app' .
+-            DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR;
+-    }
+-
+-    /**
+-     * It gets the controller file like 'todo_controller.php'
+-     * @deprecated, this method should be merged with getControllerPath()
+-     * @return string the controller file
+-     */
+-    public function getControllerFile() {
+-        return strtolower($this-&gt;controller) . '_controller.php';
+-    }
+-
+-    /**
+      * It sets the access level.
+      * @param AccessLevel access
+      */
+@@ -219,4 +191,8 @@
+     public function getHeaders() {
+         return $this-&gt;headers;
+     }
++    
++    public function toString() {
++        return sprintf('Route Controller/Action {Id}: %s/%s {%s}', $this-&gt;controller,$this-&gt;action, $this-&gt;id);
++    }
+ }
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/action/controller/Routing.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -60,6 +60,7 @@
+             $logger-&gt;debug('Route Recognized: ' . $route-&gt;getName());
+             $params= $route-&gt;getParams();
+             foreach ($params as $key=&gt;$param) {
++                if ($request-&gt;hasParam($param-&gt;getName())) continue;
+                 $request-&gt;setParam($param-&gt;getName(), $request-&gt;getPathInfo($key));
+             }
+         } else {
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -61,11 +61,14 @@
+             $parts= explode('/', trim($_SERVER['PATH_INFO'], '/'));
+             foreach ($parts as $key=&gt;$part) {
+                 if ($key == 0) {
+-                    $this-&gt;setParam('controller', current($x=explode('.', $part)));
++                    list($controller)= explode('.', $part, 2);
++                    $this-&gt;setParam('controller', $controller);
+                 } elseif ($key == 1) {
+-                    $this-&gt;setParam('action', current($x=explode('.', $part)));
++                    list($action)= explode('.', $part, 2);
++                    $this-&gt;setParam('action', $action);
+                 } else {
+-                    $this-&gt;path_info[] = current($x=explode('.', $part));
++                    list($param)= explode('.', $part,2);
++                    $this-&gt;path_info[] = $param;
+                 }
+             }
+         }
+
+Modified: trunk/libs/logger/Logger.php
+===================================================================
+--- trunk/libs/logger/Logger.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/logger/Logger.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -90,7 +90,7 @@
+     }
+ 
+     /** __magic __overloading__ */
+-    public function __call($method, $message) {
++    public function __call($method, $message=FALSE) {
+         if (!$message) return;
+         if (sizeof($this-&gt;outputters) == 0) return;
+         if (!in_array($method, $this-&gt;levels)) {
+
+Modified: trunk/libs/logger/LoggingEvent.php
+===================================================================
+--- trunk/libs/logger/LoggingEvent.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/logger/LoggingEvent.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -37,10 +37,6 @@
+  * @package locknet7.logger
+  */
+ class LoggingEvent extends Object {
+-
+-    /** @var array
+-        application backtrace */
+-    public $backtrace = array();
+     
+     /** @var mixed 
+         logging message */
+@@ -51,38 +47,24 @@
+     public $level;
+     
+     /** @var string 
+-        in what file the message took place.*/
+-    public $file;
+-    
+-    /** @var int 
+-        at what line we logged the event.*/
+-    public $line;
+-    
+-    /** @var string 
+-        function*/
+-    public $function;
+-    
+-    /** @var string 
+-        class */
+-    public $class;
+-    
+-    /** @var string 
+         date */
+     public $date;
+     
++    /** @var string
++        ip-address */
++    public $ip;
++    
+     /**
+      * Constructor, set`s the properties
+      * @param mixed, message, the message
+      * @param string, this event level
+      */ 
+     public function __construct($message, $level) {
+-        $this-&gt;backtrace = debug_backtrace();
+         $this-&gt;message   = $message;
+         $this-&gt;level     = strtoupper($level);
+         $this-&gt;date      = time();
+-        $this-&gt;file      = end(@explode(DIRECTORY_SEPARATOR,@$this-&gt;backtrace[2]['file']));
+-        $this-&gt;line      = @$this-&gt;backtrace[2]['line'];
+-        $this-&gt;class     = @$this-&gt;backtrace[3]['class'];
+-        $this-&gt;function  = @$this-&gt;backtrace[3]['function'];
++        if (array_key_exists('REMOTE_ADDR',$_SERVER)) {
++            $this-&gt;ip= $_SERVER['REMOTE_ADDR'];
++        }
+     }
+ }
+
+Modified: trunk/libs/logger/formatter/SimpleFormatter.php
+===================================================================
+--- trunk/libs/logger/formatter/SimpleFormatter.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/logger/formatter/SimpleFormatter.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -40,9 +40,7 @@
+ class SimpleFormatter extends Formatter {
+     /** @see Formatter::format */
+     public function format(LoggingEvent $event) {
+-        $_oo = $event-&gt;class ? $event-&gt;class . '::' . $event-&gt;function : $event-&gt;function;
+-        return strftime(&quot;%d/%m/%Y %H:%M:%S&quot;, $event-&gt;date) . 
+-               ' [ ' . $event-&gt;file . ' / ' . $event-&gt;line . ' ] ' . 
+-               $_oo . ' '. $event-&gt;level . ' &gt;&gt;&gt; ' . $this-&gt;extractMessage($event-&gt;message);
++        return &quot;{$event-&gt;ip} -- &quot; . strftime(&quot;%d/%m/%Y %H:%M:%S&quot;, $event-&gt;date) . 
++            &quot; [ {$event-&gt;level} ] &gt;&gt;&gt; {$this-&gt;extractMessage($event-&gt;message)}&quot;;
+     }
+ }
+
+Modified: trunk/libs/logger/outputter/StdoutOutputter.php
+===================================================================
+--- trunk/libs/logger/outputter/StdoutOutputter.php	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/libs/logger/outputter/StdoutOutputter.php	2005-12-20 19:41:09 UTC (rev 304)
+@@ -54,9 +54,9 @@
+         if (php_sapi_name() == 'cli') {
+             $this-&gt;isCLI = TRUE;
+             $this-&gt;eol = &quot;\n&quot;;
+-            $this-&gt;output .= &quot;\n&quot;;
++            $this-&gt;output .= $this-&gt;eol;
+         } else {
+-            $this-&gt;output .= '&lt;table border=&quot;1&quot; style=&quot;font-family: verdana;font-size: 0.7em;&quot; width=&quot;100%&quot;&gt;&lt;tr&gt;&lt;td&gt;';
++            $this-&gt;output .= '&lt;table border=&quot;1&quot; style=&quot;font-family: verdana;font-size: 0.8em;background-color:white&quot; width=&quot;100%&quot;&gt;&lt;tr&gt;&lt;td&gt;';
+             $this-&gt;eol =  '&lt;/td&gt;&lt;/tr&gt;&lt;tr&gt;&lt;td&gt;';
+         }
+     }
+
+Modified: trunk/public_html/default.htaccess
+===================================================================
+--- trunk/public_html/default.htaccess	2005-12-20 19:26:19 UTC (rev 303)
++++ trunk/public_html/default.htaccess	2005-12-20 19:41:09 UTC (rev 304)
+@@ -2,10 +2,10 @@
+ # $Id$
+ 
+ # Configuration
+-php_value auto_prepend_file ___PATH___TO___MEDICK___INSTALATION___/boot.php
++php_value auto_prepend_file ${CORE}/boot.php
+ 
+-SetEnv MEDICK_APPLICATION_PATH ___YOUR___APPLICATION___PATH___
+-SetEnv MEDICK_APPLICATION_NAME ___YOUR___APPLICATION___NAME___
++SetEnv MEDICK_APPLICATION_PATH ${APP_PATH}
++SetEnv MEDICK_APPLICATION_NAME ${APP_NAME}
+  
+ RewriteEngine on
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000099.html">[Medick-svn] r303 - in trunk: . bin
+</A></li>
+	<LI>Next message: <A HREF="000101.html">[Medick-svn] r305 - trunk/bin
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#100">[ date ]</a>
+              <a href="thread.html#100">[ thread ]</a>
+              <a href="subject.html#100">[ subject ]</a>
+              <a href="author.html#100">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

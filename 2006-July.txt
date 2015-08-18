@@ -1,0 +1,2625 @@
+From aurelian at berlios.de  Sat Jul  1 12:16:07 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 1 Jul 2006 12:16:07 +0200
+Subject: [Medick-svn] r412 - / exp
+Message-ID: <200607011016.k61AG70F026079@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-01 12:16:07 +0200 (Sat, 01 Jul 2006)
+New Revision: 412
+
+Added:
+   exp/
+   exp/validator_api.php
+Log:
+ -- new validator API
+
+Added: exp/validator_api.php
+===================================================================
+--- exp/validator_api.php	2006-06-24 18:16:34 UTC (rev 411)
++++ exp/validator_api.php	2006-07-01 10:16:07 UTC (rev 412)
+@@ -0,0 +1,323 @@
++<?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * Medick ActiveRecord Validation API
++ */
++
++error_reporting(E_STRICT|E_ALL);
++ini_set('display_errors', 1);
++
++class MedickClass extends ReflectionClass { }
++
++class Object {
++
++    public function getClass() {
++        return new MedickClass($this->getClassName());
++    }
++
++    public function getClassName() {
++        return get_class($this);
++    }
++
++    public function __toString() {
++        return $this->toString();
++    }
++
++    public function toString() {
++        return $this->getClassName();
++    }
++
++}
++
++class FieldError extends Object {
++
++    private $message;
++
++    public function FieldError($message) {
++        $this->message= $message;
++    }
++
++    public function getMessage() {
++        return $this->message;
++    }
++
++    public function toString() {
++        return $this->message;
++    }
++
++}
++
++class Field extends Object {
++
++    private $name;
++
++    private $value;
++
++    private $errors= array();
++
++    public function Field($name) {
++        $this->name= $name;
++    }
++
++    public function setValue($value) {
++        $this->value= $value;
++    }
++
++    public function getValue() {
++        return $this->value;
++    }
++
++    public function getName() {
++        return $this->name;
++    }
++
++    public function addError(FieldError $error) {
++        $this->errors[]= $error;
++    }
++
++    public function getErrors() {
++        return $this->errors;
++    }
++
++    public function hasErrors() {
++        return sizeof($this->errors) > 0;
++    }
++
++    public function toString() {
++        return $this->value;
++    }
++
++}
++
++abstract class Validator extends Object {
++
++    protected $fields;
++
++    protected $message;
++
++    public function message($message) {
++        $this->message= $message;
++        return $this;
++    }
++
++    public function fields(Array $fields=array()) {
++        $this->fields= $fields;
++    }
++
++    public function validate_each(ActiveRecord $record) {
++        foreach($this->fields as $field) {
++            $this->validate($record->getField($field));
++        }
++    }
++
++    abstract public function validate(Field $field);
++
++}
++
++class PresenceOfValidator extends Validator {
++
++    protected $message= '%s is empty';
++
++    public function validate(Field $field) {
++        if ($field->getValue() == '') { 
++            $field->addError(new FieldError(sprintf($this->message, $field->getName())));
++        }
++    }
++
++}
++
++class NumericalityOfValidator extends Validator {
++
++    protected $message= '%s is not a number!';
++
++    public function validate(Field $field) {
++        $v=$field->getValue();
++        if(!((is_numeric($v)) && (intval(0+$v)==$v))) { 
++            $field->addError(new FieldError(sprintf($this->message, $field->getName())));
++        }
++    }
++
++}
++
++class LengthOfValidator extends Validator {
++
++    protected $too_short= '%s is too short, min is %d';
++    protected $too_long = '%s is too long, max is %d';
++    protected $min;
++    protected $max;
++
++    public function in($min, $max) {
++        if ( $max <= $min ) { 
++            throw new Exception('Doh, you are too smart!');
++        }
++        $this->min= (int)$min;
++        $this->max= (int)$max;
++        return $this;
++    }
++
++    public function max($max) {
++        $this->max= $max;
++        return $this;
++    }
++
++    public function min($min) {
++        $this->min= $min;
++        return $this;
++    }
++
++    public function too_short($message) {
++        $this->too_short= $message;
++        return $this;
++    }
++    
++    public function too_long($message) {
++        $this->too_long= $message;
++        return $this;
++    }
++
++    public function validate(Field $field) {
++        $l= strlen($field->getValue());
++        if ($l < $this->min) { 
++            return $field->addError(new FieldError(sprintf($this->too_short, $field->getName(), $this->min)));
++        } elseif ($l > $this->max) { 
++            return $field->addError(new FieldError(sprintf($this->too_long, $field->getName(), $this->max)));
++        }
++    }
++
++}
++
++class ActiveRecord extends Object {
++
++    private $validators= array();
++
++    protected $fields= array();
++
++    public function addValidator(Validator $v) {
++        $this->validators[]= $v;
++    }
++
++    public function hasField($name) {
++        return in_array($name, array_keys($this->fields));
++    }
++
++    public function getFields() {
++        return $this->fields;
++    }
++
++    public function getField($name) {
++        return $this->fields[$name];
++    }
++
++    public function __set($name, $value) {
++        if ($this->hasField($name)) $this->getField($name)->setValue($value);
++        else throw new Exception('No such Filed: ' . $name);
++    }
++
++    public function __get($name) {
++        if ($this->hasField($name)) return $this->getField($name)->getValue();
++        else throw new Exception('No such Filed: ' . $name);
++    }
++
++    public function __call($method, $args) {
++        if (substr($method,0,10)== 'validates_') { 
++            $cname= str_replace(" ", "", ucwords(str_replace("_", " ", substr($method, 10)))) . "Validator";
++            $validator= new $cname;
++            $validator->fields($args);
++            $this->validators[]= $validator;
++            return $validator;
++        }
++        if (substr($method,0,7) == 'before_') {
++            if ($this->getClass()->hasMethod($method)) return $this->getClass()->getMethod($method)->invoke($this);
++            else return true;
++        }
++        if (substr($method,0,6) == 'after_') {
++            if ($this->getClass()->hasMethod($method)) return $this->getClass()->getMethod($method)->invoke($this);
++            return;
++        }
++    }
++
++    protected function collect_errors() {
++        foreach ($this->validators as $v) {
++            $v->validate_each($this);
++        }
++        foreach ($this->fields as $field) {
++            if ($field->hasErrors()) return 1;
++        }
++        return 0;
++    }
++
++    public function save() {
++        if ($this->before_save() && $this->collect_errors() === 0) {
++            return true;
++        }
++        return false;
++    }
++
++}
++
++class Person extends ActiveRecord {
++
++    public function Person() {
++        $this->fields['name']    = new Field('name');
++        $this->fields['address'] = new Field('address');
++        $this->fields['phone']   = new Field('phone');
++    }
++
++    protected function before_save() {
++        $this->validates_presence_of('name', 'address')->message('%s should be filled!');
++        $this->validates_length_of('name')->in(1,5)->too_short('Too short: %s [min: %d]')->too_long('Too long: %s, [max: %d]');
++        $this->validates_length_of('address')->max(5)->too_long('%s is too long, maximum is %d charachters');
++        $this->validates_numericality_of('phone');
++        return true;
++    }
++
++}
++
++function error_messages_for(ActiveRecord $record) {
++    foreach ($record->getFields() as $field) {
++        foreach ($field->getErrors() as $error) {
++            echo $error->getMessage() . "\n";
++        }
++    }
++}
++
++$p= new Person();
++$p->phone= 'a';
++$p->name= 'Marel';
++$p->address= 'Andro';
++var_dump($p->save());
++
++error_messages_for($p);
++
+
+
+Property changes on: exp/validator_api.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at berlios.de  Sat Jul  1 17:36:54 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 1 Jul 2006 17:36:54 +0200
+Subject: [Medick-svn] r413 - exp
+Message-ID: <200607011536.k61FasNI029520@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-01 17:36:54 +0200 (Sat, 01 Jul 2006)
+New Revision: 413
+
+Modified:
+   exp/validator_api.php
+Log:
+ -- removed FieldError class && added FormatOfValidator
+
+Modified: exp/validator_api.php
+===================================================================
+--- exp/validator_api.php	2006-07-01 10:16:07 UTC (rev 412)
++++ exp/validator_api.php	2006-07-01 15:36:54 UTC (rev 413)
+@@ -33,12 +33,11 @@
+ // }}}
+ 
+ /**
+- * Medick ActiveRecord Validation API
++ * Medick ActiveRecord Validation API (2)
+  */
++ 
++error_reporting(E_STRICT | E_ALL);
+ 
+-error_reporting(E_STRICT|E_ALL);
+-ini_set('display_errors', 1);
+-
+ class MedickClass extends ReflectionClass { }
+ 
+ class Object {
+@@ -61,24 +60,6 @@
+ 
+ }
+ 
+-class FieldError extends Object {
+-
+-    private $message;
+-
+-    public function FieldError($message) {
+-        $this->message= $message;
+-    }
+-
+-    public function getMessage() {
+-        return $this->message;
+-    }
+-
+-    public function toString() {
+-        return $this->message;
+-    }
+-
+-}
+-
+ class Field extends Object {
+ 
+     private $name;
+@@ -103,7 +84,7 @@
+         return $this->name;
+     }
+ 
+-    public function addError(FieldError $error) {
++    public function addError($error) {
+         $this->errors[]= $error;
+     }
+ 
+@@ -146,13 +127,32 @@
+ 
+ }
+ 
++class FormatOfValidator extends Validator {
++
++    protected $message= '%s has invalid format!';
++
++    private $with= '';
++    
++    public function with($regex='') {
++        $this->with= $regex;
++        return $this;
++    }
++    
++    public function validate(Field $field) {
++        if ( $this->with === '' ||  !preg_match($this->with, $field->getValue())) {
++            $field->addError(sprintf($this->message, $field->getName()));
++        }
++    }
++
++}
++
+ class PresenceOfValidator extends Validator {
+ 
+-    protected $message= '%s is empty';
++    protected $message= '%s is empty!';
+ 
+     public function validate(Field $field) {
+         if ($field->getValue() == '') { 
+-            $field->addError(new FieldError(sprintf($this->message, $field->getName())));
++            $field->addError(sprintf($this->message, $field->getName()));
+         }
+     }
+ 
+@@ -165,7 +165,7 @@
+     public function validate(Field $field) {
+         $v=$field->getValue();
+         if(!((is_numeric($v)) && (intval(0+$v)==$v))) { 
+-            $field->addError(new FieldError(sprintf($this->message, $field->getName())));
++            $field->addError(sprintf($this->message, $field->getName()));
+         }
+     }
+ 
+@@ -175,8 +175,8 @@
+ 
+     protected $too_short= '%s is too short, min is %d';
+     protected $too_long = '%s is too long, max is %d';
+-    protected $min;
+-    protected $max;
++    protected $min= 0;
++    protected $max= 1;
+ 
+     public function in($min, $max) {
+         if ( $max <= $min ) { 
+@@ -210,9 +210,9 @@
+     public function validate(Field $field) {
+         $l= strlen($field->getValue());
+         if ($l < $this->min) { 
+-            return $field->addError(new FieldError(sprintf($this->too_short, $field->getName(), $this->min)));
++            return $field->addError(sprintf($this->too_short, $field->getName(), $this->min));
+         } elseif ($l > $this->max) { 
+-            return $field->addError(new FieldError(sprintf($this->too_long, $field->getName(), $this->max)));
++            return $field->addError(sprintf($this->too_long, $field->getName(), $this->max));
+         }
+     }
+ 
+@@ -266,18 +266,23 @@
+             if ($this->getClass()->hasMethod($method)) return $this->getClass()->getMethod($method)->invoke($this);
+             return;
+         }
++        trigger_error('Call to a undefined method: ' . $this->getClassName() . '::' . $method, E_USER_ERROR);
+     }
+ 
+     protected function collect_errors() {
+-        foreach ($this->validators as $v) {
+-            $v->validate_each($this);
+-        }
++        $this->run_validators();
+         foreach ($this->fields as $field) {
+             if ($field->hasErrors()) return 1;
+         }
+         return 0;
+     }
+ 
++    private function run_validators() {
++        foreach ($this->validators as $v) {
++            $v->validate_each($this);
++        }
++    }
++    
+     public function save() {
+         if ($this->before_save() && $this->collect_errors() === 0) {
+             return true;
+@@ -293,6 +298,7 @@
+         $this->fields['name']    = new Field('name');
+         $this->fields['address'] = new Field('address');
+         $this->fields['phone']   = new Field('phone');
++        $this->fields['email']   = new Field('email');
+     }
+ 
+     protected function before_save() {
+@@ -300,24 +306,30 @@
+         $this->validates_length_of('name')->in(1,5)->too_short('Too short: %s [min: %d]')->too_long('Too long: %s, [max: %d]');
+         $this->validates_length_of('address')->max(5)->too_long('%s is too long, maximum is %d charachters');
+         $this->validates_numericality_of('phone');
++        $this->validates_format_of('email')->with('/^([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})$/i');
+         return true;
+     }
+ 
+ }
+ 
+-function error_messages_for(ActiveRecord $record) {
+-    foreach ($record->getFields() as $field) {
+-        foreach ($field->getErrors() as $error) {
+-            echo $error->getMessage() . "\n";
++class ActiveRecordHelper extends Object {
++    
++    public static function error_messages_for(ActiveRecord $record) {
++        foreach ($record->getFields() as $field) {
++            foreach ($field->getErrors() as $error) {
++                echo $error . "\n";
++            }
+         }
+     }
++
+ }
+ 
+ $p= new Person();
++$p->email= 'F';
+ $p->phone= 'a';
+ $p->name= 'Marel';
+ $p->address= 'Andro';
+ var_dump($p->save());
+ 
+-error_messages_for($p);
++ActiveRecordHelper::error_messages_for($p);
+ 
+
+
+
+From aurelian at berlios.de  Sat Jul  1 17:39:07 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 1 Jul 2006 17:39:07 +0200
+Subject: [Medick-svn] r414 - exp
+Message-ID: <200607011539.k61Fd7In029886@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-01 17:39:07 +0200 (Sat, 01 Jul 2006)
+New Revision: 414
+
+Added:
+   exp/README
+Log:
+ -- initial import
+
+Added: exp/README
+===================================================================
+--- exp/README	2006-07-01 15:36:54 UTC (rev 413)
++++ exp/README	2006-07-01 15:39:07 UTC (rev 414)
+@@ -0,0 +1,7 @@
++$Id$
++
++medick/exp holds medick experiments
++
++Contents:
++    -> validator API (validator_api.php)
++
+
+
+Property changes on: exp/README
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at berlios.de  Sun Jul  2 18:39:37 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 2 Jul 2006 18:39:37 +0200
+Subject: [Medick-svn] r415 - in trunk/docs/medick.website: . css
+Message-ID: <200607021639.k62GdbIo006771@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-02 18:39:34 +0200 (Sun, 02 Jul 2006)
+New Revision: 415
+
+Added:
+   trunk/docs/medick.website/faq.html
+Modified:
+   trunk/docs/medick.website/css/medick.css
+   trunk/docs/medick.website/index.html
+Log:
+ -- added faq and updated
+
+Modified: trunk/docs/medick.website/css/medick.css
+===================================================================
+--- trunk/docs/medick.website/css/medick.css	2006-07-01 15:39:07 UTC (rev 414)
++++ trunk/docs/medick.website/css/medick.css	2006-07-02 16:39:34 UTC (rev 415)
+@@ -9,7 +9,7 @@
+   margin: 0;
+   padding: 0;
+   font:80%/140% "Lucida Grande",Verdana, Helvetica,sans-serif;
+-  background: url("/s/bg-main.gif") repeat-x;
++  background: url("http://medick.locknet.ro/s/bg-main.gif") repeat-x;
+   background-color: #F5FEE8;
+ }
+ ul {
+@@ -18,7 +18,7 @@
+ }
+ li {
+   padding: 10px;
+-  list-style: url("/s/bullet.gif") none;
++  list-style: url("http://medick.locknet.ro/s/bullet.gif") none;
+ }
+ a:link, a:visited {
+   color: #30c;
+@@ -118,7 +118,7 @@
+ 
+ }
+ #header {
+-  background: url("/s/header.gif");
++  background: url("http://medick.locknet.ro/s/header.gif");
+   background-repeat:no-repeat;
+   width: 722px;
+   height: 105px;
+@@ -129,7 +129,7 @@
+   font-style: italic;
+ }
+ #footer {
+-  background: url("/s/footer.gif");
++  background: url("http://medick.locknet.ro/s/footer.gif");
+   background-repeat: no-repeat;
+   width: 722px;
+   height: 91px;
+
+Added: trunk/docs/medick.website/faq.html
+===================================================================
+--- trunk/docs/medick.website/faq.html	2006-07-01 15:39:07 UTC (rev 414)
++++ trunk/docs/medick.website/faq.html	2006-07-02 16:39:34 UTC (rev 415)
+@@ -0,0 +1,53 @@
++<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN"
++  "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
++<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en" >
++<head>
++  <meta http-equiv="content-type" content="text/html; charset=utf-8" />
++  <meta name="author" content="Oancea Aurelian" />
++  <meta name="keywords" content="" />
++  <meta name="description" content="" />
++  <meta name="robots" content="all" />
++  <title> { Medick } PHP Web Framework</title>
++  <!-- $Id$ -->
++  <style type="text/css" title="currentStyle" media="screen">
++      @import "http://medick.locknet.ro/css/medick.css";
++      dl { margin: 0px; padding: 0px; }
++      dt { font-weight: bolder; }
++      dd { margin-left: -25px; }
++  </style>
++</head>
++<body>
++  <div id="container">
++    <div id="header"><h1>medick - PHP Framework - soon...</h1></div>
++    <div id="content">
++      <h2 style="margin-left:150px;">medck F.A.Q.</h2>
++      <ul>
++        <li><dl><dt>Q. What is medick?</dt>
++          <dd>A. medick is an open-source web framework.</dd></dl></li>
++        <li><dl><dt>Q. Where did the name "medick" come from?</dt>
++            <dd>A. It's from <a href="http://www.arthurleej.com/a-blackmedick.html" title="Black Medick" target="_blank">Black Medick - Medicago lupulina L</a>.</dd></dl></li>
++        <li><dl><dt>Q. What are medick requirements?</dt>
++            <dd>A. medick needs php (version 5.1.2 or higher), a web server (Apache with mod_php) and optionally a database server.</dd></dl></li>
++        <li><dl><dt>Q. What license is medick released under?</dt>
++            <dd>A. I choose to go open source and use a <a href="http://medick.locknet.ro/api/ric_LICENSE.html">BSD style</a> licence for medick.</dd></dl></li>
++        <li><dl><dt>Q. Is medick suitable for use yet?</dt>
++            <dd>A. medick it's still a alpha stage project so it's suitable for use as long as you understand that it may undergo large backwards incompatible changes.</dd></dl></li>
++        <li><dl><dt>Q. Is medick being worked on?</dt>
++            <dd>A. Yes, but sporadically. It's mainly an experiment and a playground, though it does seem to be a very good one. If you want to see it be furthered, feel free to write code in it, give feedback, and contribute.</dd></dl></li>
++      </ul>
++    </div>
++    
++    <div id="footer">
++      <p>
++      Medick is an <a href="http://www.opensource.org/docs/definition.php"
++title="Open Source Definition" target="_blank">open source</a> project released
++under a <a href="http://www.opensource.org/licenses/bsd-license.php"
++title="BSD-style LICENSE" target="_blank">BSD-style</a> <a href="http://medick.locknet.ro/api/ric_LICENSE.html"
++title="BSD-style Licence">LICENSE</a>.
++       </p>
++    </div>
++
++  </div>
++</body>
++</html>
++
+
+
+Property changes on: trunk/docs/medick.website/faq.html
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/docs/medick.website/index.html
+===================================================================
+--- trunk/docs/medick.website/index.html	2006-07-01 15:39:07 UTC (rev 414)
++++ trunk/docs/medick.website/index.html	2006-07-02 16:39:34 UTC (rev 415)
+@@ -4,13 +4,13 @@
+ <head>
+   <meta http-equiv="content-type" content="text/html; charset=utf-8" />
+   <meta name="author" content="Oancea Aurelian" />
+-  <meta name="keywords" content="" />
+-  <meta name="description" content="" />
++  <meta name="keywords" content="PHP Rails AJAX web2.0 fun" />
++  <meta name="description" content="Yet another cool PHP framework" />
+   <meta name="robots" content="all" />
+   <title> { Medick } PHP Web Framework</title>
+   <!-- $Id$ -->
+   <style type="text/css" title="currentStyle" media="screen">
+-    @import "/css/medick.css";
++      @import "http://medick.locknet.ro/css/medick.css";
+   </style>
+ </head>
+ <body>
+@@ -18,17 +18,17 @@
+     <div id="header"><h1>medick - PHP Framework - soon...</h1></div>
+     <div id="content">
+       <ul>
+-        <li>Version 0.1 is here:<br />
+-          <a href="/download/medick-0.1.0.tgz">
+-            <img src="/s/download.gif" 
+-              alt="Download Medick version 0.1" 
+-              title="Download Medick version 0.1" />
++        <li>Version 0.2.3 is here:<br />
++          <a href="http://medick.locknet.ro/download/medick-0.2.3.tgz">
++            <img src="http://medick.locknet.ro/s/download.gif" 
++              alt="Download Medick version 0.2.3" 
++              title="Download Medick version 0.2.3" />
+           </a>
+         </li>
+         <li>Want to know what is all about?<br />
+           <a href="http://lists.berlios.de/pipermail/medick-devel/" 
+              title="Read Medick Internals Archive List">Read</a> our mailing lists archives.
+-        </li>
++         </li>
+         <li>Get involved!<br />
+           Checkout the code with <a 
+           href="http://subversion.tigris.org/" 
+@@ -38,14 +38,18 @@
+           <a title="Join Medick Internals List"
+             href="http://lists.berlios.de/mailman/listinfo/medick-devel">
+             <img 
+-              src="/s/subscribe.gif" 
++              src="http://medick.locknet.ro/s/subscribe.gif" 
+               alt="Subscribe to Our Mailing List" 
+               title="Subscribe to our Mailing List"/>
+           </a>
+         </li>
+-        <li>Documentation<br />
+-          Read the 3 lines <a href="/README">README</a>
+-        </li>
++        <li><strong>Documentation:</strong><br />
++        Work in progress: <a href="http://medick.locknet.ro/documentation.html">The Long Intro</a>.<br />
++        Watch the screencast: <a href="http://medick.locknet.ro/getting_started.html">How to install</a> <strong>elTodo</strong> Sample Application.<br />
++        Read online: Browse the <a href="http://medick.locknet.ro/api/">API docs</a>!<br />
++        Frecvent Asked Questions: medick <a href="http://medick.locknet.ro/faq.html">FAQ</a>.<br />
++        See the code: Browse medick sources under <a href="http://svn.berlios.de/wsvn/medick">version control</a>!<br />
++        Blog: read medick related articles on the <a href="http://www.locknet.ro/c?=medick">develoer blog</a>.
+       </ul>
+     </div>
+     
+@@ -54,7 +58,7 @@
+       Medick is an <a href="http://www.opensource.org/docs/definition.php"
+ title="Open Source Definition" target="_blank">open source</a> project released
+ under a <a href="http://www.opensource.org/licenses/bsd-license.php"
+-title="BSD-style LICENSE" target="_blank">BSD-style</a> <a href="/LICENSE"
++title="BSD-style LICENSE" target="_blank">BSD-style</a> <a href="http://medick.locknet.ro/api/ric_LICENSE.html"
+ title="BSD-style Licence">LICENSE</a>.
+        </p>
+     </div>
+
+
+
+From aurelian at berlios.de  Sun Jul  2 22:06:35 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 2 Jul 2006 22:06:35 +0200
+Subject: [Medick-svn] r416 - in trunk/libs: action/controller active/record
+Message-ID: <200607022006.k62K6Zlo028069@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-02 22:06:34 +0200 (Sun, 02 Jul 2006)
+New Revision: 416
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/active/record/RowsAggregate.php
+Log:
+ -- added RowsAggregate::first method + implemented ActionController::redirect_to_path method
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-07-02 16:39:34 UTC (rev 415)
++++ trunk/libs/action/controller/Base.php	2006-07-02 20:06:34 UTC (rev 416)
+@@ -430,7 +430,9 @@
+     // XXX: not done.
+     // redirects to a know path (eg. /images/pic.jpg)
+     protected function redirect_to_path($path) {
+-        throw new MedickException('Method: ' . __METHOD__ . ' not implemented!');
++        $this->logger->debug('Redirecting to: ' . $path);
++        $this->response->redirect($this->config->getWebContext()->server_name . $this->config->getWebContext()->document_root . '/' . $path);
++        $this->action_performed = TRUE;
+     }
+ 
+     // XXX: not done.
+
+Modified: trunk/libs/active/record/RowsAggregate.php
+===================================================================
+--- trunk/libs/active/record/RowsAggregate.php	2006-07-02 16:39:34 UTC (rev 415)
++++ trunk/libs/active/record/RowsAggregate.php	2006-07-02 20:06:34 UTC (rev 416)
+@@ -62,6 +62,10 @@
+         return $row;
+     }
+ 
++    public function first() {
++      return $this->container[0];
++    }
++
+     /**
+      * It gets the iterator
+      * @return Iterator
+
+
+
+From aurelian at berlios.de  Thu Jul  6 21:27:50 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Thu, 6 Jul 2006 21:27:50 +0200
+Subject: [Medick-svn] r417 - in trunk: . libs/active/record
+Message-ID: <200607061927.k66JRnFO021001@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-06 21:27:45 +0200 (Thu, 06 Jul 2006)
+New Revision: 417
+
+Added:
+   trunk/TREE_IS_BROKEN
+Modified:
+   trunk/libs/active/record/Association.php
+   trunk/libs/active/record/Base.php
+Log:
+ -- started to implement the new validation API
+
+Added: trunk/TREE_IS_BROKEN
+===================================================================
+--- trunk/TREE_IS_BROKEN	2006-07-02 20:06:34 UTC (rev 416)
++++ trunk/TREE_IS_BROKEN	2006-07-06 19:27:45 UTC (rev 417)
+@@ -0,0 +1,10 @@
++# $Id$
++
++Subversion trunk tree for medick project is currently broken due to
++incomplete implementation of the new validation API.
++
++Please update you local tree later or 
++use the last medick version from tags (medick-0.2.3)
++
++It will work again when this file will be removed.
++
+
+
+Property changes on: trunk/TREE_IS_BROKEN
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/libs/active/record/Association.php
+===================================================================
+--- trunk/libs/active/record/Association.php	2006-07-02 20:06:34 UTC (rev 416)
++++ trunk/libs/active/record/Association.php	2006-07-06 19:27:45 UTC (rev 417)
+@@ -109,14 +109,14 @@
+      *
+      * Returns a new instance of the solved Association and it acts as a factory
+      * @param array associations ActiveRecord defined associations
+-     * @param string owner current ActiveRecord woner name
++     * @param string owner current ActiveRecord owner name
+      * @param string class name of the object we want to return
+      * @param DatabaseRow fields ActiveRecord fields
+      * @return Association
+      * @throws AssociationNotFoundException when we cannot resolve this Association
+      * @since Rev. 272
+      */
+-    public static function resolve($associations, $owner, $class, $fields) {
++    public static function resolve(Array $associations, ActiveRecord $owner, $class) { //, $fields) {
+         if ( is_string($associations['has_one']) && preg_match("/$class/", $associations['has_one']) ) {
+             $type= 'HasOneAssociation';
+         } elseif( is_array($associations['has_one']) && in_array($class, $associations['has_one']) ) {
+@@ -144,8 +144,8 @@
+         $association= new $type;
+         $association->setOwner($owner);
+         $association->setClass($class);
+-        $association->setFields($fields);
+-        $association->setPk($fields->getPrimaryKey()->getValue());
++        $association->setFields($owner->getFields());
++        $association->setPk($owner->getPrimaryKey()->getValue());
+         return $association;
+     }
+ 
+@@ -171,7 +171,7 @@
+ 
+     /** @see Association::execute() */
+     public function execute() {
+-        $fk= Inflector::singularize($this->owner) . '_id';
++        $fk= Inflector::singularize($this->owner->getTableName()) . '_id';
+         $arguments= array('all', array('condition'=>$fk.'=?'), array($this->pk));
+         $builder= new QueryBuilder(Inflector::singularize($this->class), $arguments);
+         return ActiveRecord::build($builder);
+@@ -205,8 +205,9 @@
+      */
+     public function execute() {
+         $fk= $this->class.'_id'; // foreign key name: the class name+"_id" suffix"
+-        if ($field= $this->fields->getFieldByName($fk)) {
+-            $arguments= array('first', array('condition'=>'id=?'), array($field->getValue()));
++        // if ($field= $this->fields->getFieldByName($fk)) {
++        if ($this->owner->hasField($fk)) {
++            $arguments= array('first', array('condition'=>'id=?'), array($this->owner->getField($fk)->getValue()));
+             return ActiveRecord::build(new QueryBuilder($this->class, $arguments));
+         } else {
+             throw new AssociationNotFoundException('Cannot execute Association ``has_one" on ' . $this->class);
+@@ -243,17 +244,17 @@
+ 
+     /** @see Association::execute() */
+     public function execute() {
+-        if ($this->class < $this->owner) {
+-            $join_table= $this->class . '_' . Inflector::pluralize($this->owner);
++        if ($this->class < $this->owner->getTableName()) {
++            $join_table= $this->class . '_' . $this->owner->getTableName();
+         } else {
+-            $join_table= Inflector::pluralize($this->owner) . '_' . Inflector::pluralize($this->class);
++            $join_table= $this->owner->getTableName() . '_' . Inflector::pluralize($this->class);
+         }
+         $arguments=array();
+         $arguments[]='all';
+         $clauses= array();
+         $clauses['columns']   = $this->class.'.*';
+         $clauses['left join'] = $join_table . ' on ' . $this->class . '.id=' . $join_table . '.' . Inflector::singularize($this->class) . '_id';
+-        $clauses['condition'] = $join_table . '.' . Inflector::singularize($this->owner) . '_id=?';
++        $clauses['condition'] = $join_table . '.' . Inflector::singularize($this->owner->getTableName()) . '_id=?';
+         $arguments[]= $clauses;
+         $arguments[]= array($this->pk);
+         return ActiveRecord::build(new QueryBuilder(Inflector::singularize($this->class), $arguments));
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-07-02 20:06:34 UTC (rev 416)
++++ trunk/libs/active/record/Base.php	2006-07-06 19:27:45 UTC (rev 417)
+@@ -33,7 +33,8 @@
+ // }}}
+ 
+ // ActiveRecord dependencies.
+-include_once('active/record/DatabaseRow.php');
++// include_once('active/record/DatabaseRow.php');
++include_once('active/record/Field.php');
+ include_once('active/record/RowsAggregate.php');
+ include_once('active/record/QueryBuilder.php');
+ include_once('active/record/SQLCommand.php');
+@@ -78,6 +79,8 @@
+         our database row. */
+     protected $row;
+ 
++    protected $fields=array();
++    
+     /** @var string
+         primary key name */
+     private $pk;
+@@ -100,7 +103,7 @@
+         $this->table_name = Inflector::pluralize(strtolower(Inflector::underscore($this->class_name)));
+         $table_info = ActiveRecordTableInfo::getInstance(ActiveRecord::connection(), $this->table_name);
+         $this->pk   = $table_info->getPrimaryKey()->getName();
+-        $this->row  = new DatabaseRow($this->table_name);
++        // $this->row  = new DatabaseRow($this->table_name);
+         foreach( $table_info->getColumns() as $col) {
+             $field = new Field( $col->getName() );
+             // $field->size = $col->getSize();
+@@ -118,7 +121,8 @@
+             } else {
+                 $field->isFK = false;
+             }
+-            $this->row[]= $field;
++            $this->fields[$field->getName()]= $field;
++            // $this->row[]= $field;
+         }
+         // confused?
+         if(!empty($params)) { foreach ($params as $field_name => $field_value) {
+@@ -126,6 +130,22 @@
+         }}
+     }
+ 
++    public function getTableName() {
++        return $this->table_name;
++    }
++    
++    public function hasField($name) {
++        return in_array($name, array_keys($this->fields));
++    }
++
++    public function getFields() {
++        return $this->fields;
++    }
++
++    public function getField($name) {
++        return $this->fields[$name];
++    }
++    
+     // {{{ __magic functions
+     /**
+      * It sets the value of the field
+@@ -135,14 +155,40 @@
+      * @param mixed, field_value, field value
+      * @throws ActiveRecordException if the field is not found.
+      */
+-    public function __set($field_name, $field_value) {
++    public function __set($name, $value) {
++        if ($this->hasField($name)) $this->getField($name)->setValue($value);
++        else throw new ActiveRecordException('No such Filed: ' . $name);
++        /*
+         if ($field= $this->row->getFieldByName($field_name)) {
+             return $this->row->updateStatus($field, $field_value);
+         }
+         throw new ActiveRecordException (
+             'Cannot Set the value of field: `' . $field_name . '`. No such field!');
++        */
+     }
+ 
++
++    public function __call($method, $args) {
++        if (substr($method,0,10)== 'validates_') { 
++            $cname= str_replace(" ", "", ucwords(str_replace("_", " ", substr($method, 10)))) . "Validator";
++            $validator= new $cname;
++            $validator->fields($args);
++            $this->validators[]= $validator;
++            return $validator;
++        }
++        if (substr($method,0,7) == 'before_') {
++            if ($this->getClass()->hasMethod($method)) return $this->getClass()->getMethod($method)->invoke($this);
++            else return true;
++        }
++        if (substr($method,0,6) == 'after_') {
++            if ($this->getClass()->hasMethod($method)) return $this->getClass()->getMethod($method)->invoke($this);
++            return;
++        }
++        trigger_error('Call to a undefined method: ' . $this->getClassName() . '::' . $method, E_USER_ERROR);
++    }
++
++
++    
+     /**
+      * It gets the value of the field
+      *
+@@ -151,10 +197,13 @@
+      * @throws ActiveRecordException
+      * @return field value
+      */
+-    public function __get($field_name) {
++    public function __get($name) {
++        if ($this->hasField($name)) return $this->getField($name)->getValue();
++        /*
+         if ($field= $this->row->getFieldByName($field_name)) {
+             return $field->isAffected ? $field->getValue() : NULL;
+         }
++        */
+         try {
+             return Association::resolve(
+                                 array(
+@@ -163,15 +212,17 @@
+                                     'has_many'   => $this->has_many,
+                                     'has_and_belongs_to_many' => $this->has_and_belongs_to_many
+                                     ),
+-                                $this->table_name,
+-                                $field_name,
+-                                $this->row
++                                $this,// ->table_name,
++                                $name // ,
++                                // $this->fields
++                                // $this->row
+                                 )->execute();
+         } catch (AssociationNotFoundException $anfEx) {
+             throw new ActiveRecordException (
+                 'Cannot Get the value of filed: `' . $field_name . '`. No such filed!',
+                 $anfEx->getMessage());
+         }
++        // throw new ActiveRecordException('No such Filed: ' . $name);
+     }
+ 
+     /** returns a string representation of this object */
+@@ -185,17 +236,20 @@
+ 
+     /** Prepare this Object for serialization */
+     public function __sleep() {
+-        return array('row', 'table_name', 'class_name','has_one', 'belongs_to', 'has_many', 'has_and_belongs_to_many');
++        return array('fields', 'table_name', 'class_name','has_one', 'belongs_to', 'has_many', 'has_and_belongs_to_many');
+     }
+ 
+     /** restore the Object state after unserialize  */
+     public function __wakeup() {
+         ActiveRecord::connection();
+-        $it= $this->row->iterator();
+-        while($it->hasNext()) {
+-            $current= $it->next();
+-            $this->__set($current->getName(), $current->getValue());
++        foreach ($this->fields as $field) {
++            $this->__set($field->getName(), $field->getValue());
+         }
++        // $it= $this->row->iterator();
++        // while($it->hasNext()) {
++        //     $current= $it->next();
++        //     $this->__set($current->getName(), $current->getValue());
++        // }
+     }
+ 
+     // }}}
+@@ -205,27 +259,27 @@
+      *
+      * @return DatabaseRow
+      */
+-    public function getRow() {
+-        return $this->row;
+-    }
++    // public function getRow() {
++    //     return $this->row;
++    // }
+ 
+     /**
+      * Check if this row is valid by counting the associated rows errors
+      *
+      * @return true if is valid
+      */ 
+-    public function isValid() {
+-        return count($this->row->collectErrors()) == 0;
+-    }
++    // public function isValid() {
++    //     return count($this->row->collectErrors()) == 0;
++    // }
+ 
+     /**
+      * Validates this row
+      *
+      * @return Validator
+      */ 
+-    protected function validates () {
+-        return new Validator($this->row);
+-    }
++    // protected function validates () {
++    //     return new Validator($this->row);
++    // }
+ 
+     // {{{ filters
+     /**
+@@ -238,7 +292,7 @@
+      * @return bool
+      * @since Rev.272
+      */
+-    protected function before_insert() { return TRUE; }
++    // protected function before_insert() { return TRUE; }
+ 
+     /**
+      * Before Update Filter.
+@@ -250,7 +304,7 @@
+      * @return bool
+      * @since Rev.272
+      */
+-    protected function before_update() { return TRUE; }
++    // protected function before_update() { return TRUE; }
+ 
+     /**
+      * Before Delete Filter.
+@@ -262,7 +316,7 @@
+      * @return bool
+      * @since Rev.272
+      */
+-    protected function before_delete() { return TRUE; }
++    // protected function before_delete() { return TRUE; }
+ 
+     /**
+      * Before Save Filter.
+@@ -274,7 +328,7 @@
+      * @return bool
+      * @since Rev.342
+      */
+-    protected function before_save() { return TRUE; }
++    // protected function before_save() { return TRUE; }
+ 
+     /**
+      * After Insert Filter.
+@@ -284,7 +338,7 @@
+      * @return void
+      * @since Rev.272
+      */
+-    protected function after_insert()  {    }
++    // protected function after_insert()  {    }
+ 
+     /**
+      * After Update Filter.
+@@ -294,7 +348,7 @@
+      * @return void
+      * @since Rev.272
+      */
+-    protected function after_update()  {    }
++    // protected function after_update()  {    }
+ 
+     /**
+      * After Delete Filter.
+@@ -304,10 +358,16 @@
+      * @return void
+      * @since Rev.272
+      */
+-    protected function after_delete()  {    }
++    // protected function after_delete()  {    }
+ 
+     // }}}
+ 
++    public function getPrimaryKey() {
++        foreach($this->fields as $field) {
++            if ($field->isPk) return $field;
++        }
++    }
++    
+     // {{{ save
+     /**
+      * Save,
+
+
+
+From aurelian at berlios.de  Sat Jul  8 16:19:13 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 8 Jul 2006 16:19:13 +0200
+Subject: [Medick-svn] r422 - trunk/libs/active/record
+Message-ID: <200607081419.k68EJDme006781@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-08 16:19:12 +0200 (Sat, 08 Jul 2006)
+New Revision: 422
+
+Modified:
+   trunk/libs/active/record/Base.php
+Log:
+ -- fixed api docs for ActiveRecord::__call
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-07-08 14:02:12 UTC (rev 421)
++++ trunk/libs/active/record/Base.php	2006-07-08 14:19:12 UTC (rev 422)
+@@ -170,37 +170,32 @@
+      * <b>Available methods:</b><br />
+      * <ul>
+      *  <li>
+-     *    <i>validates_</i>it loads a Validator, eg. validates_presence_of will load PresenceOfValidator<br />
+-     *    @see Validator
++     *    <i>validates_</i>*, it loads a Validator, eg. validates_presence_of will load PresenceOfValidator<br />
+      *  </li>
+      *  <li>
+-     *    <i>before_</i>, if not defined, a call to a before filter will return true
++     *    <i>before_</i>* , if not defined, a call to a before filter will return true
+      *  </li>
+      *  <li>
+-     *    <i>after_</i>, if not defined this will return
++     *    <i>after_</i>* , if not defined this will return
+      *  </li>
+      *  <li>
+-     *    <i>get</i>, if not defined will try to return a Field, eg.: assuming Person is an ActiveRecord class:<br />
+-     *    <code>
+-     *      $p= Person::find(1);
+-     *      $p->getName(); // returns a Field object
+-     *      $p->name; // returns the Field value
+-     *      $p->getName()->getValue(); // the same as the above call
+-     *      $p->hasField('name') && $p->getField('name')->getValue(); // the same
+-     *    </code>
++     *    <i>get</i>* , if not defined will try to return a Field, eg.: assuming Person is an ActiveRecord class:<br />
++     *    <code>$p= Person::find(1);
++     * $p->getName(); // returns a Field object
++     * $p->name; // returns the Field value
++     * $p->getName()->getValue(); // the same as the above call
++     * $p->hasField('name') && $p->getField('name')->getValue(); // the same</code>
+      *  </li>
+      *  <li>
+-     *    <i>set</i>, if not defined will try to set the value of a Field, eg.: assuming Person is an ActiveRecord class:<br />
+-     *    <code>
+-     *      $p= new Person();
+-     *      $p->name= 'Andy'; // sets the person name to Andy
+-     *      $p->setName('Andy'); // same as above
+-     *    </code>
++     *    <i>set</i>* , if not defined will try to set the value of a Field, eg.: assuming Person is an ActiveRecord class:<br />
++     *    <code>$p= new Person();
++     * $p->name= 'Andy'; // sets the person name to Andy
++     * $p->setName('Andy'); // same as above</code>
+      *  </li>
+      * </ul>
+      * 
+      * @TODO: more checks on before_ / after_ filters
+-     *
++     * @see Validator, Fields
+      * @throws MedickException if the called method is not defined (similar with php error)
+      */ 
+     public function __call($method, $args) {
+
+
+
+From aurelian at berlios.de  Sat Jul  8 15:51:40 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 8 Jul 2006 15:51:40 +0200
+Subject: [Medick-svn] r420 - trunk
+Message-ID: <200607081351.k68DpegM001068@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-08 15:51:36 +0200 (Sat, 08 Jul 2006)
+New Revision: 420
+
+Modified:
+   trunk/README
+Log:
+ -- updated README
+
+Modified: trunk/README
+===================================================================
+--- trunk/README	2006-07-08 13:35:27 UTC (rev 419)
++++ trunk/README	2006-07-08 13:51:36 UTC (rev 420)
+@@ -6,15 +6,14 @@
+ ABOUT:
+ ------
+     Medick is an open-source software licensed under a BSD-style licence, see LICENSE file for details.
+-    Medick is a php 5 web framework.
++    Medick is a PHP 5 web framework, not a collection of PHP classes.
+     Medick is alpha stage project, use it on your own risk. Function names or framework workflow might change without prior notice.
+-    This is the README file for version 0.2.3 of medick released on 24.06.2006.
++    This is the README file for version 0.3.0pre1 of medick released on 08.July.2006.
+ 
+ REQUIREMENTS:
+ -------------
+-    1. php 5.0.3 or higher (http://php.net/downloads).
+-        The following PHP extensions are required: simplexml and spl.
+-        Starting with php 5.1.2 reflection is also needed.
++    1. php 5.1.2 or higher (http://php.net/downloads).
++        The following PHP extensions are required: simplexml, spl and reflection
+         This extensions are enbled by default on every php installation.
+         
+     2. for web application you will need, of course a web server, Apache 2 with mod_php is recommended.
+@@ -39,6 +38,7 @@
+     Web Home     : http://medick.locknet.ro
+     Documentation: http://medick.locknet.ro/documentation.html
+     API Docs     : http://medick.locknet.ro/api
++    FAQ          : http://medick.locknet.ro/faq.html
+     Dev Blog     : http://www.locknet.ro/?c=medick
+     
+     Subscribe to our internals email lists: http://lists.berlios.de/mailman/listinfo/medick-devel
+
+
+
+From aurelian at berlios.de  Sun Jul  9 16:35:04 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 9 Jul 2006 16:35:04 +0200
+Subject: [Medick-svn] r423 - in trunk: . docs/medick.website libs/action/controller libs/active/record libs/medick
+Message-ID: <200607091435.k69EZ4Cu022323@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-09 16:35:03 +0200 (Sun, 09 Jul 2006)
+New Revision: 423
+
+Modified:
+   trunk/VERSION
+   trunk/docs/medick.website/index.html
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/medick/Medick.php
+Log:
+ -- starting on pre-release 2 of medick 0.3.0
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-07-08 14:19:12 UTC (rev 422)
++++ trunk/VERSION	2006-07-09 14:35:03 UTC (rev 423)
+@@ -1 +1 @@
+-0.3.0pre1
++0.3.0pre2-svn
+
+Modified: trunk/docs/medick.website/index.html
+===================================================================
+--- trunk/docs/medick.website/index.html	2006-07-08 14:19:12 UTC (rev 422)
++++ trunk/docs/medick.website/index.html	2006-07-09 14:35:03 UTC (rev 423)
+@@ -18,11 +18,11 @@
+     <div id="header"><h1>medick - PHP Framework - soon...</h1></div>
+     <div id="content">
+       <ul>
+-        <li>Version 0.2.3 is here:<br />
+-          <a href="http://medick.locknet.ro/download/medick-0.2.3.tgz">
++        <li>Version 0.3.0pre1 is here:<br />
++          <a href="http://medick.locknet.ro/download/medick-0.3.0pre1.tgz">
+             <img src="http://medick.locknet.ro/s/download.gif" 
+-              alt="Download Medick version 0.2.3" 
+-              title="Download Medick version 0.2.3" />
++              alt="Download Medick version 0.3.0pre1" 
++              title="Download Medick version 0.3.0pre1" />
+           </a>
+         </li>
+         <li>Want to know what is all about?<br />
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2006-07-08 14:19:12 UTC (rev 422)
++++ trunk/libs/action/controller/Injector.php	2006-07-09 14:35:03 UTC (rev 423)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-07-08 14:19:12 UTC (rev 422)
++++ trunk/libs/active/record/Base.php	2006-07-09 14:35:03 UTC (rev 423)
+@@ -195,7 +195,7 @@
+      * </ul>
+      * 
+      * @TODO: more checks on before_ / after_ filters
+-     * @see Validator, Fields
++     * @see Validator, Field
+      * @throws MedickException if the called method is not defined (similar with php error)
+      */ 
+     public function __call($method, $args) {
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-07-08 14:19:12 UTC (rev 422)
++++ trunk/libs/medick/Medick.php	2006-07-09 14:35:03 UTC (rev 423)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.3.0pre1';
++        return '0.3.0pre2-svn';
+     }
+ 
+ }
+
+
+
+From aurelian at berlios.de  Sat Jul  8 16:02:13 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 8 Jul 2006 16:02:13 +0200
+Subject: [Medick-svn] r421 - trunk/libs/active/record
+Message-ID: <200607081402.k68E2DFL005914@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-08 16:02:12 +0200 (Sat, 08 Jul 2006)
+New Revision: 421
+
+Modified:
+   trunk/libs/active/record/Validator.php
+Log:
+ -- fixed package name
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2006-07-08 13:51:36 UTC (rev 420)
++++ trunk/libs/active/record/Validator.php	2006-07-08 14:02:12 UTC (rev 421)
+@@ -165,7 +165,7 @@
+  * </code>
+  * 
+  * @see Validator, ActiveRecord, Field, preg_match
+- * @package active.record
++ * @package medick.active.record
+  * @subpackage validator
+  * @author Oancea Aurelian
+  */
+@@ -219,7 +219,7 @@
+  * </code>
+  * 
+  * @see Validator, ActiveRecord, Field
+- * @package active.record
++ * @package medick.active.record
+  * @subpackage validator
+  * @author Oancea Aurelian
+  */ 
+@@ -258,7 +258,7 @@
+  * @TODO: test this with float values
+  * 
+  * @see Validator, ActiveRecord, Field, is_numeric, intvalue
+- * @package active.record
++ * @package medick.active.record
+  * @subpackage validator
+  * @author Oancea Aurelian
+  */ 
+@@ -295,7 +295,7 @@
+  * </code>
+  * 
+  * @see Validator, ActiveRecord, Field
+- * @package active.record
++ * @package medick.active.record
+  * @subpackage validator
+  * @author Oancea Aurelian
+  */ 
+@@ -350,7 +350,7 @@
+  * </code>
+  * 
+  * @see Validator, ActiveRecord, Field
+- * @package active.record
++ * @package medick.active.record
+  * @subpackage validator
+  * @author Oancea Aurelian
+  */ 
+@@ -450,4 +450,4 @@
+     }
+ 
+ }
+- 
++
+
+
+
+From aurelian at mail.berlios.de  Sun Jul 23 14:20:57 2006
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Sun, 23 Jul 2006 14:20:57 +0200
+Subject: [Medick-svn] r425 - applications/cookbook/conf
+	applications/eltodo/conf applications/testor/conf trunk
+	trunk/bin trunk/libs/active/record trunk/libs/configurator
+	trunk/skel trunk/skel/app trunk/skel/config trunk/skel/db
+	trunk/skel/public trunk/skel/public/stylesheet
+Message-ID: <200607231220.k6NCKvsX010259@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-23 14:20:32 +0200 (Sun, 23 Jul 2006)
+New Revision: 425
+
+Added:
+   applications/cookbook/conf/database.ini
+   applications/eltodo/conf/database.ini
+   applications/testor/conf/database.ini
+   trunk/skel/app/
+   trunk/skel/app/app_controller.php
+   trunk/skel/config/database.ini
+   trunk/skel/db/
+   trunk/skel/db/schema.sql
+   trunk/skel/public/index.html
+   trunk/skel/public/stylesheet/medick.css
+Modified:
+   applications/cookbook/conf/cookbook.xml
+   applications/eltodo/conf/eltodo.xml
+   applications/testor/conf/testor.xml
+   trunk/CHANGELOG
+   trunk/bin/medick.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/configurator/IConfigurator.php
+   trunk/libs/configurator/XMLConfigurator.php
+   trunk/skel/config/application.xml
+Log:
+ -- moved database configuration settings from xml file to database.ini file
+ -- updated applications to use the new database configurations
+ -- refactored bin/medick.php
+
+
+Modified: applications/cookbook/conf/cookbook.xml
+===================================================================
+--- applications/cookbook/conf/cookbook.xml	2006-07-15 11:50:01 UTC (rev 424)
++++ applications/cookbook/conf/cookbook.xml	2006-07-23 12:20:32 UTC (rev 425)
+@@ -47,14 +47,6 @@
+             </outputters>
+         </logger>
+         <!-- database(s) settings -->
+-        <database default="one">
+-            <dsn id = "one"
+-                 phptype  = "mysql"
+-                 hostspec = "localhost"
+-                 database = "cookbook"
+-                 username = "root"
+-                 password = "virus" />
+-        </database>
+     </environment>
+ 
+     <!-- a sample test environment -->
+@@ -83,12 +75,6 @@
+                 </outputter>
+             </outputters>
+         </logger>
+-        <!-- database(s) settings -->
+-        <database default="one">
+-            <dsn id = "one"
+-                 phptype  = "sqlite"
+-                 database = "/wwwroot/medick/applications/cookbook/db/cookbook-sqlite.db" />
+-        </database>
+     </environment>
+   
+ </application>
+
+Added: applications/cookbook/conf/database.ini
+===================================================================
+--- applications/cookbook/conf/database.ini	2006-07-15 11:50:01 UTC (rev 424)
++++ applications/cookbook/conf/database.ini	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,34 @@
++;
++; $Id$
++;
++
++; 
++; database.ini format:
++; [section] -> environment name
++; phptype -> database connection driver 
++; database -> database name
++; username -> username
++; password -> password
++; Connection flags:
++; persistent=PERSISTENT to mark the connection as beeing persistent
++;
++
++[localhost]
++phptype=mysql
++hostspec=localhost
++database=cookbook
++username=root
++password=virus
++persistent=PERSISTENT
++
++[live]
++phptype=mysql
++hostspec=localhost
++database=cookbook
++username=cookbook
++password=sarl7jKa
++
++[test]
++phptype=sqlite
++database=db/cookbook.sqilte.db
++
+
+
+Property changes on: applications/cookbook/conf/database.ini
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/eltodo/conf/database.ini
+===================================================================
+--- applications/eltodo/conf/database.ini	2006-07-15 11:50:01 UTC (rev 424)
++++ applications/eltodo/conf/database.ini	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,34 @@
++;
++; $Id$
++;
++
++; 
++; database.ini format:
++; [section] -> environment name
++; phptype -> database connection driver 
++; database -> database name
++; username -> username
++; password -> password
++; Connection flags:
++; persistent=PERSISTENT to mark the connection as beeing persistent
++;
++
++[localhost]
++phptype=mysql
++hostspec=localhost
++database=eltodo
++username=root
++password=virus
++
++[live]
++phptype=mysql
++hostspec=localhost
++database=eltodo
++username=root
++password=sol89aNi
++
++[test]
++phptype=sqlite
++hostspec=localhost
++database=db/eltodo.sqilte.db
++
+
+
+Property changes on: applications/eltodo/conf/database.ini
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/eltodo/conf/eltodo.xml
+===================================================================
+--- applications/eltodo/conf/eltodo.xml	2006-07-15 11:50:01 UTC (rev 424)
++++ applications/eltodo/conf/eltodo.xml	2006-07-23 12:20:32 UTC (rev 425)
+@@ -29,15 +29,6 @@
+                 </outputter>
+             </outputters>
+         </logger>
+-        <!-- database(s) settings -->
+-        <database default="one">
+-            <dsn id = "one"
+-                 phptype  = "mysql"
+-                 hostspec = "localhost"
+-                 database = "eltodo"
+-                 username = "root"
+-                 password = "virus" />
+-        </database>
+     </environment>
+ 
+     <!-- a sample test environment -->
+@@ -66,12 +57,6 @@
+                 </outputter>
+             </outputters>
+         </logger>
+-        <!-- database(s) settings -->
+-        <database default="one">
+-            <dsn id = "one"
+-                 phptype  = "sqlite"
+-                 database = "/wwwroot/medick/applications/eltodo/db/eltodo-sqlite.db" />
+-        </database>
+     </environment>
+   
+ </application>
+
+Added: applications/testor/conf/database.ini
+===================================================================
+--- applications/testor/conf/database.ini	2006-07-15 11:50:01 UTC (rev 424)
++++ applications/testor/conf/database.ini	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,34 @@
++;
++; $Id$
++;
++
++; 
++; database.ini format:
++; [section] -> environment name
++; phptype -> database connection driver 
++; database -> database name
++; username -> username
++; password -> password
++; Connection flags:
++; persistent=PERSISTENT to mark the connection as beeing persistent
++;
++
++[gremlin]
++phptype=mysql
++hostspec=localhost
++database=testor
++username=root
++password=virus
++
++[testor]
++phptype=mysql
++hostspec=localhost
++database=testor
++username=root
++password=sol89aNi
++
++[test]
++phptype=sqlite
++hostspec=localhost
++database=db/testor.sqilte.db
++
+
+
+Property changes on: applications/testor/conf/database.ini
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/testor/conf/testor.xml
+===================================================================
+--- applications/testor/conf/testor.xml	2006-07-15 11:50:01 UTC (rev 424)
++++ applications/testor/conf/testor.xml	2006-07-23 12:20:32 UTC (rev 425)
+@@ -32,15 +32,6 @@
+                 </outputter>
+             </outputters>
+         </logger>
+-        <!-- database(s) settings -->
+-        <database default="one">
+-            <dsn id = "one"
+-                 phptype  = "mysql"
+-                 hostspec = "localhost"
+-                 database = "testor"
+-                 username = "root"
+-                 password = "sacosica" />
+-        </database>
+     </environment>
+ 
+     <!-- a sample test environment -->
+@@ -69,15 +60,6 @@
+                 </outputter>
+             </outputters>
+         </logger>
+-        <!-- database(s) settings -->
+-        <database default="one">
+-            <dsn id = "one"
+-                phptype  = "pgsql"
+-                hostspec = "localhost"
+-                username = "albeit"
+-                password = "pri$6g"
+-                database = "testor" />
+-        </database>
+     </environment>
+   
+ </application>
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/CHANGELOG	2006-07-23 12:20:32 UTC (rev 425)
+@@ -1,6 +1,10 @@
+ $Id$
+ (*) SVN version
+ 
++0.3.0pre2-svn (*)
++    - refactored bin/medick.php
++    - moved database configuration settings from xml configuration file to database.ini  
++
+ 0.3.0pre1 (08.Jul.2006)
+     - Implemented a new validation API
+     - (fixed): Request::toString for multiple level array 
+
+Modified: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/bin/medick.php	2006-07-23 12:20:32 UTC (rev 425)
+@@ -108,12 +108,21 @@
+                               => 'scripts'. DIRECTORY_SEPARATOR . 'generator.php',
+   'skel' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'application.xml'
+                               => 'conf'   . DIRECTORY_SEPARATOR . $short_name.'.xml',
++  'skel' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'database.ini'
++                              => 'conf'   . DIRECTORY_SEPARATOR . 'database.ini',
++  'skel' . DIRECTORY_SEPARATOR . 'db'     . DIRECTORY_SEPARATOR . 'schema.sql'
++                              => 'db'     . DIRECTORY_SEPARATOR . 'schema.sql',
++  'skel' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'index.html'
++                              => 'public' . DIRECTORY_SEPARATOR . 'index.html',
++  'skel' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'stylesheet' . DIRECTORY_SEPARATOR . 'medick.css'
++                              => 'public' . DIRECTORY_SEPARATOR . 'stylesheet' . DIRECTORY_SEPARATOR . $short_name . '.css',
++  'skel' . DIRECTORY_SEPARATOR . 'app'    . DIRECTORY_SEPARATOR . 'app_controller.php'
++                              => 'app'    . DIRECTORY_SEPARATOR . 'controllers' . DIRECTORY_SEPARATOR . 'application.php',
+   'skel' . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'application.routes.php'
+                               => 'conf'   . DIRECTORY_SEPARATOR . $short_name.'.routes.php'
+ );
+ 
+ $search= array(
+-            // '${LOG}',
+             '${medick.core}',
+             '${app.path}',
+             '${app.name}',
+@@ -123,7 +132,6 @@
+           );
+ 
+ $replace= array(
+-            // $app_location.DIRECTORY_SEPARATOR.$folders['log'].DIRECTORY_SEPARATOR.$short_name.'.log',
+             $medick_core,
+             $app_location,
+             $short_name,
+@@ -138,75 +146,9 @@
+     write_file($contents, $app_location.DIRECTORY_SEPARATOR.$folders[$to].DIRECTORY_SEPARATOR.$orig);
+ }
+ 
+-// plain files.
++// plain file
+ write_file(' ',$app_location.DIRECTORY_SEPARATOR.$folders['log'].DIRECTORY_SEPARATOR.$short_name.'.log',0777);
+ 
+-$schema_sql=<<<EOSQL
+--- \$Id$
+--- Database Schema for $short_name project
+-
+-EOSQL;
+-
+-$css=<<<EOCSS
+-/* stylesheet for $short_name project */
+-/* \$Id$ */
+-
+-body {
+-    margin: 20px;
+-    padding: 20px;
+-    border: 1px solid black;
+-    font-family:verdana, arial, helvetica, sans-serif;
+-}
+-EOCSS;
+-
+-$index_html=<<<EOHTML
+-<html>
+-  <head>
+-    <!-- \$Id$ -->
+-    <title>Welcome to Medick!</title>
+-    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+-    <style>
+-      body { margin: 20px; padding: 20px; border: 1px solid black; font-family:verdana, arial, helvetica, sans-serif; }
+-    </style>
+-  </head>
+-  <body>
+-    <h3><center>Welcome To Medick</center></h3>
+-    <p><b>Application:</b> $short_name</p>
+-    <p><b>Develop $short_name on: </b>$app_location</p>
+-    <p>Setup the WELCOME route in
+-        <i>$app_location/config/$short_name.routes.php</i>, <br />
+-        and remove this file ($app_location/public/index.html).
+-    </p>
+-    <p>Ask for support on medick <a href="https://lists.berlios.de/mailman/listinfo/medick-devel">development list</a>.</p>
+-  </body>
+-</html>
+-
+-EOHTML;
+-
+-$application_controller=<<<EOCLASS
+-<?php
+-
+-  /**
+-   * This class is part of $short_name project
+-   *
+-   * Methods added here will be available in all your controllers.
+-   * \$Id$
+-   * @package $app_name.controllers
+-   */
+-  class ApplicationController extends ActionController {
+-
+-  }
+-
+-EOCLASS;
+-
+-write_file($index_html, $app_location.DIRECTORY_SEPARATOR.$folders['public'].DIRECTORY_SEPARATOR.'index.html');
+-
+-write_file($application_controller, $app_location.DIRECTORY_SEPARATOR.$folders['controllers'].DIRECTORY_SEPARATOR.'application.php');
+-
+-write_file($css, $app_location.DIRECTORY_SEPARATOR.$folders['css'].DIRECTORY_SEPARATOR.'medick.css');
+-
+-write_file($schema_sql,$app_location.DIRECTORY_SEPARATOR.$folders['db'].DIRECTORY_SEPARATOR.'schema.sql');
+-
+ echo "\nMedick (\$v: $medick_version) [ DONE ].\n";
+ 
+ ?>
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/libs/active/record/Base.php	2006-07-23 12:20:32 UTC (rev 425)
+@@ -33,7 +33,6 @@
+ // }}}
+ 
+ // ActiveRecord dependencies.
+-// include_once('active/record/DatabaseRow.php');
+ include_once('active/record/Field.php');
+ include_once('active/record/RowsAggregate.php');
+ include_once('active/record/QueryBuilder.php');
+@@ -45,6 +44,13 @@
+ include_once('creole/Creole.php');
+ include_once('creole/CreoleTypes.php');
+ 
++
++/**
++ * Cached Database table information
++ * 
++ * @package medick.active.record
++ * @author Oancea Aurelian
++ */ 
+ class ActiveRecordTableInfo extends Object {
+     static $instance= NULL;
+     static function getInstance(Connection $conn, $table_name) {
+@@ -312,6 +318,11 @@
+                );
+     }
+     
++    /**
++     * Check if this object has errors
++     *
++     * @return bool TRUE if it has
++     */ 
+     public function hasErrors() {
+         return sizeof($this->errors) > 0;
+     }
+@@ -321,7 +332,6 @@
+     }
+     
+     public function isValid($force= FALSE) {
+-        // return $this->collect_errors() === 0;
+         if ($this->collected) return !$this->hasErrors();
+         else return $this->collect_errors($force) === 0;
+     }
+@@ -667,6 +677,7 @@
+ 
+     /**
+      * Merge ResultSet into RowsAggregate
++     *
+      * @return RowsAggregate
+      */ 
+     protected static function fetch_all(ResultSet $rs, ReflectionClass $class) {
+@@ -679,18 +690,13 @@
+     }
+ 
+     /**
+-     * Establish A Database Connection
++     * It gets a Creole Database Connection
+      *
+-     * @return Creole database connection
+-     * @deprecate use ActiveRecord::connection, I want to use short names
+-     */
+-    public static function establish_connection() {
+-        return ActiveRecord::connection();
+-    }
+-
++     * @return Connection 
++     */ 
+     protected static function connection() {
+         if (ActiveRecord::$conn === NULL) {
+-            ActiveRecord::$conn = Creole::getConnection(Registry::get('__configurator')->getDatabaseDsn());
++            ActiveRecord::$conn = Creole::getConnection(ActiveRecord::parse_dsn());
+         }
+         return ActiveRecord::$conn;
+     }
+@@ -699,8 +705,22 @@
+      * Close the Database Connection
+      */
+     public static function close_connection() {
+-        ActiveRecord::$conn= Creole::getConnection(Registry::get('__configurator')->getDatabaseDsn())->close();
++        ActiveRecord::$conn= Creole::getConnection(ActiveRecord::parse_dsn())->close();
+     }
++    
++    /**
++     * Parse database.ini file to get a proper dsn
++     * 
++     * @return array
++     */ 
++    private static function parse_dsn() {
++        $ini_file= Registry::get('__configurator')->getApplicationPath() . DIRECTORY_SEPARATOR . 'conf' . DIRECTORY_SEPARATOR . 'database.ini';
++        if (!is_file($ini_file)) {
++            throw new ActiveRecordException('Cannot load database settings from: ' . $ini_file . ' No such file or directory!');
++        }
++        $settings= parse_ini_file($ini_file, true);
++        return $settings[Registry::get('__configurator')->getEnvName()];
++    }
+     // }}}
+ }
+ 
+
+Modified: trunk/libs/configurator/IConfigurator.php
+===================================================================
+--- trunk/libs/configurator/IConfigurator.php	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/libs/configurator/IConfigurator.php	2006-07-23 12:20:32 UTC (rev 425)
+@@ -48,6 +48,8 @@
+  * From medick 0.2, the options will be splitted based on context, and we will
+  * provide web specific configuration section as well as logger and database contextes.
+  * 
++ * From medick 0.3.0 this class and the old configuration methods will be removed
++ * 
+  * @package medick.configurator
+  * @see XMLConfigurator
+  * @see LoggerConfigurator
+@@ -69,31 +71,4 @@
+      */
+     function getLoggerFormatter();
+ 
+-    /**
+-     * Propery parser
+-     *
+-     * @param string the property name
+-     * @return string, the property value
+-     * @throws ConfiguratorException if the property is not found
+-     */
+-    // function getProperty($name);
+-
+-    /**
+-     * Based on id we return the dsn array
+-     *
+-     * <code>
+-     *   // for Creole this dsn format will do the job:
+-     *   $dsn = array(
+-     *           'phptype'=>'mysql',
+-     *           'hostspec'=>'localhost',
+-     *           'username'=>'root',
+-     *           'password'=>'',
+-     *           'database'=>'test');
+-     * </code>
+-     * @param string the dsn id, if none is specified, we will use the default
+-     * @return array a dsn ready to use with Creole
+-     * @throws ConfiguratorException if the id is not found
+-     */
+-    function getDatabaseDsn($id = FALSE);
+ }
+-
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/libs/configurator/XMLConfigurator.php	2006-07-23 12:20:32 UTC (rev 425)
+@@ -37,6 +37,8 @@
+ /**
+  * XML file-based Configurator
+  * 
++ * From medick 0.3.0 this class will be removed due to the new way of configurating a medick application!
++ *
+  * @package medick.configurator
+  * @author Oancea Aurelian
+  */
+@@ -54,6 +56,8 @@
+         configuration file */
+     protected $config_file;
+     
++    protected $environment;
++    
+     /**
+      * Constructor
+      * 
+@@ -74,22 +78,13 @@
+         }
+         $this->application_name= $xmlelement['name'];
+         $this->config_file = $stream;
+-        /*
+-        if (file_exists($xml)) {
+-            if (is_readable($xml)) {
+-                $this->sxe = simplexml_load_file($xml, 'SimpleXMLIterator');
+-            } else {
+-                throw new IOException("Cannot read: " . $xml . " Permission deny");
+-            }
+-        } else {
+-            $this->sxe = @simplexml_load_string($xml, 'SimpleXMLIterator');
+-        }
+-        if ($this->sxe === false) {
+-            throw new ConfiguratorException("Cannot read: " . $xml . " Bad Format!");
+-        }
+-        */
++        $this->environment = $env;
+     }
+ 
++    public function getEnvName() {
++        return $this->environment;
++    }
++    
+     public function getApplicationName() {
+         return $this->application_name;
+     }
+@@ -107,42 +102,6 @@
+     }
+     
+     /**
+-     * Configuration Example:
+-     * <code>
+-     *   <database default="foo">
+-     *     <dsn id="one"
+-     *          phptype  = "mysql"
+-     *          hostspec = "localhost"
+-     *          database = "baz"
+-     *          username = "root"
+-     *          password = "zzz" />
+-     *     <dsn id = "foo"
+-     *          phptype  = "pgsql"
+-     *          hostspec = "192.18.1.1"
+-     *          database ="test"
+-     *          username ="antonescu"
+-     *          password ="x-creeme" />
+-     *   </database>
+-     * </code>
+-     * @see IConfigurator::getDatabaseDsn()
+-     */
+-    public function getDatabaseDsn($id = FALSE) {
+-        if (!$id) $id = $this->sxe->database['default'];
+-        foreach( $this->sxe->database->dsn as  $dsn ) {
+-            if($dsn['id']==$id){
+-                return array (
+-                    'phptype'  => (string)trim($dsn['phptype']),
+-                    'hostspec' => (string)trim($dsn['hostspec']),
+-                    'username' => (string)trim($dsn['username']),
+-                    'password' => (string)trim($dsn['password']),
+-                    'database' => (string)trim($dsn['database'])
+-                );
+-            }
+-        }
+-        throw new ConfiguratorException('Database Id ' . $id . 'not found!');
+-    }
+-
+-    /**
+      * Configuration example:
+      * <code>
+      *   <logger>
+
+Added: trunk/skel/app/app_controller.php
+===================================================================
+--- trunk/skel/app/app_controller.php	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/skel/app/app_controller.php	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,13 @@
++<?php
++
++/**
++ * This class is part of ${app.name} project
++ *
++ * Methods added here will be available in all your controllers.
++ * $Id$
++ * @package ${app.name}.controllers
++ */
++class ApplicationController extends ActionController {
++
++}
++
+
+
+Property changes on: trunk/skel/app/app_controller.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/skel/config/application.xml
+===================================================================
+--- trunk/skel/config/application.xml	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/skel/config/application.xml	2006-07-23 12:20:32 UTC (rev 425)
+@@ -46,15 +46,6 @@
+                 </outputter>
+             </outputters>
+         </logger>
+-        <!-- database(s) settings -->
+-        <database default="one">
+-            <dsn id = "one"
+-                 phptype  = "mysql"
+-                 hostspec = "localhost"
+-                 database = "${app.name}"
+-                 username = "root"
+-                 password = "" />
+-        </database>
+     </environment>
+ 
+     <!-- a sample test environment -->
+@@ -83,12 +74,6 @@
+                 </outputter>
+             </outputters>
+         </logger>
+-        <!-- database(s) settings -->
+-        <database default="one">
+-            <dsn id = "one"
+-                 phptype  = "sqlite"
+-                 database = "${app.path}${ds}db${ds}${app.name}-sqlite.db" />
+-        </database>
+     </environment>
+   
+ </application>
+
+Added: trunk/skel/config/database.ini
+===================================================================
+--- trunk/skel/config/database.ini	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/skel/config/database.ini	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,26 @@
++;
++; $Id$
++;
++
++; 
++; database.ini format:
++; [section] -> environment name
++; phptype -> database connection driver 
++; database -> database name
++; username -> username
++; password -> password
++; Connection flags:
++; persistent=PERSISTENT to mark the connection as beeing persistent
++;
++
++[localhost]
++phptype=mysql
++hostspec=localhost
++database=${app.name}
++username=root
++password=virus
++
++[test]
++phptype=sqlite
++database=db/${app.name}.sqilte.db
++
+
+
+Property changes on: trunk/skel/config/database.ini
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/skel/db/schema.sql
+===================================================================
+--- trunk/skel/db/schema.sql	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/skel/db/schema.sql	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,6 @@
++--
++-- $Id$
++--
++-- Database SQL schema for ${app.name}
++-- 
++
+
+
+Property changes on: trunk/skel/db/schema.sql
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/skel/public/index.html
+===================================================================
+--- trunk/skel/public/index.html	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/skel/public/index.html	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,25 @@
++<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN" 
++"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
++<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
++  <head>
++    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
++    <meta name="Generator"   content="${medick.version}" />
++    <meta name="Keywords"    content="" />
++    <meta name="Description" content="" />
++    <meta name="robots"      content="" />
++    <link rel="stylesheet" href="stylesheet/${app.name}.css" type="text/css" media="all" />      
++    <title>Welcome to Medick!</title>
++    <!-- $Id$ -->
++  </head>
++  <body>
++    <h3 style="text-align:center">Welcome To Medick</h3>
++    <p><b>Application:</b> ${app.name}</p>
++    <p><b>Develop ${app.name} on: </b>${app.path}</p>
++    <p>Setup the WELCOME route in
++    <i>${app.path}/config/${app.name}.routes.php</i>, <br />
++        and remove this file (${app.path}/public/index.html).
++    </p>
++    <p>Ask for support on medick <a href="http://lists.berlios.de/mailman/listinfo/medick-devel">development list</a>.</p>
++  </body>
++</html>
++
+
+
+Property changes on: trunk/skel/public/index.html
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: trunk/skel/public/stylesheet/medick.css
+===================================================================
+--- trunk/skel/public/stylesheet/medick.css	2006-07-15 11:50:01 UTC (rev 424)
++++ trunk/skel/public/stylesheet/medick.css	2006-07-23 12:20:32 UTC (rev 425)
+@@ -0,0 +1,13 @@
++/*
++ * $Id$
++ * 
++ * stylesheet for ${app.name} project
++ */
++
++body {
++  margin: 20px;
++  padding: 20px;
++  border: 1px solid black;
++  font-family:verdana, arial, helvetica, sans-serif;
++}
++
+
+
+Property changes on: trunk/skel/public/stylesheet/medick.css
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at mail.berlios.de  Sun Jul 23 15:40:15 2006
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Sun, 23 Jul 2006 15:40:15 +0200
+Subject: [Medick-svn] r426 - in trunk: . bin libs/medick
+Message-ID: <200607231340.k6NDeFCX018332@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-23 15:40:13 +0200 (Sun, 23 Jul 2006)
+New Revision: 426
+
+Modified:
+   trunk/CHANGELOG
+   trunk/VERSION
+   trunk/bin/medick.php
+   trunk/libs/medick/Medick.php
+Log:
+ -- added overwrite feature to medick.php script, preparing to release pre2
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-07-23 12:20:32 UTC (rev 425)
++++ trunk/CHANGELOG	2006-07-23 13:40:13 UTC (rev 426)
+@@ -1,9 +1,9 @@
+ $Id$
+ (*) SVN version
+ 
+-0.3.0pre2-svn (*)
+-    - refactored bin/medick.php
++0.3.0pre2-svn (23.Jul.2006)
+     - moved database configuration settings from xml configuration file to database.ini  
++    - refactored bin/medick.php, now it also includes a overwrite feature
+ 
+ 0.3.0pre1 (08.Jul.2006)
+     - Implemented a new validation API
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-07-23 12:20:32 UTC (rev 425)
++++ trunk/VERSION	2006-07-23 13:40:13 UTC (rev 426)
+@@ -1 +1 @@
+-0.3.0pre2-svn
++0.3.0pre2
+
+Modified: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2006-07-23 12:20:32 UTC (rev 425)
++++ trunk/bin/medick.php	2006-07-23 13:40:13 UTC (rev 426)
+@@ -20,6 +20,15 @@
+ function write_file($contents, $to, $mode= FALSE) {
+     if (file_exists($to)) {
+         echo "\texists {$to}\n";
++        echo "Overwrite [Y/N]: ";
++        $answer= trim(fgets(STDIN));
++        if (in_array(strtoupper($answer), array('Y','YES'))) {
++            if(@file_put_contents($to, $contents)) {
++                echo "\toverwrote {$to}\n";
++            } else {
++                exit("Cannot overwrite {$to}, permissions?\n");
++            }
++        }
+     } else {
+         if(@file_put_contents($to, $contents)) {
+             echo "\tcreate {$to}\n";
+@@ -61,6 +70,14 @@
+     }
+ }
+ 
++
++$app_name= isset($argv[1]) ? $argv[1] : exit("No Application Location Specified.\n");
++$x = explode(DIRECTORY_SEPARATOR,$app_name); $short_name = end($x);
++$app_location= getcwd() . DIRECTORY_SEPARATOR . $app_name;
++echo "Creating application: $short_name\n";
++echo "Location: $app_location\n\n";
++mk_dir($app_location);
++
+ $folders= array(
+     'app'         =>'app',
+     'models'      =>'app' . DIRECTORY_SEPARATOR . 'models',
+@@ -80,17 +97,6 @@
+     'img'         =>'public' . DIRECTORY_SEPARATOR . 'images'
+   );
+ 
+-$app_name= isset($argv[1]) ? $argv[1] : exit("No Application Location Specified.\n");
+-
+-$x = explode(DIRECTORY_SEPARATOR,$app_name); $short_name = end($x);
+-
+-$app_location= getcwd() . DIRECTORY_SEPARATOR . $app_name;
+-
+-echo "Creating application: $short_name\n";
+-echo "Location:\n\t$app_location\n\n";
+-
+-mk_dir($app_location);
+-
+ foreach ($folders as $folder) {
+     mk_dir($app_location . DIRECTORY_SEPARATOR . $folder);
+ }
+@@ -98,7 +104,7 @@
+ copy_files($medick_core. DIRECTORY_SEPARATOR .
+             'skel'.DIRECTORY_SEPARATOR.'public'.DIRECTORY_SEPARATOR.'javascript'.DIRECTORY_SEPARATOR,
+             $app_location.DIRECTORY_SEPARATOR.$folders['js']);
+-
++            
+ $files= array(
+   'skel' . DIRECTORY_SEPARATOR . 'public' . DIRECTORY_SEPARATOR . 'index.php'
+                               => 'public' . DIRECTORY_SEPARATOR . 'index.php',
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-07-23 12:20:32 UTC (rev 425)
++++ trunk/libs/medick/Medick.php	2006-07-23 13:40:13 UTC (rev 426)
+@@ -52,7 +52,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.3.0pre2-svn';
++        return '0.3.0pre2';
+     }
+ 
+ }
+
+
+
+From aurelian at mail.berlios.de  Sun Jul 23 15:57:27 2006
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Sun, 23 Jul 2006 15:57:27 +0200
+Subject: [Medick-svn] r427 - trunk
+Message-ID: <200607231357.k6NDvRPI019705@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-23 15:57:27 +0200 (Sun, 23 Jul 2006)
+New Revision: 427
+
+Modified:
+   trunk/LICENSE
+   trunk/README
+Log:
+ -- updated
+
+Modified: trunk/LICENSE
+===================================================================
+--- trunk/LICENSE	2006-07-23 13:40:13 UTC (rev 426)
++++ trunk/LICENSE	2006-07-23 13:57:27 UTC (rev 427)
+@@ -1,7 +1,7 @@
+-    Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++Copyright (c) 2005, 2006 Oancea Aurelian <aurelian[at]locknet[dot]ro>
+ 
+-    Redistribution and use in source and binary forms, with or without
+-    modification, are permitted provided that the following conditions are met:
++Redistribution and use in source and binary forms, with or without
++modification, are permitted provided that the following conditions are met:
+ 
+     * Redistributions of source code must retain the above copyright notice,
+     this list of conditions and the following disclaimer.
+@@ -12,14 +12,14 @@
+     be used to endorse or promote products derived from this software without
+     specific prior written permission.
+ 
+-    THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-    AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-    IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-    DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-    FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-    DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-    SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-    CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-    OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+ 
+
+Modified: trunk/README
+===================================================================
+--- trunk/README	2006-07-23 13:40:13 UTC (rev 426)
++++ trunk/README	2006-07-23 13:57:27 UTC (rev 427)
+@@ -5,10 +5,11 @@
+ 
+ ABOUT:
+ ------
++    This is the README file for version 0.3.0pre2 of Medick released on 23.July.2006.
+     Medick is an open-source software licensed under a BSD-style licence, see LICENSE file for details.
+     Medick is a PHP 5 web framework, not a collection of PHP classes.
+-    Medick is alpha stage project, use it on your own risk. Function names or framework workflow might change without prior notice.
+-    This is the README file for version 0.3.0pre1 of medick released on 08.July.2006.
++    Medick is alpha stage project, use it on your own risk. 
++    Function names or framework workflow might change without prior notice.
+ 
+ REQUIREMENTS:
+ -------------
+
+
+
+From aurelian at mail.berlios.de  Tue Jul 25 21:14:10 2006
+From: aurelian at mail.berlios.de (aurelian at BerliOS)
+Date: Tue, 25 Jul 2006 21:14:10 +0200
+Subject: [Medick-svn] r428 - trunk/libs/creole
+Message-ID: <200607251914.k6PJEAhx001996@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-07-25 21:14:08 +0200 (Tue, 25 Jul 2006)
+New Revision: 428
+
+Modified:
+   trunk/libs/creole/CreoleTypes.php
+Log:
+ -- fixed php 5.2 issues with abstract static methods
+
+Modified: trunk/libs/creole/CreoleTypes.php
+===================================================================
+--- trunk/libs/creole/CreoleTypes.php	2006-07-23 13:57:27 UTC (rev 427)
++++ trunk/libs/creole/CreoleTypes.php	2006-07-25 19:14:08 UTC (rev 428)
+@@ -121,7 +121,9 @@
+          * @param string $nativeType DB native type (e.g. 'TEXT', 'byetea', etc.).
+          * @return int Creole native type (e.g. Types::LONGVARCHAR, Types::BINARY, etc.).
+          */
+-        abstract static function getType($nativeType);
++        static function getType($nativeType) {
++            throw new Exception(__METHOD__ . " should be implemented in child classes!");
++        }
+         
+         /**
+          * This method will return a native type that corresponds to the specified
+@@ -130,7 +132,9 @@
+          * native type will be returned.
+          * @return string Native type string.
+          */
+-        abstract static function getNativeType($creoleType);
++        static function getNativeType($creoleType) {
++            throw new Exception(__METHOD__ . " should be implemented in child classes!");
++        }
+         
+         /**
+          * Gets the "affix" to use for ResultSet::get*() and PreparedStatement::set*() methods.
+
+
+

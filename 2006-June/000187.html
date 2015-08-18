@@ -1,0 +1,94 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r404 - trunk/libs/action/view
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r404%20-%20trunk/libs/action/view&In-Reply-To=%3C200606081149.k58Bnwxq030380%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000186.html">
+   <LINK REL="Next"  HREF="000188.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r404 - trunk/libs/action/view</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r404%20-%20trunk/libs/action/view&In-Reply-To=%3C200606081149.k58Bnwxq030380%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r404 - trunk/libs/action/view">aurelian at berlios.de
+       </A><BR>
+    <I>Thu Jun  8 13:49:58 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000186.html">[Medick-svn] r403 - in trunk: . libs/action/controller libs/action/controller/http libs/action/view libs/active/record
+</A></li>
+        <LI>Next message: <A HREF="000188.html">[Medick-svn] r405 - trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#187">[ date ]</a>
+              <a href="thread.html#187">[ thread ]</a>
+              <a href="subject.html#187">[ subject ]</a>
+              <a href="author.html#187">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-06-08 13:49:55 +0200 (Thu, 08 Jun 2006)
+New Revision: 404
+
+Modified:
+   trunk/libs/action/view/Base.php
+Log:
+ -- added some debug methods for ActionView:::Base
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2006-06-07 08:37:46 UTC (rev 403)
++++ trunk/libs/action/view/Base.php	2006-06-08 11:49:55 UTC (rev 404)
+@@ -179,6 +179,18 @@
+         return array_key_exists($name,$this-&gt;vars) ?
+                  $this-&gt;vars[$name] : trigger_error(&quot;Undefined Template Variable: &quot; . $name, E_USER_ERROR);
+     }
++    
++    public function dump($name='') {
++      echo '&lt;div style=&quot;color:#000;background-color:#FFF;&quot;&gt;&lt;pre&gt;';var_dump($name==''?$this-&gt;vars:$this-&gt;vars[$name]);echo '&lt;/pre&gt;&lt;/div&gt;';
++    }
++    
++    public function defined_vars() {
++      echo '&lt;div style=&quot;color:#000;background-color:#FFF;&quot;&gt;&lt;pre&gt;';
++      foreach ($this-&gt;vars as $name=&gt;$value) {
++        echo $name . &quot;\n&quot;;
++      }
++      echo '&lt;/pre&gt;&lt;/div&gt;';
++    }
+ 
+ }
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000186.html">[Medick-svn] r403 - in trunk: . libs/action/controller libs/action/controller/http libs/action/view libs/active/record
+</A></li>
+	<LI>Next message: <A HREF="000188.html">[Medick-svn] r405 - trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#187">[ date ]</a>
+              <a href="thread.html#187">[ thread ]</a>
+              <a href="subject.html#187">[ subject ]</a>
+              <a href="author.html#187">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

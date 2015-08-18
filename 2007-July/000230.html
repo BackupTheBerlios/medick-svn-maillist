@@ -1,0 +1,119 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r450 - trunk/libs/action/controller
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r450%20-%20trunk/libs/action/controller&In-Reply-To=%3C200707231819.l6NIJsVv018491%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000228.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r450 - trunk/libs/action/controller</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r450%20-%20trunk/libs/action/controller&In-Reply-To=%3C200707231819.l6NIJsVv018491%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r450 - trunk/libs/action/controller">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Mon Jul 23 20:19:54 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000228.html">[Medick-svn] r449 - trunk/libs/context/configurator
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#230">[ date ]</a>
+              <a href="thread.html#230">[ thread ]</a>
+              <a href="subject.html#230">[ subject ]</a>
+              <a href="author.html#230">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-07-23 20:19:53 +0200 (Mon, 23 Jul 2007)
+New Revision: 450
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Injector.php
+Log:
+ -- catch the exception in Injector
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2007-07-23 17:56:27 UTC (rev 449)
++++ trunk/libs/action/controller/Base.php	2007-07-23 18:19:53 UTC (rev 450)
+@@ -380,17 +380,14 @@
+      * @return void
+      */
+     protected function render_file($template_file, $status = NULL) {
+-
+         if (!is_file($template_file)) {
+             throw new FileNotFoundException ('Cannot render unexistent template file:' . $template_file);
+         }
+-
+-        try {
+-            $this-&gt;injector-&gt;inject('helper', $this-&gt;params['controller']);
+-        } catch (FileNotFoundException $fnfEx) {
+-            $this-&gt;logger-&gt;info('Skiped helper: ' . $this-&gt;params['controller'] . '_helper.php');
+-        }
++        // load helper
++        $this-&gt;injector-&gt;inject('helper', $this-&gt;params['controller']);
++        // register flash
+         $this-&gt;register_flash();
++        
+         if ($this-&gt;use_layout) {
+             $layout= $this-&gt;use_layout === TRUE ? $this-&gt;params['controller'] : $this-&gt;use_layout;
+             $layout_file= $this-&gt;injector-&gt;getPath('layouts') . $layout . '.phtml';
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2007-07-23 17:56:27 UTC (rev 449)
++++ trunk/libs/action/controller/Injector.php	2007-07-23 18:19:53 UTC (rev 450)
+@@ -216,7 +216,11 @@
+         $helper_file= $this-&gt;path['helpers'] . $name . '_helper.php';
+         $this-&gt;logger-&gt;debug('[Medick] &gt;&gt; Loading Helper `' . $name . '` from ' .
+             str_replace( $this-&gt;config-&gt;getApplicationPath(), '${'. $this-&gt;config-&gt;getApplicationName() .'}', $helper_file) );
+-        return $this-&gt;includeFile($helper_file, $name . '_helper.php');
++        try {    
++          return $this-&gt;includeFile( $helper_file, $name . '_helper.php' );
++        } catch (FileNotFoundException $fnfEx) {
++          $this-&gt;logger-&gt;info( sprintf('[Medick] &gt;&gt; Skipped missing helper %s', $name) );
++        }
+     }
+ 
+     /**
+@@ -236,4 +240,3 @@
+         }
+     }
+ }
+-
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000228.html">[Medick-svn] r449 - trunk/libs/context/configurator
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#230">[ date ]</a>
+              <a href="thread.html#230">[ thread ]</a>
+              <a href="subject.html#230">[ subject ]</a>
+              <a href="author.html#230">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

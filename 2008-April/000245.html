@@ -1,0 +1,140 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r465 - trunk/libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2008-April/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r465%20-%20trunk/libs/active/record&In-Reply-To=%3C200804081136.m38BaHlK025141%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000244.html">
+   <LINK REL="Next"  HREF="000246.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r465 - trunk/libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r465%20-%20trunk/libs/active/record&In-Reply-To=%3C200804081136.m38BaHlK025141%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r465 - trunk/libs/active/record">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Tue Apr  8 13:36:17 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000244.html">[Medick-svn] r464 - trunk/libs/active/record
+</A></li>
+        <LI>Next message: <A HREF="000246.html">[Medick-svn] r466 - in trunk/libs: action/controller active/support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#245">[ date ]</a>
+              <a href="thread.html#245">[ thread ]</a>
+              <a href="subject.html#245">[ subject ]</a>
+              <a href="author.html#245">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2008-04-08 13:36:16 +0200 (Tue, 08 Apr 2008)
+New Revision: 465
+
+Modified:
+   trunk/libs/active/record/Validator.php
+Log:
+ -- added InclusionOfValidator
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2008-04-07 19:25:31 UTC (rev 464)
++++ trunk/libs/active/record/Validator.php	2008-04-08 11:36:16 UTC (rev 465)
+@@ -207,6 +207,64 @@
+ }
+ 
+ /**
++ * Validates the inclusion of a given ActiveRecord Field in a given array
++ *
++ * Validation is done with php function in_array&lt;br /&gt;
++ * Default error message is &lt;b&gt;%s not in [%s]!&lt;/b&gt;&lt;br /&gt;
++ * Use Validator::message method to provide you custom error message&lt;br /&gt;
++ *
++ * &lt;code&gt;
++ * $this-&gt;validates_inclusion_of('type')-&gt;in( array('sale', 'rent') );
++ * &lt;/code&gt;
++ *
++ * Note:&lt;br /&gt;
++ *
++ * In the above example, the value of type should be 1 or 0 in order to pass the validation, so array_keys are used&lt;br /&gt;
++ * This type of validation works best with HTML select form elements.
++ * 
++ * @see Validator, ActiveRecord, Field, preg_match
++ * @package medick.active.record
++ * @subpackage validator
++ * @author Aurelian Oancea
++ */
++
++class InclusionOfValidator extends Validator {
++
++    /** @var string
++        default error message */
++    protected $message = '%s not in [%s]';
++    
++    /** @var array
++        the inclusion array */
++    private $in = array();
++
++    /**
++     * Assigns the array
++     *
++     * @param array
++     * @return InclusionOfValidator
++     */ 
++    public function in(Array $arr= array()) {
++      $this-&gt;in= $arr;
++      return $this;
++    }
++
++    /**
++     * Performs the validation
++     *
++     * Note: the array_keys of the inclusion array is used!
++     * @see Vlaidator::validates
++     * @return void
++     */ 
++    public function validate(Field $field) {
++      if(!in_array($field-&gt;getValue(), array_keys($this-&gt;in))) {
++        $field-&gt;addError(sprintf($this-&gt;message, $field-&gt;getFormattedName(), join($this-&gt;in, ',')));
++      }
++    }
++
++}
++
++/**
+  * Validates the presence of a given ActiveRecord Field
+  *
+  * Validation is done by comparing Field value with empty string&lt;br /&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000244.html">[Medick-svn] r464 - trunk/libs/active/record
+</A></li>
+	<LI>Next message: <A HREF="000246.html">[Medick-svn] r466 - in trunk/libs: action/controller active/support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#245">[ date ]</a>
+              <a href="thread.html#245">[ thread ]</a>
+              <a href="subject.html#245">[ subject ]</a>
+              <a href="author.html#245">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

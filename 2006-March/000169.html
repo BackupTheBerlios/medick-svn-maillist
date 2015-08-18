@@ -1,0 +1,199 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r385 - trunk/libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r385%20-%20trunk/libs/active/record&In-Reply-To=%3C200603251704.k2PH4Gvp004920%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000168.html">
+   <LINK REL="Next"  HREF="000170.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r385 - trunk/libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r385%20-%20trunk/libs/active/record&In-Reply-To=%3C200603251704.k2PH4Gvp004920%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r385 - trunk/libs/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Mar 25 18:04:16 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000168.html">[Medick-svn] r384 - applications/testor/app/helpers applications/testor/app/views/layouts applications/testor/app/views/main applications/testor/app/views/strone applications/testor/app/views/tone applications/testor/public/stylesheet trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record
+</A></li>
+        <LI>Next message: <A HREF="000170.html">[Medick-svn] r386 - applications/testor/app/controllers applications/testor/app/views applications/testor/app/views/req applications/testor/conf applications/testor/db trunk trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#169">[ date ]</a>
+              <a href="thread.html#169">[ thread ]</a>
+              <a href="subject.html#169">[ subject ]</a>
+              <a href="author.html#169">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-03-25 18:04:15 +0100 (Sat, 25 Mar 2006)
+New Revision: 385
+
+Modified:
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Validator.php
+Log:
+ -- cosmethic changes.
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-03-23 20:17:46 UTC (rev 384)
++++ trunk/libs/active/record/Base.php	2006-03-25 17:04:15 UTC (rev 385)
+@@ -346,16 +346,9 @@
+      * &lt;/code&gt;
+      */
+     public final function save() {
+-        $logger= Registry::get('__logger');
+-        if ( !$this-&gt;before_save() ) {
+-            $logger-&gt;info('Before Save Failed!');
++        if ( !$this-&gt;before_save() or count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+             return false;
+         }
+-        if (count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+-            $logger-&gt;info('Object has Errors!');
+-            return false;
+-        }
+-
+         if ($this-&gt;row-&gt;getPrimaryKey()-&gt;isAffected) {
+             return $this-&gt;update();
+         } else {
+@@ -380,16 +373,9 @@
+      * @throws SQLException
+      */
+     public final function insert() {
+-        $logger= Registry::get('__logger');
+-        if ( !$this-&gt;before_insert() ) {
+-            $logger-&gt;info('Before Save Failed!');
++        if ( !$this-&gt;before_insert() or count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+             return false;
+         }
+-        if (count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+-            $logger-&gt;info('Object has Errors!');
+-            return false;
+-        }
+-
+         $af_rows = $this-&gt;performQuery($this-&gt;getInsertSql());
+         $id = $this-&gt;getNextId();
+         $this-&gt;after_insert();
+@@ -414,15 +400,9 @@
+      * @throws SQLException
+      */
+     public final function update() {
+-        $logger= Registry::get('__logger');
+-        if ( !$this-&gt;before_update() ) {
+-            $logger-&gt;info('Before Update Failed!');
++        if ( !$this-&gt;before_update() or count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+             return false;
+         }
+-        if (count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+-            $logger-&gt;info('Object has Errors!');
+-            return false;
+-        }
+         $af= $this-&gt;performQuery($this-&gt;getUpdateSql());
+         $this-&gt;after_update();
+         return $af;
+@@ -457,7 +437,6 @@
+         if (!$this-&gt;before_delete() || count($this-&gt;row-&gt;collectErrors()) &gt; 0) {
+             return false;
+         }
+-        
+         if ($this-&gt;row-&gt;getPrimaryKey() !== NULL &amp;&amp; $this-&gt;row-&gt;getPrimaryKey()-&gt;getValue()===NULL) {
+             throw new ActiveRecordException('Refusing to delete everything from ' . $this-&gt;table_name . ', Primary Key was NULL');
+         }
+@@ -525,7 +504,6 @@
+         foreach($this-&gt;row-&gt;getAffectedFields() as $field) {
+             $sql .= $field-&gt;getName() . ' = ?, ';
+         }
+-
+         return substr($sql, 0, -2) . $sqlSnippet;
+     }
+ 
+@@ -570,7 +548,6 @@
+             $class = new ReflectionClass($class_name);
+         }
+         ActiveRecord::establish_connection();
+-        Registry::get('__logger')-&gt;debug($builder-&gt;compile()-&gt;getQueryString());
+         $stmt = ActiveRecord::$conn-&gt;prepareStatement($builder-&gt;compile()-&gt;getQueryString());
+         $i=1; foreach($builder-&gt;getBindings() as $binding) {
+             $stmt-&gt;set($i++, $binding);
+@@ -578,6 +555,7 @@
+         if ($limit  = $builder-&gt;getLimit())  $stmt-&gt;setLimit($limit);
+         if ($offset = $builder-&gt;getOffset()) $stmt-&gt;setOffset($offset);
+         $rs = $stmt-&gt;executeQuery();
++        Registry::get('__logger')-&gt;debug('Query: ' . ActiveRecord::$conn-&gt;lastQuery);
+         if ($builder-&gt;getType() == 'first') {
+             if ($rs-&gt;getRecordCount() == 1) {
+                 $rs-&gt;next();
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2006-03-23 20:17:46 UTC (rev 384)
++++ trunk/libs/active/record/Validator.php	2006-03-25 17:04:15 UTC (rev 385)
+@@ -35,7 +35,7 @@
+ /**
+  * Active Record Validator
+  *
+- * In medick, Validations is performed in ActiveRecord with the help
++ * In medick, validations is performed in ActiveRecord with the help
+  * of before_* filters
+  * &lt;code&gt;
+  *  class Person extends ActiveRecord {
+@@ -102,9 +102,9 @@
+     private function isEmpty(Field $field) {
+         if ($field-&gt;getValue() == '') {
+             $field-&gt;addError('is empty');
+-            return TRUE;
++            return true;
+         } else {
+-            return FALSE;
++            return false;
+         }
+     }
+     
+@@ -138,9 +138,9 @@
+                 )
+             ));
+             $field-&gt;addError('is not unique');
+-            return TRUE;
++            return true;
+         } catch (RecordNotFoundException $rnfEx) {
+-            return FALSE;
++            return false;
+         }
+     }
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000168.html">[Medick-svn] r384 - applications/testor/app/helpers applications/testor/app/views/layouts applications/testor/app/views/main applications/testor/app/views/strone applications/testor/app/views/tone applications/testor/public/stylesheet trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record
+</A></li>
+	<LI>Next message: <A HREF="000170.html">[Medick-svn] r386 - applications/testor/app/controllers applications/testor/app/views applications/testor/app/views/req applications/testor/conf applications/testor/db trunk trunk/libs/action/controller trunk/libs/action/controller/session trunk/libs/active/record
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#169">[ date ]</a>
+              <a href="thread.html#169">[ thread ]</a>
+              <a href="subject.html#169">[ subject ]</a>
+              <a href="author.html#169">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

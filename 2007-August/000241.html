@@ -1,0 +1,394 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r461 - in exp/ar5: . libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-August/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r461%20-%20in%20exp/ar5%3A%20.%20libs/active/record%0A%09libs/active/record/drivers/abstract%0A%09libs/active/record/drivers/sqlite&In-Reply-To=%3C200708310947.l7V9lCPX008510%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000240.html">
+   
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r461 - in exp/ar5: . libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite</H1>
+    <B>aurelian at mail.berlios.de</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r461%20-%20in%20exp/ar5%3A%20.%20libs/active/record%0A%09libs/active/record/drivers/abstract%0A%09libs/active/record/drivers/sqlite&In-Reply-To=%3C200708310947.l7V9lCPX008510%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r461 - in exp/ar5: . libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Fri Aug 31 11:47:12 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000240.html">[Medick-svn] r460 - in exp/ar5: . test/mock
+</A></li>
+        
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#241">[ date ]</a>
+              <a href="thread.html#241">[ thread ]</a>
+              <a href="subject.html#241">[ subject ]</a>
+              <a href="author.html#241">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-08-31 11:47:09 +0200 (Fri, 31 Aug 2007)
+New Revision: 461
+
+Modified:
+   exp/ar5/ar5.php
+   exp/ar5/libs/active/record/SQLBuilder.php
+   exp/ar5/libs/active/record/SQLCommand.php
+   exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php
+   exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php
+   exp/ar5/libs/active/record/drivers/sqlite/sqlite.php
+Log:
+ -- more stuff.
+
+Modified: exp/ar5/ar5.php
+===================================================================
+--- exp/ar5/ar5.php	2007-08-28 14:29:29 UTC (rev 460)
++++ exp/ar5/ar5.php	2007-08-31 09:47:09 UTC (rev 461)
+@@ -45,7 +45,6 @@
+ $user-&gt;password= md5('bau-bau');
+ $user-&gt;save();
+ 
+-
+ $users= User::find();
+ 
+ foreach($users as $user) {
+@@ -53,4 +52,7 @@
+   echo '[ ' . $user-&gt;id . ' ]&gt; ' . $user-&gt;firstname . &quot;\n&quot;;
+ }
+ 
++$user= User::find(155);
++echo 'User: ' . $user-&gt;id . ' ' . $user-&gt;firstname . &quot; &quot; . $user-&gt;created_at . &quot;\n&quot;;
++
+ ?&gt;
+
+Modified: exp/ar5/libs/active/record/SQLBuilder.php
+===================================================================
+--- exp/ar5/libs/active/record/SQLBuilder.php	2007-08-28 14:29:29 UTC (rev 460)
++++ exp/ar5/libs/active/record/SQLBuilder.php	2007-08-31 09:47:09 UTC (rev 461)
+@@ -5,16 +5,16 @@
+ /**
+  * It knows how to create an SQLCommand from an array
+  *
+- *
+  * Arguments:
+  *
+  *  1. Simple, no argument:
+- *    1.1 User::find(); // select * from users; // =&gt; RowsAggregate
++ *    1.1 User::find(); // select * from users; // =&gt; Rows
+  *
+  *  2. Simple, one Argument
+- *    2.1. User::find( 'all' ); // =&gt; select * from users; // =&gt; RowsAggregate
++ *    2.1. User::find( 'all' ); // =&gt; select * from users; // =&gt; Rows
+  *    2.2. User::find( 'first' ); // =&gt; select * from users limit 1; // =&gt; ActiveRecord
+- *    2.3. User::find( 1 ); // =&gt; select * fro users where id=1; // =&gt; ActiveRecord
++ *    2.3. User::find( 155 ); // =&gt; select * from users where id=155; // =&gt; ActiveRecord
++ *    2.4. User::find( array(1,2,5) ); // =&gt; select * from users where id in (1,2,5) // =&gt; Rows
+  *
+  *  3. Clauses, one simple argument (see 2) and an array as the second one
+  *    3.1. User::find( 'all', array( 'condition' =&gt; &quot;name='Peter'&quot; )); 
+@@ -93,6 +93,9 @@
+         if (isset($arguments[0]) &amp;&amp; is_numeric($arguments[0])) {
+             $this-&gt;clauses['condition']='id=?';
+             $this-&gt;bindings[]=$arguments[0];
++            // $this-&gt;type= 'first';
++            // $this-&gt;limit= -1;
++            // $this-&gt;offset= -1;
+         }
+         if (isset($arguments[1])) {
+             $this-&gt;clauses= $arguments[1];
+@@ -184,9 +187,18 @@
+ 
+     public function execute() {
+       // 1. create a statement
+-      $stmt= ActiveRecord::connection()-&gt;prepare( $this-&gt;compile()-&gt;getQueryString() );
+-      // 2. one or more?
+-      return $stmt-&gt;getAllRecords( $this-&gt;bindings, new ReflectionClass( $this-&gt;owner ) );
++      $stmt= ActiveRecord::connection()-&gt;prepare( $this-&gt;compile()-&gt;toSQL() );
++      $stmt-&gt;setLimit( $this-&gt;limit );
++      $stmt-&gt;setOffset( $this-&gt;offset );
++
++      // 2. reflect on owner
++      $clazz = new ReflectionClass( $this-&gt;owner );
++      // 3. return stuff.
++      if($this-&gt;type=='all') {
++        return $stmt-&gt;getAllRecords( $this-&gt;bindings, $clazz );
++      } else {
++        return $clazz-&gt;newInstance( $stmt-&gt;executeQuery( $this-&gt;bindings )-&gt;next()-&gt;getRow() );
++      }
+     }
+ 
+ }
+
+Modified: exp/ar5/libs/active/record/SQLCommand.php
+===================================================================
+--- exp/ar5/libs/active/record/SQLCommand.php	2007-08-28 14:29:29 UTC (rev 460)
++++ exp/ar5/libs/active/record/SQLCommand.php	2007-08-31 09:47:09 UTC (rev 461)
+@@ -9,7 +9,7 @@
+  * &lt;code&gt;
+  *  $command= SQLCommand::select()-&gt;from('news')-&gt;where('state=?')-&gt;orderBy('created_at');
+  * // later, you can use a PreparedStatement to bind parameters.
+- *  $stmt= $conn-&gt;prepareStatement($command-&gt;getQueryString());
++ *  $stmt= $conn-&gt;prepareStatement($command-&gt;toSQL());
+  *  $stmt-&gt;setInt(1, News::PUBLISHED);
+  *  $rs= $stmt-&gt;executeQuery();
+  * &lt;/code&gt;
+@@ -67,7 +67,7 @@
+         return $this;
+     }
+     
+-    public function getQueryString() {
++    public function toSQL() {
+         $query= $this-&gt;command . &quot; &quot;;
+         // if ($this-&gt;distinct) $query .= &quot;distinct &quot;;
+         $query .= $this-&gt;appendColumns();
+
+Modified: exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php	2007-08-28 14:29:29 UTC (rev 460)
++++ exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php	2007-08-31 09:47:09 UTC (rev 461)
+@@ -2,6 +2,13 @@
+ // $Id$
+ // This file is part of ActiveRecord5, a Medick (<A HREF="http://medick.locknet.ro">http://medick.locknet.ro</A>) Experiment
+ 
++/**
++ * Drivers Authors notes:
++ *  -&gt; remember to set lastQuery in exec
++ *
++ */
++
++
+ abstract class SQLConnection extends Object {
+ 
+   // @var array known drivers
+@@ -10,7 +17,7 @@
+   // @var resource
+   protected $resource; 
+ 
+-  // @var string the database
++  // @var string the database name
+   protected $database;
+ 
+   // @var string the last executed query
+@@ -21,7 +28,7 @@
+    *
+    * @param string the sql string to execute
+    *
+-   * @return int
++   * @return int number of affected rows
+    */ 
+   public function executeUpdate( $sql ) {
+     return $this-&gt;getUpdateCount( $this-&gt;exec( $sql ) );
+@@ -46,16 +53,28 @@
+     $this-&gt;database=$database;
+   }
+ 
++  /**
++   * It gets the resource
++   *
++   * @return resource the PHP resource type
++   */ 
+   public function getResource() { 
+     return $this-&gt;resource;
+   }
+ 
++  /**
++   * Gets the last *executed* sql query
++   *
++   * @return string
++   */ 
+   public function getLastQuery() { 
+     return $this-&gt;lastQuery;
+   }
+ 
++  // return self
+   abstract public function connect( Array $dsn= array() );
+-
++  
++  // return void
+   abstract public function close(); 
+ 
+   // return int
+@@ -78,6 +97,8 @@
+   
+   // return int
+   abstract public function getUpdateCount( $rs=null );
+-  
++
++  // retrun void
++  abstract public function applyLimit(&amp;$sql, $limit, $offset);
+ }
+ 
+
+Modified: exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php	2007-08-28 14:29:29 UTC (rev 460)
++++ exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php	2007-08-31 09:47:09 UTC (rev 461)
+@@ -6,6 +6,10 @@
+ 
+   protected $conn, $sql;
+ 
++  protected $limit= -1;
++
++  protected $offset= -1;
++
+   protected $positions=0;
+   protected $positionsCount=0;
+   protected $sql_cache='';
+@@ -74,7 +78,8 @@
+    * @return string New SQL statement with parameters replaced.
+    * @throws SQLException - if param not bound.
+    */
+-  protected function replaceParams() {
++  protected function replaceParams(Array $params= array()) {
++    $this-&gt;setupParams($params);
+     // early out if we still have the same query ready
+     if ( $this-&gt;sql_cache_valid === true ) return $this-&gt;sql_cache;
+     // Default behavior for this function is to behave in 'emulated' mode.    
+@@ -111,8 +116,14 @@
+   }
+ 
+   // todo
+-  public function set($idx, $value) {
+-    var_dump(gettype($value));
++  public function set( $idx, $value ) {
++    $t= gettype($value);
++    switch($t) {
++      case &quot;integer&quot;:
++        return $this-&gt;setInteger($idx, $value);
++      default:
++        throw new MedickException(__METHOD__ . &quot; not implemented for type: &quot;.$t.&quot; !&quot;);
++    }
+   }
+ 
+   public function populateValues(Array $fields) {
+@@ -122,14 +133,24 @@
+     }
+   }
+ 
++  public function setLimit($limit) {
++    $this-&gt;limit= $limit;
++  }
++
++  public function setOffset($offset) {
++    $this-&gt;offset= $offset;
++  }
++
+   public function executeQuery(Array $params= array()) {
+-    $this-&gt;setupParams($params);
+-    return $this-&gt;conn-&gt;execute( $this-&gt;replaceParams() );
++    $sql= $this-&gt;replaceParams($params);
++    if ($this-&gt;limit &gt; 0 || $this-&gt;offset &gt; 0) {
++      $this-&gt;conn-&gt;applyLimit($sql, $this-&gt;limit, $this-&gt;offset);
++    }
++    return $this-&gt;conn-&gt;execute( $sql );
+   }
+ 
+   public function getAllRecords(Array $params=array(), ReflectionClass $record) {
+-    $this-&gt;setupParams( $params );
+-    $result= $this-&gt;conn-&gt;exec( $this-&gt;replaceParams() );
++    $result= $this-&gt;conn-&gt;exec( $this-&gt;replaceParams($params) );
+     return $this-&gt;getRecordsIterator( $result, $record );
+ 
+   }
+@@ -138,8 +159,7 @@
+     return $this-&gt;conn-&gt;executeUpdate( $this-&gt;replaceParams() );
+   }
+ 
+-  public function close() {
+-
++  public function close() {  
+   }
+ 
+   private function setupParams(Array $params=array()) {
+@@ -150,7 +170,7 @@
+     }
+   }
+ 
+-  abstract protected function escape( $value );
++  abstract public function escape( $value );
+ 
+   abstract protected function getRecordsIterator( $results, ReflectionClass $class );
+ 
+
+Modified: exp/ar5/libs/active/record/drivers/sqlite/sqlite.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/sqlite/sqlite.php	2007-08-28 14:29:29 UTC (rev 460)
++++ exp/ar5/libs/active/record/drivers/sqlite/sqlite.php	2007-08-31 09:47:09 UTC (rev 461)
+@@ -50,7 +50,7 @@
+ 
+   public function next() {
+     $this-&gt;row= sqlite_fetch_array( $this-&gt;result, SQLITE_ASSOC );
+-    return (bool)$this-&gt;row;
++    return $this-&gt;row ? $this : false;
+   }
+ 
+ }
+@@ -84,7 +84,7 @@
+ 
+ class SQLitePreparedStatement extends SQLPreparedStatement {
+ 
+-  protected function escape( $value ) {
++  public function escape( $value ) {
+     return sqlite_escape_string( $value );
+   }
+ 
+@@ -103,10 +103,12 @@
+     } catch (Error $err) {
+       throw new SQLException( $err-&gt;getMessage() );
+     }
++    return $this;
+   }
+ 
+   public function exec( $sql ) {
+-   $this-&gt;lastQuery= $sql;
++    $this-&gt;lastQuery= $sql;
++    echo &quot;query: &quot; . $sql . &quot;\n&quot;;
+     try {
+       return sqlite_query( $this-&gt;resource, $this-&gt;lastQuery, SQLITE_ASSOC );
+     } catch (Error $err) {
+@@ -149,5 +151,13 @@
+     return new SQLitePreparedStatement($this, $sql);
+   }
+ 
++  public function applyLimit(&amp;$sql, $limit, $offset) {
++    if ( $limit &gt; 0 ) {
++      $sql .= &quot; limit &quot; . $limit . ($offset &gt; 0 ? &quot; offset &quot; . $offset : &quot;&quot;);
++    } elseif ( $offset &gt; 0 ) {
++            $sql .= &quot; limit -1 offset &quot; . $offset;
++    }
++  }
++
+ }
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000240.html">[Medick-svn] r460 - in exp/ar5: . test/mock
+</A></li>
+	
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#241">[ date ]</a>
+              <a href="thread.html#241">[ thread ]</a>
+              <a href="subject.html#241">[ subject ]</a>
+              <a href="author.html#241">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

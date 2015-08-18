@@ -1,0 +1,185 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r240 - in trunk/libs: action/controller/templates active/record medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r240%20-%20in%20trunk/libs%3A%20action/controller/templates%20active/record%20medick&In-Reply-To=%3C200510252029.j9PKTOaK004621%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000043.html">
+   <LINK REL="Next"  HREF="000045.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r240 - in trunk/libs: action/controller/templates active/record medick</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r240%20-%20in%20trunk/libs%3A%20action/controller/templates%20active/record%20medick&In-Reply-To=%3C200510252029.j9PKTOaK004621%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r240 - in trunk/libs: action/controller/templates active/record medick">aurelian at berlios.de
+       </A><BR>
+    <I>Tue Oct 25 22:29:24 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000043.html">[Medick-svn] r239 - in trunk: config libs/action/controller libs/action/controller/templates libs/action/view libs/medick
+</A></li>
+        <LI>Next message: <A HREF="000045.html">[Medick-svn] r241 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#44">[ date ]</a>
+              <a href="thread.html#44">[ thread ]</a>
+              <a href="subject.html#44">[ subject ]</a>
+              <a href="author.html#44">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-25 22:29:23 +0200 (Tue, 25 Oct 2005)
+New Revision: 240
+
+Modified:
+   trunk/libs/action/controller/templates/error.phtml
+   trunk/libs/active/record/RowsAggregate.php
+   trunk/libs/medick/ErrorHandler.php
+Log:
+ - minor fixes in ErrorHandler &amp; RowsAggregate added magick __call method
+
+Modified: trunk/libs/action/controller/templates/error.phtml
+===================================================================
+--- trunk/libs/action/controller/templates/error.phtml	2005-10-25 19:53:21 UTC (rev 239)
++++ trunk/libs/action/controller/templates/error.phtml	2005-10-25 20:29:23 UTC (rev 240)
+@@ -22,6 +22,9 @@
+         &lt;style type=&quot;text/css&quot; media=&quot;all&quot;&gt;
+         
+             body {
++              margin: 3px;
++              padding: 3px;
++              border:1px solid red;
+               font-size: .9em;
+               font-family: &quot;Lucida Grande&quot;, Helvetica, Tahoma, sans-serif;
+             }        
+@@ -33,7 +36,8 @@
+             }
+             
+             .container {
+-                border:1px solid red;
++              margin: 3px;
++              padding: 3px; 
+             }
+             
+             .source {
+@@ -48,6 +52,7 @@
+     &lt;body&gt;
+        &lt;div class=&quot;container&quot;&gt;
+        &lt;h1&gt;Cannot process your request!&lt;/h1&gt;
++           &lt;h2&gt;&lt;?=get_class($error);?&gt;&lt;/h2&gt;
+            &lt;h2&gt;&lt;strong&gt;Message: &lt;/strong&gt;&lt;?=$error-&gt;getMessage();?&gt;&lt;/h2&gt;
+            &lt;strong&gt;in&lt;/strong&gt; (&lt;?=$error-&gt;getLine();?&gt;)
+            &lt;a href=&quot;javascript:void(0);&quot; onclick=&quot;return showSource();&quot;&gt;&lt;?=$error-&gt;getFile();?&gt;&lt;/a&gt;
+@@ -67,8 +72,10 @@
+            &lt;? 
+             $data = highlight_string(file_get_contents($error-&gt;getFile()), TRUE);
+             $data = explode('&lt;br /&gt;', $data);
++            $lines= count($data);
+             $line = $error-&gt;getLine();
+             $end  = $line+10;
++            if ($end &gt; $lines) $end = $lines;
+             $start = $line-10;
+ 
+             ?&gt;
+
+Modified: trunk/libs/active/record/RowsAggregate.php
+===================================================================
+--- trunk/libs/active/record/RowsAggregate.php	2005-10-25 19:53:21 UTC (rev 239)
++++ trunk/libs/active/record/RowsAggregate.php	2005-10-25 20:29:23 UTC (rev 240)
+@@ -33,6 +33,7 @@
+ // }}}
+ 
+ /**
++ * Container for FiedsAggregate Objects
+  * @package locknet7.active.record
+  */
+ class RowsAggregate extends Object implements IteratorAggregate {
+@@ -75,19 +76,18 @@
+     }
+     
+     /**
+-     * Returns an array representation of this object
+-     * @return array
+-     */
+-    public function toArray() {
+-        return iterator_to_array($this-&gt;getIterator());
+-    }
+-    
+-    /**
++     * It gets the offset by his index.
+      * @param index
+      * @return
+      */
+     public function offsetGet($index) {
+         return $this-&gt;container-&gt;offsetGet($index);
+     }
++
++    /**
++     * Magick php5 __call
++     */
++    public function __call($method, $arguments) {
++        trigger_error(sprintf('Call to undefined method: %s-&gt;%s(%s).', get_class($this), $method,$arguments), E_USER_ERROR);
++    }
+ }
+-
+
+Modified: trunk/libs/medick/ErrorHandler.php
+===================================================================
+--- trunk/libs/medick/ErrorHandler.php	2005-10-25 19:53:21 UTC (rev 239)
++++ trunk/libs/medick/ErrorHandler.php	2005-10-25 20:29:23 UTC (rev 240)
+@@ -51,19 +51,12 @@
+      * @param string $errstr
+      * @param string $errfile
+      * @param int $errline
+-     * @return void
+      * @throw Error
+      */
+     function raiseError($errno, $errstr, $errfile, $errline) {
+         if (0 == error_reporting()) return;
+-            $trace = debug_backtrace();
+-            array_shift($trace);
+-            throw new Error(
+-              $errstr,
+-              $errno,
+-              $errfile,
+-              $errline,
+-              $trace
+-            );
++        $trace = debug_backtrace();
++        array_shift($trace);
++        throw new Error( $errstr, $errno, $errfile, $errline, $trace );
+     }
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000043.html">[Medick-svn] r239 - in trunk: config libs/action/controller libs/action/controller/templates libs/action/view libs/medick
+</A></li>
+	<LI>Next message: <A HREF="000045.html">[Medick-svn] r241 - trunk
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#44">[ date ]</a>
+              <a href="thread.html#44">[ thread ]</a>
+              <a href="subject.html#44">[ subject ]</a>
+              <a href="author.html#44">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

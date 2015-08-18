@@ -1,0 +1,1046 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r456 - in exp/ar5: . libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-August/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r456%20-%20in%20exp/ar5%3A%20.%20libs/active/record%0A%09libs/active/record/drivers/abstract%0A%09libs/active/record/drivers/sqlite&In-Reply-To=%3C200708221205.l7MC5BL7021033%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000235.html">
+   <LINK REL="Next"  HREF="000237.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r456 - in exp/ar5: . libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite</H1>
+    <B>aurelian at mail.berlios.de</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r456%20-%20in%20exp/ar5%3A%20.%20libs/active/record%0A%09libs/active/record/drivers/abstract%0A%09libs/active/record/drivers/sqlite&In-Reply-To=%3C200708221205.l7MC5BL7021033%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r456 - in exp/ar5: . libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Wed Aug 22 14:05:11 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000235.html">[Medick-svn] r455 - in exp/ar5: . libs libs/context	libs/context/configurator
+</A></li>
+        <LI>Next message: <A HREF="000237.html">[Medick-svn] r457 - in exp/ar5: . conf	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#236">[ date ]</a>
+              <a href="thread.html#236">[ thread ]</a>
+              <a href="subject.html#236">[ subject ]</a>
+              <a href="author.html#236">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-08-22 14:05:02 +0200 (Wed, 22 Aug 2007)
+New Revision: 456
+
+Added:
+   exp/ar5/libs/active/record/QueryBuilder.php
+   exp/ar5/libs/active/record/SQLBuilder.php
+   exp/ar5/libs/active/record/SQLCommand.php
+   exp/ar5/libs/active/record/SQLField.php
+   exp/ar5/libs/active/record/drivers/abstract/SQLTableInfo.php
+Modified:
+   exp/ar5/ar5.php
+   exp/ar5/ar5_sql.php
+   exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php
+   exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php
+   exp/ar5/libs/active/record/drivers/sqlite/sqlite.php
+Log:
+ -- almost a base skeleton for the new active record
+
+Modified: exp/ar5/ar5.php
+===================================================================
+--- exp/ar5/ar5.php	2007-08-20 14:29:17 UTC (rev 455)
++++ exp/ar5/ar5.php	2007-08-22 12:05:02 UTC (rev 456)
+@@ -5,16 +5,22 @@
+ 
+ include_once('ar5_base.php');
+ 
+-include_once('context/configurator/XMLConfigurator.php');
++// include_once('context/configurator/XMLConfigurator.php');
+ 
++include_once('active/record/SQLField.php');
++include_once('active/record/SQLBuilder.php');
++include_once('active/record/SQLCommand.php');
++
+ include_once('active/record/drivers/abstract/SQLConnection.php');
+ include_once('active/record/drivers/abstract/SQLPreparedStatement.php');
++include_once('active/record/drivers/abstract/SQLTableInfo.php');
+ 
+ include_once('ar5_sql.php');
+ 
+ include_once('active/record/drivers/sqlite/sqlite.php');
+ 
+ include_once('active/support/Inflector.php');
++// include_once('active/support/Reflector.php');
+ 
+ class ActiveRecordException extends MedickException { }
+ 
+@@ -36,13 +42,21 @@
+   }
+ 
+   public function __set($name, $value) {
+-    if(isset($this-&gt;__fields[$name])) return $this-&gt;__fields[$name]-&gt;alter( $value );
++    if( isset($this-&gt;__fields[$name]) ) return $this-&gt;__fields[$name]-&gt;alter( $value );
+     throw new ActiveRecordException('No such field &quot;' . $name . '&quot;');
+   }
+ 
++  public function __get($name) {
++    if( isset($this-&gt;__fields[$name]) ) return $this-&gt;__fields[$name]-&gt;getValue();
++    throw new ActiveRecordException('No such field &quot;' . $name . '&quot;');
++  }
++
++  public function getPrimaryKey() {
++    return $this-&gt;__primary_key;
++  }
++
+   public function save() {
+-    if($this-&gt;__primary_key-&gt;isAffected()) return $this-&gt;update();
+-    else $this-&gt;insert();
++    return $this-&gt;__primary_key-&gt;isAffected() ? $this-&gt;update() : $this-&gt;insert();
+   }
+ 
+   public function insert() {
+@@ -56,7 +70,7 @@
+ 
+   public function update() {
+     $fields= $this-&gt;getAffectedFields();
+-    if(sizeof($fields)&lt;1) return 0;
++    if( sizeof($fields) &lt; 1 ) return 0; // no harm, primary_key will be always affected, otherwise it will be an insert.
+     $sql= 'update ' . $this-&gt;__table_name . ' set ';
+     $sql .= implode('=?, ', array_keys($fields)) . '=? ';
+     $sql .= 'where ' . $this-&gt;__primary_key-&gt;getName() . '=' . $this-&gt;__primary_key-&gt;getValue();
+@@ -72,39 +86,34 @@
+     return $r;
+   }
+ 
+-  public function getPrimaryKey() {
+-    return $this-&gt;__primary_key;
+-  }
+-
+-  protected function getAffectedFields() {
++  private function getAffectedFields() {
+     return array_filter( $this-&gt;__fields, array($this, '__affectedField') );
+   }
+ 
+-  protected function reset() {
++  private function reset() {
+     return array_walk( $this-&gt;__fields, array($this,'__notAffected'));
+   }
+ 
+   // callback for array_filter
+-  private function __affectedField( Field $field ) {
++  private function __affectedField( SQLField $field ) {
+     return $field-&gt;isAffected();
+   }
+   // callback for array_filter
+-  private function __pk( Field $field ) {
++  private function __pk( SQLField $field ) {
+     return $field-&gt;isPk();
+   }
+ 
+   // callback for array_walk
+-  private function __notAffected( Field $field ) {
++  private function __notAffected( SQLField $field ) {
+     if( $field-&gt;isAffected() &amp;&amp; !$field-&gt;isPk() ) $field-&gt;setAffected(false);
+   }
+ 
++  // -----------
++  // static
++  // -----------
+   protected static $__table_info = null;
+   protected static $__connection = null;
+ 
+-  public static function find() {
+-    throw new MedickException('ActiveRecord::find() must be implemented in child class.');
+-  }
+-
+   public static function connection() {
+     if(self::$__connection===null) {
+       self::$__connection= new SQLiteConnection();
+@@ -113,19 +122,28 @@
+     return self::$__connection;
+   }
+ 
++  public static function find() {
++    throw new MedickException('ActiveRecord::find() must be implemented in child class.');
++  }
++
++  public static function build( SQLBuilder $builder ) {
++    return $builder-&gt;execute();
++  }
++
+ }
+ 
+ class User extends ActiveRecord { 
+ 
+   public static function find() {
+     $args= func_get_args();
+-    return self::build(new QueryBuilder(__CLASS__, $args));
++    return ActiveRecord::build(new SQLBuilder(__CLASS__, $args));
+   }
+ 
+ }
+ 
++
+ $u = new User();
+-$u-&gt;firstname= 'aurelian';
++$u-&gt;firstname= 'aurelian2';
+ $u-&gt;lastname = 'oancea';
+ $u-&gt;email= '<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">oancea at gmail.com</A>';
+ $u-&gt;password=md5('foo');
+@@ -135,9 +153,17 @@
+ $u-&gt;save();
+ $u-&gt;save();
+ 
+-$user = new User(array('firstname'=&gt;'oancea', 'lastname'=&gt;'mandinga'));
++$user = new User(array('firstname'=&gt;'oancea2', 'lastname'=&gt;'mandinga'));
+ $user-&gt;email= '<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">oancea at yahoo.com</A>';
+ $user-&gt;password= md5('bau-bau');
+ $user-&gt;save();
+ 
++
++$users= User::find();
++
++foreach($users as $user) {
++  // var_dump($user);
++  echo '[ ' . $user-&gt;id . ' ]&gt; ' . $user-&gt;firstname . &quot;\n&quot;;
++}
++
+ ?&gt;
+
+Modified: exp/ar5/ar5_sql.php
+===================================================================
+--- exp/ar5/ar5_sql.php	2007-08-20 14:29:17 UTC (rev 455)
++++ exp/ar5/ar5_sql.php	2007-08-22 12:05:02 UTC (rev 456)
+@@ -17,40 +17,8 @@
+ 
+ }
+ 
+-class Field extends Object {
++abstract class SQLResultSet extends Object implements ArrayAccess {
+ 
+-  private $name, $value, $pk, $type, $size, $affected;
+-
+-  public function Field($name, $pk=false, $type='int', $size=0, $value= null, $affected=false) {
+-    $this-&gt;name=  $name;
+-    $this-&gt;value= $value;
+-    $this-&gt;pk= (bool)$pk;
+-    $this-&gt;size= (int)$size;
+-    $this-&gt;type= SQLType::getPhpType( strtolower($type) );
+-    $this-&gt;affected= (bool)$affected;
+-  }
+-
+-  public function getName() { return $this-&gt;name; }
+-
+-  public function getValue() { return $this-&gt;value; }
+-  public function setValue($value) { $this-&gt;value= $value;}
+-
+-  public function setAffected($val) { $this-&gt;affected= (bool)$val; }
+-  public function isAffected() { return (bool)$this-&gt;affected; }
+-
+-  public function isPk() { return (bool)$this-&gt;pk; }
+-
+-  public function getType() { return $this-&gt;type; }
+-
+-  public function alter( $value ) {
+-    $this-&gt;value    = $value;
+-    $this-&gt;affected = true;
+-  }
+-
+-}
+-
+-abstract class SQLResultSet extends Object {
+-
+   protected $result, $connection;
+   protected $row= array();
+ 
+@@ -59,35 +27,33 @@
+     $this-&gt;connection  = $connection;
+   }
+ 
+-  public abstract function next();
++  public function offsetExists($offset) {
++    return isset( $this-&gt;row[$offset] );
++  }
+ 
+-  public function getRow() { return $this-&gt;row; }
++  public function offsetGet($offset) {
++    return $this-&gt;row[$offset];
++  }
+ 
+-  public function __get($name) {
+-    if(isset($this-&gt;row[$name])) return $this-&gt;row[$name];
+-    throw new SQLException('Cannot get the value of &quot;' . $name . '&quot; no such field!');
++  public function offsetSet($offset, $value) {
++    throw new MedickError(&quot;A ResultSet is read-only!&quot;);
+   }
+ 
+-}
++  public function offsetUnset($offset) {
++    throw new MedickError(&quot;A ResultSet is read-only!&quot;);
++  }
+ 
+-abstract class SQLTableInfo extends Object {
+-
+-  protected $name, $connection;
+-  private $fields;
+-
+-  public function SQLTableInfo($name, SQLConnection $connection) {
+-    $this-&gt;name= $name;
+-    $this-&gt;connection= $connection;
+-    $this-&gt;fields= array();
++  public function getRow() { 
++    return $this-&gt;row;
+   }
+ 
+-  public function add(Field $field) {
+-    $this-&gt;fields[$field-&gt;getName()]= $field;
++  public function __get($name) {
++    if(isset($this-&gt;row[$name])) return $this-&gt;row[$name];
++    throw new SQLException('Cannot get the value of &quot;' . $name . '&quot; no such field!');
+   }
+ 
+-  public function getFields() { return $this-&gt;fields; }
++  abstract public function next();
+ 
+-  abstract public function initFields( );
+-
+ }
+ 
++
+
+Added: exp/ar5/libs/active/record/QueryBuilder.php
+===================================================================
+--- exp/ar5/libs/active/record/QueryBuilder.php	2007-08-20 14:29:17 UTC (rev 455)
++++ exp/ar5/libs/active/record/QueryBuilder.php	2007-08-22 12:05:02 UTC (rev 456)
+@@ -0,0 +1,5 @@
++&lt;?php
++
++// $Id$
++
++class QueryBuilder extends SQLBuilder {	}
+
+
+Property changes on: exp/ar5/libs/active/record/QueryBuilder.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/ar5/libs/active/record/SQLBuilder.php
+===================================================================
+--- exp/ar5/libs/active/record/SQLBuilder.php	2007-08-20 14:29:17 UTC (rev 455)
++++ exp/ar5/libs/active/record/SQLBuilder.php	2007-08-22 12:05:02 UTC (rev 456)
+@@ -0,0 +1,241 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * It knows how to create an SQLCommand from an array
++ *
++ *
++ * Arguments:
++ *
++ *  1. Simple, no argument:
++ *    1.1 User::find(); // select * from users; // =&gt; RowsAggregate
++ *
++ *  2. Simple, one Argument
++ *    2.1. User::find( 'all' ); // =&gt; select * from users; // =&gt; RowsAggregate
++ *    2.2. User::find( 'first' ); // =&gt; select * from users limit 1; // =&gt; ActiveRecord
++ *    2.3. User::find( 1 ); // =&gt; select * fro users where id=1; // =&gt; ActiveRecord
++ *
++ *  3. Clauses, one simple argument (see 2) and an array as the second one
++ *    3.1. User::find( 'all', array( 'condition' =&gt; &quot;name='Peter'&quot; )); 
++ *    // select * from users where name='Peter';
++ *    3.2. User::find( 'all', array( 'order by' =&gt; 'name asc' ));
++ *    // select * from users order by name asc;
++ *    3.3. User::find( 'all', array( 'limit' =&gt; 5 ));
++ *    // select * from users limit 5;
++ *    3.4. User::find( 'all', array( 'offset' =&gt; 10 ));
++ *
++ *    3.5. User::find( 'all', array( 'left join' =&gt; 'posts on posts.user_id=users.id' ));
++ *
++ *    3.6. User::find( 'all', array( 'columns' =&gt; 'id, name' ));
++ *    // select id,name from users;
++ *
++ *    3.7. User::find( 'all', array( 'from'=&gt;'posts' ));
++ *    // select * from users, posts;
++ *    3.8. User::find( 'all', array( 'include'=&gt;'posts' ));
++ *
++ *    3.9. User::find( 'all', array( 
++ *          'condition'=&gt;&quot;name != 'Peter'&quot;, 'limit' =&gt; 5, 'offset'=&gt;10, 'order by' =&gt; 'name asc' ));
++ *    // select * from users where name != 'Peter' limit 5, 10 order by name asc;
++ *
++ *  4. Bindings
++ *    4.1. User::find( 'all', array('condition'=&gt;'name=?'), array('Peter'));
++ *    // select * from users where name='Peter';
++ *    4.2. User::find( 'first', array('condition'=&gt;'id &gt; ?'), array(5));
++ *    // select * from users where id &gt; 5 limit 1; 
++ *
++ * @package medick.active.record
++ * @author Aurelian Oancea
++ */
++class SQLBuilder extends Object {
++
++    /** @var string 
++        result type owner */
++    private $owner;
++    
++    /** @var array
++        clauses */ 
++    private $clauses=array();
++
++    /** @var array
++        current bindings */ 
++    private $bindings=array();
++    
++    /** @var string
++        Type of select (all or first) */
++    private $type;
++    
++    /** @var int 
++        limit */
++    private $limit;
++    
++    /** @var int
++        offset */
++    private $offset;
++
++    /**
++     * Constructor.
++     * 
++     * It parses the arguments and will create the instance variables.
++     * Usually this class is a parameter for ActiveRecord::build method, but it is 
++     * also used from Associations.
++     *
++     * @see medick.active.record.ActiveRecord::build, medick.active.record.association
++     * @param string owner
++     * @param array arguments
++     */ 
++    public function SQLBuilder($owner, $arguments) {
++        $this-&gt;owner= $owner;
++        if ( !count($arguments) || $arguments[0] == 'all' ) {
++            $this-&gt;type= 'all';
++        } else {
++            $this-&gt;type = 'first';
++            $this-&gt;limit= 1;
++        }
++        if (isset($arguments[0]) &amp;&amp; is_numeric($arguments[0])) {
++            $this-&gt;clauses['condition']='id=?';
++            $this-&gt;bindings[]=$arguments[0];
++        }
++        if (isset($arguments[1])) {
++            $this-&gt;clauses= $arguments[1];
++        }
++        if (isset($arguments[2])) {
++            $this-&gt;bindings= $arguments[2];
++        }
++    }
++    
++    /**
++     * It gets the limit
++     *
++     * @return int limit
++     */ 
++    public function getLimit() {
++        return $this-&gt;limit;    
++    }
++
++    public function setLimit( $limit ) {
++        $this-&gt;limit= $limit;
++    }
++
++    /**
++     * It gets the offset
++     *
++     * @return int the offset
++     */ 
++    public function getOffset() {
++        return $this-&gt;offset;
++    }
++    
++    /**
++     * It gets the owner
++     *
++     * @return string the owner
++     */ 
++    public function getOwner() {
++        return $this-&gt;owner;
++    }
++    
++    /**
++     * It creates an instance of the owner
++     *
++     * @return ReflectionClass
++     */ 
++    // public function getOwnerClass() {
++    //     return ActiveRecord::reflect_class( $this-&gt;owner );
++    // }
++
++    /**
++     * It gets the current list of bindings
++     *
++     * @return array the list of bindings
++     */ 
++    public function getBindings() {
++        return $this-&gt;bindings;
++    }
++
++    /**
++     * It gets the type
++     *
++     * @return string
++     */ 
++    public function getType() {
++        return $this-&gt;type;
++    }
++
++    /**
++     * Compile an SQLCommand from this query clauses.
++     * 
++     * Valid Clauses:
++     * &lt;ul&gt;
++     *  &lt;li&gt;'from'      =&gt; to add an additional from clause&lt;/li&gt;
++     *  &lt;li&gt;'condition' =&gt; to insert a sql condition&lt;/li&gt;
++     *  &lt;li&gt;'order by'  =&gt; to set an order by&lt;/li&gt;
++     *  &lt;li&gt;'columns'   =&gt; specify only the columns you want to select (check if it work on aliases too?)&lt;/li&gt;
++     *  &lt;li&gt;'limit'     =&gt; adjust the limit (this is not sended to the SQLCommand since is intended to be used with PreparedStatements)&lt;/li&gt;
++     *  &lt;li&gt;'offset'    =&gt; adds an offset (this is not sended to the SQLCommand since is intended to be used with PreparedStatements)&lt;/li&gt;
++     *  &lt;li&gt;'left join' =&gt; add a left join&lt;/li&gt;
++     * &lt;/ul&gt;
++     *
++     * @return SQLCommand
++     */
++    public function compile() {
++        if(isset($this-&gt;clauses['include'])) {
++          $this-&gt;clauses['left join'] = Inflector::pluralize($this-&gt;clauses['include']) . ' on ' . Inflector::pluralize($this-&gt;clauses['include']).'.id='.Inflector::tabelize($this-&gt;owner).'.'.$this-&gt;clauses['include'].'_id';
++        }
++        $command= SQLCommand::select()-&gt;from(Inflector::tabelize($this-&gt;owner));
++        if (isset($this-&gt;clauses['from']))       $command-&gt;from($this-&gt;clauses['from']);
++        if (isset($this-&gt;clauses['condition']))  $command-&gt;where($this-&gt;clauses['condition']);
++        if (isset($this-&gt;clauses['order by']))   $command-&gt;orderBy($this-&gt;clauses['order by']);
++        if (isset($this-&gt;clauses['columns']))    $command-&gt;columns($this-&gt;clauses['columns']);
++        if (isset($this-&gt;clauses['limit']))      $this-&gt;limit= $this-&gt;clauses['limit'];
++        if (isset($this-&gt;clauses['offset']))     $this-&gt;offset= $this-&gt;clauses['offset'];
++        if (isset($this-&gt;clauses['left join']))  $command-&gt;leftJoin('left outer join ' . $this-&gt;clauses['left join']);
++        return $command;
++    }
++
++
++    public function execute() {
++      // 1.
++      $stmt= ActiveRecord::connection()-&gt;prepare( $this-&gt;compile()-&gt;getQueryString() );
++
++      // 2. one or more?
++      return $stmt-&gt;getAllRecords( $this-&gt;bindings, new ReflectionClass( $this-&gt;owner ) );
++
++      $rs= $stmt-&gt;executeQuery( $this-&gt;bindings );
++      return $rs;
++      // 2.
++      return array();
++    }
++
++}
++
+
+
+Property changes on: exp/ar5/libs/active/record/SQLBuilder.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/ar5/libs/active/record/SQLCommand.php
+===================================================================
+--- exp/ar5/libs/active/record/SQLCommand.php	2007-08-20 14:29:17 UTC (rev 455)
++++ exp/ar5/libs/active/record/SQLCommand.php	2007-08-22 12:05:02 UTC (rev 456)
+@@ -0,0 +1,142 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * It represents an sql command
++ *
++ * You can use this object to build sql query`s in a fancy way:
++ * &lt;code&gt;
++ *  $command= SQLCommand::select()-&gt;from('news')-&gt;where('state=?')-&gt;orderBy('created_at');
++ * // later, you can use a PreparedStatement to bind parameters.
++ *  $stmt= $conn-&gt;prepareStatement($command-&gt;getQueryString());
++ *  $stmt-&gt;setInt(1, News::PUBLISHED);
++ *  $rs= $stmt-&gt;executeQuery();
++ * &lt;/code&gt;
++ * More methods will be added later-on, API will be provided on request.
++ * 
++ * @package medick.active.record
++ * @author Aurelian Oancea
++ * @since Rev. 343
++ */
++class SQLCommand extends Object {
++
++    private $command;
++
++    private $tables= array();
++
++    private $joins= array();
++    
++    private $wheres= array();
++
++    private $orderBy;
++
++    private $columns;
++    
++    private function SQLCommand($command) {
++        $this-&gt;command= $command;
++    }
++
++    public static function select() {
++        return new SQLCommand('select');
++    }
++
++    public function from($table) {
++        $this-&gt;tables[]= $table;
++        return $this;
++    }
++
++    public function where($clause) {
++        $this-&gt;wheres[]= $clause;
++        return $this;
++    }
++
++    public function orderBy($clause) {
++        $this-&gt;orderBy= $clause;
++        return $this;
++    }
++
++    public function columns($columns) {
++        $this-&gt;columns= $columns;
++        return $this;
++    }
++    
++    public function leftJoin($what) {
++        // $this-&gt;tables[]=$what;
++        $this-&gt;joins[]= $what;
++        return $this;
++    }
++    
++    public function getQueryString() {
++        $query= $this-&gt;command . &quot; &quot;;
++        // if ($this-&gt;distinct) $query .= &quot;distinct &quot;;
++        $query .= $this-&gt;appendColumns();
++        // $query .= &quot; from &quot; . $this-&gt;from;
++        $query .= $this-&gt;appendFrom();
++        $query .= $this-&gt;appendJoins();
++        $query .= $this-&gt;appendWhere();
++        $query .= $this-&gt;appendOrderBy();
++        return $query;
++    }
++
++    private function appendColumns() {
++        return $this-&gt;columns ? $this-&gt;columns : &quot;*&quot;;
++    }
++
++    private function appendFrom() {
++        $q= &quot; from &quot;;
++        $size= count($this-&gt;tables);
++        for ($i = 0; $i &lt; $size; ++$i) {
++            $q .= $this-&gt;tables[$i];
++            if ($i &lt;= $size - 2) {
++                $q .= &quot; , &quot;;
++            }
++        }
++        return $q;
++    }
++    
++    private function appendJoins() {
++        if (count($this-&gt;joins)) return &quot; &quot; . implode(&quot; &quot;, $this-&gt;joins);
++        else return &quot; &quot;;
++    }
++    
++    private function appendWhere() {
++        if (count($this-&gt;wheres)) return &quot; where &quot; . implode(&quot; and &quot;, $this-&gt;wheres);
++        else return &quot;&quot;;
++    }
++
++    private function appendOrderBy() {
++        return $this-&gt;orderBy ? &quot; order by &quot; . $this-&gt;orderBy : &quot;&quot;;
++    }
++
++}
+
+
+Property changes on: exp/ar5/libs/active/record/SQLCommand.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: exp/ar5/libs/active/record/SQLField.php
+===================================================================
+--- exp/ar5/libs/active/record/SQLField.php	2007-08-20 14:29:17 UTC (rev 455)
++++ exp/ar5/libs/active/record/SQLField.php	2007-08-22 12:05:02 UTC (rev 456)
+@@ -0,0 +1,36 @@
++&lt;?php
++
++// $Id$
++
++class SQLField extends Object {
++
++  private $name, $value, $pk, $type, $size, $affected;
++
++  public function SQLField($name, $pk=false, $type='int', $size=0, $value= null, $affected=false) {
++    $this-&gt;name=  $name;
++    $this-&gt;value= $value;
++    $this-&gt;pk= (bool)$pk;
++    $this-&gt;size= (int)$size;
++    $this-&gt;type= SQLType::getPhpType( strtolower($type) );
++    $this-&gt;affected= (bool)$affected;
++  }
++
++  public function getName() { return $this-&gt;name; }
++
++  public function getValue() { return $this-&gt;value; }
++  public function setValue($value) { $this-&gt;value= $value;}
++
++  public function setAffected($val) { $this-&gt;affected= (bool)$val; }
++  public function isAffected() { return (bool)$this-&gt;affected; }
++
++  public function isPk() { return (bool)$this-&gt;pk; }
++
++  public function getType() { return $this-&gt;type; }
++
++  public function alter( $value ) {
++    $this-&gt;value    = $value;
++    $this-&gt;affected = true;
++  }
++
++}
++
+
+
+Property changes on: exp/ar5/libs/active/record/SQLField.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php	2007-08-20 14:29:17 UTC (rev 455)
++++ exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php	2007-08-22 12:05:02 UTC (rev 456)
+@@ -22,7 +22,7 @@
+   abstract protected function getLastErrorMessage();
+ 
+   // return TableInfo
+-  abstract public function getTableInfo($name);
++  abstract public function getTableInfo( $name, $force=false );
+   
+   // return PreparedStatement
+   abstract public function prepare( $sql );
+@@ -38,7 +38,7 @@
+   
+   // return int
+   public function executeUpdate( $sql ) {
+-    return $this-&gt;getUpdateCount( $this-&gt;exec($sql) );
++    return $this-&gt;getUpdateCount( $this-&gt;exec( $sql ) );
+   }
+ 
+ }
+
+Modified: exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php	2007-08-20 14:29:17 UTC (rev 455)
++++ exp/ar5/libs/active/record/drivers/abstract/SQLPreparedStatement.php	2007-08-22 12:05:02 UTC (rev 456)
+@@ -109,22 +109,49 @@
+     $this-&gt;boundInVars[$idx]= (int)$value;
+   }
+ 
++  // todo
++  public function set($idx, $value) {
++    var_dump(gettype($value));
++  }
++
+   public function populateValues(Array $fields) {
+     $i=1; foreach($fields as $field) {
+-      if(!$field instanceof Field) throw new SQLException('Wrong argument Type, it should be an instance of &quot;Field&quot;');
++      if(!$field instanceof SQLField) throw new SQLException('Wrong argument Type, it should be an instance of &quot;Field&quot;');
+       call_user_func( array($this, 'set'.ucfirst($field-&gt;getType())), $i++, $field-&gt;getValue() );
+     }
+   }
+ 
++  public function executeQuery(Array $params= array()) {
++    $this-&gt;setupParams($params);
++    return $this-&gt;conn-&gt;execute( $this-&gt;replaceParams() );
++  }
++
++  public function getAllRecords(Array $params=array(), ReflectionClass $record) {
++    $this-&gt;setupParams( $params );
++    $result= $this-&gt;conn-&gt;exec( $this-&gt;replaceParams() );
++    return $this-&gt;getRecordsIterator( $result, $record );
++
++  }
++
+   public function executeUpdate() {
+-    $sql= $this-&gt;replaceParams();
+-    return $this-&gt;conn-&gt;executeUpdate( $sql );
++    return $this-&gt;conn-&gt;executeUpdate( $this-&gt;replaceParams() );
+   }
+ 
+   public function close() {
++
+   }
+ 
+-  abstract protected function escape($value);
++  private function setupParams(Array $params=array()) {
++    if ($params) {
++			for($i=0,$cnt=count($params); $i &lt; $cnt; $i++) {
++				$this-&gt;set($i+1, $params[$i]);
++			}
++    }
++  }
+ 
++  abstract protected function escape( $value );
++
++  abstract protected function getRecordsIterator( $results, ReflectionClass $class );
++
+ }
+ 
+
+Added: exp/ar5/libs/active/record/drivers/abstract/SQLTableInfo.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/abstract/SQLTableInfo.php	2007-08-20 14:29:17 UTC (rev 455)
++++ exp/ar5/libs/active/record/drivers/abstract/SQLTableInfo.php	2007-08-22 12:05:02 UTC (rev 456)
+@@ -0,0 +1,26 @@
++&lt;?php
++// $Id$
++
++abstract class SQLTableInfo extends Object {
++
++  protected $name, $connection;
++  private $fields;
++
++  public function SQLTableInfo($name, SQLConnection $connection) {
++    $this-&gt;name= $name;
++    $this-&gt;connection= $connection;
++    $this-&gt;fields= array();
++  }
++
++  public function add(SQLField $field) {
++    $this-&gt;fields[$field-&gt;getName()]= $field;
++  }
++
++  public function getFields() { 
++    return $this-&gt;fields;
++  }
++
++  abstract public function initFields( );
++
++}
++
+
+
+Property changes on: exp/ar5/libs/active/record/drivers/abstract/SQLTableInfo.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/ar5/libs/active/record/drivers/sqlite/sqlite.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/sqlite/sqlite.php	2007-08-20 14:29:17 UTC (rev 455)
++++ exp/ar5/libs/active/record/drivers/sqlite/sqlite.php	2007-08-22 12:05:02 UTC (rev 456)
+@@ -1,12 +1,49 @@
+ &lt;?php
+ // $Id$
+ 
++class SQLiteRecordsIterator extends Object implements Iterator {
++
++  private $result;
++
++  private $class;
++
++  public function SQLiteRecordsIterator( $result, ReflectionClass $class ) {
++    $this-&gt;class= $class;
++    $this-&gt;result= $result;
++  }
++
++  // Rewind the Iterator to the first element.
++  public function rewind() {
++    return sqlite_rewind( $this-&gt;result );
++  }
++
++  // Returns the current element
++  public function current() {
++    return $this-&gt;class-&gt;newInstance( sqlite_current( $this-&gt;result ) );
++  }
++
++  // Return the key of the current element.
++  public function key() {
++    return sqlite_key( $this-&gt;result );
++  }
++
++  // Moves the cursor to the next element.
++  public function next() {
++    return sqlite_next( $this-&gt;result );
++  }
++
++  // Check if there is a current element after calls to rewind() or next().
++  public function valid() {
++    return sqlite_valid( $this-&gt;result );
++  }
++
++}
++
+ class SQLiteResultSet extends SQLResultSet {
+ 
+   public function next() {
+     $this-&gt;row= sqlite_fetch_array( $this-&gt;result );
+     return (bool)$this-&gt;row;
+-    // return $this-&gt;row ? true : false;
+   }
+ 
+ }
+@@ -14,11 +51,12 @@
+ class SQLiteTableInfo extends SQLTableInfo {
+ 
+   public function initFields() {
++    echo &quot;.&quot;;
+     $sql= 'PRAGMA table_info('.$this-&gt;name.')';
+     $rs= $this-&gt;connection-&gt;execute( $sql );
+     while( $rs-&gt;next() ) {
+       // xxx: type.
+-      $fulltype= $rs-&gt;type; // varchar(255);
++      $fulltype= $rs['type']; // varchar(255);
+       $size=0;
+       if (preg_match('/^([^\(]+)\(\s*(\d+)\s*,\s*(\d+)\s*\)$/', $fulltype, $matches)) {
+         $type = $matches[1];
+@@ -31,7 +69,7 @@
+         $type = $fulltype;
+       }
+       // add field
+-      $this-&gt;add( new Field( $rs-&gt;name, $rs-&gt;pk, $type, $size ) );
++      $this-&gt;add( new SQLField( $rs['name'], $rs['pk'], $type, $size ) );
+     }
+   }
+ 
+@@ -43,6 +81,10 @@
+     return sqlite_escape_string( $value );
+   }
+ 
++  public function getRecordsIterator( $result, ReflectionClass $class ) {
++    return new SQLiteRecordsIterator( $result, $class );
++  }
++
+ }
+ 
+ class SQLiteConnection extends SQLConnection {
+@@ -87,12 +129,15 @@
+   public function getLastErrorMessage() {
+     return sqlite_error_string( sqlite_last_error($this-&gt;resource) );
+   }
+-  
+-  // xxx. cache.
+-  public function getTableInfo( $name ) {
+-    $table_info= new SQLiteTableInfo( $name, $this );
+-    $table_info-&gt;initFields();
+-    return $table_info;
++
++  private static $__table_info_storage;
++
++  public function getTableInfo( $name, $force= false ) {
++    if( $force || !isset(self::$__table_info_storage[$name]) ) {
++      self::$__table_info_storage[$name]= new SQLiteTableInfo( $name, $this );
++      self::$__table_info_storage[$name]-&gt;initFields();
++    }
++    return self::$__table_info_storage[$name];
+   }
+ 
+   public function prepare( $sql ) {
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000235.html">[Medick-svn] r455 - in exp/ar5: . libs libs/context	libs/context/configurator
+</A></li>
+	<LI>Next message: <A HREF="000237.html">[Medick-svn] r457 - in exp/ar5: . conf	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#236">[ date ]</a>
+              <a href="thread.html#236">[ thread ]</a>
+              <a href="subject.html#236">[ subject ]</a>
+              <a href="author.html#236">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

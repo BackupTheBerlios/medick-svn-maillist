@@ -1,0 +1,194 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r315 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r315%20-%20trunk&In-Reply-To=%3C200601032119.k03LJK5h031927%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000110.html">
+   <LINK REL="Next"  HREF="000112.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r315 - trunk</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r315%20-%20trunk&In-Reply-To=%3C200601032119.k03LJK5h031927%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r315 - trunk">aurelian at berlios.de
+       </A><BR>
+    <I>Tue Jan  3 22:19:20 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000110.html">[Medick-svn] r314 - trunk
+</A></li>
+        <LI>Next message: <A HREF="000112.html">[Medick-svn] r316 - in trunk: . skel skel/config skel/public
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#111">[ date ]</a>
+              <a href="thread.html#111">[ thread ]</a>
+              <a href="subject.html#111">[ subject ]</a>
+              <a href="author.html#111">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-03 22:19:19 +0100 (Tue, 03 Jan 2006)
+New Revision: 315
+
+Modified:
+   trunk/LICENSE
+   trunk/README
+Log:
+ -- updated README file to reflect the current state.
+ -- bumped 2006 in LICENCE file.
+
+
+Modified: trunk/LICENSE
+===================================================================
+--- trunk/LICENSE	2006-01-03 20:52:09 UTC (rev 314)
++++ trunk/LICENSE	2006-01-03 21:19:19 UTC (rev 315)
+@@ -1,4 +1,4 @@
+-    Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
++    Copyright (c) 2005,2006 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+     
+     Redistribution and use in source and binary forms, with or without
+     modification, are permitted provided that the following conditions are met:
+@@ -21,4 +21,5 @@
+     SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+     CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+     OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+\ No newline at end of file
++    OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++    
+
+Modified: trunk/README
+===================================================================
+--- trunk/README	2006-01-03 20:52:09 UTC (rev 314)
++++ trunk/README	2006-01-03 21:19:19 UTC (rev 315)
+@@ -1,22 +1,18 @@
+ ============================
+ Medick :: One PHP Framework
+-$Id:$
++$Id$
+ ============================
+ 
+ ABOUT:
+ ------
+-    Medick is a free software licensed under BSD License, see LICENSE file for details.
+-    Medick is a PHP Framework and the main task is to ease the work of programmers 
+-    by providing a ground for rapid and clean development.
+-
++    Medick is a free software licensed under a BSD-style licence, see LICENSE file for details.
+     At this point, the project is on pre-alpha stage.
+-    The stable version will require at least php 5.1.0 and it will be released around 1.february.2006
++    The alpha version will require at least php 5.1.1 and it will be released around 1.february.2006
+ 
+ REQUIREMENTS:
+ -------------
+     1. php 5.0.3 or higher (<A HREF="http://php.net/downloads">http://php.net/downloads</A>).
+-        The fallowing PHP extensions are required: simplexml and spl.
+-        For changing application settings on runtime you will also need domxml.
++        The following PHP extensions are required: simplexml and spl.
+         This extensions are enbled by default on every php installation.
+         
+     2. for web application you will need, of course a web server, Apache is recommended.
+@@ -32,55 +28,18 @@
+ 
+ INSTALL:
+ --------
+-    1. checkout Medick sources from svn:
++    Checkout Medick sources from svn:
+     
+-        $ svn checkout <A HREF="svn://svn.berlios.de/medick/trunk">svn://svn.berlios.de/medick/trunk</A> medick
++        $ svn checkout <A HREF="svn://svn.berlios.de/medick">svn://svn.berlios.de/medick</A> medick
+ 
+-    this will create the medick folder and will download the source code from svn.
+-    The folder layout after the checkout (ignoring .svn folders and the content of docs and libs):
++WHERE TO GET HELP:
++-----------------
++    Subscribe to our internals email lists: 
++    <A HREF="http://lists.berlios.de/mailman/listinfo/medick-devel">http://lists.berlios.de/mailman/listinfo/medick-devel</A>
++    You can also read the archives:
++    <A HREF="http://lists.berlios.de/pipermail/medick-devel">http://lists.berlios.de/pipermail/medick-devel</A>
+     
+-        medick/
+-            config/
+-                application.xml
+-                bootstrap.php
+-            docs/
+-                ...............
+-            scripts/
+-                updater.sh
+-                generator.php
+-            public_html/
+-                images/
+-                javascript/
+-                stylesheet/
+-                index.php
+-                default.htaccess
+-            libs/
+-                .................
+-            README
+-            LICENSE
+-            VERSION
+ 
+-    2. Install Medick dependencies:
+-    
+-        $ cd medick/
+-        $ scripts/updater.sh
+-
+-        This script will checkout Creole (database abstraction layer for PHP5) and SimpleTest (PHP Test Framework)
+-    from their CVS repositories into the vendor folder:
+-    
+-        medick/
+-            vendor/
+-                creole/
+-                    ..........
+-                simpletest/
+-                    ..........
+-
+-    More details about creole and simpletest:
+-    simpletest: <A HREF="http://www.lastcraft.com/simple_test.php">http://www.lastcraft.com/simple_test.php</A>
+-    creole:     <A HREF="http://creole.phpdb.org/wiki">http://creole.phpdb.org/wiki</A>
+-    
+-    3. There is no step 3, just start to code.
+-
+ GETTING STARTED.
+ ----------------
+   To be Done
+
+
+Property changes on: trunk/README
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000110.html">[Medick-svn] r314 - trunk
+</A></li>
+	<LI>Next message: <A HREF="000112.html">[Medick-svn] r316 - in trunk: . skel skel/config skel/public
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#111">[ date ]</a>
+              <a href="thread.html#111">[ thread ]</a>
+              <a href="subject.html#111">[ subject ]</a>
+              <a href="author.html#111">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

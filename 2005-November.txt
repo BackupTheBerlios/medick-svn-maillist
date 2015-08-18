@@ -1,0 +1,3801 @@
+From aurelian at berlios.de  Sun Nov  6 20:20:39 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Sun, 6 Nov 2005 20:20:39 +0100
+Subject: [Medick-svn] r249 - trunk/libs/medick
+Message-ID: <200511061920.jA6JKdQv012998@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-06 20:20:38 +0100 (Sun, 06 Nov 2005)
+New Revision: 249
+
+Removed:
+   trunk/libs/medick/Error.php
+   trunk/libs/medick/InvalidOffsetException.php
+Modified:
+   trunk/libs/medick/Exception.php
+Log:
+ [ medick ] groupping all Exceptions in one file
+
+Deleted: trunk/libs/medick/Error.php
+===================================================================
+--- trunk/libs/medick/Error.php	2005-10-29 19:32:25 UTC (rev 248)
++++ trunk/libs/medick/Error.php	2005-11-06 19:20:38 UTC (rev 249)
+@@ -1,48 +0,0 @@
+-<?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * Error.
+- * @package locknet7.medick
+- */
+-class Error extends MedickException {
+-
+-    public function __construct($message, $code, $file, $line, $trace) {
+-        parent::__construct($message, $code);
+-        $this->file  = $file;
+-        $this->line  = $line;
+-        $this->trace = $trace;
+-    }
+-
+-}
+
+Modified: trunk/libs/medick/Exception.php
+===================================================================
+--- trunk/libs/medick/Exception.php	2005-10-29 19:32:25 UTC (rev 248)
++++ trunk/libs/medick/Exception.php	2005-11-06 19:20:38 UTC (rev 249)
+@@ -47,5 +47,22 @@
+     public function __construct($message, $code = '0') {
+         parent::__construct($message, $code);
+     }
++}
+ 
++/**
++ * Error.
++ * @package locknet7.medick
++ */
++class Error extends MedickException {
++    public function __construct($message, $code, $file, $line, $trace) {
++        parent::__construct($message, $code);
++        $this->file  = $file;
++        $this->line  = $line;
++        $this->trace = $trace;
++    }
+ }
++
++/**
++ * @package locknet7.medick
++ */
++class InvalidOffsetException extends MedickException { }
+
+Deleted: trunk/libs/medick/InvalidOffsetException.php
+===================================================================
+--- trunk/libs/medick/InvalidOffsetException.php	2005-10-29 19:32:25 UTC (rev 248)
++++ trunk/libs/medick/InvalidOffsetException.php	2005-11-06 19:20:38 UTC (rev 249)
+@@ -1,38 +0,0 @@
+-<?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * @package locknet7.medick
+- */
+-class InvalidOffsetException extends MedickException { }
+
+
+
+From aurelian at berlios.de  Sun Nov  6 20:25:23 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Sun, 6 Nov 2005 20:25:23 +0100
+Subject: [Medick-svn] r250 - trunk/libs/medick/io
+Message-ID: <200511061925.jA6JPNg9023572@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-06 20:25:22 +0100 (Sun, 06 Nov 2005)
+New Revision: 250
+
+Removed:
+   trunk/libs/medick/io/FileNotFoundException.php
+   trunk/libs/medick/io/IOException.php
+Log:
+ [ medick/io ] removed exceptions files. contents moved to medick.Exception
+
+Deleted: trunk/libs/medick/io/FileNotFoundException.php
+===================================================================
+--- trunk/libs/medick/io/FileNotFoundException.php	2005-11-06 19:20:38 UTC (rev 249)
++++ trunk/libs/medick/io/FileNotFoundException.php	2005-11-06 19:25:22 UTC (rev 250)
+@@ -1,43 +0,0 @@
+-<?php
+-// {{{ License
+-//////////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-//////////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-include_once('medick/io/IOException.php');
+-
+-/**
+- * Indicates that a file could not be found.
+- * @package locknet7.medick.io
+- */
+-
+-class FileNotFoundException extends IOException { }
+- 
+
+Deleted: trunk/libs/medick/io/IOException.php
+===================================================================
+--- trunk/libs/medick/io/IOException.php	2005-11-06 19:20:38 UTC (rev 249)
++++ trunk/libs/medick/io/IOException.php	2005-11-06 19:25:22 UTC (rev 250)
+@@ -1,40 +0,0 @@
+-<?php
+-// {{{ License
+-//////////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-//////////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * @package locknet7.medick.io
+- */
+-
+-class IOException extends MedickException { }
+-
+
+
+
+From aurelian at berlios.de  Sun Nov  6 20:29:49 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Sun, 6 Nov 2005 20:29:49 +0100
+Subject: [Medick-svn] r251 - trunk/libs/medick
+Message-ID: <200511061929.jA6JTn0c023852@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-06 20:29:48 +0100 (Sun, 06 Nov 2005)
+New Revision: 251
+
+Modified:
+   trunk/libs/medick/Registry.php
+   trunk/libs/medick/Version.php
+Log:
+ [ medick/ ] Some api docs in Version, removed include_once stmt. from Registry
+
+Modified: trunk/libs/medick/Registry.php
+===================================================================
+--- trunk/libs/medick/Registry.php	2005-11-06 19:25:22 UTC (rev 250)
++++ trunk/libs/medick/Registry.php	2005-11-06 19:29:48 UTC (rev 251)
+@@ -32,8 +32,6 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-include_once('medick/InvalidOffsetException.php');
+-
+ /**
+  * @package locknet7.medick
+  */
+@@ -104,3 +102,4 @@
+     }
+     // }}}
+ }
++
+
+Modified: trunk/libs/medick/Version.php
+===================================================================
+--- trunk/libs/medick/Version.php	2005-11-06 19:25:22 UTC (rev 250)
++++ trunk/libs/medick/Version.php	2005-11-06 19:29:48 UTC (rev 251)
+@@ -33,11 +33,16 @@
+ // }}}
+ 
+ /**
++ * Holds the current Medick version
+  * @package locknet7.medick
+  */
+ 
+ class Version extends Object {
+ 
++    /**
++     * It gets the medick version.
++     * @return string the medick version
++     */
+     public static function getVersion() {
+         return "0.0.3-svn";
+     }
+
+
+
+From aurelian at berlios.de  Sun Nov  6 20:35:49 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Sun, 6 Nov 2005 20:35:49 +0100
+Subject: [Medick-svn] r252 - trunk/libs/action/controller/route
+Message-ID: <200511061935.jA6JZnoM024467@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-06 20:35:47 +0100 (Sun, 06 Nov 2005)
+New Revision: 252
+
+Removed:
+   trunk/libs/action/controller/route/RouteException.php
+Log:
+ [ ACRoute/ ] removed RouteException
+
+Deleted: trunk/libs/action/controller/route/RouteException.php
+===================================================================
+--- trunk/libs/action/controller/route/RouteException.php	2005-11-06 19:29:48 UTC (rev 251)
++++ trunk/libs/action/controller/route/RouteException.php	2005-11-06 19:35:47 UTC (rev 252)
+@@ -1,38 +0,0 @@
+-<?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * @package locknet7.action.controller.route
+- */
+-class RouteException extends MedickException {    }
+
+
+
+From aurelian at berlios.de  Sun Nov  6 20:37:35 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Sun, 6 Nov 2005 20:37:35 +0100
+Subject: [Medick-svn] r253 - trunk/libs/action/controller/cli
+Message-ID: <200511061937.jA6JbZJ0024529@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-06 20:37:35 +0100 (Sun, 06 Nov 2005)
+New Revision: 253
+
+Removed:
+   trunk/libs/action/controller/cli/CLIException.php
+Log:
+ [ ACRequest ] removed CLIException.
+
+Deleted: trunk/libs/action/controller/cli/CLIException.php
+===================================================================
+--- trunk/libs/action/controller/cli/CLIException.php	2005-11-06 19:35:47 UTC (rev 252)
++++ trunk/libs/action/controller/cli/CLIException.php	2005-11-06 19:37:35 UTC (rev 253)
+@@ -1,38 +0,0 @@
+-<?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/** 
+- * @package locknet7.action.controller.request
+- */
+-class CLIException extends MedickException {      }
+
+
+
+From aurelian at berlios.de  Sun Nov  6 20:42:52 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Sun, 6 Nov 2005 20:42:52 +0100
+Subject: [Medick-svn] r254 - trunk/libs/action/controller/session
+Message-ID: <200511061942.jA6JgqVG025222@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-06 20:42:52 +0100 (Sun, 06 Nov 2005)
+New Revision: 254
+
+Added:
+   trunk/libs/action/controller/session/ISessionContainer.php
+Removed:
+   trunk/libs/action/controller/session/ISession.php
+   trunk/libs/action/controller/session/driver/
+Modified:
+   trunk/libs/action/controller/session/Session.php
+Log:
+ [ ACSession ] starting to work on it. removed unused files.
+
+Deleted: trunk/libs/action/controller/session/ISession.php
+===================================================================
+--- trunk/libs/action/controller/session/ISession.php	2005-11-06 19:37:35 UTC (rev 253)
++++ trunk/libs/action/controller/session/ISession.php	2005-11-06 19:42:52 UTC (rev 254)
+@@ -1,70 +0,0 @@
+-<?php
+-// {{{ License
+-//////////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-//////////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * @package locknet7.action.controller.session
+- */
+-
+-interface ISession {
+-    /**
+-     *
+-     */
+-    public function open($save_path,$session_name);
+-
+-
+-    /**
+-     *
+-     */
+-    public function close();
+-
+-    /**
+-     *
+-     */
+-    public function read($id);
+-
+-    /**
+-     * 
+-     */
+-    public function destroy($id);
+-
+-    /**
+-     * 
+-     */
+-    public function write($id,$session_data);
+-
+-    /**
+-     * 
+-     */
+-    public function gc($maxlifetime=300);
+-}
+
+Copied: trunk/libs/action/controller/session/ISessionContainer.php (from rev 248, trunk/libs/action/controller/session/ISession.php)
+===================================================================
+--- trunk/libs/action/controller/session/ISession.php	2005-10-29 19:32:25 UTC (rev 248)
++++ trunk/libs/action/controller/session/ISessionContainer.php	2005-11-06 19:42:52 UTC (rev 254)
+@@ -0,0 +1,70 @@
++<?php
++// {{{ License
++//////////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++//////////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * @package locknet7.action.controller.session
++ */
++interface ISessionContainer {
++
++    /**
++     *
++     */
++    public function open($save_path, $session_name);
++
++
++    /**
++     *
++     */
++    public function close();
++
++    /**
++     *
++     */
++    public function read($id);
++
++    /**
++     *
++     */
++    public function destroy($id);
++
++    /**
++     *
++     */
++    public function write($id, $session_data);
++
++    /**
++     *
++     */
++    public function gc($maxlifetime=300);
++}
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2005-11-06 19:37:35 UTC (rev 253)
++++ trunk/libs/action/controller/session/Session.php	2005-11-06 19:42:52 UTC (rev 254)
+@@ -7,13 +7,13 @@
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+ //
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+@@ -26,119 +26,66 @@
+ // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
++//
+ // $Id$
+-// 
++//
+ //////////////////////////////////////////////////////////////////////////////////
+ // }}}
+- 
+-include_once('action/controller/session/SessionException.php');
+-include_once('action/controller/session/ISession.php');
+ 
+ /**
+  * @package locknet7.action.controller.session
+- */
+-
+-class Session {
+-    
+-    /**
+-     * @var $instance object, this session instance
+-     */
+-    static private $instance=null;
+-    
+-    /**
+-     * Constructor.
+-     *
+-     * Just hide him
+-     */
+-    private function __construct() { }
+-
+-    public function regenerateId() {
+-        session_regenerate_id();
+-    }
+-    
+-    /**
+-     * Sets a session value for the specified name
+-     *
+-     * @param $name, string the name of this session object
+-     * @param $value, string the value
+-     */
+-    public function setAttribute($name,$value) {
+-        return $_SESSION[$name] = $value;
+-    }
+-    
+-    public function removeAttribute($name) {
+-        $_SESSION[$name] = null;
+-        unset($_SESSION[$name]);
+-    }
+-
+-    public function getAttribute($name) {
+-        return session_is_registered($name) ? $_SESSION[$name] : false;
+-    }
+-    
+-    public function getId(){
+-        return session_id();
+-    }
+-    
+-    public function dump() {
+-        return $_SESSION;
+-    }
+-    
+-    /**
+-     * Attempts to return a concrete Session instance based on
+-     * $driver.
+-     *
+-     * @param optional string $driver The type of concrete Session
+-     *                                subclass to return. The is based on the
+-     *                                driver ($driver). The code is
+-     *                                dynamically included.
+-     * @param optional array $params  A hash containing any additional
+-     *                                configuration or connection parameters
+-     *                                a subclass might need.
+-     *
+-     * @return mixed    The newly created concrete Session instance, or
+-     *                  false on an error.
+-     */
+-    private static final function factory($driver='', $params = array())
+-    {
+-        $drivers = array('Creole','PDO','File');
+-        
+-        if( ($driver=='') OR (!in_array($driver,$drivers)) ) {
+-            $driver = 'Default';
+-        }
+-        
+-        $class = $driver . 'Session';
+-        $file  = 'Session/driver/' . $class  . '.php';
+-        
+-        include_once($file);
+-        
+-        if (class_exists($class)) {
+-            return new $class($params);
+-        } else {
+-            throw new SessionException("Class " . $class . " don`t exist!");
+-        }
+-    }
+-
+-    /**
+-     * Attempts to return a reference to a concrete Session
+-     * instance based on $driver. It will only create a new instance
+-     * if no Session instance with the same parameters
+-     * currently exists.
+-     *
+-     * This method must be invoked as: $var = Session::getInstance()
+-     *
+-     * @param string $driver          See Session::factory().
+-     * @param optional array $params  See Session::factory().
+-     *
+-     * @return mixed  The created concrete Session instance, or false
+-     *                on error.
+-     */
+-    public static final function getInstance($driver, $params = null)
+-    {
+-        $signature = serialize(array($driver, $params));
+-        if(!isset(self::$instance[$signature])){
+-            self::$instance[$signature] = self::factory($driver, $params);
+-        }
+-        return self::$instance[$signature];
+-    }
+-}
++ */
++class Session extends Object {
++
++    private $container;
++
++    private $isStarted = FALSE;
++
++    /**
++     * Constructor.
++     */
++    public function __construct() {
++
++    }
++
++    public function start() {
++        if ($this->isStarted) {
++            throw new IllegalStateException();
++        }
++        return session_start();
++    }
++
++    public function __set($name, $value) {
++        $_SESSION[$name] = $value;
++    }
++
++    public function __get() {
++        return session_is_registered($name) ? $_SESSION[$name] : false;
++    }
++
++    public function putValue($name, $value) {
++        $this->__set($name, $value);
++    }
++
++    public function hasValue($name) {
++        return session_is_registered($name);
++    }
++
++    public function removeValue($name) {
++        $this->__set($name, null);
++        unset($_SESSION[$name]);
++    }
++
++    public function getId(){
++        return session_id();
++    }
++
++    public function setContainer(ISessionContainer $container) {
++        $this->container= $container;
++    }
++
++    public function dump() {
++        return $_SESSION;
++    }
++
++}
+
+
+
+From aurelian at berlios.de  Sun Nov  6 20:49:24 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Sun, 6 Nov 2005 20:49:24 +0100
+Subject: [Medick-svn] r255 - trunk/libs/action/controller
+Message-ID: <200511061949.jA6JnO0p025777@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-06 20:49:23 +0100 (Sun, 06 Nov 2005)
+New Revision: 255
+
+Removed:
+   trunk/libs/action/controller/InjectorException.php
+Modified:
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/action/controller/Routing.php
+Log:
+ [ action/controller ] moved InjectorException class to medick.Exception, clean-up the imports.
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2005-11-06 19:42:52 UTC (rev 254)
++++ trunk/libs/action/controller/Injector.php	2005-11-06 19:49:23 UTC (rev 255)
+@@ -33,12 +33,11 @@
+ // }}}
+ 
+ include_once('active/record/Base.php');
+-include_once('medick/io/FileNotFoundException.php');
+-include_once('action/controller/InjectorException.php');
+ 
+ /** 
+  * Model Injector.
+  * Injects the model name into Active Record Base Class.
++ * @TODO: this should be used for other types of injections. (controller, layout files, etc.)
+  * @package locknet7.action.controller
+  */
+ 
+@@ -80,12 +79,5 @@
+                 The dummy `find` method is not defined! [ User Info: ' . $rex->getMessage() . ']');
+         }
+     }
+-  
+-    /** prepare static members for our model
+-     * @[Deprecated]
+-     */
+-    public static function prepareARBase() {
+-        return ActiveRecordBase::establish_connection();
+-    }
+ }
+ 
+
+Deleted: trunk/libs/action/controller/InjectorException.php
+===================================================================
+--- trunk/libs/action/controller/InjectorException.php	2005-11-06 19:42:52 UTC (rev 254)
++++ trunk/libs/action/controller/InjectorException.php	2005-11-06 19:49:23 UTC (rev 255)
+@@ -1,40 +0,0 @@
+-<?php
+-// {{{ License
+-//////////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-//////////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * @package locknet7.action.controller
+- */
+-
+-class InjectorException extends MedickException { }
+- 
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2005-11-06 19:42:52 UTC (rev 254)
++++ trunk/libs/action/controller/Routing.php	2005-11-06 19:49:23 UTC (rev 255)
+@@ -32,8 +32,6 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-include_once('action/controller/route/RouteException.php');
+-
+ /**
+  * @package locknet7.action.controller.route
+  */
+
+
+
+From aurelian at berlios.de  Sun Nov  6 20:50:31 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Sun, 6 Nov 2005 20:50:31 +0100
+Subject: [Medick-svn] r256 - trunk/libs/configurator
+Message-ID: <200511061950.jA6JoVN2025846@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-06 20:50:30 +0100 (Sun, 06 Nov 2005)
+New Revision: 256
+
+Removed:
+   trunk/libs/configurator/ConfiguratorException.php
+Modified:
+   trunk/libs/configurator/IConfigurator.php
+Log:
+ [ configurator ] removed ConfiguratorException, fix imports
+
+Deleted: trunk/libs/configurator/ConfiguratorException.php
+===================================================================
+--- trunk/libs/configurator/ConfiguratorException.php	2005-11-06 19:49:23 UTC (rev 255)
++++ trunk/libs/configurator/ConfiguratorException.php	2005-11-06 19:50:30 UTC (rev 256)
+@@ -1,39 +0,0 @@
+-<?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice,
+-//   this list of conditions and the following disclaimer.
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation
+-//   and/or other materials provided with the distribution.
+-//   * Neither the name of locknet.ro nor the names of its contributors may
+-//   be used to endorse or promote products derived from this software without
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-//
+-// $Id$
+-//
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * Cofigurator Exception
+- * @package locknet7.config
+- */
+-class ConfiguratorException extends MedickException {       }
+
+Modified: trunk/libs/configurator/IConfigurator.php
+===================================================================
+--- trunk/libs/configurator/IConfigurator.php	2005-11-06 19:49:23 UTC (rev 255)
++++ trunk/libs/configurator/IConfigurator.php	2005-11-06 19:50:30 UTC (rev 256)
+@@ -32,8 +32,6 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-include_once('configurator/ConfiguratorException.php');
+-
+ /**
+  * Configurator Interface.
+  * @package locknet7.config
+
+
+
+From aurelian at berlios.de  Sun Nov  6 20:53:04 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Sun, 6 Nov 2005 20:53:04 +0100
+Subject: [Medick-svn] r257 - trunk/libs/logger
+Message-ID: <200511061953.jA6Jr4RM025955@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-06 20:53:02 +0100 (Sun, 06 Nov 2005)
+New Revision: 257
+
+Removed:
+   trunk/libs/logger/LoggingException.php
+Modified:
+   trunk/libs/logger/Logger.php
+Log:
+ [ logger ] removed LoggingException, fix imports
+
+Modified: trunk/libs/logger/Logger.php
+===================================================================
+--- trunk/libs/logger/Logger.php	2005-11-06 19:50:30 UTC (rev 256)
++++ trunk/libs/logger/Logger.php	2005-11-06 19:53:02 UTC (rev 257)
+@@ -33,7 +33,6 @@
+ // }}}
+ 
+ include_once('logger/ILogger.php');
+-include_once('logger/LoggingException.php');
+ include_once('logger/LoggingEvent.php');
+ include_once('logger/outputter/IOutputter.php');
+ include_once('logger/outputter/Outputter.php');
+
+Deleted: trunk/libs/logger/LoggingException.php
+===================================================================
+--- trunk/libs/logger/LoggingException.php	2005-11-06 19:50:30 UTC (rev 256)
++++ trunk/libs/logger/LoggingException.php	2005-11-06 19:53:02 UTC (rev 257)
+@@ -1,40 +0,0 @@
+-<?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice,
+-//   this list of conditions and the following disclaimer.
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation
+-//   and/or other materials provided with the distribution.
+-//   * Neither the name of locknet.ro nor the names of its contributors may
+-//   be used to endorse or promote products derived from this software without
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-//
+-// $Id$
+-//
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * Logging Exception
+- * @package locknet7.logger
+- */
+-class LoggingException extends MedickException {       }
+-
+
+
+
+From aurelian at berlios.de  Sun Nov  6 20:56:17 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Sun, 6 Nov 2005 20:56:17 +0100
+Subject: [Medick-svn] r258 - trunk/libs/active/record
+Message-ID: <200511061956.jA6JuHkJ026246@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-06 20:56:17 +0100 (Sun, 06 Nov 2005)
+New Revision: 258
+
+Removed:
+   trunk/libs/active/record/ActiveRecordException.php
+   trunk/libs/active/record/RecordNotFoundException.php
+Modified:
+   trunk/libs/active/record/Base.php
+Log:
+ [ active/record ] removed Exceptions, removed imports.
+
+Deleted: trunk/libs/active/record/ActiveRecordException.php
+===================================================================
+--- trunk/libs/active/record/ActiveRecordException.php	2005-11-06 19:53:02 UTC (rev 257)
++++ trunk/libs/active/record/ActiveRecordException.php	2005-11-06 19:56:17 UTC (rev 258)
+@@ -1,38 +0,0 @@
+-<?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * @package locknet7.active.record
+- */
+-class ActiveRecordException extends MedickException {     }
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2005-11-06 19:53:02 UTC (rev 257)
++++ trunk/libs/active/record/Base.php	2005-11-06 19:56:17 UTC (rev 258)
+@@ -7,13 +7,13 @@
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+ //
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+@@ -38,9 +38,6 @@
+ include_once('active/record/QueryBuilder.php');
+ include_once('active/support/Inflector.php');
+ include_once('active/record/Association.php');
+-// Errors and Exceptions.
+-include_once('active/record/ActiveRecordException.php');
+-include_once('active/record/RecordNotFoundException.php');
+ // 3-rd party.
+ include_once('creole/Creole.php');
+ 
+@@ -62,15 +59,15 @@
+     protected $logger;
+ 
+     // {{{ static members
+-    
++
+     /** @var Connection
+         database connection*/
+     protected static $conn;
+-    
+-    /** @var string 
++
++    /** @var string
+         current table name */
+     protected static $table_name;
+-    
++
+     // }}}
+ 
+     /**
+@@ -81,14 +78,14 @@
+             self::$conn = Creole::getConnection(Registry::get('__configurator')->getDatabaseDsn());
+         }
+     }
+-    
++
+     /**
+      * Force a closing of the database connection
+      */
+     public static function close() {
+         self::$conn = Creole::getConnection(Registry::get('__configurator')->getDatabaseDsn())->close();
+     }
+-    
++
+     /**
+      * Constructor
+      *
+@@ -324,7 +321,7 @@
+     }
+ 
+     private function getInsertSql() {
+-        return 'INSERT INTO ' . self::$table_name 
++        return 'INSERT INTO ' . self::$table_name
+                . ' (' . implode(',', $this->fields->getAffectedFieldsNames()) . ')'
+                . ' VALUES (' . substr(str_repeat('?,', count($this->fields->getAffectedFields())), 0, -1) . ')';
+     }
+@@ -377,7 +374,7 @@
+             }
+             $stmt = self::$conn->prepareStatement($query->buildQuery());
+             $stmt->setInt(1, $params[0]);
+-            $rs   = $stmt->executeQuery();  
++            $rs   = $stmt->executeQuery();
+             if ($rs->getRecordCount() == 1) {
+                 $rs->next();
+                 return $class->newInstance($rs->getRow());
+
+Deleted: trunk/libs/active/record/RecordNotFoundException.php
+===================================================================
+--- trunk/libs/active/record/RecordNotFoundException.php	2005-11-06 19:53:02 UTC (rev 257)
++++ trunk/libs/active/record/RecordNotFoundException.php	2005-11-06 19:56:17 UTC (rev 258)
+@@ -1,40 +0,0 @@
+-<?php
+-// {{{ License
+-//////////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-//////////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * @package locknet7.active.record
+- */
+-
+-class RecordNotFoundException extends ActiveRecordException { }
+-
+
+
+
+From aurelian at berlios.de  Sun Nov  6 21:01:09 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Sun, 6 Nov 2005 21:01:09 +0100
+Subject: [Medick-svn] r259 - trunk/libs/medick
+Message-ID: <200511062001.jA6K19xe026548@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-06 21:01:08 +0100 (Sun, 06 Nov 2005)
+New Revision: 259
+
+Modified:
+   trunk/libs/medick/Exception.php
+Log:
+ [ medick.Exception ] a file witch will hold all our Exceptions.
+
+Modified: trunk/libs/medick/Exception.php
+===================================================================
+--- trunk/libs/medick/Exception.php	2005-11-06 19:56:17 UTC (rev 258)
++++ trunk/libs/medick/Exception.php	2005-11-06 20:01:08 UTC (rev 259)
+@@ -32,10 +32,10 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-
++// {{{ MedickException
+ /**
++ * Our base Exception Class
+  * @package locknet7.medick
+- * Our base Exception Class
+  */
+ class MedickException extends Exception {
+ 
+@@ -48,9 +48,10 @@
+         parent::__construct($message, $code);
+     }
+ }
+-
++// }}}
++// {{{ Error
+ /**
+- * Error.
++ * Error, a routine error.
+  * @package locknet7.medick
+  */
+ class Error extends MedickException {
+@@ -61,8 +62,75 @@
+         $this->trace = $trace;
+     }
+ }
+-
++// }}}
++// {{{ InvalidOffsetException
+ /**
++ * Exception thrown when trying to acces an array by an invalid identifier(offset)
+  * @package locknet7.medick
+  */
+ class InvalidOffsetException extends MedickException { }
++// }}}
++// {{{ IOException
++/**
++ * General Input/Output Exception
++ * @package locknet7.medick.io
++ */
++class IOException extends MedickException { }
++// }}}
++// {{{ FileNotFoundException
++/**
++ * Indicates that a file could not be found.
++ * @package locknet7.medick.io
++ */
++class FileNotFoundException extends IOException { }
++// }}}
++// {{{ InjectorException
++/**
++ * It signals a problem with the Injector.
++ * @package locknet7.action.controller
++ */
++class InjectorException extends MedickException { }
++// }}}
++// {{{ RouteException
++/**
++ * Exception that occurrs when a problem on the route is found.
++ * @package locknet7.action.controller.route
++ */
++class RouteException extends MedickException {    }
++// }}}
++// {{{ CLIException
++/**
++ * @package locknet7.action.controller.request
++ */
++class CLIException extends MedickException {      }
++// }}}
++// {{{ IllegalStateException
++class IllegalStateException extends MedickException {    }
++// }}}
++// {{{ ConfiguratorException
++/**
++ * Cofigurator Exception
++ * @package locknet7.config
++ */
++class ConfiguratorException extends MedickException {       }
++// }}}
++// {{{ LoggingException
++/**
++ * Logging Exception
++ * @package locknet7.logger
++ */
++class LoggingException extends MedickException {       }
++// }}}
++// {{{ ActiveRecordException
++/**
++ * @package locknet7.active.record
++ */
++class ActiveRecordException extends MedickException {     }
++// }}}
++// {{{ RecordNotFoundException
++/**
++ * @package locknet7.active.record
++ */
++class RecordNotFoundException extends ActiveRecordException { }
++// }}}
++
+
+
+
+From aurelian at berlios.de  Sun Nov  6 21:02:13 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Sun, 6 Nov 2005 21:02:13 +0100
+Subject: [Medick-svn] r260 - trunk
+Message-ID: <200511062002.jA6K2DPT026660@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-06 21:02:13 +0100 (Sun, 06 Nov 2005)
+New Revision: 260
+
+Modified:
+   trunk/CHANGELOG
+Log:
+ updated CHANGELOG.
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2005-11-06 20:01:08 UTC (rev 259)
++++ trunk/CHANGELOG	2005-11-06 20:02:13 UTC (rev 260)
+@@ -1,5 +1,5 @@
+ $Id$
+-(*) SVM version
++(*) SVN version
+ 
+ 0.0.3 (*)
+     - more UnitTests and a better organization of tests.
+@@ -8,8 +8,12 @@
+     - ActiveRecordBase:
+         implemented has_and_belongs_to_many association (read-only)
+         fix broken behavior when trying to return an empty result set in __find() method
+-    - ActionController: added process_with_exception method.
+-    - Custom ErrorHandler, added more specialized Errors and Exceptions, for better debugging.
++    - ActionController: 
++        added process_with_exception method.
++    - Error and Exceptions:
++        added Custom ErrorHandler, 
++        added more specialized Errors and Exceptions, for better debugging, 
++        moved all exceptions class to one file: medick.Exception.
+     - bundled creole, creole is a DB Abstraction layer for PHP5 released under LGPL licence, more details on http://creole.phpdb.org
+ 
+ 0.0.2 (14.Oct.2005)
+
+
+
+From aurelian at berlios.de  Fri Nov 11 21:56:34 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Fri, 11 Nov 2005 21:56:34 +0100
+Subject: [Medick-svn] r266 - in trunk/libs: action/controller/route active/record medick
+Message-ID: <200511112056.jABKuYkF032175@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-11 21:56:34 +0100 (Fri, 11 Nov 2005)
+New Revision: 266
+
+Modified:
+   trunk/libs/action/controller/route/RouteParam.php
+   trunk/libs/active/record/FieldsAggregate.php
+   trunk/libs/medick/Object.php
+Log:
+ - [ ar.FieldsAggregate ] removed "implements IteratorAggregate" from the class decalration, added some comments.
+ - [ ac.route.RouteParam ] removed unused methods, finished contains method, some apidocs.
+ - [ medick.Object ] added getClass method  
+
+
+Modified: trunk/libs/action/controller/route/RouteParam.php
+===================================================================
+--- trunk/libs/action/controller/route/RouteParam.php	2005-11-10 21:43:55 UTC (rev 265)
++++ trunk/libs/action/controller/route/RouteParam.php	2005-11-11 20:56:34 UTC (rev 266)
+@@ -7,13 +7,13 @@
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+ //
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+@@ -26,9 +26,9 @@
+ // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
++//
+ // $Id$
+-// 
++//
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+@@ -38,13 +38,16 @@
+  */
+ class RouteParam extends Object {
+ 
+-    /** @var string param name */
++    /** @var string
++        Route Parameter name */
+     private $name;
+-    /** @var string param value */
++
++    /** @var string
++        Route Parameter value */
+     private $value;
+-    /** XXX. NotUsed */
+-    private $type;
+-    /** @var IValidators[] param validators */
++
++    /** @var IValidators[]
++        Route Parameter validators */
+     private $validators;
+ 
+     /**
+@@ -56,22 +59,6 @@
+         $this->validators = array();
+     }
+ 
+-    /** XXX. NotUsed.
+-     * Sets this parameter Type
+-     * @param string type
+-     */
+-    public function setType($type) {
+-        $this->type= $type;
+-    }
+-
+-    /** XXX. NotUsed
+-     * It gets this param type
+-     * @return string type
+-     */
+-    public function getType() {
+-        return $this->type;
+-    }
+-
+     /**
+      * Adds a validator for this parameter
+      * @param IValidator validators
+@@ -80,7 +67,7 @@
+         if ($this->contains($validator)) return;
+         $this->validators[]= $validator;
+     }
+-    
++
+     /**
+      * It gets the list of Validators
+      * @return IValidators[]
+@@ -88,23 +75,23 @@
+     public function getValidators() {
+         return $this->validator;
+     }
+-    
++
+     /**
+-     * Check if this parameter hav attached Validators
++     * Check if this parameter have Validators attached
+      * @return bool, TRUE if the parameter has at least one IValidator attached, FALSE otherwise
+      */
+     public function hasValidators() {
+       return sizeof($this->validators) > 0;
+     }
+-    
+-    /** XXX. NotDone.
++
++    /**
+      * Check if the parameter contains the given Validator
+      * @param IValidator validator to check if is already in the stack of IValidators elements
+      * @return IValidator if this parameter has the IValidator attached or FALSE if the stack of IValidator dont contains this IValidator
+      */
+-    public function contains (IValidator $validator) {
+-        foreach ($this->validators AS $_validator) {
+-
++    protected function contains (IValidator $validator) {
++        foreach ($this->validators as $_validator) {
++            if ($_validator->getClassName() == $validator->getClassName()) return TRUE;
+         }
+         return FALSE;
+     }
+@@ -114,7 +101,7 @@
+      * @param string value
+      */
+     public function setValue($value) {
+-        $this->value= $value;
++        $this->value = $value;
+     }
+ 
+     /**
+@@ -133,4 +120,3 @@
+         return $this->name;
+     }
+ }
+-
+
+Modified: trunk/libs/active/record/FieldsAggregate.php
+===================================================================
+--- trunk/libs/active/record/FieldsAggregate.php	2005-11-10 21:43:55 UTC (rev 265)
++++ trunk/libs/active/record/FieldsAggregate.php	2005-11-11 20:56:34 UTC (rev 266)
+@@ -7,13 +7,13 @@
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+ //
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+@@ -26,32 +26,33 @@
+ // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
++//
+ // $Id$
+-// 
++//
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+ include_once('active/record/Field.php');
+ 
+ /**
++ * It represents a Row from the Database, generic named here FieldsAggregate
+  * @package locknet7.active.record
+  */
+ 
+-class FieldsAggregate extends Object implements IteratorAggregate {
+-    
++class FieldsAggregate extends Object {
++
+     /** @var ArrayObject
+         fields container */
+     private $fields;
+-    
++
+     /** @var Field
+         pk field*/
+     private $pk_filed = NULL;
+-    
+-    /** @var bool 
++
++    /** @var bool
+         affected flag. */
+     private $affected = FALSE;
+-    
++
+     /**
+      * FieldsAggregate Constructor
+      */
+@@ -59,16 +60,16 @@
+         $this->fields = new ArrayObject();
+     }
+ 
+-    /** 
+-     * Add a new Field on the fields container 
++    /**
++     * Add a new Field on the fields container
+      */
+     public function add(Field $field) {
+         if (!$this->contains($field)) $this->fields[] = $field;
+         if ($field->isPk) $this->pk_field = $field;
+         return $field;
+     }
+-    
+-    /** 
++
++    /**
+      * Check if the container contains the given Field
+      * @return bool, TRUE if it contains this Field, FALSE otherwise
+      */
+@@ -81,7 +82,7 @@
+         return FALSE;
+     }
+ 
+-    /** 
++    /**
+      * It gets the iterator
+      * @return Iterator
+      */
+@@ -89,15 +90,15 @@
+         return $this->fields->getIterator();
+     }
+ 
+-    /** 
+-     * Set the affected modifier 
++    /**
++     * Set the affected modifier
+      * @param bool affected
+      */
+     public function setAffected($affected) {
+         $this->affected = (bool)$affected;
+     }
+ 
+-    /** 
++    /**
+      * It checks if it has affected fields by this run
+      * @return bool TRUE if it has, FALSE otherwise
+      */
+@@ -112,9 +113,9 @@
+     public function getPrimaryKey() {
+         return $this->pk_field;
+     }
+-    
+-    /** 
+-     * It gets an array with the names of the affected fields 
++
++    /**
++     * It gets an array with the names of the affected fields
+      * @return array
+      */
+     public function getAffectedFieldsNames() {
+@@ -127,7 +128,7 @@
+         return $names;
+     }
+ 
+-    /** 
++    /**
+      * Get an array of objects Field[] that are affected(changed) by this run
+      * @return Field[]
+      */
+
+Modified: trunk/libs/medick/Object.php
+===================================================================
+--- trunk/libs/medick/Object.php	2005-11-10 21:43:55 UTC (rev 265)
++++ trunk/libs/medick/Object.php	2005-11-11 20:56:34 UTC (rev 266)
+@@ -7,13 +7,13 @@
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+ //
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+@@ -26,9 +26,9 @@
+ // CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+ // OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+ // OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
++//
+ // $Id$
+-// 
++//
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+@@ -36,9 +36,9 @@
+  * Base Framework Object
+  * @package locknet7.medick
+  */
+- 
++
+ class Object {
+-    
++
+     /**
+      * It gets the class name
+      * @return string
+@@ -46,15 +46,24 @@
+     public function getClassName() {
+         return get_class($this);
+     }
+-    
++
+     /**
++     *
++     * @return ReflectionClass
++     * @throws ReflectionException
++     */
++    public function getClass() {
++        return new ReflectionClass($this->getClassName());
++    }
++
++    /**
+      * Compare two Medick Objects
+      * @return bool
+      */
+     public function equals(Object $obj) {
+         return $this===$obj;
+     }
+-    
++
+     /**
+      * Magick __toString method, returns a string representation of this object
+      * <code>
+
+
+
+From aurelian at berlios.de  Fri Nov 11 22:06:18 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Fri, 11 Nov 2005 22:06:18 +0100
+Subject: [Medick-svn] r267 - trunk
+Message-ID: <200511112106.jABL6I59000165@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-11 22:06:18 +0100 (Fri, 11 Nov 2005)
+New Revision: 267
+
+Removed:
+   trunk/vendor/
+Log:
+ - removed vendor folder
+
+
+
+From aurelian at berlios.de  Fri Nov 11 22:26:41 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Fri, 11 Nov 2005 22:26:41 +0100
+Subject: [Medick-svn] r269 - trunk/docs
+Message-ID: <200511112126.jABLQfxv001889@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-11 22:26:41 +0100 (Fri, 11 Nov 2005)
+New Revision: 269
+
+Removed:
+   trunk/docs/patches/
+   trunk/docs/todo.tar.gz
+Log:
+ - clean-up the docs folder
+
+Deleted: trunk/docs/todo.tar.gz
+===================================================================
+(Binary files differ)
+
+
+
+From aurelian at berlios.de  Fri Nov 11 22:28:02 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Fri, 11 Nov 2005 22:28:02 +0100
+Subject: [Medick-svn] r270 - in trunk/docs: . dev
+Message-ID: <200511112128.jABLS2js002043@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-11 22:28:02 +0100 (Fri, 11 Nov 2005)
+New Revision: 270
+
+Added:
+   trunk/docs/dev/
+   trunk/docs/dev/HEADER
+   trunk/docs/dev/routes.185
+Removed:
+   trunk/docs/HEADER
+   trunk/docs/routes.185
+Log:
+ - clean-up the docs
+
+Deleted: trunk/docs/HEADER
+===================================================================
+--- trunk/docs/HEADER	2005-11-11 21:26:41 UTC (rev 269)
++++ trunk/docs/HEADER	2005-11-11 21:28:02 UTC (rev 270)
+@@ -1,39 +0,0 @@
+-<?php
+-// {{{ License
+-//////////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-//////////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- *
+- * @package locknet7.
+- */
+-
+
+Copied: trunk/docs/dev/HEADER (from rev 266, trunk/docs/HEADER)
+
+Copied: trunk/docs/dev/routes.185 (from rev 266, trunk/docs/routes.185)
+
+Deleted: trunk/docs/routes.185
+===================================================================
+--- trunk/docs/routes.185	2005-11-11 21:26:41 UTC (rev 269)
++++ trunk/docs/routes.185	2005-11-11 21:28:02 UTC (rev 270)
+@@ -1,5 +0,0 @@
+-$Id$
+-
+-Use 185 revision to continue the work on routes.
+-This file will be deprecated after revision 350.
+-
+
+
+
+From aurelian at berlios.de  Sun Nov 13 18:06:55 2005
+From: aurelian at berlios.de (oancea aurelian at BerliOS)
+Date: Sun, 13 Nov 2005 18:06:55 +0100
+Subject: [Medick-svn] r271 - applications/eltodo/db
+Message-ID: <200511131706.jADH6toW002535@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-13 18:06:54 +0100 (Sun, 13 Nov 2005)
+New Revision: 271
+
+Modified:
+   applications/eltodo/db/schema.sql
+Log:
+ - [ eltodo.db.schema ] added project table
+
+Modified: applications/eltodo/db/schema.sql
+===================================================================
+--- applications/eltodo/db/schema.sql	2005-11-11 21:28:02 UTC (rev 270)
++++ applications/eltodo/db/schema.sql	2005-11-13 17:06:54 UTC (rev 271)
+@@ -1,7 +1,22 @@
+-DROP TABLE IF EXISTS `todos`;
+-CREATE TABLE IF NOT EXISTS `todos` (
+-  `id` int(11) NOT NULL auto_increment,
+-  `description` varchar(100) NOT NULL default '',
+-  `done` tinyint(4) NOT NULL default '0',
+-  PRIMARY KEY  (`id`)
++-- ------------------------
++-- eltodo database schema.
++-- $Id$
++-- ------------------------
++
++DROP TABLE IF EXISTS projects;
++CREATE TABLE projects (
++	id 	int(11) 	not null auto_increment,
++	name 	varchar(255) 	not null,
++	primary key (id)
+ );
++
++DROP TABLE IF EXISTS todos;
++CREATE TABLE IF NOT EXISTS todos (
++	id 		int(11) 	not null auto_increment,
++	project_id	int(11)		not null,
++	description 	varchar(100) 	not null default '',
++	done 		tinyint(4) 	not null default '0',
++	constraint fk_todos_project foreign key (project_id) references projects(id),
++	primary key (id)
++);
++
+
+
+Property changes on: applications/eltodo/db/schema.sql
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at berlios.de  Sun Nov 20 16:24:30 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 20 Nov 2005 16:24:30 +0100
+Subject: [Medick-svn] r273 - applications/eltodo/app/models
+Message-ID: <200511201524.jAKFOU6Q024493@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-20 16:24:27 +0100 (Sun, 20 Nov 2005)
+New Revision: 273
+
+Added:
+   applications/eltodo/app/models/project.php
+Modified:
+   applications/eltodo/app/models/todo.php
+Log:
+ - [ eltodo.models ] added Project model, added Id Keyword
+
+Added: applications/eltodo/app/models/project.php
+===================================================================
+--- applications/eltodo/app/models/project.php	2005-11-19 18:26:34 UTC (rev 272)
++++ applications/eltodo/app/models/project.php	2005-11-20 15:24:27 UTC (rev 273)
+@@ -0,0 +1,18 @@
++<?php
++
++/**
++ * This class is part of eltodo, medick sample application
++ * $Id$
++ * @package eltodo.models
++ */
++
++class Project extends ActiveRecordBase {
++
++    public static function find() {
++        $args= func_get_args();
++        self::setTable(__CLASS__);
++        return self::__find($args);
++    }
++
++}
++
+
+
+Property changes on: applications/eltodo/app/models/project.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/eltodo/app/models/todo.php
+===================================================================
+--- applications/eltodo/app/models/todo.php	2005-11-19 18:26:34 UTC (rev 272)
++++ applications/eltodo/app/models/todo.php	2005-11-20 15:24:27 UTC (rev 273)
+@@ -1,6 +1,10 @@
+ <?php
+ 
+-/** This file was autogenerated on 20/09/2005 13:09:45 by aurelian */
++/**
++ * This file is part of eltodo, medick sample application
++ * $Id$
++ * @package eltodo.models
++ */
+ 
+ class Todo extends ActiveRecordBase {
+ 
+@@ -27,3 +31,4 @@
+     }
+ 
+ }
++
+
+
+Property changes on: applications/eltodo/app/models/todo.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at berlios.de  Sun Nov 20 16:36:13 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 20 Nov 2005 16:36:13 +0100
+Subject: [Medick-svn] r274 - in applications/eltodo/app/views: . layouts project todo
+Message-ID: <200511201536.jAKFaDKZ028035@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-20 16:36:06 +0100 (Sun, 20 Nov 2005)
+New Revision: 274
+
+Added:
+   applications/eltodo/app/views/project/
+   applications/eltodo/app/views/project/all.phtml
+Modified:
+   applications/eltodo/app/views/layouts/todo.phtml
+   applications/eltodo/app/views/todo/all.phtml
+   applications/eltodo/app/views/todo/edit.phtml
+Log:
+ [ eltodo.views ] added keywords, initial import of project
+
+Modified: applications/eltodo/app/views/layouts/todo.phtml
+===================================================================
+--- applications/eltodo/app/views/layouts/todo.phtml	2005-11-20 15:24:27 UTC (rev 273)
++++ applications/eltodo/app/views/layouts/todo.phtml	2005-11-20 15:36:06 UTC (rev 274)
+@@ -1,14 +1,21 @@
+-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+-        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
+-<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+-    <head>
+-        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+-        <title>All todos</title>
+-    </head>
+-
++<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
++        "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
++
++<!--
++ ! This file is part of eltodo, a medick sample application.
++ ! Is the layout for todo controller.
++ ! $Id$
++ !-->
++<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
++    <head>
++        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
++        <title><?=$title;?></title>
++    </head>
++
+     <body>
+         <div>
+             <?=$content_for_layout;?>
+         </div>
+-    </body>
++    </body>
+ </html>
++
+
+
+Property changes on: applications/eltodo/app/views/layouts/todo.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/eltodo/app/views/project/all.phtml
+===================================================================
+--- applications/eltodo/app/views/project/all.phtml	2005-11-20 15:24:27 UTC (rev 273)
++++ applications/eltodo/app/views/project/all.phtml	2005-11-20 15:36:06 UTC (rev 274)
+@@ -0,0 +1,16 @@
++<h2>All Projects</h2>
++<!-- $Id$ -->
++<form action="<?=URL::create('project','create');?>" method="post">
++    <div>
++        <label>New Project:</label>
++        <?=Form::text('name', NULL, array('maxlength'=>255,'size'=>55)); ?>
++        <?=Form::submit('submit', 'Submit') ?>
++    </div>
++</form>
++
++<hr />
++
++<? foreach($projects as $project): ?>
++    <?=$project->name;?> <br />
++<? endforeach;?>
++
+
+
+Property changes on: applications/eltodo/app/views/project/all.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/eltodo/app/views/todo/all.phtml
+===================================================================
+--- applications/eltodo/app/views/todo/all.phtml	2005-11-20 15:24:27 UTC (rev 273)
++++ applications/eltodo/app/views/todo/all.phtml	2005-11-20 15:36:06 UTC (rev 274)
+@@ -1,5 +1,5 @@
+ <h2>All todos</h2>
+-            
++<!-- $Id$ -->           
+ <form action="<?=URL::create('todo','create');?>" method="post">
+     <div>
+         <label>New item:</label>
+@@ -20,3 +20,4 @@
+     <?=display_todos($todos_done);?>
+     <hr />
+ <? endif ?>
++
+
+
+Property changes on: applications/eltodo/app/views/todo/all.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/eltodo/app/views/todo/edit.phtml
+===================================================================
+--- applications/eltodo/app/views/todo/edit.phtml	2005-11-20 15:24:27 UTC (rev 273)
++++ applications/eltodo/app/views/todo/edit.phtml	2005-11-20 15:36:06 UTC (rev 274)
+@@ -1,5 +1,6 @@
+ <!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+         "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
++<!-- $Id$ -->        
+ <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+   <head>
+     <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+
+
+Property changes on: applications/eltodo/app/views/todo/edit.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at berlios.de  Sun Nov 20 18:42:23 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 20 Nov 2005 18:42:23 +0100
+Subject: [Medick-svn] r276 - trunk/libs/action/controller
+Message-ID: <200511201742.jAKHgN8j006210@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-20 18:42:21 +0100 (Sun, 20 Nov 2005)
+New Revision: 276
+
+Modified:
+   trunk/libs/action/controller/Base.php
+Log:
+ [ ACBase ] suppress error when the buffer is empty
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-11-20 17:37:37 UTC (rev 275)
++++ trunk/libs/action/controller/Base.php	2005-11-20 17:42:21 UTC (rev 276)
+@@ -113,7 +113,7 @@
+      * @return Response
+      */
+     public static function process_with_exception(Request $request, Response $response, Exception $exception) {
+-        ob_end_clean();
++        //@ob_end_clean();
+         $template = ActionViewBase::factory();
+         $template->error= $exception;
+         $text= $template->render_file(TOP_LOCATION . '/libs/action/controller/templates/error.phtml');
+@@ -183,7 +183,9 @@
+             $this->injector->inject('helper', $this->params['controller']);
+         } catch (FileNotFoundException $fnfEx) {
+             $this->logger->info(
+-                'skipping helper: ' . $this->injector->getPath('helpers') . '_' . $this->params['controller'] . ' ' . $fnfEx->getMessage());
++                'skipping helper: '
++                . $this->injector->getPath('helpers')
++                . '_' . $this->params['controller'] . ' ' . $fnfEx->getMessage());
+         }
+ 
+         if ($this->use_layout) {
+@@ -201,6 +203,7 @@
+         } else {
+             return $this->render_without_layout($template_file, $status);
+         }
++
+         /*
+         // {{{ hook RouteParams here.
+         $hij= array();
+@@ -212,6 +215,7 @@
+         $this->template->__param = $hij;
+         // }}}
+         */
++
+     }
+ 
+     protected function render_without_layout($template_file, $status) {
+@@ -317,8 +321,9 @@
+      * TODO: still to refactor.
+      */
+     private function perform_action($action_name) {
+-        $forbidden_actions = array('process', '__construct', '__destruct');
++        $forbidden_actions = array('process', '__construct', '__destruct', '__common');
+ 
++        // XXX. getDefaultRoute is not defined for XMLConfig.
+         if( (is_null($action_name)) || (in_array($action_name, $forbidden_actions)) ) {
+             $action_name = $this->config->getDefaultRoute()->action ? $this->config->getDefaultRoute()->action : 'index';
+             $action = $this->createMethod($action_name);
+@@ -332,6 +337,7 @@
+                 return;
+             }
+         }
++
+         $this->params['action'] = strtolower($action_name);
+         $this->logger->debug('Incoming action:: ' . strtolower($action_name));
+         $action->invoke($this);
+
+
+
+From aurelian at berlios.de  Mon Nov 21 20:43:41 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 21 Nov 2005 20:43:41 +0100
+Subject: [Medick-svn] r277 - trunk/libs/action/controller
+Message-ID: <200511211943.jALJhfd3028485@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-21 20:43:39 +0100 (Mon, 21 Nov 2005)
+New Revision: 277
+
+Modified:
+   trunk/libs/action/controller/Base.php
+Log:
+ - [ ACBase ] Removed (clean-up) XMLConfigurator::getDefaultRoute calls in process_action (thanks Andrei for patch)
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-11-20 17:42:21 UTC (rev 276)
++++ trunk/libs/action/controller/Base.php	2005-11-21 19:43:39 UTC (rev 277)
+@@ -113,7 +113,7 @@
+      * @return Response
+      */
+     public static function process_with_exception(Request $request, Response $response, Exception $exception) {
+-        //@ob_end_clean();
++        @ob_end_clean();
+         $template = ActionViewBase::factory();
+         $template->error= $exception;
+         $text= $template->render_file(TOP_LOCATION . '/libs/action/controller/templates/error.phtml');
+@@ -322,26 +322,31 @@
+      */
+     private function perform_action($action_name) {
+         $forbidden_actions = array('process', '__construct', '__destruct', '__common');
+-
+-        // XXX. getDefaultRoute is not defined for XMLConfig.
+-        if( (is_null($action_name)) || (in_array($action_name, $forbidden_actions)) ) {
+-            $action_name = $this->config->getDefaultRoute()->action ? $this->config->getDefaultRoute()->action : 'index';
+-            $action = $this->createMethod($action_name);
+-            if (!$action || $action->isStatic()) throw new Exception('Cannot perform default action: ' . $action_name);
+-        } else {
+-            $action = $this->createMethod($action_name);
++        
++        $action= $this->createMethod($action_name);
++        
++        if (
++            is_null($action_name) || 
++            in_array($action_name, $forbidden_actions) || 
++            !$action || 
++            $action->isStatic() )
++        {
++            $action_name = 'index';
++            $action= $this->createMethod($action_name);
+             if (!$action || $action->isStatic()) {
+-                $action_name = $this->config->getDefaultRoute()->action ? $this->config->getDefaultRoute()->action : 'index';
+-                $this->perform_action($action_name);
+-                $this->action_performed = TRUE;
+-                return;
++                throw new RouteException(
++                    'Cannot invoke default action, \'index\' for this Route!',
++                    'Method named \'index\' is not defined in class: ' . $this->getClassName()
++                );
+             }
+         }
+-
++        
+         $this->params['action'] = strtolower($action_name);
+         $this->logger->debug('Incoming action:: ' . strtolower($action_name));
++        // invoke the action.
+         $action->invoke($this);
+         if ($this->action_performed) return;
++        // try to load the magick __common method.
+         if ($_common= $this->createMethod('__common')) {
+             $_common->invoke($this);
+         }
+@@ -371,11 +376,19 @@
+      */
+     private function add_before_filters() {
+         if (!is_array($this->before_filter)) {
+-            throw new Exception ($this->getClassName() . '\$before_filter should be an array of strings, each string representing a method name');
++            throw new MedickException(
++                $this->getClassName() . '->\$before_filter should be an array of strings, each string representing a method name');
+         }
+         foreach($this->before_filter as $filter_name) {
+-            $filter = $this->createMethod($filter_name);
+-            if (!$filter->isProtected()) throw new MedickException('Your filter is declared as public!');
++            if (!$filter= $this->createMethod($filter_name)) {
++                $this->logger->info('Could not create filter: `'.$filter_name.'`, skipping...');
++                continue;
++            }
++            // a filter should be declared as private.
++            if (!$filter->isProtected()) {
++                throw new MedickException(
++                    'Your filter,`'. $filter_name . '` is declared as a public method of class `' . $this->getClassName() .'` !');
++            }    
+             $this->$filter_name();
+         }
+     }
+@@ -385,7 +398,8 @@
+      */
+     private function add_models() {
+         if (!is_array($this->models)) {
+-            throw new Exception($this->getClassName . '->\$models should be an array of strings.');
++            throw new MedickException(
++                $this->getClassName . '->\$models should be an array of strings.');
+         }
+         $this->logger->debug('We have Models...');
+         foreach ($this->models as $model) {
+@@ -414,3 +428,4 @@
+         }
+     }
+ }
++
+
+
+
+From aurelian at berlios.de  Fri Nov 25 22:59:50 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Fri, 25 Nov 2005 22:59:50 +0100
+Subject: [Medick-svn] r278 - trunk/libs/medick
+Message-ID: <200511252159.jAPLxor9021047@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-25 22:59:49 +0100 (Fri, 25 Nov 2005)
+New Revision: 278
+
+Modified:
+   trunk/libs/medick/Version.php
+Log:
+ - [ medick.Version ] still alive.
+
+Modified: trunk/libs/medick/Version.php
+===================================================================
+--- trunk/libs/medick/Version.php	2005-11-21 19:43:39 UTC (rev 277)
++++ trunk/libs/medick/Version.php	2005-11-25 21:59:49 UTC (rev 278)
+@@ -39,13 +39,16 @@
+ 
+ class Version extends Object {
+ 
++    const TINY =3;
++    const MINOR=0;
++    const MAJOR=0;
++    
+     /**
+      * It gets the medick version.
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return "0.0.3-svn";
++        return Version::MAJOR . '.' . VERSION::MINOR . '.' . VERSION::TINY . '-svn';
+     }
+ 
+ }
+-
+
+
+
+From aurelian at berlios.de  Sat Nov 26 14:00:38 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 26 Nov 2005 14:00:38 +0100
+Subject: [Medick-svn] r279 - in trunk: . config libs/medick public_html
+Message-ID: <200511261300.jAQD0cKU007702@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-26 14:00:33 +0100 (Sat, 26 Nov 2005)
+New Revision: 279
+
+Added:
+   trunk/boot.php
+Removed:
+   trunk/config/application.bootstrap.php
+Modified:
+   trunk/libs/medick/Version.php
+   trunk/public_html/default.htaccess
+   trunk/public_html/index.php
+Log:
+ - simplified installation procedures
+
+Added: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2005-11-25 21:59:49 UTC (rev 278)
++++ trunk/boot.php	2005-11-26 13:00:33 UTC (rev 279)
+@@ -0,0 +1,73 @@
++<?php
++// {{{ License
++//////////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice, 
++//   this list of conditions and the following disclaimer. 
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation 
++//   and/or other materials provided with the distribution. 
++//   * Neither the name of locknet.ro nor the names of its contributors may 
++//   be used to endorse or promote products derived from this software without 
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++// 
++// $Id$
++// 
++//////////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * It boots a medick application
++ * @package locknet7.boot
++ */
++
++define( 'MEDICK_PATH', dirname(__FILE__)  . DIRECTORY_SEPARATOR );
++set_include_path( MEDICK_PATH . 'libs'   . DIRECTORY_SEPARATOR  );
++error_reporting(E_ALL|E_STRICT);
++
++if (version_compare(PHP_VERSION, '5.1.0') <= 0) {
++    date_default_timezone_set('Europe/Bucharest');
++}
++
++include_once('medick/Object.php');
++include_once('medick/Exception.php');
++include_once('medick/ErrorHandler.php');
++set_error_handler(array(new ErrorHandler(), 'raiseError'));
++include_once('medick/Registry.php');
++include_once('medick/Dispatcher.php');
++include_once('medick/Version.php');
++include_once('configurator/XMLConfigurator.php');
++include_once('logger/Logger.php');
++include_once('action/controller/Map.php');
++
++$conf_files = $_SERVER['MEDICK_APPLICATION_PATH'] . DIRECTORY_SEPARATOR . 'conf' . 
++                        DIRECTORY_SEPARATOR . $_SERVER['MEDICK_APPLICATION_NAME'];
++                        
++Registry::put(new XMLConfigurator($conf_files . '.xml'), '__configurator');
++
++$map= Registry::put(new Map(), '__map');
++
++$logger= Registry::put(new Logger(), '__logger');
++
++$logger->debug('Core Loaded...');
++$logger->debug('Running on Medick $v:' . Version::getVersion());
++$logger->debug('XML Config File: ' . $conf_files . '.xml');
++$logger->debug('Routes File: ' . $conf_files . '.routes.php');
++
++include_once($conf_files . '.routes.php');
+
+
+Property changes on: trunk/boot.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Deleted: trunk/config/application.bootstrap.php
+===================================================================
+--- trunk/config/application.bootstrap.php	2005-11-25 21:59:49 UTC (rev 278)
++++ trunk/config/application.bootstrap.php	2005-11-26 13:00:33 UTC (rev 279)
+@@ -1,94 +0,0 @@
+-<?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * Sample __APPLICATION__NAME__.bootsrap.php file
+- * Will bootstrap the application by setting it`s properties.
+- * Required files for start-up are included here
+- * @package locknet7.start
+- */
+-
+-// error reporting level, turn this off in production!
+-error_reporting(E_ALL|E_STRICT);
+-
+-if (version_compare(PHP_VERSION, '5.1.0') <= 0) {
+-    date_default_timezone_set('Europe/Bucharest');
+-}
+-
+-$pathinfo = pathinfo(__FILE__);
+-$file     = explode('.',$pathinfo['basename']);
+-
+-// application name
+-define('APP_NAME', $file[0]);
+-
+-// main TOP_LOCATION.
+-define('TOP_LOCATION', dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR);
+-
+-// include_path, rewrite the existing one
+-set_include_path( TOP_LOCATION . 'libs'   . DIRECTORY_SEPARATOR . PATH_SEPARATOR );
+-
+-// load core classes.
+-include_once('medick/Object.php');
+-include_once('medick/Exception.php');
+-include_once('medick/ErrorHandler.php');
+-include_once('medick/Registry.php');
+-include_once('medick/Dispatcher.php');
+-include_once('medick/Version.php');
+-
+-// set-up the error handler:
+-set_error_handler(array(new ErrorHandler(), 'raiseError'));
+-
+-// hook a Configurator into Registry.
+-include_once('configurator/XMLConfigurator.php');
+-Registry::put(new XMLConfigurator(TOP_LOCATION . 'config' . DIRECTORY_SEPARATOR . APP_NAME . '.xml'), '__configurator');
+-
+-// get some orientation.
+-include_once('action/controller/Map.php');
+-$map= Registry::put(new Map(), '__map');
+-
+-// core loaded.
+-include_once('logger/Logger.php');
+-$logger= new Logger();
+-$logger->debug('Core Loaded...');
+-$logger->debug('Running on Medick $v:' . Version::getVersion());
+-$logger->debug('Bootstrapped: ' . APP_NAME . '.bootstrap.php');
+-$logger->debug('XML Config File: ' . APP_NAME . '.xml');
+-$logger->debug('Routes File: ' . APP_NAME . '.routes.php');
+-Registry::put($logger, '__logger');
+-
+-// load application map.
+-include_once(TOP_LOCATION . 'config' . DIRECTORY_SEPARATOR . APP_NAME . '.routes.php');
+-
+-$logger->debug('Routes Loaded. Application Ready.');
+-?>
+
+Modified: trunk/libs/medick/Version.php
+===================================================================
+--- trunk/libs/medick/Version.php	2005-11-25 21:59:49 UTC (rev 278)
++++ trunk/libs/medick/Version.php	2005-11-26 13:00:33 UTC (rev 279)
+@@ -48,7 +48,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return Version::MAJOR . '.' . VERSION::MINOR . '.' . VERSION::TINY . '-svn';
++        return Version::MAJOR . '.' . Version::MINOR . '.' . Version::TINY . '-svn';
+     }
+ 
+ }
+
+Modified: trunk/public_html/default.htaccess
+===================================================================
+--- trunk/public_html/default.htaccess	2005-11-25 21:59:49 UTC (rev 278)
++++ trunk/public_html/default.htaccess	2005-11-26 13:00:33 UTC (rev 279)
+@@ -1,18 +1,18 @@
+ # default.htaccess file for Medick framework.
+ # rename-it to .htaccess
+ # $Id$
++
++# Configuration
++php_value auto_prepend_file /wwwroot/medick/trunk/boot.php
++# php_value error_reporting 2047
++
++SetEnv MEDICK_APPLICATION_PATH __MEDICK__APPLICATION__PATH__
++SetEnv MEDICK_APPLICATION_NAME __MEDICK__APPLICATION__NAME__
+  
+-ErrorDocument 404 /todo.html
+- 
+ RewriteEngine on
+ 
+ RewriteCond    %{REQUEST_FILENAME}  -d
+ RewriteRule    ^(.+[^/])$           $1/  [R]
+- 
+-# ## Works
+-#RewriteRule ^todo/edit/(.*)$ /index.php?controller=todo&action=edit&id=$1 [NE,L]
+-#RewriteRule ^todo/(.*)$ /index.php?controller=todo&action=$1 [NE,L]
+-# ##
+   
+ RewriteRule ^([A-Za-z]+)/?([A-Za-z]+)/?\.html$ index.php?controller=$1&action=$2 [NS]
+ RewriteRule ^([A-Za-z]+)/([A-Za-z]+)/([0-9]+)\.html?$ index.php?controller=$1&action=$2&id=$3 [NS]
+
+Modified: trunk/public_html/index.php
+===================================================================
+--- trunk/public_html/index.php	2005-11-25 21:59:49 UTC (rev 278)
++++ trunk/public_html/index.php	2005-11-26 13:00:33 UTC (rev 279)
+@@ -32,12 +32,5 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-/**
+- * Index.php file.
+- * The file __APPLICATION__NAME__.bootstrap.php should be included here.
+- */
+-
+-include_once(___PATH__TO__YOUR__bootstrap.php__FILE__HERE__);
+-
++/** Main Entry Point */
+ Dispatcher::dispatch();
+-
+
+
+
+From aurelian at berlios.de  Sat Nov 26 22:02:09 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 26 Nov 2005 22:02:09 +0100
+Subject: [Medick-svn] r280 - in trunk/libs/action/controller: . http
+Message-ID: <200511262102.jAQL291x002335@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-26 22:02:09 +0100 (Sat, 26 Nov 2005)
+New Revision: 280
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Routing.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+Log:
+ -- clean up the Routing sistem to use the PATH_INFO
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-11-26 13:00:33 UTC (rev 279)
++++ trunk/libs/action/controller/Base.php	2005-11-26 21:02:09 UTC (rev 280)
+@@ -112,11 +112,17 @@
+      * @param Exception $exception
+      * @return Response
+      */
+-    public static function process_with_exception(Request $request, Response $response, Exception $exception) {
+-        @ob_end_clean();
++    public static function process_with_exception(
++                                                    Request $request, 
++                                                    Response $response, 
++                                                    Exception $exception)
++    {
++        if(ob_get_length()) {
++            ob_end_clean();
++        }
+         $template = ActionViewBase::factory();
+         $template->error= $exception;
+-        $text= $template->render_file(TOP_LOCATION . '/libs/action/controller/templates/error.phtml');
++        $text= $template->render_file(MEDICK_PATH . '/libs/action/controller/templates/error.phtml');
+         $status = Response::SC_INTERNAL_SERVER_ERROR;
+         $response->setStatus($status);
+         $response->setContent($text);
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2005-11-26 13:00:33 UTC (rev 279)
++++ trunk/libs/action/controller/Routing.php	2005-11-26 21:02:09 UTC (rev 280)
+@@ -41,58 +41,38 @@
+ 
+     /**
+      * Check if the application Map contains the current Route.
++     *
++     * If so, we add the route parameters into the current request.
++     *
++     * @param locknet7.action.controller.Request
++     * @return locknet7.action.controller.Base
+      */
+     public static function recognize(Request $request) {
+         $map   = Registry::get('__map');
+         $logger= Registry::get('__logger');
+-        // do we know this Route?
+-        if ($route= $map->contains(new Route($request->getParam('controller'), $request->getParam('action')))) {
+-            $logger->debug('Route Recognized:' . $route->getName());
+-            $is_failure= FALSE;
++        // do we know this route?
++        if ($route= $map->contains(
++                                new Route(
++                                    $request->getParam('controller'), 
++                                    $request->getParam('action')))
++                                  )
++        {
++            $logger->debug('Route Recognized: ' . $route->getName());
+             $params= $route->getParams();
+-            // {{{ loop throught the Route Parameters
+-            foreach ($params as $param) {
+-                $logger->debug('Validating Route Parameter:' . $param->getName());
+-                // {{{ if this Request has the current parameter, try to validate him.
+-                if (!$request->hasParam($param->getName()) || ($request->getParam($param->getName()) == '')) {
+-                    // XXX. load failure due to missing parameters.
+-                    $logger->info('Validation failed on RouteParameter: `' . $param->getName() . '`
+-                        [User Info: parametter missing or empty].');
+-                    $is_failure= TRUE;
+-                    // XXX. failure message.
+-                    // break;
+-                } // }}}
+-                // {{{ if this parameter has attached validators,
+-                if ($param->hasValidators()) {
+-                    // loop throught the validators and validate this parameter value.
+-                    foreach($param->getValidators() as $validator) {
+-                        $validator->setValue($request->getParam($param->getName()));
+-                        if (!$validator->validate()) {
+-                          // XXX. validation failed, handle automatically and break(?)
+-                          throw new RouteException('Route validation failed!');
+-                        }
+-                    }
+-                } // }}}
+-                $param->setValue($request->getParam($param->getName()));
+-            } // end foreach. }}}
+-            if ($is_failure) {
+-                $route= $map->getRouteByName($route->getFailure()->getName());
+-                $route->addFromArray($params);
++            foreach ($params as $key=>$param) {
++                $request->setParam($param->getName(), $request->getPathInfo($key));
+             }
+         } else {
+             $logger->debug('Unknown Route! Loading default...');
+             $route= $map->getRouteByName('default');
++            $request->setParam('controller', $route->getController());
++            $request->setParam('action', $route->getAction());
+         }
+-
+-        // overwrite incoming core parameters.
+-        $request->setParam('controller', $route->getController());
+-        $request->setParam('action', $route->getAction());
+         $logger->debug(
+             'Running on Route: ' . $route->getName() .
+             ' ctrller: ' . $route->getController() .
+             ' act: ' . $route->getAction());
+         $map->setCurrentRoute($route);
+-        $injector= Registry::put(new Injector(), '__injector');
+-        return $injector->inject('controller', $route->getController());
++        return Registry::put(new Injector(), '__injector')->inject('controller', $route->getController());
+     }
+ }
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2005-11-26 13:00:33 UTC (rev 279)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2005-11-26 21:02:09 UTC (rev 280)
+@@ -36,38 +36,55 @@
+  * @package locknet7.action.controller.request
+  */
+ class HTTPRequest extends Request {
+-
+-    /** HTTP method */
+-    protected $method;
+     
+-    /** HTTP Session */
++    /** @var Session */
+     protected $session;
+ 
++    /** @var array
++        path_info_parts */
++    protected $path_info= array();
++
+     /**
+      * Constructor.
+      * It builds the HTTPRequest object
+      */
+     public function __construct() {
+-        $this->method = strtoupper($_SERVER['REQUEST_METHOD']) == 'POST' ? 'POST' : 'GET';
+-        $this->params  = $_REQUEST; // to test!
+-        unset($_REQUEST); // hack or feature? :)
++        foreach ($_REQUEST as $key=>$value) {
++            $this->params[$key] = $value;
++        }
++        
++        unset($_REQUEST); unset($_GET); unset($_POST);
++        
++        if (array_key_exists('PATH_INFO', $_SERVER)) {
++            $parts= explode('/', trim($_SERVER['PATH_INFO'], '/'));
++            foreach ($parts as $key=>$part) {
++                if ($key == 0) {
++                    $this->params['controller'] = current(explode('.', $part));
++                } elseif ($key == 1) {
++                    $this->params['action']     = current(explode('.', $part));
++                } else {
++                    $this->path_info[]          = current(explode('.', $part));
++                }
++            }
++        }
+     }
+ 
+     /**
++     * It gets a part of the path info associated with this request
++     * @param int, key, the part index
++     * @return value of this part or NULL if this part is not defined
++     */
++    public function getPathInfo($key) {
++        return isset($this->path_info[$key]) ? $this->path_info[$key] : NULL;
++    }
++
++    /**
+      * It gets the Session
+      * @return Session, the curent Session
+      */
+     public function getSession() {
+         return $this->session;
+     }
+-
+-    /**
+-     * It get the method name used for this Request (GET or POST)
+-     * @return string method name (GET/POST)
+-     */
+-    public function getMethod() {
+-        return $this->method;
+-    }
+     
+     // {{{ todos.
+     
+
+
+
+From aurelian at berlios.de  Mon Nov 28 19:34:11 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 28 Nov 2005 19:34:11 +0100
+Subject: [Medick-svn] r281 - in trunk: . libs/medick
+Message-ID: <200511281834.jASIYBsB004045@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-28 19:33:29 +0100 (Mon, 28 Nov 2005)
+New Revision: 281
+
+Removed:
+   trunk/libs/medick/Collection.php
+Modified:
+   trunk/boot.php
+Log:
+ -- fix wrong version_compare usage in boot.php, removed unused / bloated Collection class.
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2005-11-26 21:02:09 UTC (rev 280)
++++ trunk/boot.php	2005-11-28 18:33:29 UTC (rev 281)
+@@ -38,13 +38,15 @@
+  */
+ 
+ define( 'MEDICK_PATH', dirname(__FILE__)  . DIRECTORY_SEPARATOR );
++// medick path.
+ set_include_path( MEDICK_PATH . 'libs'   . DIRECTORY_SEPARATOR  );
++// this should depend on environment
+ error_reporting(E_ALL|E_STRICT);
+-
+-if (version_compare(PHP_VERSION, '5.1.0') <= 0) {
++// php 5.1 strict sdandards.
++if (version_compare(PHP_VERSION, '5.1.0') > 0) {
+     date_default_timezone_set('Europe/Bucharest');
+ }
+-
++// load core classes
+ include_once('medick/Object.php');
+ include_once('medick/Exception.php');
+ include_once('medick/ErrorHandler.php');
+@@ -66,7 +68,7 @@
+ $logger= Registry::put(new Logger(), '__logger');
+ 
+ $logger->debug('Core Loaded...');
+-$logger->debug('Running on Medick $v:' . Version::getVersion());
++$logger->debug('Running on Medick $v: ' . Version::getVersion());
+ $logger->debug('XML Config File: ' . $conf_files . '.xml');
+ $logger->debug('Routes File: ' . $conf_files . '.routes.php');
+ 
+
+Deleted: trunk/libs/medick/Collection.php
+===================================================================
+--- trunk/libs/medick/Collection.php	2005-11-26 21:02:09 UTC (rev 280)
++++ trunk/libs/medick/Collection.php	2005-11-28 18:33:29 UTC (rev 281)
+@@ -1,184 +0,0 @@
+-<?php
+-// {{{ License
+-//////////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-//////////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * @package locknet7.medick
+- */
+-class Collection extends Object implements ArrayAccess {
+-
+-    /** @var array
+-        Collection container */
+-    protected $list  = array();
+-    
+-    /** @var string
+-        Type of objects that we want to store in this Collection */
+-    protected $type = NULL;
+-    
+-    /** Creates a new Collection */
+-    public function __construct() {
+-        $this->type= 'Object';
+-    }
+-    
+-    /**
+-     * Check if the given offset exists
+-     * @param int offset, offset indentifier
+-     * @return TRUE if the offset exists, FALSE otherwise
+-     * @see: http://www.php.net/~helly/php/ext/spl/interfaceArrayAccess.html#ArrayAccessa0
+-     */
+-    public function offsetExists($offset) {
+-        return isset($this->list[$offset]);
+-    }
+-    
+-    /**
+-     * It gets the current element by his offset
+-     * @param int offset of the element to get
+-     * @return FALSE if the given offset don`t exists or Object, the element
+-     * @see: http://www.php.net/~helly/php/ext/spl/interfaceArrayAccess.html#ArrayAccessa1
+-     */
+-    public function offsetGet($offset) {
+-        if (!$this->offsetExists($offset)) throw new MedickException ('Array Index Out of Bounds!');
+-        return $this->list[$offset];
+-    }
+-    
+-    /**
+-     * It sets the element by his offset
+-     * @param int offset the position where we want to insert the element, if NULL is given, the elemnt will be inserted on the last position
+-     * @param Object value of this element, overwrite the type propriety to set a diffrent type of Object in child classes
+-     * @throws MedickException if the value is not an instance of the specified type
+-     * @see: http://www.php.net/~helly/php/ext/spl/interfaceArrayAccess.html#ArrayAccessa2
+-     * @return Object, the added element
+-     */
+-    public function offsetSet($offset, $value) {
+-        if (!$value instanceof $this->type) {
+-            throw new MedickException('Illegal Argument!');
+-        }
+-        if ($offset===NULL) {
+-            $this->list[] = $value;
+-        } else {
+-            $this->list[$offset]= $value;
+-        }
+-        return $value;
+-    }
+-    
+-    /**
+-     * unset the element from the specified position
+-     * @param int the element position
+-     * @see: http://www.php.net/~helly/php/ext/spl/interfaceArrayAccess.html#ArrayAccessa3
+-     * @return Object the removed element
+-     */
+-    public function offsetUnset($offset) {
+-        if (!$this->offsetExists($offset)) throw new MedickException ('Array Index Out of Bounds!');
+-        $element= $this->offsetGet($offset);
+-        unset($this->list[$offset]);
+-        $this->list= array_values($this->list);
+-        return $element;
+-    }
+-    
+-    /**
+-     * It gets this collection iterator
+-     * @return ArrayIterator
+-     * @see: http://www.php.net/~helly/php/ext/spl/interfaceIteratorAggregate.html#IteratorAggregatea0
+-     * @see: http://www.php.net/~helly/php/ext/spl/classArrayIterator.html
+-     */
+-    public function getIterator() {
+-        return new ArrayIterator($this->list);
+-    }
+-    
+-    /** wrapper for offsetSet */
+-    public function add($element) {
+-        $this->offsetSet(NULL, $element);
+-        return $element;
+-    }
+-    
+-    /**
+-     * Add another Collection in to this
+-     *  <code>
+-     *      $col1 = new MyCollection();
+-     *      $col1[] = new Foo();
+-     *      $col1[] = new Bar();
+-     *      $col2 = new MyOtherCollection();
+-     *      $col2[] = new Baz();
+-     *      $col2[] = new Foo();
+-     *      $col1->addAll($col2);
+-     *      $col1->size(); // outputs 4
+-     *  </code>
+-     * @param ICollection
+-     * @return void
+-     */
+-    public function addAll(Collection $ic) {
+-        for($it = $ic->getIterator(); $it->valid(); $it->next()) {
+-            $this->add($it->current());
+-        }
+-    }
+-    
+-    /** alias for offsetSet */
+-    public function set($index, $element) {
+-        $this->offsetSet($index, $element);
+-    }
+-    /** alias for offsetGet */
+-    public function get($index) {
+-        return $this->offsetGet($index);
+-    }
+-    
+-    /** Check if the given object is in this collection */
+-    public function contains(Object $o) {
+-        return in_array($o, $this->list, TRUE);
+-    }
+-
+-    /** Check if this collection is empty */
+-    public function isEmpty() {
+-        return $this->size() == 0;
+-    }
+-    
+-    /** Removes the specified Object from this Collection */
+-    public function remove(Object $o) { 
+-        for($it = $this->getIterator(); $it->valid(); $it->next()) {
+-            if ($it->current()->getClassName() == $o->getClassName()) {
+-                $element= $it->current();
+-                $this->offsetUnset($it->key());
+-                return $element;            
+-            }
+-        }
+-        return FALSE;
+-    }
+-    
+-    /** counts the elements of this collection */
+-    public function size() {
+-        return count($this->list);
+-    }
+-    /** alias for size */
+-    public function count() {
+-        return $this->size();    
+-    }
+-}
+
+
+
+From aurelian at berlios.de  Mon Nov 28 20:28:02 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 28 Nov 2005 20:28:02 +0100
+Subject: [Medick-svn] r282 - in trunk/libs/action/controller: . http session
+Message-ID: <200511281928.jASJS2Wk011776@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-28 20:28:01 +0100 (Mon, 28 Nov 2005)
+New Revision: 282
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/session/Session.php
+Log:
+ - initial support for Session's
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2005-11-28 18:33:29 UTC (rev 281)
++++ trunk/libs/action/controller/Base.php	2005-11-28 19:28:01 UTC (rev 282)
+@@ -137,8 +137,8 @@
+      */
+     public function process(Request $request, Response $response) {
+         $this->instantiate($request, $response);
++        $this->add_models();
+         $this->add_before_filters();
+-        $this->add_models();
+         $this->perform_action($request->getParam('action'));
+         return $response;
+     }
+@@ -257,6 +257,17 @@
+     // }}}
+ 
+     /**
++     * It sets the value a template entry
++     * @see http://php.net/manual/en/language.oop5.overloading.php
++     * @param string, name,  name
++     * @param mixed, value, value
++     * @throw Error if using a reserved word
++     */
++    public function __set($name, $value) {
++        $this->template->$name= $value;
++    }
++
++    /**
+      * Act as an internal constructor.
+      * @param Request request, the request
+      * @param Response response, the response
+@@ -266,6 +277,7 @@
+         $this->request  = $request;
+         $this->response = $response;
+         $this->session  = $request->getSession();
++        $this->session->start();
+         $this->params   = $request->getParams();
+ 
+         $this->logger   = Registry::get('__logger');
+@@ -390,7 +402,7 @@
+                 $this->logger->info('Could not create filter: `'.$filter_name.'`, skipping...');
+                 continue;
+             }
+-            // a filter should be declared as private.
++            // a filter should be declared as protected.
+             if (!$filter->isProtected()) {
+                 throw new MedickException(
+                     'Your filter,`'. $filter_name . '` is declared as a public method of class `' . $this->getClassName() .'` !');
+@@ -404,13 +416,13 @@
+      */
+     private function add_models() {
+         if (!is_array($this->models)) {
+-            throw new MedickException(
+-                $this->getClassName . '->\$models should be an array of strings.');
++            $this->models= explode(',',$this->models);
+         }
+-        $this->logger->debug('We have Models...');
+         foreach ($this->models as $model) {
+-            $this->logger->debug('Injecting Model:: ' . $model);
+-            $this->injector->inject('model', $model);
++            if ( trim($model) != '' ) {
++                $this->logger->debug('Injecting Model:: ' . $model);
++                $this->injector->inject('model', trim($model));
++            }
+         }
+     }
+ 
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2005-11-28 18:33:29 UTC (rev 281)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2005-11-28 19:28:01 UTC (rev 282)
+@@ -32,6 +32,8 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
++include_once('action/controller/session/Session.php');
++
+ /** 
+  * @package locknet7.action.controller.request
+  */
+@@ -67,6 +69,7 @@
+                 }
+             }
+         }
++        $this->session= new Session();
+     }
+ 
+     /**
+
+Modified: trunk/libs/action/controller/session/Session.php
+===================================================================
+--- trunk/libs/action/controller/session/Session.php	2005-11-28 18:33:29 UTC (rev 281)
++++ trunk/libs/action/controller/session/Session.php	2005-11-28 19:28:01 UTC (rev 282)
+@@ -37,38 +37,47 @@
+  */
+ class Session extends Object {
+ 
+-    private $container;
+-
+     private $isStarted = FALSE;
+ 
+     /**
+      * Constructor.
+      */
+     public function __construct() {
+-
++        if ($this->isStarted) {
++            throw new IllegalStateException('Session already Started!');
++        }
+     }
+ 
+     public function start() {
+         if ($this->isStarted) {
+-            throw new IllegalStateException();
++            throw new IllegalStateException('Session already Started!');
+         }
+-        return session_start();
++        $this->isStarted= TRUE;
++        // session_cache_limiter("nocache");
++        // session_write_close();
++        session_start();
++        session_regenerate_id(TRUE);
+     }
+ 
+-    public function __set($name, $value) {
+-        $_SESSION[$name] = $value;
++    public function putValue($name, $value) {
++        if (!$this->isStarted) {
++            throw new IllegalStateException('Session is not Started!');
++        }
++        $_SESSION[$name]=$value;
+     }
+ 
+-    public function __get() {
+-        return session_is_registered($name) ? $_SESSION[$name] : false;
++    public function getValue($name) {
++        if (!$this->isStarted) {
++            throw new IllegalStateException('Session is not Started!');
++        }
++        return isset($_SESSION[$name]) ? $_SESSION[$name] : NULL;
+     }
+-
+-    public function putValue($name, $value) {
+-        $this->__set($name, $value);
+-    }
+-
++    
+     public function hasValue($name) {
+-        return session_is_registered($name);
++        if (!$this->isStarted) {
++            throw new IllegalStateException('Session is not Started!');
++        }
++        return isset($_SESSION[$name]);
+     }
+ 
+     public function removeValue($name) {
+
+
+
+From aurelian at berlios.de  Mon Nov 28 21:10:05 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 28 Nov 2005 21:10:05 +0100
+Subject: [Medick-svn] r283 - in trunk/libs: action/controller action/view active/record active/support
+Message-ID: <200511282010.jASKA5Qu004644@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-28 21:10:04 +0100 (Mon, 28 Nov 2005)
+New Revision: 283
+
+Modified:
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/action/view/HTML.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/support/Inflector.php
+Log:
+  [ Inflector ] added camelize and uderscore methods
+  [ ACInjector/ARBase  ] fix class name/ file name / table name when the name of the table had undescores in it
+  [ ARBase ] added __sleep and __wakeup magic functions, to allow a decent serialization for ARBase Objects (thanks andrei)
+  [ AVHTML ] using index as action name by default
+
+
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2005-11-28 19:28:01 UTC (rev 282)
++++ trunk/libs/action/controller/Injector.php	2005-11-28 20:10:04 UTC (rev 283)
+@@ -61,8 +61,7 @@
+     public function __construct() {
+         $this->config = Registry::get('__configurator');
+         $this->logger = Registry::get('__logger');
+-        $app_path = $this->config->getProperty('application_path') . DIRECTORY_SEPARATOR;
+-        $app_path .= 'app' . DIRECTORY_SEPARATOR;
++        $app_path = $this->config->getProperty('application_path') . DIRECTORY_SEPARATOR . 'app' . DIRECTORY_SEPARATOR;
+         $this->path['__base']      = $app_path;
+         $this->path['models']      = $app_path . 'models'      . DIRECTORY_SEPARATOR;
+         $this->path['controllers'] = $app_path . 'controllers' . DIRECTORY_SEPARATOR;
+@@ -82,7 +81,8 @@
+         $types= array('model', 'controller', 'helper', 'layout', 'include_path');
+         $method= 'inject' . ucfirst($type);
+         if (!method_exists($this, $method)) {
+-            throw new InjectorException('Call to undefined method: `' . $this->getClassName() . '->' . $method . '(string ' . $param . ')`');
++            throw new InjectorException(
++                'Call to undefined method: `' . $this->getClassName() . '->' . $method . '(string ' . $param . ')`');
+         } elseif (in_array($type, $types)) {
+             if ($param=='') return $this->$method();
+             else return $this->$method($param);
+@@ -110,7 +110,7 @@
+             set_include_path(get_include_path() . PATH_SEPARATOR . $top . 'vendor');
+         }
+         if (is_dir($top . 'libs')) {
+-            set_include_path(get_include_path() . PATH_SEPARATOR . $top . 'lib');
++            set_include_path(get_include_path() . PATH_SEPARATOR . $top . 'libs');
+         }
+     }
+ 
+@@ -126,16 +126,15 @@
+     protected function injectModel($name) {
+         $location= $this->path['models'] . $name . '.php';
+         $this->logger->debug('Model Location:: ' . $location);
+-        $this->logger->debug('Model Name:: ' . ucfirst($name));
+-
+         $this->includeFile($location, ucfirst($name));
+-
++        $model_class_name= Inflector::camelize($name);
++        $this->logger->debug('Model Class Name:: ' . $model_class_name);
+         try {
+-            $model_object = new ReflectionClass(ucfirst($name));
++            $model_object = new ReflectionClass($model_class_name);
+ 
+             if (@$model_object->getParentClass()->name != 'ActiveRecordBase') {
+                 throw new InjectorException (
+-                    'Wrong Definition of user Model, `' . ucfirst($name) . '`, it must extend ActiveRecordBase object!');
++                    'Wrong Definition of user Model, `' . $model_class_name . '`, it must extend ActiveRecordBase object!');
+             }
+ 
+             // if (!$model_object->hasMethod('find')) { XXX. php 5.1 only.
+@@ -143,12 +142,11 @@
+             $method= $model_object->getMethod('find');
+             if (!$method->isStatic() && !$method->isPublic()) {
+                 throw new InjectorException (
+-                    'Class method: ' . ucfirst($name) . '::find([mixed arguments]) should be declared as static and public!');
++                    'Class method: ' . $model_class_name . '::find([mixed arguments]) should be declared as static and public!');
+             }
+         } catch (ReflectionException $rEx) {
+             throw new InjectorException (
+-                'Cannot Inject user Model, `' . ucfirst($name) . '`!
+-                The dummy `find` method is not defined! [ User Info: ' . $rEx->getMessage() . ']');
++                'Cannot Inject user Model, `' . $model_class_name . '`!', $rEx->getMessage());
+         }
+ 
+     }
+@@ -194,7 +192,7 @@
+                     should be instantiable (must have a public constructor)!');
+             }
+         } catch (ReflectionException $rEx) {
+-            throw new InjectorException ('Cannot inject user controller class `' . $clazz . '` [ User Info ] :' . $rEx->getMessage());
++            throw new InjectorException ('Cannot inject user controller class `' . $clazz . '`',$rEx->getMessage());
+         }
+     }
+ 
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2005-11-28 19:28:01 UTC (rev 282)
++++ trunk/libs/action/view/HTML.php	2005-11-28 20:10:04 UTC (rev 283)
+@@ -42,7 +42,7 @@
+ }
+ 
+ class URL extends Object {
+-    public static function create($controller, $action, $params=array(), $separator='&amp;') {
++    public static function create($controller, $action='index', $params=array(), $separator='&amp;') {
+         $config = Registry::get('__configurator');
+         $base   = $config->getProperty('document_root');
+         if (!$config->getProperty('rewrite')) {
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2005-11-28 19:28:01 UTC (rev 282)
++++ trunk/libs/active/record/Base.php	2005-11-28 20:10:04 UTC (rev 283)
+@@ -54,10 +54,6 @@
+         primary key name! */
+     private $pk;
+ 
+-    /** @var Logger
+-        a Logger instance */
+-    protected $logger;
+-
+     // {{{ Associations
+     protected $has_one= array();
+     protected $has_many= array();
+@@ -101,12 +97,14 @@
+      * @param array, params, parameters as pair of `field name` => `value`
+      */
+     public final function __construct($params = array()) {
+-        $this->logger= Registry::get('__logger');
+         self::establish_connection();
++        
+         $this->fields = new FieldsAggregate();
+-        self::$table_name = Inflector::pluralize(strtolower(get_class($this)));
++        
++        self::$table_name = Inflector::pluralize(strtolower(Inflector::underscore($this->getClassName())));
++        
+         $table_info = self::$conn->getDatabaseInfo()->getTable(self::$table_name);
+-        $this->pk = $table_info->getPrimaryKey()->getName();
++        $this->pk   = $table_info->getPrimaryKey()->getName();
+ 
+         foreach( $table_info->getColumns() as $col) {
+             $field = new Field( $col->getName() );
+@@ -143,6 +141,7 @@
+      * @throw ActiveRecordException if the field is not found.
+      */
+     public function __set($field_name, $field_value) {
++        Registry::get('__logger')->debug('Setting the value of field: ' . $field_name .' to :' . $field_value);
+         for($it = $this->fields->getIterator(); $it->valid(); $it->next()) {
+             if ($it->current()->getName() == $field_name) {
+                 $it->current()->setValue($field_value);
+@@ -172,10 +171,10 @@
+         try {
+             return Association::resolve(
+                                 array(
+-                                    'has_one'=>$this->has_one,
+-                                    'belongs_to'=>$this->belongs_to,
+-                                    'has_many'=>$this->has_many,
+-                                    'has_and_belongs_to_many'=>$this->has_and_belongs_to_many
++                                    'has_one'    => $this->has_one,
++                                    'belongs_to' => $this->belongs_to,
++                                    'has_many'   => $this->has_many,
++                                    'has_and_belongs_to_many' => $this->has_and_belongs_to_many
+                                     ),
+                                 self::$table_name,
+                                 $field_name,
+@@ -222,6 +221,22 @@
+         }
+         return $string;
+     }
++    
++    /** Prepare this Object for serialization */
++    public function __sleep() {
++        self::close();
++        return array('fields', 'pk', 'has_one', 'belongs_to', 'has_many', 'has_and_belongs_to_many');
++    }
++    
++    /** restore the Object state after unserialize */
++    public function __wakeup() {
++        self::establish_connection();
++        for($it = $this->fields->getIterator(); $it->valid(); $it->next()) {
++            $field_name= $it->current()->getName();
++            $this->$field_name = $it->current()->getValue();
++        }
++    }
++    
+     // }}}
+ 
+     // {{{ filters:
+@@ -481,6 +496,7 @@
+     public static final function __find($params= array()) {
+         $numargs = sizeof($params);
+         if($numargs == 0) return self::__find(array('all'));
++        
+         self::establish_connection();
+ 
+         $clazz= Inflector::singularize(ucfirst(self::$table_name));
+@@ -488,7 +504,8 @@
+         try {
+             $class = new ReflectionClass($clazz);
+         } catch (ReflectionException $rEx) {
+-            Registry::get('__logger')->debug($clazz . 'probably not included. Trying to inject. [ User Info: ' . $rEx->getMessage() . ']');
++            Registry::get('__logger')->debug('`'.$clazz . '` probably not included. Trying to inject.
++                                            [ User Info: ' . $rEx->getMessage() . ']');
+             Registry::get('__injector')->inject('model', strtolower($clazz));
+             // retry:
+             $class = new ReflectionClass($clazz);
+
+Modified: trunk/libs/active/support/Inflector.php
+===================================================================
+--- trunk/libs/active/support/Inflector.php	2005-11-28 19:28:01 UTC (rev 282)
++++ trunk/libs/active/support/Inflector.php	2005-11-28 20:10:04 UTC (rev 283)
+@@ -112,5 +112,16 @@
+         }
+         return $word;
+     }
++
++    // {{{ based on cake.    
++    public static function camelize($word) {
++        return str_replace(" ", "", ucwords(str_replace("_", " ", $word)));
++    }
++    
++    public static function underscore($word) {
++        $word = preg_replace('/([A-Z]+)([A-Z])/','\1_\2', $word);
++        return strtolower(preg_replace('/([a-z])([A-Z])/','\1_\2', $word));
++    }
++    // }}}
+ }
+ 
+
+
+
+From aurelian at berlios.de  Mon Nov 28 21:30:32 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 28 Nov 2005 21:30:32 +0100
+Subject: [Medick-svn] r284 - trunk/public_html
+Message-ID: <200511282030.jASKUW26006774@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-28 21:30:31 +0100 (Mon, 28 Nov 2005)
+New Revision: 284
+
+Modified:
+   trunk/public_html/default.htaccess
+Log:
+ -- clean up defaul.htaccess file
+
+Modified: trunk/public_html/default.htaccess
+===================================================================
+--- trunk/public_html/default.htaccess	2005-11-28 20:10:04 UTC (rev 283)
++++ trunk/public_html/default.htaccess	2005-11-28 20:30:31 UTC (rev 284)
+@@ -1,20 +1,18 @@
+-# default.htaccess file for Medick framework.
+-# rename-it to .htaccess
++# .htaccess file for eldepot sample medick application
+ # $Id$
+ 
+ # Configuration
+-php_value auto_prepend_file /wwwroot/medick/trunk/boot.php
+-# php_value error_reporting 2047
++php_value auto_prepend_file ___PATH___TO___MEDICK___INSTALATION___/boot.php
+ 
+-SetEnv MEDICK_APPLICATION_PATH __MEDICK__APPLICATION__PATH__
+-SetEnv MEDICK_APPLICATION_NAME __MEDICK__APPLICATION__NAME__
++SetEnv MEDICK_APPLICATION_PATH ___YOUR___APPLICATION___PATH___
++SetEnv MEDICK_APPLICATION_NAME ___YOUR___APPLICATION___NAME___
+  
+ RewriteEngine on
+ 
+-RewriteCond    %{REQUEST_FILENAME}  -d
+-RewriteRule    ^(.+[^/])$           $1/  [R]
+-  
+-RewriteRule ^([A-Za-z]+)/?([A-Za-z]+)/?\.html$ index.php?controller=$1&action=$2 [NS]
+-RewriteRule ^([A-Za-z]+)/([A-Za-z]+)/([0-9]+)\.html?$ index.php?controller=$1&action=$2&id=$3 [NS]
+-RewriteRule ^([A-Za-z]+)/([A-Za-z]+)/([0-9]+)/?$ index.php?controller=$1&action=$2&id=$3 [L]
+- 
++########## Set 2
++RewriteCond %{REQUEST_FILENAME} !-s
++RewriteCond %{REQUEST_URI} !^index.php/$
++RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
++
++#RewriteRule !^(stylesheet|images|javascript)/ index.php [NC,L]
++
+
+
+
+From aurelian at berlios.de  Mon Nov 28 21:31:32 2005
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 28 Nov 2005 21:31:32 +0100
+Subject: [Medick-svn] r285 - in trunk: . libs/medick
+Message-ID: <200511282031.jASKVWYk006949@sheep.berlios.de>
+
+Author: aurelian
+Date: 2005-11-28 21:31:31 +0100 (Mon, 28 Nov 2005)
+New Revision: 285
+
+Modified:
+   trunk/CHANGELOG
+   trunk/TODO
+   trunk/VERSION
+   trunk/libs/medick/Object.php
+   trunk/libs/medick/Version.php
+Log:
+ -- release 0.0.3 is ready.
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2005-11-28 20:30:31 UTC (rev 284)
++++ trunk/CHANGELOG	2005-11-28 20:31:31 UTC (rev 285)
+@@ -1,9 +1,11 @@
+ $Id$
+ (*) SVN version
+ 
+-0.0.3 (*)
++0.0.4 (*)
++
++0.0.3 (28.nov.2005)
+     - Code Clean-Up:
+-        - logger/Logger:
++        - logger.Logger:
+                 * removed logger.outputters.Outputter::getId() abstract method;
+                 * speed improvments if no outputters are added;
+                 * fix: file name in logger.LoggingEvent was wrong;
+@@ -17,16 +19,23 @@
+         - removed vendor folder, medick 3-rd party imports should be placed inside libs folder.
+     - ActiveRecordBase:
+         added before/after filters on update/insert/delete methods
+-        created associations classes and implemented has_and_belongs_to_many, belongs_to, has_many, has_one associations.
++        created associations classes and implemented has_and_belongs_to_many, belongs_to, has_many, has_one associations (read-only)
+         fix: broken (strange) behavior when trying to return an empty result set in __find() method
++        fix: proper serialization of ARBase Objects (thanks andrei)
+     - ActionController:
+         added process_with_exception method.
+         layout fix, by introducing $use_layout
++    - session.Session:
++        initial working session class
++    - active.support.inflector
++        added camelize and underscore methods
+     - Errors and Exceptions:
+         added custom ErrorHandler,
+         added more specialized Errors and Exceptions, for better debugging.
+         moved all exceptions class to one file: medick.Exception.
+-    - Initial import of an INI style file configurator (INIConfigurator), not used yet.
++    - using a boot.php file witch will be common to all the applications developed with medick.
++        this should be used with a .htaccess file and it was introduced in an attempt to ease the installation procedure.
++    - initial import of an INI style file configurator (INIConfigurator), not used yet.
+     - bundled creole, creole is a DB Abstraction layer for PHP5 released under LGPL licence,
+                     more details on http://creole.phpdb.org
+ 
+
+Modified: trunk/TODO
+===================================================================
+--- trunk/TODO	2005-11-28 20:30:31 UTC (rev 284)
++++ trunk/TODO	2005-11-28 20:31:31 UTC (rev 285)
+@@ -11,26 +11,22 @@
+ (!) highest priority
+ ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ 
+-0.0.3 WishList:
++0.0.4 WishList:
+ ~~~~~~~~~~~~~~~
+-A. * Fix Model by forcing the user to write a dummy static find method.
+-B. * Fix usage of "layout".
++A. this will be only a code-clean-up release (so no so many features will be added):
+ 
+-C. Implement Session management
+-D. Fix && Clean-up Routing System
+-E. Clean-up test/* folder
++    -> fix unit-tests.
++    -> remove collection ~like~ classes by adding a core.util API
++    
++B. !!! medick Web Site, use pmwiki?
+ 
+-F. !!! medick Web Site, use pmwiki?
++C. generator scripts (see task 009).
+ 
+ General TODO list:
+ ~~~~~~~~~~~~~~~~~~
+-1. (0.0.4) Routing Mechanism.
+-    ! Must choose between some kind of RoR implementation or invent a new and magick Routing system
+-    ! use PATH_INFO
+-    * On setFailure use a Route as a parameter?
+-    * Connect two Routes (a Failure Route and a Route) this way, the Route will know what to expect from Failure.
+-    
+-2. (0.0.4) Validators + Error messages.
++1. * Routing System
++
++2. (0.0.5) Validators + Error messages.
+     This task is related with task 1
+     
+ 3. (0.0.5) A RDBAC System should be implemented by default.
+@@ -46,7 +42,7 @@
+ 6. XML template engine (?)
+     Not so hard, must be without XSLT since there are a lot  of hosts that don't install this extension.
+ 
+-7. (0.0.4) Flash thing. depends on Session implementation.
++7. (0.0.5) Flash thing. depends on Session implementation.
+ 
+ 8. (0.0.5) Add a configurator alternative so we can remove (or provide an alternative to) the simplexml dependency (XMLConfigurator)
+ 
+@@ -55,7 +51,7 @@
+     
+     YAML? found a nice php class for parsing: /home/aurelian/Desktop/spyc-0.1.1.tar.gz
+ 
+-9. (0.0.6) Generator scripts, for applications, for generating Models/Controllers/Views (fix the old one).
++9. (0.0.4) Generator scripts, for applications, for generating Models/Controllers/Views (fix the old one).
+ 
+     Application Generator:
+             -> creates a base application skeleton.
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2005-11-28 20:30:31 UTC (rev 284)
++++ trunk/VERSION	2005-11-28 20:31:31 UTC (rev 285)
+@@ -1 +1 @@
+-0.0.3-svn
++0.0.4-svn
+
+Modified: trunk/libs/medick/Object.php
+===================================================================
+--- trunk/libs/medick/Object.php	2005-11-28 20:30:31 UTC (rev 284)
++++ trunk/libs/medick/Object.php	2005-11-28 20:31:31 UTC (rev 285)
+@@ -76,5 +76,6 @@
+     public function __toString() {
+         return ucfirst($this->getClassName());
+     }
++    
+ }
+ 
+
+Modified: trunk/libs/medick/Version.php
+===================================================================
+--- trunk/libs/medick/Version.php	2005-11-28 20:30:31 UTC (rev 284)
++++ trunk/libs/medick/Version.php	2005-11-28 20:31:31 UTC (rev 285)
+@@ -39,9 +39,9 @@
+ 
+ class Version extends Object {
+ 
+-    const TINY =3;
+-    const MINOR=0;
+-    const MAJOR=0;
++    const TINY  = 4;
++    const MINOR = 0;
++    const MAJOR = 0;
+     
+     /**
+      * It gets the medick version.
+@@ -52,3 +52,4 @@
+     }
+ 
+ }
++
+
+
+

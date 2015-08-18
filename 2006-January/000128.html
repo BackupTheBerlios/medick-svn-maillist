@@ -1,0 +1,117 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r334 - in trunk/libs: creole/drivers/mssql medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-January/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r334%20-%20in%20trunk/libs%3A%20creole/drivers/mssql%20medick&In-Reply-To=%3C200601141139.k0EBdDo1012447%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000127.html">
+   <LINK REL="Next"  HREF="000129.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r334 - in trunk/libs: creole/drivers/mssql medick</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r334%20-%20in%20trunk/libs%3A%20creole/drivers/mssql%20medick&In-Reply-To=%3C200601141139.k0EBdDo1012447%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r334 - in trunk/libs: creole/drivers/mssql medick">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Jan 14 12:39:14 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000127.html">[Medick-svn] r332 - trunk/skel/scripts
+</A></li>
+        <LI>Next message: <A HREF="000129.html">[Medick-svn] r335 - in trunk: bin libs/action/controller libs/action/controller/session libs/active/support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#128">[ date ]</a>
+              <a href="thread.html#128">[ thread ]</a>
+              <a href="subject.html#128">[ subject ]</a>
+              <a href="author.html#128">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-01-14 12:39:11 +0100 (Sat, 14 Jan 2006)
+New Revision: 334
+
+Modified:
+   trunk/libs/creole/drivers/mssql/MSSQLIdGenerator.php
+   trunk/libs/medick/Version.php
+Log:
+ -- creole: MFH. bumped medick version in medick/version
+
+Modified: trunk/libs/creole/drivers/mssql/MSSQLIdGenerator.php
+===================================================================
+--- trunk/libs/creole/drivers/mssql/MSSQLIdGenerator.php	2006-01-14 11:35:39 UTC (rev 333)
++++ trunk/libs/creole/drivers/mssql/MSSQLIdGenerator.php	2006-01-14 11:39:11 UTC (rev 334)
+@@ -6,7 +6,7 @@
+  * MSSQL IdGenerator implimenation.
+  *
+  * @author    Hans Lellelid &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">hans at xmpl.org</A>&gt;
+- * @version   $Revision: 1.5 $
++ * @version   $Revision: 1.6 $
+  * @package   creole.drivers.mssql
+  */
+ class MSSQLIdGenerator implements IdGenerator {
+@@ -53,7 +53,7 @@
+      */
+     public function getId($unused = null)
+     {
+-        $rs = $this-&gt;conn-&gt;executeQuery(&quot;select @@identity&quot;, ResultSet::FETCHMODE_NUM);
++        $rs = $this-&gt;conn-&gt;executeQuery(&quot;SELECT SCOPE_IDENTITY()&quot;, ResultSet::FETCHMODE_NUM);
+         $rs-&gt;next();
+         return $rs-&gt;getInt(1);        
+     }
+
+Modified: trunk/libs/medick/Version.php
+===================================================================
+--- trunk/libs/medick/Version.php	2006-01-14 11:35:39 UTC (rev 333)
++++ trunk/libs/medick/Version.php	2006-01-14 11:39:11 UTC (rev 334)
+@@ -39,7 +39,7 @@
+ 
+ class Version extends Object {
+ 
+-    const TINY  = 4;
++    const TINY  = 5;
+     const MINOR = 0;
+     const MAJOR = 0;
+ 
+@@ -48,7 +48,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return Version::MAJOR . '.' . Version::MINOR . '.' . Version::TINY;
++        return Version::MAJOR . '.' . Version::MINOR . '.' . Version::TINY . '-svn';
+     }
+ 
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000127.html">[Medick-svn] r332 - trunk/skel/scripts
+</A></li>
+	<LI>Next message: <A HREF="000129.html">[Medick-svn] r335 - in trunk: bin libs/action/controller libs/action/controller/session libs/active/support
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#128">[ date ]</a>
+              <a href="thread.html#128">[ thread ]</a>
+              <a href="subject.html#128">[ subject ]</a>
+              <a href="author.html#128">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

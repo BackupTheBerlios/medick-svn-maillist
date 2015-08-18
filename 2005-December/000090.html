@@ -1,0 +1,97 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r294 - trunk/libs/action/controller/templates
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r294%20-%20trunk/libs/action/controller/templates&In-Reply-To=%3C200512111421.jBBELFrG005126%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000089.html">
+   <LINK REL="Next"  HREF="000091.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r294 - trunk/libs/action/controller/templates</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r294%20-%20trunk/libs/action/controller/templates&In-Reply-To=%3C200512111421.jBBELFrG005126%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r294 - trunk/libs/action/controller/templates">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Dec 11 15:21:15 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000089.html">[Medick-svn] r293 - trunk/libs/logger/outputter
+</A></li>
+        <LI>Next message: <A HREF="000091.html">[Medick-svn] r295 - in trunk/libs: action/controller configurator logger logger/outputter medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#90">[ date ]</a>
+              <a href="thread.html#90">[ thread ]</a>
+              <a href="subject.html#90">[ subject ]</a>
+              <a href="author.html#90">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-12-11 15:21:01 +0100 (Sun, 11 Dec 2005)
+New Revision: 294
+
+Modified:
+   trunk/libs/action/controller/templates/error.phtml
+Log:
+ -- [error.phtml] valid xhtml output
+
+Modified: trunk/libs/action/controller/templates/error.phtml
+===================================================================
+--- trunk/libs/action/controller/templates/error.phtml	2005-12-11 14:19:47 UTC (rev 293)
++++ trunk/libs/action/controller/templates/error.phtml	2005-12-11 14:21:01 UTC (rev 294)
+@@ -17,7 +17,7 @@
+            &lt;h2&gt;&lt;?=get_class($error);?&gt;&lt;/h2&gt;
+ 
+            &lt;strong&gt;Message: &lt;?=$error-&gt;getMessage();?&gt;&lt;/strong&gt;&lt;br /&gt;
+-           &lt;? if (method_exists($error,'getUserInfo')): ?&gt;
++           &lt;? if (method_exists($error,'getUserInfo') &amp;&amp; $error-&gt;getUserInfo() != ''): ?&gt;
+                 User Info: &lt;?=$error-&gt;getUserInfo();?&gt;&lt;br /&gt;
+            &lt;? endif; ?&gt;
+            &lt;? if (method_exists($error,'getNativeError')): ?&gt;
+@@ -25,10 +25,10 @@
+            &lt;? endif; ?&gt;
+ 
+            &lt;strong&gt;in&lt;/strong&gt; &lt;?=$error-&gt;getFile();?&gt; at line: &lt;?=$error-&gt;getLine();?&gt;
+-           &lt;hr noshade=&quot;noshade&quot; /&gt;
++           &lt;hr /&gt;
+            Backtrace:&lt;br /&gt;
+            &lt;pre&gt;&lt;?=$error-&gt;getTraceAsString();?&gt;&lt;/pre&gt;
+-           &lt;hr noshade=&quot;noshade&quot; /&gt;
++           &lt;hr /&gt;
+         &lt;/div&gt;
+     &lt;/body&gt;
+ &lt;/html&gt;
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000089.html">[Medick-svn] r293 - trunk/libs/logger/outputter
+</A></li>
+	<LI>Next message: <A HREF="000091.html">[Medick-svn] r295 - in trunk/libs: action/controller configurator logger logger/outputter medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#90">[ date ]</a>
+              <a href="thread.html#90">[ thread ]</a>
+              <a href="subject.html#90">[ subject ]</a>
+              <a href="author.html#90">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

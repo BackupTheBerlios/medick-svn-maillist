@@ -1,0 +1,198 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r207 - trunk/libs/configurator
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r207%20-%20trunk/libs/configurator&In-Reply-To=%3C200510151238.j9FCcAiT028723%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000010.html">
+   <LINK REL="Next"  HREF="000012.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r207 - trunk/libs/configurator</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r207%20-%20trunk/libs/configurator&In-Reply-To=%3C200510151238.j9FCcAiT028723%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r207 - trunk/libs/configurator">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Oct 15 14:38:10 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000010.html">[Medick-svn] r206 - trunk/libs/action/controller
+</A></li>
+        <LI>Next message: <A HREF="000012.html">[Medick-svn] r208 - trunk/config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#11">[ date ]</a>
+              <a href="thread.html#11">[ thread ]</a>
+              <a href="subject.html#11">[ subject ]</a>
+              <a href="author.html#11">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-15 14:38:09 +0200 (Sat, 15 Oct 2005)
+New Revision: 207
+
+Modified:
+   trunk/libs/configurator/IConfigurator.php
+   trunk/libs/configurator/XMLConfigurator.php
+Log:
+ - [ configurator/IConfigurator ] removed unused methods: getSectionProperty and getDefaultRoute
+ - [ configurator/XMLConfigurator ] removed unused methods
+ - [ configurator/XMLConfigurator ] fix: when the value of a property is off,false or 0, getProperty should return false, this fix solves the rewrite on/off setting.
+
+
+Modified: trunk/libs/configurator/IConfigurator.php
+===================================================================
+--- trunk/libs/configurator/IConfigurator.php	2005-10-15 12:07:52 UTC (rev 206)
++++ trunk/libs/configurator/IConfigurator.php	2005-10-15 12:38:09 UTC (rev 207)
+@@ -39,13 +39,6 @@
+  * @package locknet7.config
+  */
+ interface IConfigurator {
+-    /**
+-     * It gets the section property
+-     * @param string, section, the section
+-     * @param string, property, the property
+-     * @return string, the section property
+-     */
+-    function getSectionProperty($section, $property);
+     
+     /**
+      * It gets the logger outputters.
+@@ -68,12 +61,6 @@
+     function getProperty($name);
+     
+     /**
+-     * It gets the default application route.
+-     * @return Object, so we can access properties as members.
+-     */
+-    function getDefaultRoute();
+-    
+-    /**
+      * Based on id we return the dsn array
+      * &lt;code&gt;
+      *      // for Creole this dsn format will do the job:
+@@ -85,4 +72,3 @@
+      */
+     function getDatabaseDsn($id = FALSE);
+ }
+-
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2005-10-15 12:07:52 UTC (rev 206)
++++ trunk/libs/configurator/XMLConfigurator.php	2005-10-15 12:38:09 UTC (rev 207)
+@@ -55,22 +55,6 @@
+         else $this-&gt;sxe = simplexml_load_string($xml, 'SimpleXMLIterator');
+         if ($this-&gt;sxe===false) throw new ConfiguratorException('Cannot read ' . $xml . '\n&lt;br /&gt; Bad Format!');
+     }
+-
+-    /** @see Configurator::getSectionProperty() */
+-    public function getSectionProperty($section, $property) {
+-        if(!$this-&gt;sxe-&gt;$section) {
+-            throw new ConfiguratorException('Cannot find ' . $section . ' section in your Configuration!');
+-        }
+-        $_sys   = $this-&gt;sxe-&gt;$section-&gt;$property;
+-        $_query = (string)trim($_sys['value']);
+-        if( ($_query=='') OR ($_query=='false') OR ($_query=='off') OR ($_query == 0) ){
+-            return false;
+-        } elseif( ($_query=='true') OR ($_query=='on') OR ($_query == 1) ) {
+-            return true;
+-        } else {
+-            return (string)$_query;
+-        }
+-    }
+     
+     /** 
+      * Configuration Example:
+@@ -142,9 +126,15 @@
+     /** @see Configurator::getProperty */
+     public function getProperty($name) {
+         foreach($this-&gt;sxe-&gt;property as  $properties ) {
+-            if($properties['name']==$name) {
+-                return (string)trim($properties['value']);
+-            }
++            if($properties['name'] != $name)
++                continue;
++            $_query= (string)trim($properties['value']);
++            if( ($_query=='') OR ($_query=='false') OR ($_query=='off') OR ($_query == '0') )
++                return (bool)false;
++            elseif( ($_query=='true') OR ($_query=='on') OR ($_query == '1') ) 
++                return (bool)true;
++            else 
++                return (string)$_query;
+         }
+         throw new ConfiguratorException('Property ' . $name . ' not found!');
+     }
+@@ -175,30 +165,10 @@
+         $this-&gt;sxe = simplexml_import_dom($dom, 'SimpleXMLIterator');
+     }
+     
+-    /** 
+-     * Configuration Example:
+-     * &lt;code&gt;
+-     *      &lt;route name=&quot;default&quot;&gt;
+-     *          &lt;controller&gt;foo&lt;/controller&gt;
+-     *          &lt;action&gt;someaction&lt;/action&gt;
+-     *      &lt;/route&gt;
+-     * &lt;/code&gt;
+-     * or, to use the default medick action (index):
+-     * &lt;code&gt;
+-     *      &lt;route&gt;&lt;controller&gt;foo&lt;/controller&gt;&lt;/route&gt;
+-     * &lt;/code&gt;
+-     * @see Configurator::getDefaultRoute() */
+-    public function getDefaultRoute() {
+-        return $this-&gt;sxe-&gt;route[0];
+-    }
+- 
+-    /** sets the default route */
+-    public function setDefaultRoute($controller, $action = 'index') {
+-        $this-&gt;sxe-&gt;route[0]-&gt;controller = $controller;
+-        $this-&gt;sxe-&gt;route[0]-&gt;action     = $action;
+-    }
+-    
+-    /** */
++    /**
++     * Convert this document from SXE to DOM
++     * @return DomDocument
++     */
+     public function toDom() {
+         $dom_sxe = dom_import_simplexml($this-&gt;sxe);
+         $dom = new DomDocument();
+@@ -213,4 +183,3 @@
+     }
+     
+ }
+-
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000010.html">[Medick-svn] r206 - trunk/libs/action/controller
+</A></li>
+	<LI>Next message: <A HREF="000012.html">[Medick-svn] r208 - trunk/config
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#11">[ date ]</a>
+              <a href="thread.html#11">[ thread ]</a>
+              <a href="subject.html#11">[ subject ]</a>
+              <a href="author.html#11">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

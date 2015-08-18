@@ -1,0 +1,760 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r391 - applications/testor/app/controllers applications/testor/app/models applications/testor/app/views applications/testor/app/views/portfolio applications/testor/app/views/project applications/testor/db applications/testor/public/stylesheet trunk/libs/action/controller
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-April/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r391%20-%20applications/testor/app/controllers%20applications/testor/app/models%20applications/testor/app/views%20applications/testor/app/views/portfolio%20applications/testor/app/views/project%20applications/testor/db%20applications/testor/public/stylesheet%20trunk/libs/action/controller&In-Reply-To=%3C200604062100.k36L0WcS027651%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000174.html">
+   <LINK REL="Next"  HREF="000176.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r391 - applications/testor/app/controllers applications/testor/app/models applications/testor/app/views applications/testor/app/views/portfolio applications/testor/app/views/project applications/testor/db applications/testor/public/stylesheet trunk/libs/action/controller</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r391%20-%20applications/testor/app/controllers%20applications/testor/app/models%20applications/testor/app/views%20applications/testor/app/views/portfolio%20applications/testor/app/views/project%20applications/testor/db%20applications/testor/public/stylesheet%20trunk/libs/action/controller&In-Reply-To=%3C200604062100.k36L0WcS027651%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r391 - applications/testor/app/controllers applications/testor/app/models applications/testor/app/views applications/testor/app/views/portfolio applications/testor/app/views/project applications/testor/db applications/testor/public/stylesheet trunk/libs/action/controller">aurelian at berlios.de
+       </A><BR>
+    <I>Thu Apr  6 23:00:32 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000174.html">[Medick-svn] r390 - in applications/testor/app/views: cookie project
+</A></li>
+        <LI>Next message: <A HREF="000176.html">[Medick-svn] r392 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#175">[ date ]</a>
+              <a href="thread.html#175">[ thread ]</a>
+              <a href="subject.html#175">[ subject ]</a>
+              <a href="author.html#175">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-04-06 23:00:28 +0200 (Thu, 06 Apr 2006)
+New Revision: 391
+
+Added:
+   applications/testor/app/controllers/portfolio_controller.php
+   applications/testor/app/models/category.php
+   applications/testor/app/models/manager.php
+   applications/testor/app/models/milestone.php
+   applications/testor/app/models/portfolio.php
+   applications/testor/app/models/project.php
+   applications/testor/app/views/portfolio/
+   applications/testor/app/views/portfolio/_form.phtml
+   applications/testor/app/views/portfolio/add.phtml
+   applications/testor/app/views/portfolio/edit.phtml
+   applications/testor/app/views/portfolio/index.phtml
+Removed:
+   applications/testor/app/controllers/tone_controller.php
+   applications/testor/app/views/tone/
+Modified:
+   applications/testor/app/controllers/project_controller.php
+   applications/testor/app/views/project/index.phtml
+   applications/testor/db/schema.sql
+   applications/testor/public/stylesheet/testor.css
+   trunk/libs/action/controller/Base.php
+Log:
+more on testor
+
+Added: applications/testor/app/controllers/portfolio_controller.php
+===================================================================
+--- applications/testor/app/controllers/portfolio_controller.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/controllers/portfolio_controller.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,102 @@
++&lt;?php
++/**
++ * 
++ * @desc: Test for: &lt;ul&gt;&lt;li&gt;FormHelper::check_box&lt;/li&gt;&lt;li&gt;uniqueness_of validator&lt;/li&gt;&lt;li&gt;ActiveRecordHelper::error_message_on&lt;/li&gt;&lt;/ul&gt;
++ * @package testor.controller
++ * $Id$
++ */ 
++class PortfolioController extends ApplicationController {
++    
++    protected $use_layout= 'main';
++    
++    protected $models= 'portfolio';
++    
++    /** 
++     * @desc: it lists all &lt;em&gt;portfolios&lt;/em&gt; 
++     */
++    public function index() {
++        $this-&gt;portfolios= Portfolio::find();
++    }
++    
++    /** 
++     * @desc: prints the form for adding a new &lt;em&gt;portfolio&lt;/em&gt;, it submits to &lt;a href=&quot;portfolio/create&quot;&gt;create&lt;/a&gt;
++     */
++    public function add() {
++        $this-&gt;portfolio= new Portfolio();
++    }
++    
++    /** 
++     * @desc: creates a new &lt;em&gt;portfolio&lt;/em&gt;
++     */
++    public function create() {
++        $this-&gt;portfolio= new Portfolio($this-&gt;request-&gt;getParameter('portfolio'));
++        $this-&gt;set_status($this-&gt;portfolio);
++
++        if ($this-&gt;portfolio-&gt;save() === FALSE) {
++            $this-&gt;render('add');
++        } else {
++            $this-&gt;flash('notice', '&lt;em&gt;' . $this-&gt;portfolio-&gt;name . '&lt;/em&gt; created');
++            $this-&gt;redirect_to('index');
++        }
++    }
++    
++    /** 
++     * @desc: prints the form for editing a &lt;em&gt;portfolio&lt;/em&gt;, it submits to &lt;a href=&quot;portfolio/update&quot;&gt;update&lt;/a&gt;
++     */
++    public function edit() {
++        try {
++            $this-&gt;portfolio= Portfolio::find($this-&gt;request-&gt;getParameter('id'));
++        } catch (RecordNotFoundException $rnfEx) {
++            $this-&gt;flash('error', $rnfEx-&gt;getMessage());
++            $this-&gt;redirect_to('index');
++        }
++    }
++
++    /** 
++     * @desc: updates a &lt;em&gt;portfolio&lt;/em&gt;
++     */
++    public function update() {
++        try {
++            $this-&gt;portfolio= Portfolio::find($this-&gt;request-&gt;getParameter('id'))-&gt;attributes($this-&gt;request-&gt;getParameter('portfolio'));
++            $this-&gt;set_status($this-&gt;portfolio);
++            if ($this-&gt;portfolio-&gt;save() === FALSE) {
++                $this-&gt;render('edit');
++            } else {
++                $this-&gt;flash('notice', $this-&gt;portfolio-&gt;name . ' updated');
++                $this-&gt;redirect_to('index');
++            }
++        } catch (ActiveRecordException $arEx) {
++            $this-&gt;logger-&gt;warn($arEx-&gt;getMessage());   
++            $this-&gt;flash('error', $arEx-&gt;getMessage());
++            $this-&gt;redirect_to('index');
++        }
++    }
++
++    private function set_status($portfolio) {
++        if (!isset($this-&gt;params['portfolio']['status'])) {
++          $portfolio-&gt;status=0;
++        } else {
++          $portfolio-&gt;status=1;
++        }
++    }
++    
++    /**
++     * @desc: removes a &lt;em&gt;portfolio&lt;/em&gt;
++     */
++    public function delete() {
++        try {
++            $portfolio= Portfolio::find($this-&gt;request-&gt;getParameter('id'));
++            if ($portfolio-&gt;delete()===FALSE) {
++                $this-&gt;flash('error', 'Cannot delete &lt;em&gt;' . $portfolio-&gt;name . '&lt;/em&gt;!');
++                return $this-&gt;redirect_to('index');
++            }
++            $this-&gt;flash('notice', '&lt;em&gt;' . $portfolio-&gt;name . '&lt;/em&gt; succesfully removed');
++            $this-&gt;redirect_to('index');
++        } catch (ActiveRecordException $arEx) {
++            $this-&gt;flash('error', $arEx-&gt;getMessage());
++            $this-&gt;redirect_to('index');
++        }
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/controllers/portfolio_controller.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/testor/app/controllers/project_controller.php
+===================================================================
+--- applications/testor/app/controllers/project_controller.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/controllers/project_controller.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -1,9 +1,9 @@
+ &lt;?php
+-
+ /**
+  * This class is part of elproject, medick sample application
+  * $Id$
+  * @package elproject.controllers
++ * @desc: Tests ActiveRecord Associations.&lt;br /&gt;&lt;code&gt;Project&lt;/code&gt; model definition:&lt;ul&gt;&lt;li&gt;&lt;code&gt;$belongs_to=portfolio;&lt;/code&gt;&lt;/li&gt;&lt;li&gt;&lt;code&gt;$has_one='manager'&lt;/code&gt;&lt;/li&gt;&lt;li&gt;&lt;code&gt;$has_many='milestones'&lt;/code&gt;&lt;/li&gt;&lt;li&gt;&lt;code&gt;$has_and_belongs_to_many='categories'&lt;/code&gt;&lt;/li&gt;&lt;/ul&gt;
+  */
+ 
+ class ProjectController extends ApplicationController {
+@@ -12,20 +12,21 @@
+ 
+     protected $use_layout= 'main';
+ 
+-    /** List all projects */
++    /**
++     * @desc: List all projects
++     */
+     public function index() {
+-        try {
+-            $this-&gt;template-&gt;projects= Project::find();
+-        } catch (RecordNotFoundException $rnfEx) {
+-            $this-&gt;render_text($rnfEx-&gt;getMessage());
+-        }
++        $this-&gt;template-&gt;assign('projects', Project::find());
+     }
+ 
+-    /** Show one project */
++    /**
++     * @desc: Shows a project
++     */
+     public function show() {
+         try {
+-            $this-&gt;template-&gt;project= Project::find($this-&gt;params['id']);
++            $this-&gt;template-&gt;assign('project', Project::find($this-&gt;request-&gt;getParameter('id')));
+         } catch (ActiveRecordException $rnfEx) {
++            $this-&gt;flash('error', $rnfEx-&gt;getMessage());
+             $this-&gt;redirect_to('index');
+         }
+     }
+
+Deleted: applications/testor/app/controllers/tone_controller.php
+===================================================================
+--- applications/testor/app/controllers/tone_controller.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/controllers/tone_controller.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -1,99 +0,0 @@
+-&lt;?php
+-/**
+- * 
+- * @desc: Test for: &lt;ul&gt;&lt;li&gt;FormHelper::check_box&lt;/li&gt;&lt;li&gt;uniqueness_of validator&lt;/li&gt;&lt;li&gt;ActiveRecordHelper::error_message_on&lt;/li&gt;&lt;/ul&gt;
+- * @package testor.controller
+- * $Id$
+- */ 
+-class ToneController extends ApplicationController {
+-    
+-    protected $use_layout= 'main';
+-    
+-    protected $models= 'tone';
+-    
+-    /** 
+-     * @desc: it lists all &lt;em&gt;tones&lt;/em&gt; 
+-     */
+-    public function index() {
+-        $this-&gt;tone= Tone::find();
+-    }
+-    
+-    /** 
+-     * @desc: prints the form for adding a new &lt;em&gt;tone&lt;/em&gt;, it submits to &lt;a href=&quot;tone/create&quot;&gt;create&lt;/a&gt;
+-     */
+-    public function add() {
+-        $this-&gt;tone= new Tone();
+-    }
+-    
+-    /** 
+-     * @desc: creates a new &lt;em&gt;tone&lt;/em&gt;
+-     */
+-    public function create() {
+-        $this-&gt;tone= new Tone($this-&gt;request-&gt;getParameter('tone'));
+-        $this-&gt;set_status($this-&gt;tone);
+-
+-        if ($this-&gt;tone-&gt;save() === FALSE) {
+-            $this-&gt;render('add');
+-        } else {
+-            $this-&gt;flash('notice', '&lt;em&gt;' . $this-&gt;tone-&gt;name . '&lt;/em&gt; created');
+-            $this-&gt;redirect_to('index');
+-        }
+-    }
+-    
+-    /** 
+-     * @desc: prints the form for editing a &lt;em&gt;tone&lt;/em&gt;, it submits to &lt;a href=&quot;tone/update&quot;&gt;update&lt;/a&gt;
+-     */
+-    public function edit() {
+-        try {
+-            $this-&gt;tone= Tone::find($this-&gt;request-&gt;getParameter('id'));
+-        } catch (RecordNotFoundException $rnfEx) {
+-            $this-&gt;flash('error', $rnfEx-&gt;getMessage());
+-            $this-&gt;redirect_to('index');
+-        }
+-    }
+-
+-    /** 
+-     * @desc: updates a &lt;em&gt;tone&lt;/em&gt;
+-     */
+-    public function update() {
+-        try {
+-            $this-&gt;tone= Tone::find($this-&gt;request-&gt;getParameter('id'))-&gt;attributes($this-&gt;request-&gt;getParameter('tone'));
+-            $this-&gt;set_status($this-&gt;tone);
+-            if ($this-&gt;tone-&gt;save() === FALSE) {
+-                $this-&gt;render('edit');
+-            } else {
+-                $this-&gt;flash('notice', $this-&gt;tone-&gt;name . ' updated');
+-                $this-&gt;redirect_to('index');
+-            }
+-        } catch (ActiveRecordException $arEx) {
+-            $this-&gt;logger-&gt;warn($arEx-&gt;getMessage());   
+-            $this-&gt;flash('error', $arEx-&gt;getMessage());
+-            $this-&gt;redirect_to('index');
+-        }
+-    }
+-
+-    private function set_status($tone) {
+-        if (!isset($this-&gt;params['tone']['status'])) {
+-          $tone-&gt;status=0;
+-        } else {
+-          $tone-&gt;status=1;
+-        }
+-    }
+-    
+-    /**
+-     * @desc: removes a &lt;em&gt;tone&lt;/em&gt;
+-     */
+-    public function delete() {
+-        try {
+-            $tone= Tone::find($this-&gt;request-&gt;getParameter('id'));
+-            $tone-&gt;delete();
+-            $this-&gt;flash('notice', '&lt;em&gt;' . $tone-&gt;name . '&lt;/em&gt; succesfully removed');
+-            $this-&gt;redirect_to('index');
+-        } catch (ActiveRecordException $arEx) {
+-            $this-&gt;flash('error', $arEx-&gt;getMessage());
+-            $this-&gt;redirect_to('index');
+-        }
+-    }
+-
+-}
+-
+
+Added: applications/testor/app/models/category.php
+===================================================================
+--- applications/testor/app/models/category.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/models/category.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,22 @@
++&lt;?php
++/**
++ * This class is part of testor project
++ *
++ * @package testor.models
++ * $Id$
++ */
++class Category extends ActiveRecord {
++
++    /**
++     * Finds a Category
++     *
++     * @see ActiveRecord::build()
++     * @return mixed
++     */
++    public static function find() {
++        $args = func_get_args();
++        return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/models/category.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/models/manager.php
+===================================================================
+--- applications/testor/app/models/manager.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/models/manager.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,22 @@
++&lt;?php
++/**
++ * This class is part of testor project
++ *
++ * @package testor.models
++ * $Id$
++ */
++class Manager extends ActiveRecord {
++
++    /**
++     * Finds a Manager
++     *
++     * @see ActiveRecord::build()
++     * @return mixed
++     */
++    public static function find() {
++        $args = func_get_args();
++        return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/models/manager.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/models/milestone.php
+===================================================================
+--- applications/testor/app/models/milestone.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/models/milestone.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,22 @@
++&lt;?php
++/**
++ * This class is part of testor project
++ *
++ * @package testor.models
++ * $Id$
++ */
++class Milestone extends ActiveRecord {
++
++    /**
++     * Finds a Milestone
++     *
++     * @see ActiveRecord::build()
++     * @return mixed
++     */
++    public static function find() {
++        $args = func_get_args();
++        return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/models/milestone.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/models/portfolio.php
+===================================================================
+--- applications/testor/app/models/portfolio.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/models/portfolio.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,33 @@
++&lt;?php
++ /**
++  * This class is part of testor project
++  *
++  * @package testor.models
++  * $Id$
++  */
++class Portfolio extends ActiveRecord {
++
++    protected function before_save() {
++        $this-&gt;name= htmlentities($this-&gt;name);
++        $this-&gt;validates()-&gt;presence_of('name');
++        $this-&gt;validates()-&gt;uniqueness_of('name');
++        return TRUE;
++    }
++
++    protected function before_delete() {
++        return !($this-&gt;name=='locknet.ro');
++    }
++    
++    /**
++     * Finds a Portfolio
++     *
++     * @see ActiveRecord::build()
++     * @return mixed
++     */
++    public static function find() {
++        $args = func_get_args();
++        return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/models/portfolio.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/models/project.php
+===================================================================
+--- applications/testor/app/models/project.php	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/models/project.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,28 @@
++&lt;?php
++
++ /**
++  * This class is part of testor project
++  *
++  * @package testor.models
++  * $Id$
++  */
++class Project extends ActiveRecord {
++
++    protected $belongs_to= 'portfolio';
++    protected $has_one   = 'manager';
++    protected $has_many  = 'milestones';
++    protected $has_and_belongs_to_many = 'categories';
++    
++    /**
++     * Finds a Project
++     *
++     * @see ActiveRecord::build()
++     * @return mixed
++     */
++    public static function find() {
++        $args = func_get_args();
++        return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
++    }
++
++}
++
+
+
+Property changes on: applications/testor/app/models/project.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/portfolio/_form.phtml
+===================================================================
+--- applications/testor/app/views/portfolio/_form.phtml	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/views/portfolio/_form.phtml	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,12 @@
++&lt;!-- $Id$ --&gt;    
++&lt;div&gt;
++      &lt;label for=&quot;portfolio_name&quot;&gt;Name:&lt;/label&gt;
++      &lt;?=ActiveRecordHelper::error_message_on($portfolio, 'name');?&gt;
++      &lt;?=FormHelper::text_field($portfolio, 'name', array('size'=&gt;35));?&gt;
++&lt;/div&gt;
++    
++&lt;div&gt;
++      &lt;label for=&quot;portfolio_status&quot;&gt;Status:&lt;/label&gt;
++      &lt;?=FormHelper::check_box($portfolio,'status');?&gt;
++&lt;/div&gt;
++
+
+
+Property changes on: applications/testor/app/views/portfolio/_form.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/portfolio/add.phtml
+===================================================================
+--- applications/testor/app/views/portfolio/add.phtml	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/views/portfolio/add.phtml	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,9 @@
++&lt;!-- $Id$ --&gt; 
++&lt;form action=&quot;&lt;?=URL::create('portfolio','create');?&gt;&quot; method=&quot;post&quot;&gt;
++  &lt;fieldset&gt;
++    &lt;legend&gt;Add portfolio&lt;/legend&gt;
++    &lt;?=$this-&gt;render_partial(NULL, 'form');?&gt;
++    &lt;div&gt;&lt;?=Form::submit('submit', 'Submit');?&gt;&lt;/div&gt;
++  &lt;/fieldset&gt;
++&lt;/form&gt;
++
+
+
+Property changes on: applications/testor/app/views/portfolio/add.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/portfolio/edit.phtml
+===================================================================
+--- applications/testor/app/views/portfolio/edit.phtml	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/views/portfolio/edit.phtml	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,10 @@
++&lt;!-- $Id$ --&gt; 
++&lt;form action=&quot;&lt;?=URL::create('portfolio','update');?&gt;&quot; method=&quot;post&quot;&gt;
++&lt;input type=&quot;hidden&quot; name=&quot;id&quot; value=&quot;&lt;?=$portfolio-&gt;id;?&gt;&quot; /&gt;
++  &lt;fieldset&gt;
++    &lt;legend&gt;Edit portfolio: &lt;?=$portfolio-&gt;name;?&gt;&lt;/legend&gt;
++    &lt;?=$this-&gt;render_partial(NULL, 'form');?&gt;
++    &lt;div&gt;&lt;?=Form::submit('submit', 'Edit');?&gt;&lt;/div&gt;
++  &lt;/fieldset&gt;
++&lt;/form&gt;
++
+
+
+Property changes on: applications/testor/app/views/portfolio/edit.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Added: applications/testor/app/views/portfolio/index.phtml
+===================================================================
+--- applications/testor/app/views/portfolio/index.phtml	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/views/portfolio/index.phtml	2006-04-06 21:00:28 UTC (rev 391)
+@@ -0,0 +1,34 @@
++&lt;!-- $Id$ --&gt; 
++&lt;h5&gt;All Portfolios&lt;/h5&gt;
++
++&lt;hr /&gt;
++
++&lt;? if(isset($flash['notice'])):?&gt;
++    &lt;div class=&quot;flash_notice&quot;&gt;
++        &lt;div class=&quot;label&quot;&gt;Note&lt;/div&gt;
++        &lt;div class=&quot;content&quot;&gt;&lt;?=$flash['notice'];?&gt;&lt;/div&gt;
++    &lt;/div&gt;
++&lt;? endif;?&gt;
++&lt;? if(isset($flash['error'])):?&gt;
++    &lt;div class=&quot;flash_error&quot;&gt;
++        &lt;div class=&quot;label&quot;&gt;Warning&lt;/div&gt;
++        &lt;div class=&quot;content&quot;&gt;&lt;?=$flash['error'];?&gt;&lt;/div&gt;
++    &lt;/div&gt;
++&lt;? endif;?&gt;
++
++&lt;? if($portfolios-&gt;size()==0):?&gt;
++  Didnt find any portfolio!
++&lt;? else: ?&gt;
++  &lt;? foreach ($portfolios as $portfolio): ?&gt;
++    &lt;div id=&quot;e_&lt;?=$portfolio-&gt;id;?&gt;&quot; class=&quot;portfolio_&lt;?=$portfolio-&gt;status == '1' ? 'online' : 'offline';?&gt;&quot;&gt;
++      &lt;a href=&quot;&lt;?=URL::create('portfolio', 'edit',   array('id'=&gt;$portfolio-&gt;id));?&gt;&quot;&gt;Edit&lt;/a&gt; / 
++      &lt;a href=&quot;&lt;?=URL::create('portfolio', 'delete', array('id'=&gt;$portfolio-&gt;id));?&gt;&quot;&gt;Delete&lt;/a&gt;&nbsp;
++      &lt;?=$portfolio-&gt;name;?&gt;
++    &lt;/div&gt;
++  &lt;? endforeach; ?&gt;
++&lt;? endif; ?&gt;
++
++&lt;hr /&gt;
++
++&lt;a href=&quot;&lt;?=URL::create('portfolio', 'add');?&gt;&quot;&gt;Add a new Portfolio&lt;/a&gt;
++
+
+
+Property changes on: applications/testor/app/views/portfolio/index.phtml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: applications/testor/app/views/project/index.phtml
+===================================================================
+--- applications/testor/app/views/project/index.phtml	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/app/views/project/index.phtml	2006-04-06 21:00:28 UTC (rev 391)
+@@ -1,5 +1,20 @@
+ &lt;h5&gt;All Projects&lt;/h5&gt;
+ &lt;!-- $Id$ --&gt;
++&lt;? if(isset($flash['notice'])):?&gt;
++    &lt;div class=&quot;flash_notice&quot;&gt;
++        &lt;div class=&quot;label&quot;&gt;Note&lt;/div&gt;
++        &lt;div class=&quot;content&quot;&gt;&lt;?=$flash['notice'];?&gt;&lt;/div&gt;
++    &lt;/div&gt;
++&lt;? endif;?&gt;
++&lt;? if(isset($flash['error'])):?&gt;
++    &lt;div class=&quot;flash_error&quot;&gt;
++        &lt;div class=&quot;label&quot;&gt;Warning&lt;/div&gt;
++        &lt;div class=&quot;content&quot;&gt;&lt;?=$flash['error'];?&gt;&lt;/div&gt;
++    &lt;/div&gt;
++&lt;? endif;?&gt;
++ 
++&lt;hr /&gt;
++
+ &lt;table border=&quot;1&quot;&gt;
+     &lt;tr&gt;
+         &lt;td&gt;&nbsp;&lt;/td&gt;
+@@ -26,3 +41,4 @@
+         &lt;/tr&gt;
+     &lt;? endforeach; ?&gt;
+ &lt;/table&gt;
++
+
+Modified: applications/testor/db/schema.sql
+===================================================================
+--- applications/testor/db/schema.sql	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/db/schema.sql	2006-04-06 21:00:28 UTC (rev 391)
+@@ -11,11 +11,11 @@
+ -- --------------------------------------------------------
+ -- Table structure for table `tones`
+ 
+-CREATE TABLE tones (
+-  `id`      INT (11) PRIMARY KEY auto_increment,
+-  `name`    VARCHAR (255),
+-  `status`  INT(1)
+-) ENGINE=InnoDB;
++-- CREATE TABLE tones (
++--  `id`      INT (11) PRIMARY KEY auto_increment,
++--  `name`    VARCHAR (255),
++--  `status`  INT(1)
++-- ) ENGINE=InnoDB;
+ 
+ 
+ -- --------------------------------------------------------
+@@ -75,6 +75,7 @@
+ CREATE TABLE portfolios (
+   id        int(11)     NOT NULL auto_increment,
+   `name`    varchar(40) default NULL,
++  `status`  int(1)      NOT NULL default 1,
+   PRIMARY KEY  (id)
+ ) Engine=InnoDB;
+ 
+@@ -128,7 +129,7 @@
+ INSERT INTO `portfolios` ( `id` , `name` )
+     VALUES (NULL , 'locknet.ro');
+ INSERT INTO `managers` ( `id` , `first_name` , `last_name` )
+-    VALUES ( NULL , 'oancea', 'aurelian');
++    VALUES ( NULL , 'Oancea', 'Aurelian');
+ INSERT INTO `projects` ( `id` , `portfolio_id` , `manager_id`,`name` , `created_at` )
+     VALUES ( NULL , '1', '1', 'elproject', NOW());
+ INSERT INTO `milestones` ( `id` , `project_id` , `title` , `description` )
+
+Modified: applications/testor/public/stylesheet/testor.css
+===================================================================
+--- applications/testor/public/stylesheet/testor.css	2006-04-04 18:41:49 UTC (rev 390)
++++ applications/testor/public/stylesheet/testor.css	2006-04-06 21:00:28 UTC (rev 391)
+@@ -35,7 +35,7 @@
+   padding: 5px 10px;
+ }
+ 
+-.entry_on {
++.portfolio_online {
+   background: #a6f9cf;
+   /*color: white;*/
+   border-bottom: 1px solid black;
+@@ -43,7 +43,7 @@
+   margin: 2px;
+ }
+ 
+-.entry_off {
++.portfolio_offline {
+   background: #e3a6a6;
+   /*color: white;*/
+   border-bottom: 1px solid black;
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-04-04 18:41:49 UTC (rev 390)
++++ trunk/libs/action/controller/Base.php	2006-04-06 21:00:28 UTC (rev 391)
+@@ -398,6 +398,7 @@
+      * @param array params, additional parameters to pass with this redirect.
+      */
+     protected function redirect_to($action, $controller= NULL, $params = array(), $ext='html') {
++        if ($this-&gt;action_performed) return;
+         if ($controller === NULL) {
+             $controller= $this-&gt;params['controller'];
+         }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000174.html">[Medick-svn] r390 - in applications/testor/app/views: cookie project
+</A></li>
+	<LI>Next message: <A HREF="000176.html">[Medick-svn] r392 - in trunk: . libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#175">[ date ]</a>
+              <a href="thread.html#175">[ thread ]</a>
+              <a href="subject.html#175">[ subject ]</a>
+              <a href="author.html#175">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,5452 @@
+From aurelian at berlios.de  Sun Feb  5 15:58:42 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 5 Feb 2006 15:58:42 +0100
+Subject: [Medick-svn] r344 - applications/eltodo/app/controllers applications/eltodo/app/views/layouts applications/eltodo/app/views/project applications/eltodo/public/stylesheet trunk trunk/libs/action/controller trunk/libs/action/view trunk/libs/active/record trunk/libs/active/support trunk/libs/creole/drivers/oracle trunk/libs/logger trunk/libs/logger/formatter trunk/libs/medick
+Message-ID: <200602051458.k15EwgUN000508@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-05 15:58:35 +0100 (Sun, 05 Feb 2006)
+New Revision: 344
+
+Added:
+   trunk/libs/active/record/SQLCommand.php
+Modified:
+   applications/eltodo/app/controllers/project_controller.php
+   applications/eltodo/app/views/layouts/eltodo.phtml
+   applications/eltodo/app/views/project/all.phtml
+   applications/eltodo/public/stylesheet/eltodo.v0.2.css
+   trunk/CHANGELOG
+   trunk/boot.php
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Injector.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/view/Base.php
+   trunk/libs/action/view/HTML.php
+   trunk/libs/active/record/Association.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/DatabaseRow.php
+   trunk/libs/active/record/QueryBuilder.php
+   trunk/libs/active/record/RowsAggregate.php
+   trunk/libs/active/record/Validator.php
+   trunk/libs/active/support/Inflector.php
+   trunk/libs/creole/drivers/oracle/OCI8PreparedStatement.php
+   trunk/libs/logger/Logger.php
+   trunk/libs/logger/formatter/Formatter.php
+   trunk/libs/medick/Dispatcher.php
+   trunk/libs/medick/ErrorHandler.php
+   trunk/libs/medick/Exception.php
+Log:
+ -- renamed ActionViewBase to ActionView, 
+ -- renamed ActionControllerBase to ActionController 
+ -- renamed ActiveRecordBase to ActiveRecord
+ -- 3-rd version of ActiveRecord::find() method, 
+    this time the user model classes find method should be written as:
+    class News extends ActiveRecord{
+        public static function find() {
+            $args= func_get_args();
+            return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
+        }
+    }
+ -- re-wrote QueryBuilder, this time it knows how to build sqlquery`s from an array of options
+ -- added SQLCommand class (more API on request!)
+ -- on logger, the full path to application is replaced with the name of the application.
+ -- removed some debugging infos
+ -- more on elTodo (is broken now!).
+
+
+Modified: applications/eltodo/app/controllers/project_controller.php
+===================================================================
+--- applications/eltodo/app/controllers/project_controller.php	2006-01-29 15:39:43 UTC (rev 343)
++++ applications/eltodo/app/controllers/project_controller.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -39,6 +39,10 @@
+         }
+     }
+ 
++    public function overview() {
++        $this->template->project= Project::find($this->params['id']);
++    }
++
+     /** Removes a project */
+     public function delete() {
+         $project= Project::find($this->params['id']);
+
+Modified: applications/eltodo/app/views/layouts/eltodo.phtml
+===================================================================
+--- applications/eltodo/app/views/layouts/eltodo.phtml	2006-01-29 15:39:43 UTC (rev 343)
++++ applications/eltodo/app/views/layouts/eltodo.phtml	2006-02-05 14:58:35 UTC (rev 344)
+@@ -21,14 +21,14 @@
+             <div id="sidebar">
+                 <h1>sidebar</h1>
+                 <ul>
+-                    <li>My Projects</li>
+-                    <li>Add Project</li>
++                    <li><a href="<?=URL::create('project', 'all');?>">My Projects</a></li>
++                    <li><a href="<?=URL::create('project', 'add');?>">Add Project</a></li>
+                 </ul>
+             </div>
+ 
+             <div id="content"><?=$content_for_layout;?></div>
+ 
+-            <div id="footer">elTodo :: powered by medick.</div>
++            <div id="footer"><p>elTodo :: powered by <a href="http://medick.locknet.ro">medick</a>.</p></div>
+ 
+         </div>
+ 
+
+Modified: applications/eltodo/app/views/project/all.phtml
+===================================================================
+--- applications/eltodo/app/views/project/all.phtml	2006-01-29 15:39:43 UTC (rev 343)
++++ applications/eltodo/app/views/project/all.phtml	2006-02-05 14:58:35 UTC (rev 344)
+@@ -12,7 +12,7 @@
+     <div>
+         <label>Create a new Project:</label>
+         <?=Form::text('project[name]', NULL, array('maxlength'=>255,'size'=>45)); ?>
+-        <?=Form::submit('submit', 'Submit') ?>
++        <?=Form::submit('submit', 'Go!') ?>
+     </div>
+ </form>
+ 
+@@ -30,11 +30,17 @@
+           </a>
+         </td>
+         <td width="100%">
+-          <p id="e_<?=$project->id;?>"><?=$project->name;?></p>
++          <!-- <p id="e_<?=$project->id;?>"> -->
++        <a href="<?=URL::create('project','overview',array('id'=>$project->id));?>">
++            <?=$project->name;?>
++        </a>
++          <!-- </p> -->
++            <!--
+           <script language="JavaScript">
+               new Ajax.InPlaceEditor('e_<?=$project->id;?>', '/eltodo/project/edit',
+               { callback: function(form, value) { return 'id=<?=$project->id;?>&name=' + value }});
+           </script>
++            -->
+         </td>
+       </tr>
+     <? endforeach;?>
+
+Modified: applications/eltodo/public/stylesheet/eltodo.v0.2.css
+===================================================================
+--- applications/eltodo/public/stylesheet/eltodo.v0.2.css	2006-01-29 15:39:43 UTC (rev 343)
++++ applications/eltodo/public/stylesheet/eltodo.v0.2.css	2006-02-05 14:58:35 UTC (rev 344)
+@@ -11,7 +11,7 @@
+     border:1px solid #ccc;
+     border-width:0 1px 1px;
+     position:relative;
+-    }
++}
+ 
+ #content {
+     float:left;
+@@ -20,7 +20,7 @@
+     overflow:hidden;
+     padding-bottom:1em;
+     border-right:1px solid #ccc;
+-    }
++}
+ 
+ #sidebar {
+     font-size:0.94em;
+@@ -28,13 +28,13 @@
+     float:right;
+     width:-20%;
+     margin:0 2% 0 0;
+-    }
++}
+ 
+ #header {
+     background:#003163;
+     color: #fff;
+     height:100px;
+-    }
++}
+ 
+ #footer {
+     clear:both;
+@@ -43,7 +43,7 @@
+     text-align:right;
+     font-size:0.94em;
+     border-top:1px solid #ccc;
+-    }
++}
+ 
+ /* *******************
+  * Page Global Style
+@@ -51,9 +51,9 @@
+ body {
+     margin: 0;
+     padding: 0;
+-    font-family:verdana, arial, helvetica, sans-serif;
++    /*font-family:verdana, arial, helvetica, sans-serif;*/
++    font: .8em "Lucida Grande", Tahoma, Arial, Helvetica, sans-serif;
+     color:#333;
+-    /* background-image: url(http://localhost/eltodo/images/bg.gif); */
+ }
+ 
+ h2 {
+@@ -64,6 +64,28 @@
+     margin: 0.75em 0 0;
+ }
+ 
++/* *******************
++ * Individual project
++ * *******************/
++#projectlist tbody tr.even td {
++  background-color: #eee;
++}
++
++#projectlist tbody tr.odd  td {
++  background-color: #fff;
++}
++
++a:link, a:visited{
++    color: #30c;
++    background-color: transparent;
++    text-decoration: underline;
++}
++
++a:hover,a:active{
++    color: #c03;
++    background-color: transparent;
++}
++
+ /* *******
+  * forms
+  * ******/
+@@ -81,7 +103,6 @@
+     font-size:115%;
+ }
+ 
+-
+ label {
+     margin:0;
+     padding:0.2em;
+@@ -89,7 +110,6 @@
+     font-weight:bold;
+ }
+ 
+-
+ fieldset>input.submit-button {
+     margin-left:5em;
+     margin-top:1em;
+@@ -147,21 +167,11 @@
+     font-size:95%;
+ }
+ 
+-#projectlist tbody tr.even td {
+-  background-color: #eee;
+-}
+-
+-#projectlist tbody tr.odd  td {
+-  background-color: #fff;
+-}
+-
+-
+ /* **************
+  In place editor
+  * **************/
+ 
+ form.inplaceeditor-form { /* The form */
+-  /* background-color:red; */
+ }
+ 
+ form.inplaceeditor-form input[type="text"] { /* Input box */
+@@ -171,12 +181,7 @@
+ }
+ 
+ form.inplaceeditor-form input[type="submit"] { /* The submit button */
+-  /* margin-left:1em;*/
+-  /* color:red;*/
+ }
+ 
+ form.inplaceeditor-form a { /* The cancel link */
+-  /* margin-left:1em; */
+ }
+-
+-
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/CHANGELOG	2006-02-05 14:58:35 UTC (rev 344)
+@@ -2,6 +2,28 @@
+ (*) SVN version
+ 
+ 0.0.5(*)
++    - Renamed ActionViewBase to ActionView, ActionControllerBase to ActionController and ActiveRecordBase to ActiveRecord
++    - 3-rd version of ActiveRecord::find() method, this time the user model classes find method should be written as:
++      class News extends ActiveRecord{
++        public static function find() {
++          $args= func_get_args();
++          return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
++        }
++      }
++    - re-wrote QueryBuilder, this time it knows how to build sqlquery`s from an array of options
++    - added SQLCommand class (more API on request!)
++    - added Validators (more API will be provided on request!)
++    - ActiveRecord filters should return TRUE 
++        and the size of errors associated with a databaserow should be 0 (no errors), 
++        otherwise changing an object state will fail
++    - added the "flash" thing
++    - added ActiveRecordHelper and FormHelper classes on ActionView:::HTML namespace  
++    - added 3 new methods on Inflector: sanitize, tabelize() and humanize()
++    - on logger, the full path to application is replaced with the name of the application.
++    - removed some debugging infos  
++    - more API docs.
++    - bundled prototype (http://prototype.conio.net/) 
++      and script.aculo.us (http://script.aculo.us/) javascript libraries, both under a MIT-style licence.
+ 
+ 0.0.4 (09.Jan.2006)
+     - added medick application generator (bin/medick.php).
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/boot.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -70,9 +70,8 @@
+ 
+ $logger= Registry::put(new Logger(), '__logger');
+ 
+-$logger->debug('Core Loaded...');
+-$logger->debug('Running on Medick $v: ' . Version::getVersion());
+-$logger->debug('XML Config File: ' . $conf_files . '.xml');
+-$logger->debug('Routes File: ' . $conf_files . '.routes.php');
+-
++$logger->debug('Medick $v: ' . Version::getVersion());
++$logger->debug('Config: ' . $conf_files . '.xml');
++$logger->debug('Routes: ' . $conf_files . '.routes.php');
+ include_once($conf_files . '.routes.php');
++
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/action/controller/Base.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -37,10 +37,11 @@
+ // namespace ActionController {
+ 
+ /**
++ * Base Class For Our Application Controllers
++ *
+  * @package locknet7.action.controller
+- * Base Class For Our Application Controllers
+  */
+-class ActionControllerBase extends Object {
++class ActionController extends Object {
+ 
+     /** @var Logger
+         logger instance */
+@@ -68,15 +69,15 @@
+ 
+     /** @var array
+         values for template class */
+-    protected $assigns;
++    private $assigns;
+ 
+     /** @var string
+         Default location for template files*/
+-    protected $template_root;
++    private $template_root;
+ 
+     /** @var string
+         application path*/
+-    protected $app_path;
++    private $app_path;
+ 
+     /** @var string
+         the layout to use */
+@@ -106,8 +107,6 @@
+         the injector. */
+     private $injector;
+ 
+-    // private $__flash=array();
+-
+     /**
+      * Process this Request
+      *
+@@ -124,8 +123,7 @@
+         if(ob_get_length()) {
+             ob_end_clean();
+         }
+-        $template = ActionViewBase::factory('php');
+-        // $template = new ActionView:::Base();
++        $template = ActionView::factory('php');
+         $template->error= $exception;
+         $text= $template->render_file(MEDICK_PATH . '/libs/action/controller/templates/error.phtml');
+         $response->setStatus(Response::SC_INTERNAL_SERVER_ERROR);
+@@ -197,16 +195,11 @@
+                 . $this->injector->getPath('helpers')
+                 . '_' . $this->params['controller'] . ' ' . $fnfEx->getMessage());
+         }
+-
+-        if ($this->session->hasValue('flash')) {
+-            $this->template->flash = $this->session->getValue('flash');
+-        } else {
+-            $this->template->flash = NULL;
+-        }
++        $this->register_flash();
+         if ($this->use_layout) {
+             $layout= $this->use_layout === TRUE ? $this->params['controller'] : $this->use_layout;
+             $layout_file= $this->injector->getPath('layouts') . $layout . '.phtml';
+-            $this->logger->debug('Trying to use layout: ' . $layout_file);
++            $this->logger->debug('Layout: ' . $layout_file);
+             if (!is_file($layout_file)) {
+                 $this->logger->debug('...failed.');
+                 return $this->render_without_layout($template_file, $status);
+@@ -218,19 +211,14 @@
+         } else {
+             return $this->render_without_layout($template_file, $status);
+         }
++    }
+ 
+-        /*
+-        // {{{ hook RouteParams here.
+-        $hij= array();
+-        $route= Registry::get('__map')->getCurrentRoute();
+-        foreach($route->getParams() as $param) {
+-            $hij[$param->getName()]['message'] = 'foo';
+-            $hij[$param->getName()]['value']   = $param->getValue();
+-        }
+-        $this->template->__param = $hij;
+-        // }}}
+-        */
+-
++    protected function render_partial($partial, $controller=NULL, $status=NULL) {
++        $this->register_flash();
++        if (is_null($controller)) $location = $this->template_root;
++        else $location = $this->injector->getPath('views') . $controller . DIRECTORY_SEPARATOR;
++        // $this->logger->debug('Partial: ' . $location . '_' . $partial . '.phtml');
++        return $this->render_without_layout($location . '_' . $partial . '.phtml', $status);
+     }
+ 
+     protected function render_without_layout($template_file, $status) {
+@@ -255,8 +243,6 @@
+             return;
+         }
+         $status = $status === NULL ? Response::SC_OK : $status;
+-        // try to load the magick __common method.
+-
+         $this->response->setStatus($status);
+         $this->response->setContent($text);
+         $this->action_performed = TRUE;
+@@ -265,12 +251,19 @@
+         if ($this->session->hasValue('flash')) {
+             $this->session->removeValue('flash');
+         }
+-
+     }
+ 
+     // }}}
+ 
+-    protected final function flash($name, $value) {
++    private function register_flash() {
++        if ($this->session->hasValue('flash')) {
++            $this->template->assign('flash', $this->session->getValue('flash'));
++        } else {
++            $this->template->assign('flash', NULL);
++        }
++    }
++
++    protected function flash($name, $value) {
+         $this->session->putValue('flash', array($name=>$value));
+     }
+ 
+@@ -294,13 +287,25 @@
+         $this->app_path      = $this->injector->getPath('__base');
+         $this->template_root = $this->injector->getPath('views') . $this->params['controller'] . DIRECTORY_SEPARATOR;
+ 
+-        $this->template = ActionViewBase::factory('php');
+-        // $this->template = new ActionView:::Base();
++        $this->template = ActionView::factory('php');
+         // predefined variables:
+-        $this->template->__base   = $this->config->getProperty('document_root');
+-        $this->template->__server = $this->config->getProperty('server_name');
++        $this->template->assign('__base', $this->config->getProperty('document_root'));
++        $this->template->assign('__server', $this->config->getProperty('server_name'));
++        $this->template->assign('__controller', $this->params['controller']);
++        $this->logger->debug($this->request->toString());
+     }
+ 
++    /**
++     * Shortcut for template assigns
++     */
++    public function __set($name, $value) {
++        $this->template->assign($name, $value);
++    }
++
++    public function __get($name) {
++        return $this->template->$name;
++    }
++
+     // XXX: not-done!
+     protected function sendFile($location, $options = array()) {
+         if(!is_file($location)) {
+@@ -312,23 +317,28 @@
+ 
+     // {{{ redirects
+ 
+-    // XXX: not done.
++    /**
++     * Redirects the current Response
++     *
++     * This changes the flag of action performed to TRUE
++     * @param string action to redirect to
++     * @param string controller defaults to NULL, the current controller
++     * @param array params, additional parameters to pass with this redirect.
++     */
+     protected function redirect_to($action, $controller= NULL, $params = array()) {
+         // get the curent controller, if NULL is passed.
+-        if (is_null($controller)) $controller= $this->params['controller'];
+-
+-        if ($this->config->getProperty('rewrite')) {
+-            $this->response->redirect(
+-                $this->config->getProperty('server_name') . $this->config->getProperty('document_root') . '/' .
+-                $controller . '/' . $action . '.html');
+-        } else {
+-            // rewrite-off
+-            $this->response->redirect(
+-                $this->config->getProperty('server_name') .
+-                $this->config->getProperty('document_root') .
+-                '/index.php?controller=' . $controller . '&action=' . $action
+-            );
++        if (is_null($controller)) {
++            $controller= $this->params['controller'];
+         }
++        $redirect_to= $this->config->getProperty('server_name') . $this->config->getProperty('document_root') . '/';
++        if (!$this->config->getProperty('rewrite')) {
++            $redirect_to .= 'index.php/';
++        }
++        $redirect_to .= $controller . '/' . $action;
++        if (count($params)) $redirect_to .= '/' . implode('/', $params);
++        $redirect_to .= '.html';
++        $this->logger->debug('Redirecting to: ' . $redirect_to);
++        $this->response->redirect($redirect_to);
+         $this->action_performed = TRUE;
+     }
+ 
+@@ -347,6 +357,7 @@
+      * Also, the magic __common method is invoked.
+      * @param string, action_name, the action to perform
+      * TODO: still to refactor.
++     * TODO: do not try to create the ``index" method, just throw an error.
+      */
+     private function perform_action($action_name) {
+         $forbidden_actions = array('process', '__construct', '__destruct', '__common');
+@@ -369,7 +380,7 @@
+             }
+         }
+         $this->params['action'] = strtolower($action_name);
+-        $this->logger->debug('Incoming action:: ' . strtolower($action_name));
++        // $this->logger->debug('Action:: ' . strtolower($action_name));
+         // quickly load the common magick method.
+         if ($_common= $this->createMethod('__common')) {
+             $_common->invoke($this);
+@@ -434,7 +445,6 @@
+         }
+         foreach ($this->models as $model) {
+             if ( trim($model) != '' ) {
+-                $this->logger->debug('Injecting Model:: ' . $model);
+                 $this->injector->inject('model', trim($model));
+             }
+         }
+
+Modified: trunk/libs/action/controller/Injector.php
+===================================================================
+--- trunk/libs/action/controller/Injector.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/action/controller/Injector.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -38,6 +38,7 @@
+  * Solves dependencys, by including application specific files
+  * controllers, models, layout files.
+  * Aditional using php reflection api, it validates the user classes
++ *
+  * @package locknet7.action.controller
+  */
+ 
+@@ -123,16 +124,15 @@
+      */
+     protected function injectModel($name) {
+         $location= $this->path['models'] . $name . '.php';
+-        $this->logger->debug('Model Location:: ' . $location);
++        $this->logger->debug('Model: ' . $location);
+         $this->includeFile($location, ucfirst($name));
+         $model_class_name= Inflector::camelize($name);
+-        $this->logger->debug('Model Class Name:: ' . $model_class_name);
+         try {
+             $model_object = new ReflectionClass($model_class_name);
+ 
+-            if (@$model_object->getParentClass()->name != 'ActiveRecordBase') {
++            if (@$model_object->getParentClass()->name != 'ActiveRecord') {
+                 throw new InjectorException (
+-                    'Wrong Definition of user Model, `' . $model_class_name . '`, it must extend ActiveRecordBase object!');
++                    'Wrong Definition of user Model, `' . $model_class_name . '`, it must extend ActiveRecord object!');
+             }
+ 
+             // if (!$model_object->hasMethod('find')) { XXX. php 5.1 only.
+@@ -178,7 +178,7 @@
+                 (
+                     (@$controller_class->getParentClass()->name == 'ApplicationController')
+                     ||
+-                    (@$controller_class->getParentClass()->name == 'ActionControllerBase')
++                    (@$controller_class->getParentClass()->name == 'ActionController')
+                 )
+             )
+             {
+@@ -186,7 +186,7 @@
+             } else {
+                 throw new InjectorException (
+                     'Wrong Definition of user controller class,
+-                    `' . $clazz . '` must extend ApplicationController or ActionControllerBase and
++                    `' . $clazz . '` must extend ApplicationController or ActionController and
+                     should be instantiable (must have a public constructor)!');
+             }
+         } catch (ReflectionException $rEx) {
+@@ -204,7 +204,7 @@
+      */
+     protected function injectHelper($location) {
+         $helper_file= $this->path['helpers'] . $location . '_helper.php';
+-        $this->logger->debug('Trying to load user helper from: ' . $helper_file);
++        $this->logger->debug('Helper: ' . $helper_file);
+         return $this->includeFile($helper_file, $location . '_helper.php');
+     }
+ 
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/action/controller/Request.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -78,5 +78,19 @@
+     public function setParameter($name, $value) {
+         $this->params[$name] = $value;
+     }
++
++    /**
++     * Gets a string representation of this Object
++     *
++     * @return string
++     */ 
++    public function toString() {
++        $buff = "{".$this->getClassName()."}-->";
++        foreach ($this->getParameters() as $name=>$value) {
++            $buff .= "[{$name}={$value}]";
++        }
++        return $buff;
++    }
++    
+ }
+ 
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/action/controller/Route.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -217,3 +217,4 @@
+     }
+ 
+ }
++
+
+Modified: trunk/libs/action/view/Base.php
+===================================================================
+--- trunk/libs/action/view/Base.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/action/view/Base.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -32,20 +32,21 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
++include_once('action/view/HTML.php');
++
+ /**
+- * @package locknet7.action.view.base
++ * @package locknet7.action.view
+  */
+ 
+-include_once('action/view/HTML.php');
+-
+ // namespace ActionView {
+ 
+ interface ITemplateEngine {
++    public function render_partial($controller, $partial);
+     public function render($template_file);
+     public function assign($name, $value);
+ }
+ 
+-class ActionViewBase extends Object {
++class ActionView extends Object {
+ 
+     public static function factory($engine) {
+         return new PHPTemplateEngine();
+@@ -61,7 +62,7 @@
+      */
+     public static function stripslashes_deep($value) {
+         if (is_array($value)) {
+-            array_map(array('ActionViewBase','stripslashes_deep'), $value);
++            array_map(array('ActionView','stripslashes_deep'), $value);
+         } elseif (is_object($value)) {
+ 
+         } else {
+@@ -72,7 +73,7 @@
+ }
+ 
+ /**
+- * ActionViewBase is the default `Template Engine' for Medick Framwork.
++ * A ``PHPTemplateEngine" is the default `Template Engine' for Medick Framwork.
+  *
+  * For a smoother transaction from <tt>Smarty</tt>, some variabiles/methods
+  * may share the same name and behavior
+@@ -85,6 +86,17 @@
+         return $this->render($template_file);
+     }
+ 
++    public function render_partial($controller, $partial) {
++        $path= Registry::get('__injector')->getPath('views');
++        if (NULL === $controller) {
++            $path .= $this->__controller;
++        } else {
++            $path .= $controller;
++        }
++        $path .= DIRECTORY_SEPARATOR . '_' . $partial . '.phtml';
++        return $this->render($path);
++    }
++
+     /**
+      * Render the file
+      * @param string, file, the file to render.
+@@ -92,9 +104,11 @@
+      * @throws Exception if the file is wrong.
+      */
+     public function render($file) {
+-        if (!is_file($file)) throw new MedickException ('Cannot Find Template: ' . $file);
++        if (!is_file($file)) {
++            throw new FileNotFoundException ('Cannot Find Template: ' . $file);
++        }
+         if (!empty($this->vars)) {
+-            if(!get_magic_quotes_gpc()) $this->vars = ActionViewBase::stripslashes_deep($this->vars);
++            if(!get_magic_quotes_gpc()) $this->vars = ActionView::stripslashes_deep($this->vars);
+             extract($this->vars,EXTR_SKIP);
+         }
+         ob_start();
+@@ -139,3 +153,4 @@
+ }
+ 
+ // }
++
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/action/view/HTML.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -35,7 +35,7 @@
+ 
+ class ActiveRecordHelper extends Object {
+ 
+-    public static function error_messages_for(ActiveRecordBase $object, $options=array()) {
++    public static function error_messages_for(ActiveRecord $object, $options=array()) {
+         $css_class= isset($options['css_class']) ? $options['css_class'] : 'formErrors';
+         $heading  = isset($options['heading']) && (int)$options['heading'] > 0 && (int)$options['heading'] < 6 ? $options['heading'] : 2;
+         $buffer= '<div id="medickFormErrors" class="' . $css_class . '">';
+@@ -63,7 +63,7 @@
+         }
+     }
+ 
+-    public static function error_message_on(ActiveRecordBase $object, $method, $options=array()) {
++    public static function error_message_on(ActiveRecord $object, $method, $options=array()) {
+         // $prepend_text = isset($options['prepend']) ? $options['prepend'] : "";
+         // $append_text  = isset($options['append']) ? $options['append'] : "";
+         // $css_class    = isset($options['css_class']) ? $options['css_class'] : "formError";
+@@ -76,7 +76,7 @@
+ 
+ class FormHelper extends Object {
+ 
+-    public static function text_field(ActiveRecordBase $object, $method, $options = array()) {
++    public static function text_field(ActiveRecord $object, $method, $options = array()) {
+         if (!$field= $object->getRow()->getFieldByName($method)) {
+             return; // ex?
+         }
+@@ -104,7 +104,7 @@
+         return $buff . "</div>";
+     }
+ 
+-    public static function text_area(ActiveRecordBase $object, $method, $options=array()) {
++    public static function text_area(ActiveRecord $object, $method, $options=array()) {
+         if (!$field= $object->getRow()->getFieldByName($method)) {
+             return; // ex?
+         }
+@@ -135,9 +135,20 @@
+             $options = array(),
+             $checked_value = "1",
+             $unchecked_value = "0") {
+-        $buff = '<input type="checkbox" id="';
+-        $buff .= strtolower(get_class($object)) . '_'.$method.'" ';
+-        $buff .= 'name="'.strtolower(get_class($object)).'['.$method.']" ';
++                
++        if (!$field= $object->getRow()->getFieldByName($method)) {
++            return; // ex?
++        }
++        $id   = strtolower(get_class($object)) . '_'.$method;
++        $name = strtolower(get_class($object)).'['.$method.']';
++        $buff = "<div class=\"formRow\">\n<label for=\"" . $id . "\">" . $field->getFormattedName() . "</label><br />\n";
++        $errors= FALSE;
++        if($field->hasErrors()) {
++            $buff .= '<div class="fieldWithErrors">';
++            $errors= TRUE;
++        }
++                
++        $buff .= '<input type="checkbox" id="' . $id . '" name="' . $name . '" ';
+         foreach ($options as $key=>$value) {
+             $buff .= $key . '="'.$value.'" ';
+         }
+
+Modified: trunk/libs/active/record/Association.php
+===================================================================
+--- trunk/libs/active/record/Association.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/active/record/Association.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -34,6 +34,7 @@
+ 
+ /**
+  * Association base abstract class
++ * 
+  * @package locknet7.active.record
+  */
+ abstract class Association extends Object {
+@@ -68,27 +69,7 @@
+ 
+     /** execute function */
+     abstract public function execute();
+-
+-    /** */
+-    protected function pre_execution() {
+-        return $this->reload($this->class);
+-    }
+-
+-    /** */
+-    protected function post_execution() {
+-        return $this->reload($this->owner);
+-    }
+-
+-    private function reload($what) {
+-        if ($this->getClassName() == 'HasAndBelongsToManyAssociation'
+-             || $this->getClassName() == 'HasManyAssociation'
+-        ) {
+-            return ActiveRecordBase::initialize(Inflector::singularize($what));
+-        } else {
+-            return ActiveRecordBase::initialize($what);
+-        }
+-    }
+-
++    
+     /**
+      * Resolves this Association
+      *
+@@ -149,12 +130,10 @@
+ class HasManyAssociation extends Association {
+ 
+     public function execute() {
+-        $this->class = Inflector::singularize($this->class);
+-        $this->pre_execution();
+-        $ret = ActiveRecordBase::__find(array(
+-                array('condition'=>Inflector::singularize($this->owner) . '_id=' . $this->pk)));
+-        $this->post_execution();
+-        return $ret;
++        $fk= Inflector::singularize($this->owner) . '_id';
++        $arguments= array('all', array('condition'=>$fk.'=?'), array($this->pk));
++        $builder= new QueryBuilder(Inflector::singularize($this->class), $arguments);
++        return ActiveRecord::build($builder);
+     }
+ 
+ }
+@@ -177,19 +156,17 @@
+ 
+     /**
+      * It Executes this Association
++     * 
++     * @todo: what if we don`t find the field?
+      * @see Association#execute
+      */
+     public function execute() {
+         $fk= $this->class.'_id'; // foreign key name: the class name+"_id" suffix"
+-        $it= $this->fields->iterator();
+-        while($it->hasNext()) {
+-            $current= $it->next();
+-            if ($current->getName() == $fk) {
+-                $this->pre_execution();
+-                $ret= ActiveRecordBase::__find(array($current->getValue()));
+-                $this->post_execution();
+-                return $ret;
+-            }
++        if ($field= $this->fields->getFieldByName($fk)) {
++            $arguments= array('first', array('condition'=>'id=?'), array($field->getValue()));
++            return ActiveRecord::build(new QueryBuilder($this->class, $arguments));
++        } else {
++            throw new AssociationNotFoundException('Cannot execute Association ``has_one" on ' . $this->class);
+         }
+     }
+ }
+@@ -217,25 +194,20 @@
+ class HasAndBelongsToManyAssociation extends Association {
+ 
+     public function execute() {
+-        $this->pre_execution();
+         if ($this->class < $this->owner) {
+             $join_table= $this->class . '_' . Inflector::pluralize($this->owner);
+         } else {
+             $join_table= Inflector::pluralize($this->owner) . '_' . Inflector::pluralize($this->class);
+         }
+-        $ret= ActiveRecordBase::__find(
+-                            array(
+-                                array(
+-                                    'include'  => $this->class . '.*',
+-                                    'left join'=>
+-                                        $join_table . ' ON ' . $this->class .
+-                                        '.id=' . $join_table . '.' . Inflector::singularize($this->class) . '_id',
+-                                     'condition'=>
+-                                        $join_table . '.' . Inflector::singularize($this->owner) . '_id=' . $this->pk
+-                                    )
+-                                )
+-                            );
+-        $this->post_execution();
+-        return $ret;
++        $arguments=array();
++        $arguments[]='all';
++        $clauses= array();
++        $clauses['columns']   = $this->class.'.*';
++        $clauses['left join'] = $join_table . ' on ' . $this->class . '.id=' . $join_table . '.' . Inflector::singularize($this->class) . '_id';
++        $clauses['condition'] = $join_table . '.' . Inflector::singularize($this->owner) . '_id=?';
++        $arguments[]= $clauses;
++        $arguments[]= array($this->pk);
++        return ActiveRecord::build(new QueryBuilder(Inflector::singularize($this->class), $arguments));
+     }
+ }
++
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/active/record/Base.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -33,34 +33,34 @@
+ // }}}
+ 
+ // ActiveRecord dependencies.
+-// include_once('active/record/FieldsAggregate.php');
+ include_once('active/record/DatabaseRow.php');
+ include_once('active/record/RowsAggregate.php');
+ include_once('active/record/QueryBuilder.php');
+-include_once('active/support/Inflector.php');
++include_once('active/record/SQLCommand.php');
+ include_once('active/record/Association.php');
+ include_once('active/record/Validator.php');
++include_once('active/support/Inflector.php');
+ // 3-rd party.
+ include_once('creole/Creole.php');
+ 
+ /**
+  * @package locknet7.active.record
+  */
+-abstract class ActiveRecordBase extends Object {
++abstract class ActiveRecord extends Object {
+ 
+     /* class name: Person */
+-    static protected $class_name = NULL;
++    protected $class_name = NULL;
+     /* table mane: persons */
+-    static protected $table_name = NULL;
++    protected $table_name = NULL;
+     /* database connection */
+-    static protected $conn       = NULL;
++    static protected $conn= NULL;
+ 
+     /** @var DatabaseRow
+         our database row. */
+     protected $row;
+ 
+     /** @var string
+-        primary key name! */
++        primary key name */
+     private $pk;
+ 
+     // {{{ Associations
+@@ -96,15 +96,15 @@
+      * PHP Engine will call this constructor by default.
+      * @param array, params, parameters as pair of `field name` => `value`
+      */
+-    public final function __construct($params = array()) {
++    public final function ActiveRecord($params = array()) {
+         self::establish_connection();
+-        self::$class_name = $this->getClassName();
+-        self::$table_name = Inflector::pluralize(strtolower(Inflector::underscore(self::$class_name)));
++        $this->class_name = $this->getClassName();
++        $this->table_name = Inflector::pluralize(strtolower(Inflector::underscore($this->class_name)));
+ 
+-        $table_info   = self::$conn->getDatabaseInfo()->getTable(self::$table_name);
++        $table_info   = self::$conn->getDatabaseInfo()->getTable($this->table_name);
+         $this->pk     = $table_info->getPrimaryKey()->getName();
+ 
+-        $this->row = new DatabaseRow();
++        $this->row = new DatabaseRow($this->table_name);
+         foreach( $table_info->getColumns() as $col) {
+             $field = new Field( $col->getName() );
+             // $field->size = $col->getSize();
+@@ -165,7 +165,7 @@
+                                     'has_many'   => $this->has_many,
+                                     'has_and_belongs_to_many' => $this->has_and_belongs_to_many
+                                     ),
+-                                self::$table_name,
++                                $this->table_name,
+                                 $field_name,
+                                 $this->row
+                                 )->execute();
+@@ -177,7 +177,9 @@
+     }
+ 
+     /**
+-     * This method is run before any call to ActiveRecordBase public methods!
++     * @TODO: This method is not working as expected!
++     *
++     * This method is run before any call to ActiveRecord public methods! (nope: php 5.1.2)
+      * Removes some duplicate code from the list with <tt>know_methods</tt>.
+      * ALso, it defines some methods aliases (eg: delete===distroy)
+      *
+@@ -213,13 +215,13 @@
+ 
+     /** Prepare this Object for serialization */
+     public function __sleep() {
+-        self::close_connection();
+-        return array('fields', 'pk', 'has_one', 'belongs_to', 'has_many', 'has_and_belongs_to_many');
++        ActiveRecord::close_connection();
++        return array('row', 'pk', 'has_one', 'belongs_to', 'has_many', 'has_and_belongs_to_many');
+     }
+ 
+     /** restore the Object state after unserialize */
+     public function __wakeup() {
+-        self::establish_connection();
++        ActiveRecord::establish_connection();
+         for($it = $this->fields->getIterator(); $it->valid(); $it->next()) {
+             $field_name= $it->current()->getName();
+             $this->$field_name = $it->current()->getValue();
+@@ -418,7 +420,7 @@
+         foreach ($this->row->getAffectedFields() as $col) {
+             $whereClause[] = $col->getName() . ' = ? ';
+         }
+-        $sql = 'DELETE FROM ' . ActiveRecordBase::$table_name . ' WHERE ' . implode(' AND ', $whereClause);
++        $sql = 'DELETE FROM ' . $this->table_name . ' WHERE ' . implode(' AND ', $whereClause);
+         $af= $this->performQuery($sql);
+         $this->after_delete();
+         return $af;
+@@ -434,7 +436,7 @@
+     private function getNextId() {
+         if ($this->row->getPrimaryKey() !== NULL) {
+             $_pk = $this->pk;
+-            $id  = ActiveRecordBase::$conn->getIdGenerator()->getId($this->pk);
++            $id  = ActiveRecord::$conn->getIdGenerator()->getId($this->pk);
+             $this->$_pk = $id;
+             return $id;
+         } else {
+@@ -443,18 +445,19 @@
+     }
+ 
+     /**
+-     * Helper internal method witch performs an sql query
++     * @TODO: can we use QueryBuilder for this?
++     * Helper, internal method witch performs an sql query, other than select.
+      *
+      * @param string sql the sql query to execute
+      * @return int affected rows
+      * @throws SQLException
+      */
+     private function performQuery($sql) {
+-        $stmt = ActiveRecordBase::$conn->prepareStatement($sql);
+-        ActiveRecordBase::populateStmtValues($stmt, $this->row->getAffectedFields());
++        $stmt = ActiveRecord::$conn->prepareStatement($sql);
++        ActiveRecord::populateStmtValues($stmt, $this->row->getAffectedFields());
+         $af_rows = $stmt->executeUpdate();
+         $stmt->close();
+-        Registry::get('__logger')->debug('Performing sql query: ' . ActiveRecordBase::$conn->lastQuery);
++        // Registry::get('__logger')->debug('Performing sql query: ' . ActiveRecord::$conn->lastQuery);
+         // $this->_reset();
+         return $af_rows;
+     }
+@@ -473,7 +476,7 @@
+         if ($this->pk !== NULL) {
+             $sqlSnippet = ' WHERE ' . $this->pk . ' = ' . $this->row->getPrimaryKey()->getValue();
+         }
+-        $sql  = 'UPDATE ' . ActiveRecordBase::$table_name . ' SET ';
++        $sql  = 'UPDATE ' . $this->table_name . ' SET ';
+         // $sql .= implode(' = ?, ', $this->row->getAffectedFieldsNames());
+ 
+         foreach($this->row->getAffectedFields() as $field) {
+@@ -488,7 +491,7 @@
+      * @return string
+      */
+     private function getInsertSql() {
+-        return 'INSERT INTO ' . self::$table_name
++        return 'INSERT INTO ' . $this->table_name
+                . ' (' . implode(',', $this->row->getAffectedFieldsNames()) . ')'
+                . ' VALUES (' . substr(str_repeat('?,', count($this->row->getAffectedFields())), 0, -1) . ')';
+     }
+@@ -513,96 +516,43 @@
+ 
+     abstract static function find();
+ 
+-    // {{{ find monster
+-    /**
+-     *
+-     * @throws ActiveRecordException if a requested case is not yet implemented (or invalid)
+-     * @throws RecordNotFoundException no record responded to this method
+-     */
+-    public static final function __find($params= array()) {
+-        $numargs = count($params);
+-        if($numargs == 0) return ActiveRecordBase::__find(array('all'));
+-
+-        ActiveRecordBase::establish_connection();
+-
++    public static function build(QueryBuilder $builder) {
++        $class_name= $builder->getOwner();
+         try {
+             // prepare the class instance.
+-            $class = new ReflectionClass(ActiveRecordBase::$class_name);
++            $class = new ReflectionClass($class_name);
+         } catch (ReflectionException $rEx) {
+-            Registry::get('__injector')->inject('model', strtolower(ActiveRecordBase::$class_name));
++            Registry::get('__injector')->inject('model', strtolower($class_name));
+             // retry:
+-            $class = new ReflectionClass(ActiveRecordBase::$class_name);
++            $class = new ReflectionClass($class_name);
+         }
+-        $query = new QuerryBuilder(ActiveRecordBase::$table_name);
+-
+-        if ( $params[0] == 'all' && $numargs == 1 ) {
+-            // all table fields and one arg.
+-        } elseif ( $params[0] == 'all' && $numargs == 2 && is_array($params[1]) && !empty($params[1]) ) {
+-            $query->addArray($params[1]);
+-        } elseif ( $params[0] == 'first' && $numargs == 2 && is_array($params[1]) && !empty($params[1]) ) {
+-            $query->addArray($params[1]);
+-            $stmt = ActiveRecordBase::$conn->prepareStatement($query->buildQuery());
+-            $rs   = $stmt->executeQuery();
++        ActiveRecord::establish_connection();
++        Registry::get('__logger')->debug($builder->compile()->getQueryString());
++        $stmt = ActiveRecord::$conn->prepareStatement($builder->compile()->getQueryString());
++        $i=1; foreach($builder->getBindings() as $binding) {
++            $stmt->set($i++, $binding);
++        }
++        $rs = $stmt->executeQuery();
++        if ($builder->getType() == 'first') {
+             if ($rs->getRecordCount() == 1) {
+                 $rs->next();
+                 $stmt->close();
+-                return $class->newInstance($rs->getRow());
++                $result= $class->newInstance($rs->getRow());
++                $rs->close();
++                return $result;
+             } else {
+                 throw new RecordNotFoundException(
+-                    'Couldn\'t find a `' . ActiveRecordBase::$class_name . '` to match your query.');
++                    'Couldn\'t find a `' . $class_name . '` to match your query.');
+             }
+-        } elseif ( is_numeric($params[0])) {
+-            // we expect only one row!
+-            // we need the pk name.
+-            $pk_name = self::$conn->getDatabaseInfo()->getTable(self::$table_name)->getPrimaryKey()->getName();
+-            if ( $numargs == 1 ) {
+-                $query->add('condition', $pk_name . '=?');
+-            } elseif ( $numargs == 2 && is_array($params[1]) && !empty($params[1]) ) {
+-                $query->add('condition', $pk_name . '=?');
+-                $query->addArray($params[1]);
+-            }
+-            $stmt = ActiveRecordBase::$conn->prepareStatement($query->buildQuery());
+-            $stmt->setInt(1, $params[0]);
+-            $rs   = $stmt->executeQuery();
+-            if ($rs->getRecordCount() == 1) {
+-                $rs->next();
+-                $stmt->close();
+-                return $class->newInstance($rs->getRow());
+-            } elseif ($rs->getRecordCount() == 0) {
+-                throw new RecordNotFoundException(
+-                    'Couldn\'t find a `' . ActiveRecordBase::$class_name . '` with ID=' . $params[0]);
+-            }
+-        } elseif(is_array($params[0])) {
+-            $query->addArray($params[0]);
+-        } else {
+-            throw new ActiveRecordException('Case Not Implemented yet!');
+         }
+-
+-        $stmt = ActiveRecordBase::$conn->prepareStatement($query->buildQuery());
+-        // add limit and/or offset if requested
+-        if ($limit = $query->getLimit())   $stmt->setLimit($limit);
+-        if ($offset = $query->getOffset()) $stmt->setOffset($offset);
+-        $rs = $stmt->executeQuery();
+-        /*
+-        if ($rs->getRecordCount() == 0) {
+-            throw new RecordNotFoundException(
+-                'Couldn\'t find a ' . ActiveRecordBase::$class_name . ' The Result Set was empty!');
+-        }
+-        */
+-        // build a list with objects of this type.
+         $results = new RowsAggregate();
+         while ($rs->next()) {
+             $results->add($class->newInstance($rs->getRow()));
+         }
+         // release resources.
+-        $rs->close(); $stmt->close();
+-        Registry::get('__logger')->debug('Performed sql query: ' . ActiveRecordBase::$conn->lastQuery);
++        $rs->close();$stmt->close();
++        Registry::get('__logger')->debug(ActiveRecord::$conn->lastQuery);
+         return $results;
+     }
+-    // }}}
+-
+-    public static final function initialize($table) {
+-        ActiveRecordBase::$table_name= strtolower(Inflector::pluralize($table));
+-        ActiveRecordBase::$class_name= ucfirst($table);
+-    }
+ }
++
+
+Modified: trunk/libs/active/record/DatabaseRow.php
+===================================================================
+--- trunk/libs/active/record/DatabaseRow.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/active/record/DatabaseRow.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -35,7 +35,8 @@
+ include_once('active/record/Field.php');
+ 
+ /**
+- * It represents a Row from the Database, generic named here FieldsAggregate
++ * It represents a Row from the Database
++ * 
+  * @package locknet7.active.record
+  */
+ 
+@@ -47,7 +48,7 @@
+ 
+     /** @var array
+         holds the field names */
+-    private $field_names     = array();
++    private $field_names = array();
+ 
+     /** @var array
+         affected fields, Filed[] */
+@@ -57,6 +58,33 @@
+         affected flag. */
+     private $affected = FALSE;
+ 
++    /** @var string
++        this database table name */ 
++    private $table;
++
++    /**
++     * Creates a new DatabaseRow
++     *
++     * @param string table, the table name where this row is from
++     */ 
++    public function DatabaseRow($table) {
++        $this->table= $table;
++        parent::__construct();
++    }
++
++    /**
++     * It gets the table name
++     *
++     * @return string, the table name
++     */ 
++    public function getTable() {
++        return $this->table;
++    }
++
++    /**
++     * Automatic trigger executed when a new Field is added on to this Collection
++     * @see Collection::onAdd
++     */
+     public function onAdd(Object $field) {
+         if (!$field instanceof Field) {
+             throw new IllegalArgumentException(
+@@ -108,6 +136,11 @@
+         return FALSE;
+     }
+ 
++    /**
++     * Collects errors from the fields added on this row
++     *
++     * @return array an array of errors
++     */ 
+     public function collectErrors() {
+         $errors= array();
+         $it = $this->iterator();
+@@ -144,3 +177,4 @@
+         return $this->hasAffected() ? $this->affected_fields : array();
+     }
+ }
++
+
+Modified: trunk/libs/active/record/QueryBuilder.php
+===================================================================
+--- trunk/libs/active/record/QueryBuilder.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/active/record/QueryBuilder.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -33,147 +33,59 @@
+ // }}}
+ 
+ /**
+- * It builds Select SQL querys
++ * It knows how to create a SQLCommand from an array
++ *
+  * @package locknet7.active.record
+  */
+-class QuerryBuilder extends Object {
++class QueryBuilder extends Object {
+ 
+-    /** @var array
+-        select, used in include modifier */
+-    private $select = array();
++    private $owner;
+ 
+-    /** @var array
+-        from clause, this includes the table name and joins */
+-    private $fromClause = array();
++    private $clauses=array();
+ 
+-    /** @var array
+-        where clause */
+-    private $whereClause = array();
++    private $bindings=array();
+ 
+-    /** @var string
+-        adds an order by */
+-    private $orderBy;
++    private $type;
+ 
+-    /** @var int limit */
+-    private $limit  = FALSE;
+-
+-    /** @var int offset */
+-    private $offset = FALSE;
+-
+-    /**
+-     * Creates a new QueryBuilder
+-     * @param string table
+-     */
+-    public function __construct($table) {
+-        $this->fromClause[]= $table;
+-    }
+-
+-    /**
+-     * It adds a modifier to this select
+-     *
+-     * @param string type of this modifier
+-     * @param string value of this modifier
+-     * @throws ActiveRecordException when the type is unknown
+-     * @return void
+-     */
+-    public function add($type, $value) {
+-        switch ($type) {
+-            case 'include':
+-                $this->addSelect($value);
+-                break;
+-            case 'condition':
+-                $this->addWhere($value);
+-                break;
+-            case 'left join':
+-                $this->addJoin('LEFT', $value);
+-                break;
+-            case 'limit':
+-                $this->limit = (int)$value;
+-                break;
+-            case 'offset':
+-                $this->offset = (int)$value;
+-                break;
+-            case 'order':
+-                $this->orderBy = $value;
+-                break;
+-            default:
+-                throw new ActiveRecordException ('Call to unknow modifier: `' . $type . '`');
+-                break;
++    public function QueryBuilder($owner, $arguments) {
++        $this->owner= $owner;
++        if ( !count($arguments) || $arguments[0] == 'all' ) {
++            $this->type= 'all';
++        } else {
++            $this->type = 'first';
+         }
+-    }
+-
+-    /**
+-     * Adds modifiers as array
+-     * @param array the array of parameters to pass
+-     */
+-    public function addArray(/*array*/ $params) {
+-        foreach ($params AS $type=>$value) {
+-            $this->add($type, $value);
++        if (isset($arguments[0]) && is_numeric($arguments[0])) {
++            $this->clauses['condition']='id=?';
++            $this->bindings[]=$arguments[0];
+         }
++        if (isset($arguments[1])) {
++            $this->clauses= $arguments[1];
++        }
++        if (isset($arguments[2])) {
++            $this->bindings= $arguments[2];
++        }
+     }
+ 
+-    /**
+-     * It gets the limit
+-     * @return int the limit or FALSE if the limit was not changed
+-     */
+-    public function getLimit() {
+-        return $this->limit;
++    public function getOwner() {
++        return $this->owner;
+     }
+ 
+-    /**
+-     * It gets the offset
+-     * @return int the offset or FALSE if the offset was not changed
+-     */
+-    public function getOffset() {
+-        return $this->offset;
++    public function getBindings() {
++        return $this->bindings;
+     }
+ 
+-    /**
+-     * It buils the select query based on the modifiers passed.
+-     * @return string the sql querys
+-     */
+-    public function buildQuery() {
+-        $query =  "SELECT "
+-                 . ($this->select ? implode(" ", $this->select) . " " : " * ")
+-                 // .implode(", ", $selectClause)
+-                 // . " FROM " . implode(", ", $fromClause)
+-                 // . " FROM " . $this->table
+-                 . " FROM " . implode(" ", $this->fromClause)
+-                 . ($this->whereClause ? " WHERE " . implode(" AND ", $this->whereClause) : "")
+-                 // .($groupByClause ? " GROUP BY ".implode(",", $groupByClause) : "")
+-                 // .($havingString ? " HAVING ".$havingString : "")
+-                 // . ($this->orderBy ? " ORDER BY " . implode(",", $this->orderBy) : "");
+-                 . ($this->orderBy ? " ORDER BY " . $this->orderBy : "");
+-        Registry::get('__logger')->debug('Trying to run sql query:');
+-        Registry::get('__logger')->debug($query);
+-        return $query;
+ 
+-
++    public function getType() {
++        return $this->type;
+     }
+ 
+-    // {{{ internal helpers.
+-    /**
+-     * Adds a select clause
+-     * @param string select clause to add
+-     */
+-    private function addSelect($select) {
+-        $this->select[] = $select;
++    public function compile() {
++        $command= SQLCommand::select($this->type)->from(Inflector::tabelize($this->owner));
++        if (isset($this->clauses['condition']))  $command->where($this->clauses['condition']);
++        if (isset($this->clauses['order by']))   $command->orderBy($this->clauses['order by']);
++        if (isset($this->clauses['columns']))    $command->columns($this->clauses['columns']);
++        if (isset($this->clauses['left join']))  $command->leftJoin('left outer join ' . $this->clauses['left join']);
++        return $command;
+     }
+-
+-    /**
+-     * Adds a where clause
+-     * @param string where clause to add
+-     */
+-    private function addWhere($where) {
+-        $this->whereClause[] = $where;
+-    }
+-
+-    /**
+-     * Adds a join clause
+-     * @param string join clause to add
+-     */
+-    private function addJoin($args, $value) {
+-        $this->fromClause[] = $args . " JOIN " . $value;
+-    }
+-    // }}}
+ }
++
+
+Modified: trunk/libs/active/record/RowsAggregate.php
+===================================================================
+--- trunk/libs/active/record/RowsAggregate.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/active/record/RowsAggregate.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -54,7 +54,7 @@
+      * @param ActiveRecordBase row the row to add into this container
+      * @return ActiveRecordBase
+      */
+-    public function add(ActiveRecordBase $row) {
++    public function add(ActiveRecord $row) {
+         $this->container->append($row);
+         return $row;
+     }
+
+Added: trunk/libs/active/record/SQLCommand.php
+===================================================================
+--- trunk/libs/active/record/SQLCommand.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/active/record/SQLCommand.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -0,0 +1,133 @@
++<?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * It represents an sql command
++ *
++ * You can use this object to build sql query`s in a fancy way:
++ * <code>
++ *  $command= SQLCommand::select()->from('news')->where('state=?')->orderBy('created_at');
++ * // later, you can use a PreparedStatement to bind parameters.
++ *  $stmt= $conn->prepareStatement($command->getQueryString());
++ *  $stmt->setInt(1, News::PUBLISHED);
++ *  $rs= $stmt->executeQuery();
++ * </code>
++ * More methods will be added later-on, API will be provided on request.
++ * 
++ * @package locknet7.active.record
++ * @since Rev. 343
++ */
++class SQLCommand extends Object {
++
++    private $command;
++
++    private $tables= array();
++
++    private $wheres= array();
++
++    private $orderBy;
++
++    private $columns;
++    
++    private function SQLCommand($command) {
++        $this->command= $command;
++    }
++
++    public static function select($ret_values) {
++        return new SQLCommand('select');
++    }
++
++    public function from($table) {
++        $this->tables[]= $table;
++        return $this;
++    }
++
++    public function where($clause) {
++        $this->wheres[]= $clause;
++        return $this;
++    }
++
++    public function orderBy($clause) {
++        $this->orderBy= $clause;
++        return $this;
++    }
++
++    public function columns($columns) {
++        $this->columns= $columns;
++        return $this;
++    }
++    
++    public function leftJoin($what) {
++        $this->tables[]=$what;
++        return $this;
++    }
++    
++    public function getQueryString() {
++        $query= $this->command . " ";
++        // if ($this->distinct) $query .= "distinct ";
++        $query .= $this->appendColumns();
++        // $query .= " from " . $this->from;
++        $query .= $this->appendFrom();
++        $query .= $this->appendWhere();
++        $query .= $this->appendOrderBy();
++        return $query;
++    }
++
++    private function appendColumns() {
++        return $this->columns ? " " . $this->columns . " " : "*";
++    }
++
++    private function appendFrom() {
++        $q= " from ";
++        $size= count($this->tables);
++        for ($i = 0; $i < $size; ++$i) {
++            $q .= $this->tables[$i];
++            if ($i <= $size - 2) {
++                $q .= "  ";
++            }
++        }
++        return $q;
++    }
++    
++    private function appendWhere() {
++        if (count($this->wheres)) return " where " . implode(" and ", $this->wheres);
++        else return "";
++    }
++
++    private function appendOrderBy() {
++        return $this->orderBy ? " order by " . $this->orderBy : "";
++    }
++
++}
++
+
+
+Property changes on: trunk/libs/active/record/SQLCommand.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/active/record/Validator.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -76,8 +76,16 @@
+ 
+     private function isNotUnique(Field $field) {
+         try {
+-            ActiveRecordBase::__find(array(
+-                array('condition'=>$field->getName() .'=\''.$field->getValue().'\'')));
++            ActiveRecord::build(
++                new QueryBuilder(
++                    $this->row->getTable(), 
++                    array(
++                        'first', 
++                        array('condition'=>$field->getName() . '=?'), 
++                        array($field->getValue()
++                    )
++                )
++            ));
+             $field->addError('is not unique');
+             return TRUE;
+         } catch (RecordNotFoundException $rnfEx) {
+
+Modified: trunk/libs/active/support/Inflector.php
+===================================================================
+--- trunk/libs/active/support/Inflector.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/active/support/Inflector.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -113,6 +113,11 @@
+         return $word;
+     }
+ 
++    public static function tabelize($class) {
++        $s= strtolower(Inflector::pluralize($class));
++        return $s;
++    }
++    
+     // {{{ based on cake.
+     public static function camelize($word) {
+         return str_replace(" ", "", ucwords(str_replace("_", " ", $word)));
+
+Modified: trunk/libs/creole/drivers/oracle/OCI8PreparedStatement.php
+===================================================================
+--- trunk/libs/creole/drivers/oracle/OCI8PreparedStatement.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/creole/drivers/oracle/OCI8PreparedStatement.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -1,6 +1,6 @@
+ <?php
+ /*
+- *  $Id: OCI8PreparedStatement.php,v 1.25 2005/11/21 17:54:11 sethr Exp $
++ *  $Id: OCI8PreparedStatement.php,v 1.26 2006/01/30 21:32:05 sethr Exp $
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  * "AS IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+@@ -27,7 +27,7 @@
+  * 
+  * @author    David Giffin <david at giffin.org>
+  * @author    Hans Lellelid <hans at xmpl.org>
+- * @version   $Revision: 1.25 $
++ * @version   $Revision: 1.26 $
+  * @package   creole.drivers.oracle
+  */
+ class OCI8PreparedStatement extends PreparedStatementCommon implements PreparedStatement {
+@@ -66,13 +66,13 @@
+     }
+     
+     /**
+-     * ' -> ''
++     * Nothing to do - since oci_bind is used to insert data, no escaping is needed
+      * @param string $str
+      * @return string
+      */
+     protected function escape($str)
+     {
+-        return str_replace("'","''", $str);
++        return $str;
+     }
+ 
+     /**
+@@ -322,9 +322,9 @@
+             // it's ok to have a fatal error here, IMO, if object doesn't have
+             // __toString() and is being passed to this method.
+             if ( is_object ( $value ) ) {
+-                $this->boundInVars[$paramIndex] = $this->escape($value->__toString());
++                $this->boundInVars[$paramIndex] = $value->__toString();
+             } else {
+-                $this->boundInVars[$paramIndex] = $this->escape((string)$value);
++                $this->boundInVars[$paramIndex] = (string)$value;
+             }
+         }
+     }
+@@ -345,7 +345,7 @@
+         } else {
+             if (is_numeric($value)) $value = date('Y-m-d H:i:s', $value);
+             elseif (is_object($value)) $value = date('Y-m-d H:i:s', $value->getTime());
+-            $this->boundInVars[$paramIndex] = $this->escape($value);
++            $this->boundInVars[$paramIndex] = $value;
+         }
+     }
+ 
+@@ -364,7 +364,7 @@
+         } else {
+             if (is_numeric($value)) $value = date("Y-m-d", $value);
+             elseif (is_object($value)) $value = date("Y-m-d", $value->getTime());
+-            $this->boundInVars[$paramIndex] = $this->escape($value);
++            $this->boundInVars[$paramIndex] = $value;
+         }
+     }
+ 
+
+Modified: trunk/libs/logger/Logger.php
+===================================================================
+--- trunk/libs/logger/Logger.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/logger/Logger.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -85,8 +85,6 @@
+             include_once('logger' . DIRECTORY_SEPARATOR . 'formatter' . DIRECTORY_SEPARATOR . $_klazz . '.php');
+             $this->formatter= new $_klazz;
+         }
+-
+-        $this->debug('Logger ready');
+     }
+ 
+     /** __magic __overloading__ */
+
+Modified: trunk/libs/logger/formatter/Formatter.php
+===================================================================
+--- trunk/libs/logger/formatter/Formatter.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/logger/formatter/Formatter.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -54,6 +54,7 @@
+      */
+     protected function extractMessage($message) {
+         if(!is_string($message)) $message = print_r($message, TRUE);
++        $message= str_replace($_SERVER['MEDICK_APPLICATION_PATH'], "{" . strtoupper($_SERVER['MEDICK_APPLICATION_NAME']) . "}", $message);
+         return $message;
+     }
+ }
+
+Modified: trunk/libs/medick/Dispatcher.php
+===================================================================
+--- trunk/libs/medick/Dispatcher.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/medick/Dispatcher.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -38,6 +38,8 @@
+ include_once('action/controller/Base.php');
+ 
+ /**
++ * It knows how to dispatch a request
++ *
+  * @package locknet7.medick
+  */
+ class Dispatcher extends Object {
+@@ -52,9 +54,8 @@
+         try {
+             ActionControllerRouting::recognize($request)->process($request, $response)->dump();
+         } catch (Exception $ex) {
+-            ActionControllerBase::process_with_exception($request, $response, $ex)->dump();
++            ActionController::process_with_exception($request, $response, $ex)->dump();
+             Registry::get('__logger')->warn($ex->getMessage());
+         }
+     }
+ }
+-
+
+Modified: trunk/libs/medick/ErrorHandler.php
+===================================================================
+--- trunk/libs/medick/ErrorHandler.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/medick/ErrorHandler.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -33,15 +33,16 @@
+ // }}}
+ 
+ /**
+- * @package locknet7.medick
+  * The Medick Error Handler.
++ *
++ * @package locknet7.medick
+  */
+ class ErrorHandler extends Object {
+ 
+     /**
+      * Setup this ErrorHandler
+      */
+-    public function __construct() {
++    public function ErrorHandler() {
+         ini_set('docref_root', null);
+         ini_set('docref_ext', null);
+     }
+@@ -55,15 +56,11 @@
+      */
+     function raiseError($errno, $errstr, $errfile, $errline) {
+         $errRep = error_reporting();
+-
+         if( ($errno & $errRep) != $errno) {
+             return;
+         }
+-
+         $trace = debug_backtrace();
+         array_shift($trace);
+-
+         throw new Error( $errstr, $errno, $errfile, $errline, $trace );
+-
+     }
+ }
+
+Modified: trunk/libs/medick/Exception.php
+===================================================================
+--- trunk/libs/medick/Exception.php	2006-01-29 15:39:43 UTC (rev 343)
++++ trunk/libs/medick/Exception.php	2006-02-05 14:58:35 UTC (rev 344)
+@@ -178,4 +178,3 @@
+  */
+ class AssociationNotFoundException extends MedickException{ }
+ // }}}
+-
+
+
+
+From aurelian at berlios.de  Sat Feb 11 18:44:23 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 11 Feb 2006 18:44:23 +0100
+Subject: [Medick-svn] r346 - in trunk: . bin skel/scripts
+Message-ID: <200602111744.k1BHiNxZ026432@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-11 18:44:19 +0100 (Sat, 11 Feb 2006)
+New Revision: 346
+
+Modified:
+   trunk/CHANGELOG
+   trunk/bin/medick.php
+   trunk/skel/scripts/generator.php
+Log:
+ -- updated generators to match the latest changes on ActionController renaming and ActiveRecord renaming and way of building sql querys
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-02-06 19:33:06 UTC (rev 345)
++++ trunk/CHANGELOG	2006-02-11 17:44:19 UTC (rev 346)
+@@ -2,26 +2,27 @@
+ (*) SVN version
+ 
+ 0.0.5(*)
+-    - Renamed ActionViewBase to ActionView, ActionControllerBase to ActionController and ActiveRecordBase to ActiveRecord
++    - Renamed ActionViewBase to ActionView, ActionControllerBase to ActionController and ActiveRecordBase to ActiveRecord;
+     - 3-rd version of ActiveRecord::find() method, this time the user model classes find method should be written as:
+       class News extends ActiveRecord{
+         public static function find() {
+           $args= func_get_args();
+           return ActiveRecord::build(new QueryBuilder(__CLASS__, $args));
+         }
+-      }
+-    - re-wrote QueryBuilder, this time it knows how to build sqlquery`s from an array of options
+-    - added SQLCommand class (more API on request!)
+-    - added Validators (more API will be provided on request!)
++      };
++    - re-wrote QueryBuilder, this time it knows how to build sqlquery`s from an array of options;
++    - added SQLCommand class (more API on request!);
++    - added Validators (more API will be provided on request!);
+     - ActiveRecord filters should return TRUE 
+         and the size of errors associated with a databaserow should be 0 (no errors), 
+-        otherwise changing an object state will fail
+-    - added the "flash" thing
+-    - added ActiveRecordHelper and FormHelper classes on ActionView:::HTML namespace  
+-    - added 3 new methods on Inflector: sanitize, tabelize() and humanize()
+-    - on logger, the full path to application is replaced with the name of the application.
+-    - removed some debugging infos  
+-    - more API docs.
++        otherwise changing an object state will fail;
++    - added the "flash" thing;
++    - added ActiveRecordHelper and FormHelper classes on ActionView:::HTML;
++    - added 3 new methods on Inflector: sanitize, tabelize() and humanize();
++    - on logger, the full path to application is replaced with the name of the application;
++    - removed some debugging infos;
++    - more API docs and Unit Tests;
++    - Injector: if SERVER['MEDICK_APPLICATION_PATH'] key is missing, use application_path from Configurator,
+     - bundled prototype (http://prototype.conio.net/) 
+       and script.aculo.us (http://script.aculo.us/) javascript libraries, both under a MIT-style licence.
+ 
+
+Modified: trunk/bin/medick.php
+===================================================================
+--- trunk/bin/medick.php	2006-02-06 19:33:06 UTC (rev 345)
++++ trunk/bin/medick.php	2006-02-11 17:44:19 UTC (rev 346)
+@@ -189,7 +189,7 @@
+    * \$Id$
+    * @package $app_name.controllers
+    */
+-  class ApplicationController extends ActionControllerBase {
++  class ApplicationController extends ActionController {
+ 
+   }
+ 
+@@ -205,4 +205,4 @@
+ 
+ echo "\nMedick (\$v: $medick_version) [ DONE ].\n";
+ 
+-?>
+\ No newline at end of file
++?>
+
+Modified: trunk/skel/scripts/generator.php
+===================================================================
+--- trunk/skel/scripts/generator.php	2006-02-06 19:33:06 UTC (rev 345)
++++ trunk/skel/scripts/generator.php	2006-02-11 17:44:19 UTC (rev 346)
+@@ -110,17 +110,17 @@
+   * @package ${APP_NAME}.models
+   * \$Id$
+   */
+-class $model_class_name extends ActiveRecordBase {
++class $model_class_name extends ActiveRecord {
+ 
+      /**
+       * Finds a $model_class_name
+       *
+-      * @see ActiveRecordBase::__find()
++      * @see ActiveRecord::build()
+       * @return mixed
+       */
+      public static function find() {
+-         ActiveRecordBase::initialize(__CLASS__);
+-         return ActiveRecordBase::__find(func_get_args());
++         \$args = func_get_args();
++         return ActiveRecord::build(new QueryBuilder(__CLASS__, \$args));
+      }
+ 
+   }
+
+
+
+From aurelian at berlios.de  Sat Feb 11 19:13:14 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 11 Feb 2006 19:13:14 +0100
+Subject: [Medick-svn] r347 - trunk
+Message-ID: <200602111813.k1BIDEAb010849@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-11 19:13:03 +0100 (Sat, 11 Feb 2006)
+New Revision: 347
+
+Modified:
+   trunk/README
+Log:
+ -- added a link to our home page
+
+Modified: trunk/README
+===================================================================
+--- trunk/README	2006-02-11 17:44:19 UTC (rev 346)
++++ trunk/README	2006-02-11 18:13:03 UTC (rev 347)
+@@ -1,13 +1,13 @@
+-============================
++================================================
+ Medick :: One PHP Framework
+ $Id$
+-============================
++================================================
+ 
+ ABOUT:
+ ------
+     Medick is a free software licensed under a BSD-style licence, see LICENSE file for details.
+     At this point, the project is on pre-alpha stage.
+-    The alpha version will require at least php 5.1.1 and it will be released around 1.february.2006
++    The alpha version will require at least php 5.1.1 and it will be released around 1.March.2006
+ 
+ REQUIREMENTS:
+ -------------
+@@ -47,4 +47,5 @@
+ CONTACT:
+ --------
+     aurelian [ AT ] locknet [ DOT ] ro
+-
++    http://medick.locknet.ro
++    
+
+
+
+From aurelian at berlios.de  Sat Feb 11 22:28:01 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 11 Feb 2006 22:28:01 +0100
+Subject: [Medick-svn] r348 - in trunk: . libs/creole/drivers/oracle scripts skel/scripts
+Message-ID: <200602112128.k1BLS1LY017401@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-11 22:28:01 +0100 (Sat, 11 Feb 2006)
+New Revision: 348
+
+Added:
+   trunk/scripts/
+   trunk/scripts/mktar.sh
+   trunk/scripts/updater.bat
+   trunk/scripts/updater.sh
+Removed:
+   trunk/skel/scripts/mktar.sh
+   trunk/skel/scripts/targets/
+   trunk/skel/scripts/templates/
+   trunk/skel/scripts/updater.bat
+   trunk/skel/scripts/updater.sh
+Modified:
+   trunk/libs/creole/drivers/oracle/OCI8Connection.php
+Log:
+ -- clean-up. (removed un-used skel/script/targets* skel/script/templates*, moved skel/scripts/updater* to scripts/updater*) + MFCreoleHEAD
+
+Modified: trunk/libs/creole/drivers/oracle/OCI8Connection.php
+===================================================================
+--- trunk/libs/creole/drivers/oracle/OCI8Connection.php	2006-02-11 18:13:03 UTC (rev 347)
++++ trunk/libs/creole/drivers/oracle/OCI8Connection.php	2006-02-11 21:28:01 UTC (rev 348)
+@@ -69,6 +69,7 @@
+         $user					= $dsninfo[ 'username' ];
+         $pw						= $dsninfo[ 'password' ];
+         $hostspec				= $dsninfo[ 'hostspec' ];
++        $db					= $dsninfo[ 'database' ];
+ 
+         $connect_function		= ( $persistent )
+ 									? 'oci_pconnect'
+@@ -76,7 +77,11 @@
+ 
+ 		@ini_set( 'track_errors', true );
+ 
+-        if ( $hostspec && $user && $pw )
++        if ( $db && $hostspec && $user && $pw )
++	{
++			$conn				= @$connect_function( $user, $pw, "//$hostspec/$db" );
++	}
++        elseif ( $hostspec && $user && $pw )
+ 		{
+ 			$conn				= @$connect_function( $user, $pw, $hostspec );
+         }
+
+Copied: trunk/scripts/mktar.sh (from rev 343, trunk/skel/scripts/mktar.sh)
+
+Copied: trunk/scripts/updater.bat (from rev 343, trunk/skel/scripts/updater.bat)
+
+Copied: trunk/scripts/updater.sh (from rev 343, trunk/skel/scripts/updater.sh)
+
+Deleted: trunk/skel/scripts/mktar.sh
+===================================================================
+--- trunk/skel/scripts/mktar.sh	2006-02-11 18:13:03 UTC (rev 347)
++++ trunk/skel/scripts/mktar.sh	2006-02-11 21:28:01 UTC (rev 348)
+@@ -1,46 +0,0 @@
+-#!/bin/bash
+-
+-# mktar.sh - create a tar file from a subversion working copy
+-# Based on http://svnpkg.tigris.org/source/browse/*checkout*/svnpkg/trunk/mktar/usr/lib/svnpkg/mktar.sh?content-type=text%2Fplain&rev=2
+-# Original Copyright 2004-2005 Dick Marinus <dick.marinus at etos.nl>
+-# $Id$
+-
+-echo 'MkTAR, create a tar file from a SVN working copy'
+-PW=`pwd`
+-C_DATE=`date +%F`
+-mkdir -p ~/tmp/medick
+-cd ~/tmp/medick
+-echo 'Checking out trunk/medick...'
+-svn checkout -q svn://svn.berlios.de/medick/trunk medick
+-echo 'Done.'
+-TARNAME=medick
+-TMPDIR=~/tmp/mktar-$(id -un)-$$/
+-TMPFILE=~/tmp/mktar-$(id -un)-$$-file
+-# cleanup
+-rm -rf "${TMPDIR}" "${TMPFILE}"
+-mkdir -p ${TMPDIR}/${TARNAME}
+-cd medick
+-echo 'Removing .svn folders...'
+-# concat workingcopies together
+-find . ! -regex '.*/\.svn.*' -exec sh -c "
+-    if [ -d "{}" ] ; then
+-        mkdir -p "${TMPDIR}/${TARNAME}/{}"
+-    else
+-        DIRNAME=$(dirname {})
+-        mkdir -p "${TMPDIR}/${TARNAME}/${DIRNAME}"
+-        cat "${TMPDIR}/${TARNAME}/{}" "{}" > $TMPFILE 2>/dev/null
+-        mv "${TMPFILE}" "${TMPDIR}/${TARNAME}/{}"
+-    fi
+-" \;
+-cd - > /dev/null
+-echo 'Done.'
+-echo "Creating tar.gz file: ${TARNAME}-${C_DATE}.tar.gz"
+-tar czf ${TARNAME}.tar.gz -C "${TMPDIR}/" ${TARNAME}
+-mv ${TARNAME}.tar.gz ${PW}/${TARNAME}-${C_DATE}.tar.gz
+-cd $PW
+-echo 'Done.'
+-echo 'Cleaning-up...'
+-#clean up
+-rm -rf "${TMPDIR}" "${TMPFILE}"
+-rm -rf ~/tmp/medick
+-echo 'MkTAR Done.'
+
+Deleted: trunk/skel/scripts/updater.bat
+===================================================================
+--- trunk/skel/scripts/updater.bat	2006-02-11 18:13:03 UTC (rev 347)
++++ trunk/skel/scripts/updater.bat	2006-02-11 21:28:01 UTC (rev 348)
+@@ -1,25 +0,0 @@
+- at ECHO OFF
+-REM $Id: updater.sh 94 2005-07-17 13:14:44Z aurelian $
+-
+-SET CVS="C:\Program Files\TortoiseCVS\cvs.exe"
+-
+-MKDIR vendor
+-CD vendor
+-ECHO "Script for updating/downloading Medick req. from CVS"
+-
+-ECHO "===================================================="
+-ECHO "creole....."
+-ECHO "[ HINT ] Type { guest } as password..."
+-%CVS% -d:pserver:guest at cvs.tigris.org:/cvs login
+-ECHO "checking out creole"
+-%CVS% -d:pserver:guest at cvs.tigris.org:/cvs co -d creole/ creole/creole/classes/creole
+-ECHO "===================================================="
+-ECHO "simpletest....."
+-ECHO "[ HINT ] Press { enter } for password"
+-%CVS% -d:pserver:anonymous at cvs.sourceforge.net:/cvsroot/simpletest login
+-ECHO "checking out simpletest....."
+-%CVS% -z3 -d:pserver:anonymous at cvs.sourceforge.net:/cvsroot/simpletest co -d simpletest -P simpletest/
+-
+-ECHO "<======== Updater [ DONE ]"
+-CD ../
+-
+
+Deleted: trunk/skel/scripts/updater.sh
+===================================================================
+--- trunk/skel/scripts/updater.sh	2006-02-11 18:13:03 UTC (rev 347)
++++ trunk/skel/scripts/updater.sh	2006-02-11 21:28:01 UTC (rev 348)
+@@ -1,23 +0,0 @@
+-#!/bin/bash
+-# $Id$
+-
+-mkdir -p vendor
+-cd vendor
+-echo 'Script for updating/downloading Medick req. from CVS'
+-
+-echo '===================================================='
+-echo 'creole.....'
+-echo '[ HINT ] Type << guest >> as password...'
+-cvs -d:pserver:guest at cvs.tigris.org:/cvs login
+-echo 'checking out creole'
+-cvs -d:pserver:guest at cvs.tigris.org:/cvs co -d creole/ creole/creole/classes/creole
+-echo '===================================================='
+-echo ' simpletest.....'
+-echo '[ HINT ] Press << enter >> for password'
+-cvs -d:pserver:anonymous at cvs.sourceforge.net:/cvsroot/simpletest login
+-echo 'checking out simpletest.....'
+-cvs -z3 -d:pserver:anonymous at cvs.sourceforge.net:/cvsroot/simpletest co -d simpletest -P simpletest/
+-
+-echo '<======== Updater [ DONE ]'
+-cd ../
+-
+
+
+
+From aurelian at berlios.de  Sat Feb 11 22:29:41 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 11 Feb 2006 22:29:41 +0100
+Subject: [Medick-svn] r349 - trunk/scripts
+Message-ID: <200602112129.k1BLTfYp017708@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-11 22:29:41 +0100 (Sat, 11 Feb 2006)
+New Revision: 349
+
+Added:
+   trunk/scripts/creole.diff.sh
+Log:
+ -- added a script for creating patches against creole head
+
+Added: trunk/scripts/creole.diff.sh
+===================================================================
+--- trunk/scripts/creole.diff.sh	2006-02-11 21:28:01 UTC (rev 348)
++++ trunk/scripts/creole.diff.sh	2006-02-11 21:29:41 UTC (rev 349)
+@@ -0,0 +1,30 @@
++#!/bin/bash
++# $Id$
++MEDICK_HOME=/wwwroot/medick/trunk
++CREOLE_HOME=~/work/creole/classes
++cd $CREOLE_HOME
++echo "-----> Updating creole svn tree....."
++svn up
++REVISION=`svn info | grep 'Revision' | awk '{ print $2 }'`
++FILENAME=creole-`date +%Y%m%d.%S`-$REVISION.diff
++cd $MEDICK_HOME
++echo "-----> Creating diff..."
++diff -ur -x 'CVS' -x '.svn' $MEDICK_HOME/libs/creole $CREOLE_HOME/creole > $FILENAME
++SIZE=`ls -lh $FILENAME | awk '{ print $5 }'`
++echo "-----> Diff is: $FILENAME"
++echo "-----> Size is: $SIZE"
++if [ $SIZE -eq 20 ]; then
++    echo "Nothing new on creole tree."
++    rm -rf $FILENAME
++    exit 0
++fi
++echo "-----> Diff:"
++more $FILENAME
++echo "<----- End;"
++echo "Apply this patch? [Y/N]:"
++read -n 1 ANSWER
++if [ $ANSWER == 'Y' ]; then
++    patch -p0 < $FILENAME
++fi
++rm $FILENAME
++echo "Done..."
+
+
+Property changes on: trunk/scripts/creole.diff.sh
+___________________________________________________________________
+Name: svn:executable
+   + *
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at berlios.de  Sat Feb 11 22:54:25 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 11 Feb 2006 22:54:25 +0100
+Subject: [Medick-svn] r350 - in trunk/test: . test/active/record
+Message-ID: <200602112154.k1BLsP5w020940@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-11 22:54:24 +0100 (Sat, 11 Feb 2006)
+New Revision: 350
+
+Modified:
+   trunk/test/runner.php
+   trunk/test/test/active/record/ValidatorTest.php
+Log:
+ -- ValidatorTest: we should not depend on the order that we run the tests.
+ -- runner: more debugging infos
+
+
+Modified: trunk/test/runner.php
+===================================================================
+--- trunk/test/runner.php	2006-02-11 21:29:41 UTC (rev 349)
++++ trunk/test/runner.php	2006-02-11 21:54:24 UTC (rev 350)
+@@ -24,16 +24,17 @@
+ include_once('medick/util.php');
+ include_once('medick/io/Folder.php');
+ 
+-
+ // include_once('simpletest/web_tester.php');
+ include_once('simpletest/unit_tester.php');
+ include_once('simpletest/reporter.php');
+ 
+ 
+-$test= new GroupTest('====== Medick Framework Unit Tests =====');
++$test= new GroupTest(" ");
++echo " === Medick Framework Unit Tests ===\n";
+ 
+ $test_files = Folder::recursiveFindRelative('.', 'test', 'Test.php');
+ foreach($test_files as $file) {
++    echo ">>> Adding file: $file\n";
+     $test->addTestFile($file);
+ }
+ 
+
+Modified: trunk/test/test/active/record/ValidatorTest.php
+===================================================================
+--- trunk/test/test/active/record/ValidatorTest.php	2006-02-11 21:29:41 UTC (rev 349)
++++ trunk/test/test/active/record/ValidatorTest.php	2006-02-11 21:54:24 UTC (rev 350)
+@@ -14,6 +14,10 @@
+      */
+     public function ValidatorTest() {
+         @unlink(TMP . 'test.db');
++        parent::UnitTestCase();
++    }
++
++    private function createDatabase() {
+         $query='
+             CREATE TABLE news (
+                 id INTEGER PRIMARY KEY,
+@@ -22,11 +26,15 @@
+             );
+         ';
+         sqlite_query(sqlite_open(TMP . 'test.db'), $query);
+-        parent::UnitTestCase();
+     }
+ 
++    private function removeDatabase() {
++        unlink(TMP.'test.db');
++    }
++    
+     /** set up */
+     public function setUp() {
++        $this->createDatabase();
+         Registry::put(new MockConfigurator(), '__configurator');
+         Registry::put(new Logger(), '__logger');
+         ActiveRecord::close_connection();
+@@ -35,6 +43,7 @@
+     /** tearDown */
+     public function tearDown() {
+         Registry::close();
++        $this->removeDatabase();
+     }
+ 
+     public function testEmpty() {
+
+
+
+From aurelian at berlios.de  Wed Feb 15 07:23:14 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Wed, 15 Feb 2006 07:23:14 +0100
+Subject: [Medick-svn] r351 - in trunk: . libs/action/view libs/medick
+Message-ID: <200602150623.k1F6NEH7027271@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-15 07:23:02 +0100 (Wed, 15 Feb 2006)
+New Revision: 351
+
+Added:
+   trunk/libs/medick/ConsoleOptions.php
+Modified:
+   trunk/CHANGELOG
+   trunk/libs/action/view/HTML.php
+Log:
+ -- action/view/HTML:::URL ==> create method should work with PATH_INFO url`s style.
+ -- medick/ConsoleOptions  ==> initial import
+
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-02-11 21:54:24 UTC (rev 350)
++++ trunk/CHANGELOG	2006-02-15 06:23:02 UTC (rev 351)
+@@ -21,6 +21,7 @@
+     - added 3 new methods on Inflector: sanitize, tabelize() and humanize();
+     - on logger, the full path to application is replaced with the name of the application;
+     - removed some debugging infos;
++    - initilal import of ConsoleOptions;  
+     - more API docs and Unit Tests;
+     - Injector: if SERVER['MEDICK_APPLICATION_PATH'] key is missing, use application_path from Configurator,
+     - bundled prototype (http://prototype.conio.net/) 
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-02-11 21:54:24 UTC (rev 350)
++++ trunk/libs/action/view/HTML.php	2006-02-15 06:23:02 UTC (rev 351)
+@@ -173,22 +173,20 @@
+ }
+ 
+ class URL extends Object {
+-    public static function create($controller, $action='index', $params=array(), $separator='&amp;') {
++  
++    public static function create($controller, $action='index', $params=array(), $ext='html') {
+         $config = Registry::get('__configurator');
+         $base   = $config->getProperty('document_root');
++        
+         if (!$config->getProperty('rewrite')) {
+-            $buff = $base . '/index.php?controller=' . $controller . $separator . 'action=' . $action;
+-            foreach ($params AS $key=>$value) {
+-                $buff .= $separator . $key . '=' . $value;
+-            }
+-            return $buff;
+-        } else {
+-            $buff = $base . '/' . $controller . '/' . $action;
+-            foreach ($params AS $key=>$value) {
+-                $buff .= '/' . $value;
+-            }
+-            return $buff . '.html';
++            $base .= '/index.php';
+         }
++        $buff = $base . '/' . $controller . '/' . $action;
++        Registry::get('__logger')->debug($params);
++        foreach ($params as $key=>$value) {
++            $buff .= '/' . $value;
++        }
++        return $buff . '.' . $ext;
+     }
+ }
+ 
+
+Added: trunk/libs/medick/ConsoleOptions.php
+===================================================================
+--- trunk/libs/medick/ConsoleOptions.php	2006-02-11 21:54:24 UTC (rev 350)
++++ trunk/libs/medick/ConsoleOptions.php	2006-02-15 06:23:02 UTC (rev 351)
+@@ -0,0 +1,221 @@
++<?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++  
++/**
++ * Class for reading console options.
++ * @see: http://www.php.net/manual/en/features.commandline.php
++ * <code>
++ *    $c= new ConsoleOptions(isset($argv)?$argv:$_SERVER['argv']); // create a new ConsoleOptions Object, loaded with $argv
++ *    $c->alias('controller', '-c, --c'); // sets some aliases.
++ *    $c->alias('methods', '-m, --m, --methods');
++ *    // script runned with php script.php -c invoker --methods "index, foo"
++ *    $c->has('controller'); // TRUE
++ *    $c->get(); // invoker
++ *    $c->has('-c'); // TRUE
++ *    $c->get(); // invoker
++ *    $c->get('methods'); // index, foo
++ *    $c->get('foo'); // NULL
++ * </code>
++ * 
++ * @package medick.console
++ */
++class ConsoleOptions extends Object {
++    /** @var array
++        Container for Console Options */
++    private $options;
++    /** @var string
++        internal index */
++    private $index;
++    /** @var bool
++        true if the options are loaded */
++    private $isLoaded;
++    /** @var string
++        the current script name */
++    private $scriptName;
++    /** @var array
++        a list of defined aliases */
++    private $aliases;
++    
++    /**
++     * Creates a new ConsoleOptions object
++     *
++     * @param array options, the initial set of unparsed options
++     */
++    public function ConsoleOptions($options= array()) {
++        $this->isLoaded = false;
++        $this->options  = array();
++        if (!empty($options)) {
++            $this->load($options);
++        }
++        $this->index   = NULL;
++        $this->aliases = array();
++    }
++    
++    /**
++     * Loads options
++     *
++     * Note: First option passed is discarded from the options list.
++     *       We assume that this is the script name
++     * We pass an array like:
++     * <code>
++     *   array(__SCRIPT__NAME__, param1 param2 param3 param4 param5 "param6 param7");
++     * </code>
++     * And we build this set of options:
++     * <code>
++     *   array('param1'=>"param2",
++     *         'param3'=>"param4",
++     *         'param5'=>"param6 param7"
++     *         )
++     * </code>
++     * @param array options
++     * @throw IllegalStateException if it`s already loaded.
++     */
++    public function load($options) {
++        if ($this->isLoaded) {
++            throw new IllegalStateException('Options already loaded!');
++        }
++        $this->scriptName= array_shift($options);
++        for($i=0; $i < count($options); $i+=2) {
++          $this->options[$options[$i]]= isset($options[$i+1]) ? $options[$i+1] : NULL;
++        } 
++        $this->isLoaded= true;
++    }
++    
++    /**
++     * Check if it has option
++     *
++     * @param string option, the option to check for
++     * @return bool, TRUE if it has.
++     * @throws IllegalStateException if this object not loaded
++     */
++    public function has($option) {
++        if (!$this->isLoaded) {
++            throw new IllegalStateException('Options should be loaded first!');
++        }
++        if ( array_key_exists($option, $this->options) && !is_null($this->options[$option]) ) {
++          $this->index= $option;
++          return true;
++        } 
++        return false;
++    }
++    
++    /**
++     * It gets the option
++     *
++     * If the index is not provided, we assume that a we did a previous call to <tt>has</tt> method
++     * @param string index, default null
++     * @return string, or null, if the option is missing
++     * @throws IllegalStateException
++     */
++    public function get($index= NULL) {
++        if (!$this->isLoaded) {
++            throw new IllegalStateException('Options should be loaded first!');
++        }
++        if (is_null($index) && !is_null($this->index) ) {
++            return $this->options[$this->index];
++        } elseif ($this->has($index)) {
++            return $this->get();
++        } else {
++            return NULL;
++        }
++    }
++    
++    /**
++     * It sets a console alias.
++     *
++     * @param string for
++     * @param mixed aliases, use a list of values separated by comma 
++     *                       to provide multiple aliases or an array
++     * @retun void
++     * @throws IllegalStateException
++     */
++    public function alias($for, $aliases) {
++        if (!$this->isLoaded) {
++            throw new IllegalStateException('Options should be loaded first!');
++        }
++        if (is_string($aliases)) {
++            $this->aliases[$for]= explode(', ', trim($aliases));
++        }
++        $this->aliases[$for][]=$for;
++        foreach ($this->aliases[$for] as $value) {
++            if ($this->has(trim($value))) {
++                $this->loadAliases(trim($value), $this->aliases[$for]);
++                break;
++            }
++        }
++    }
++    
++    /**
++     * It gets a list of aliases set for $for
++     *
++     * @param string for, aliases to get
++     * @return array or null if we didnt define any aliasses for this entry
++     */
++    public function getAliasesFor($for) {
++        return isset($this->aliases[$for])?$this->aliases[$for]:null;
++    }
++    
++    /**
++     * It gets the current script name
++     *
++     * @return string, the script name
++     */
++    public function getScriptName() {
++        return $this->scriptName;
++    }
++    
++    /**
++     * It gets the current set of options
++     *
++     * @return array, options
++     */ 
++    public function getOptions() {
++        return $this->options;
++    }
++    
++    /**
++     * Internal Helper, sets the value of aliases 
++     * to the same value as main option
++     *
++     * @param string value, we found this one
++     * @param array options
++     */
++    private function loadAliases($value, $options) {
++        unset($options[$value]);
++        foreach ($options as $option) {
++            $this->options[trim($option)]= $this->options[$value];
++        }
++    }
++}
++
+
+
+Property changes on: trunk/libs/medick/ConsoleOptions.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at berlios.de  Sun Feb 19 09:59:28 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 19 Feb 2006 09:59:28 +0100
+Subject: [Medick-svn] r352 - branches trunk/docs/dev trunk/libs/action/view
+Message-ID: <200602190859.k1J8xSCC015502@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-19 09:59:25 +0100 (Sun, 19 Feb 2006)
+New Revision: 352
+
+Removed:
+   branches/route.190/
+   trunk/docs/dev/routes.185
+Modified:
+   trunk/libs/action/view/HTML.php
+Log:
+ -- clean-up route.190 branch
+
+Deleted: trunk/docs/dev/routes.185
+===================================================================
+--- trunk/docs/dev/routes.185	2006-02-15 06:23:02 UTC (rev 351)
++++ trunk/docs/dev/routes.185	2006-02-19 08:59:25 UTC (rev 352)
+@@ -1,5 +0,0 @@
+-$Id$
+-
+-Use 185 revision to continue the work on routes.
+-This file will be deprecated after revision 350.
+-
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-02-15 06:23:02 UTC (rev 351)
++++ trunk/libs/action/view/HTML.php	2006-02-19 08:59:25 UTC (rev 352)
+@@ -182,7 +182,6 @@
+             $base .= '/index.php';
+         }
+         $buff = $base . '/' . $controller . '/' . $action;
+-        Registry::get('__logger')->debug($params);
+         foreach ($params as $key=>$value) {
+             $buff .= '/' . $value;
+         }
+
+
+
+From aurelian at berlios.de  Sun Feb 19 19:08:02 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sun, 19 Feb 2006 19:08:02 +0100
+Subject: [Medick-svn] r353 - in trunk: . libs/configurator libs/logger libs/logger/formatter libs/medick test test/test/action/controller test/test/active/record test/test/active/record/associations test/test/medick
+Message-ID: <200602191808.k1JI82Q8012257@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-19 19:07:57 +0100 (Sun, 19 Feb 2006)
+New Revision: 353
+
+Added:
+   trunk/libs/configurator/LoggerConfigurator.php
+   trunk/test/README.tests
+   trunk/test/test/medick/ConsoleOptionsTest.php
+Modified:
+   trunk/boot.php
+   trunk/libs/configurator/XMLConfigurator.php
+   trunk/libs/logger/Logger.php
+   trunk/libs/logger/formatter/Formatter.php
+   trunk/libs/medick/ConsoleOptions.php
+   trunk/test/runner.php
+   trunk/test/test/action/controller/InjectorTest.php
+   trunk/test/test/active/record/DBOperationsTest.php
+   trunk/test/test/active/record/FindTest.php
+   trunk/test/test/active/record/ValidatorTest.php
+   trunk/test/test/active/record/associations/HasOneTest.php
+Log:
+ -- Logger should be more independent:
+    -> Logger takes a Configurator on constructor.
+    -> checking if we have MEDICK_APPLICATION_PATH on _SERVER
+ -- added ConsoleOptions tests.
+ -- added ConsoleOptions::setNoValueFor() method (can be used when passing --debug like arguments)
+ -- added README.tests
+
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/boot.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -66,9 +66,10 @@
+ $conf_files = $_SERVER['MEDICK_APPLICATION_PATH'] . DIRECTORY_SEPARATOR . 'conf' .
+                         DIRECTORY_SEPARATOR . $_SERVER['MEDICK_APPLICATION_NAME'];
+ 
+-Registry::put(new XMLConfigurator($conf_files . '.xml'), '__configurator');
++$configurator= new XMLConfigurator($conf_files . '.xml');                        
++Registry::put($configurator, '__configurator');
+ 
+-$logger= Registry::put(new Logger(), '__logger');
++$logger= Registry::put(new Logger($configurator), '__logger');
+ 
+ $logger->debug('Medick $v: ' . Version::getVersion());
+ $logger->debug('Config: ' . $conf_files . '.xml');
+
+Added: trunk/libs/configurator/LoggerConfigurator.php
+===================================================================
+--- trunk/libs/configurator/LoggerConfigurator.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/libs/configurator/LoggerConfigurator.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -0,0 +1,52 @@
++<?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005,2006 Oancea Aurelian <aurelian at locknet.ro>
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id$
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++include_once('configurator/IConfigurator.php');
++ 
++class LoggerConfigurator extends Object implements IConfigurator {
++ 
++    public function getLoggerOutputters() {
++        return array(array('name' => 'stdout','level' => '0'));
++    }
++  
++    public function getLoggerFormatter() {
++        return 'SimpleFormatter';
++    }
++
++    public function getProperty($name) {     }
++
++    public function getDatabaseDsn($id = FALSE) {  }
++    
++}
++
+
+
+Property changes on: trunk/libs/configurator/LoggerConfigurator.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/libs/configurator/XMLConfigurator.php
+===================================================================
+--- trunk/libs/configurator/XMLConfigurator.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/libs/configurator/XMLConfigurator.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -49,7 +49,7 @@
+      * Constructor.
+      * @param string/file xml
+      */
+-    public function __construct($xml) {
++    public function XMLConfigurator($xml) {
+         if (file_exists($xml)) {
+             if (is_readable($xml)) {
+                 $this->sxe = simplexml_load_file($xml, 'SimpleXMLIterator');
+
+Modified: trunk/libs/logger/Logger.php
+===================================================================
+--- trunk/libs/logger/Logger.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/libs/logger/Logger.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -72,8 +72,7 @@
+      * Constructor.
+      * It reads the config file and setup the logging system
+      */
+-    public function __construct() {
+-        $configurator = Registry::get('__configurator');
++    public function Logger(IConfigurator $configurator) {
+         $outputters   = $configurator->getLoggerOutputters();
+         if (sizeof($outputters) != 0) {
+             $this->load($outputters);
+
+Modified: trunk/libs/logger/formatter/Formatter.php
+===================================================================
+--- trunk/libs/logger/formatter/Formatter.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/libs/logger/formatter/Formatter.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -54,7 +54,9 @@
+      */
+     protected function extractMessage($message) {
+         if(!is_string($message)) $message = print_r($message, TRUE);
+-        $message= str_replace($_SERVER['MEDICK_APPLICATION_PATH'], "{" . strtoupper($_SERVER['MEDICK_APPLICATION_NAME']) . "}", $message);
++        if (array_key_exists('MEDICK_APPLICATION_PATH', $_SERVER)) {
++            $message= str_replace($_SERVER['MEDICK_APPLICATION_PATH'], "{" . strtoupper($_SERVER['MEDICK_APPLICATION_NAME']) . "}", $message);
++        }
+         return $message;
+     }
+ }
+
+Modified: trunk/libs/medick/ConsoleOptions.php
+===================================================================
+--- trunk/libs/medick/ConsoleOptions.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/libs/medick/ConsoleOptions.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -66,6 +66,8 @@
+     /** @var array
+         a list of defined aliases */
+     private $aliases;
++
++    private $skipValues;
+     
+     /**
+      * Creates a new ConsoleOptions object
+@@ -75,11 +77,12 @@
+     public function ConsoleOptions($options= array()) {
+         $this->isLoaded = false;
+         $this->options  = array();
++        $this->skipValues= array();
++        $this->aliases = array();
+         if (!empty($options)) {
+             $this->load($options);
+         }
+         $this->index   = NULL;
+-        $this->aliases = array();
+     }
+     
+     /**
+@@ -106,13 +109,48 @@
+             throw new IllegalStateException('Options already loaded!');
+         }
+         $this->scriptName= array_shift($options);
+-        for($i=0; $i < count($options); $i+=2) {
+-          $this->options[$options[$i]]= isset($options[$i+1]) ? $options[$i+1] : NULL;
++        $i=0;
++        while($i<count($options)) {
++            if (in_array($options[$i], $this->skipValues)) {
++                $this->options[$options[$i]]= -1;
++                $i++;
++            } else {
++                $this->options[$options[$i]]= isset($options[$i+1]) ? $options[$i+1] : NULL;
++                $i=$i+2;
++            }
+         } 
+         $this->isLoaded= true;
+     }
+     
+     /**
++     * Adds an empty value for a list of options
++     *
++     * Options are taken with <tt>func_get_args()</tt> and a second call to this method will
++     * overwrite the values previously added.
++     * Add aliases too!
++     *
++     * <code>
++     * // script called with php script.php --force --controller invoker
++     * $c= new ConsoleOptions();
++     * $c->setNoValueFor('debug','force','-f','--force','-d','--debug'); // before loading!
++     * $c->load($args);
++     * $c->alias('force', '-f, --force'); // after loading
++     * $c->alias('debug', '-d, --debug'); // after loading
++     * $c->has('force'); // returns true
++     * $c->get(); // returns -1
++     * $c->has('controller'); // returns true
++     * $c->get(); // return invoker
++     * </code>
++     * @throws IllegalStateException if the options are loaded
++     */ 
++    public function setNoValueFor() {
++        if ($this->isLoaded) {
++            throw new IllegalStateException('Options already loaded, cannot add empty values!');
++        }
++        $this->skipValues= func_get_args();
++    }
++    
++    /**
+      * Check if it has option
+      *
+      * @param string option, the option to check for
+
+Added: trunk/test/README.tests
+===================================================================
+--- trunk/test/README.tests	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/README.tests	2006-02-19 18:07:57 UTC (rev 353)
+@@ -0,0 +1,18 @@
++$Id$
++
++$MEDICK_HOME is reffered to the folder that contains boot.php file.
++
++Running tests:
++
++1. make sure you have simpletest installed under $MEDICK_HOME/vendor/simpletest.
++To install:
++    1.1 change directory to $MEDICK_HOME:
++        $ cd $MEDICK_HOME
++    1.2 create folder ``vendor" and change to that 
++        $ mkdir vendor && cd vendor
++    1.3 checkout the simpletest tree from cvs (type ENTER for password):
++        $ cvs -d:pserver:anonymous at cvs.sourceforge.net:/cvsroot/simpletest login
++        $ cvs -z3 -d:pserver:anonymous at cvs.sourceforge.net:/cvsroot/simpletest co -d simpletest -P simpletest/
++2. run the tests (from $MEDICK_HOME/test)
++    $ php runner.php
++    
+
+
+Property changes on: trunk/test/README.tests
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: trunk/test/runner.php
+===================================================================
+--- trunk/test/runner.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/runner.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -1,4 +1,3 @@
+-#!/usr/bin/env php
+ <?php
+ 
+ // $Id$
+@@ -23,24 +22,39 @@
+ include_once('medick/Registry.php');
+ include_once('medick/util.php');
+ include_once('medick/io/Folder.php');
++include_once('medick/ConsoleOptions.php');
+ 
+ // include_once('simpletest/web_tester.php');
++
+ include_once('simpletest/unit_tester.php');
+ include_once('simpletest/reporter.php');
+ 
++$options= new ConsoleOptions();
++$options->setNoValueFor('debug', '-d', '--debug');
++$options->load(isset($argv)?$argv:$_SERVER['argv']);
++$options->alias('debug', '-d, --debug');
+ 
+-$test= new GroupTest(" ");
+-echo " === Medick Framework Unit Tests ===\n";
++include_once('configurator/LoggerConfigurator.php');
++include_once('logger/Logger.php');
+ 
++$logger= new Logger(new LoggerConfigurator());
++
++$test= new GroupTest("=== Medick Framework Unit Tests ===");
++
+ $test_files = Folder::recursiveFindRelative('.', 'test', 'Test.php');
+ foreach($test_files as $file) {
+-    echo ">>> Adding file: $file\n";
++    if ($options->has('debug')) {
++        $logger->debug('Adding test file: ' . $file);
++    }
+     $test->addTestFile($file);
+ }
+ 
+ $test->run(new TextReporter());
+ 
+-$time_end = microtime(true);
+-echo "Done in " . ($time_end - $time_start) . " seconds\n";
++if ($options->has('debug')) {
++    $time_end = microtime(true);
++    $logger->debug('Done in ' . round($time_end - $time_start,4) . ' seconds');
++}
+ 
+ @unlink(TMP . 'test.db');
++
+
+Modified: trunk/test/test/action/controller/InjectorTest.php
+===================================================================
+--- trunk/test/test/action/controller/InjectorTest.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/test/action/controller/InjectorTest.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -11,8 +11,8 @@
+ 
+     /** set up */
+     public function setUp() {
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
++        Registry::put($configurator= new MockConfigurator(), '__configurator');
++        Registry::put(new Logger($configurator), '__logger');
+         Registry::put(new Injector(FALSE), '__injector');
+     }
+     
+
+Modified: trunk/test/test/active/record/DBOperationsTest.php
+===================================================================
+--- trunk/test/test/active/record/DBOperationsTest.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/test/active/record/DBOperationsTest.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -28,8 +28,8 @@
+ 
+     /** set up */
+     public function setUp() {
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
++        Registry::put($configurator= new MockConfigurator(), '__configurator');
++        Registry::put(new Logger($configurator), '__logger');
+         ActiveRecord::close_connection();
+     }
+     
+
+Modified: trunk/test/test/active/record/FindTest.php
+===================================================================
+--- trunk/test/test/active/record/FindTest.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/test/active/record/FindTest.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -30,8 +30,8 @@
+   
+      /** set up this test case, we insert 3 fileds in DB table */
+      public function setUp() {
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
++        Registry::put($configurator= new MockConfigurator(), '__configurator');
++        Registry::put(new Logger($configurator), '__logger');
+         ActiveRecord::close_connection();
+         $author= new Author();
+         $author->name= "Andrei Cristescu";
+
+Modified: trunk/test/test/active/record/ValidatorTest.php
+===================================================================
+--- trunk/test/test/active/record/ValidatorTest.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/test/active/record/ValidatorTest.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -35,8 +35,8 @@
+     /** set up */
+     public function setUp() {
+         $this->createDatabase();
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
++        Registry::put($configurator= new MockConfigurator(), '__configurator');
++        Registry::put(new Logger($configurator), '__logger');
+         ActiveRecord::close_connection();
+     }
+     
+
+Modified: trunk/test/test/active/record/associations/HasOneTest.php
+===================================================================
+--- trunk/test/test/active/record/associations/HasOneTest.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/test/active/record/associations/HasOneTest.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -35,8 +35,8 @@
+ 
+     /** set up */
+     public function setUp() {
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
++        Registry::put($configurator= new MockConfigurator(), '__configurator');
++        Registry::put(new Logger($configurator), '__logger');
+         ActiveRecord::close_connection();
+         
+         $author= new Author();
+
+Added: trunk/test/test/medick/ConsoleOptionsTest.php
+===================================================================
+--- trunk/test/test/medick/ConsoleOptionsTest.php	2006-02-19 08:59:25 UTC (rev 352)
++++ trunk/test/test/medick/ConsoleOptionsTest.php	2006-02-19 18:07:57 UTC (rev 353)
+@@ -0,0 +1,58 @@
++<?php
++
++// $Id$
++    
++include_once('medick/ConsoleOptions.php');
++
++class ConsoleOptionsTest extends UnitTestCase {
++
++    private $args;
++    
++    function setUp() {
++        $this->args=  array('__FOO__', '--controller', 'Invoker');
++    }
++    
++    function tearDown() {
++        $this->args= array();
++    }
++    
++    function testScriptName() {
++        $c= new ConsoleOptions($this->args);
++        $this->assertTrue($c->getScriptName()==$this->args[0]);
++    }
++
++    function testSimpleAlias() {
++        $c= new ConsoleOptions($this->args);
++        $c->alias('controller', '--controller, -c');
++        $this->assertTrue($c->has('-c'));
++        $this->assertEqual($c->get(), 'Invoker');
++    }
++
++    function testMultipleAliases() {
++        $this->args[]= '--methods';
++        $this->args[]= '"index, add"';
++        $c= new ConsoleOptions($this->args);
++        $c->alias('controller', '-c, --controller');
++        $c->alias('methods', '-m, --methods, method');
++        $this->assertTrue($c->has('-m'));
++        $this->assertEqual($c->get('-c'), 'Invoker');
++    }
++
++    function testNoValueSimple() {
++        $args= array('__FOO__', 'force');
++        $c= new ConsoleOptions();
++        $c->setNoValueFor('force');
++        $c->load($args);
++        $this->assertTrue($c->has('force'));
++    }
++
++    function testNoValueWithAliases() {
++        $args= array('__FOO__', '-f');
++        $c= new ConsoleOptions();
++        $c->setNoValueFor('force', '-f', '--force');
++        $c->load($args);
++        $c->alias('force', '-f, --force');
++        $this->assertTrue($c->has('--force'));
++    }
++
++}
+
+
+Property changes on: trunk/test/test/medick/ConsoleOptionsTest.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at berlios.de  Wed Feb 22 20:26:36 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Wed, 22 Feb 2006 20:26:36 +0100
+Subject: [Medick-svn] r354 - applications/eltodo/public/javascript trunk/skel/public/javascript trunk/test
+Message-ID: <200602221926.k1MJQaPj013655@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-22 20:26:26 +0100 (Wed, 22 Feb 2006)
+New Revision: 354
+
+Modified:
+   applications/eltodo/public/javascript/controls.js
+   applications/eltodo/public/javascript/dragdrop.js
+   applications/eltodo/public/javascript/effects.js
+   applications/eltodo/public/javascript/scriptaculous.js
+   applications/eltodo/public/javascript/slider.js
+   trunk/skel/public/javascript/controls.js
+   trunk/skel/public/javascript/dragdrop.js
+   trunk/skel/public/javascript/effects.js
+   trunk/skel/public/javascript/scriptaculous.js
+   trunk/skel/public/javascript/slider.js
+   trunk/test/runner.php
+Log:
+ -- upgraded script.aculo.us to version 1.5.3
+
+Modified: applications/eltodo/public/javascript/controls.js
+===================================================================
+--- applications/eltodo/public/javascript/controls.js	2006-02-19 18:07:57 UTC (rev 353)
++++ applications/eltodo/public/javascript/controls.js	2006-02-22 19:26:26 UTC (rev 354)
+@@ -152,6 +152,12 @@
+         setTimeout(this.onObserverEvent.bind(this), this.options.frequency*1000);
+   },
+ 
++  activate: function() {
++    this.changed = false;
++    this.hasFocus = true;
++    this.getUpdatedChoices();
++  },
++
+   onHover: function(event) {
+     var element = Event.findElement(event, 'LI');
+     if(this.index != element.autocompleteIndex) 
+@@ -310,7 +316,7 @@
+ Ajax.Autocompleter = Class.create();
+ Object.extend(Object.extend(Ajax.Autocompleter.prototype, Autocompleter.Base.prototype), {
+   initialize: function(element, update, url, options) {
+-	  this.baseInitialize(element, update, options);
++    this.baseInitialize(element, update, options);
+     this.options.asynchronous  = true;
+     this.options.onComplete    = this.onComplete.bind(this);
+     this.options.defaultParams = this.options.parameters || null;
+@@ -477,9 +483,10 @@
+       formClassName: 'inplaceeditor-form',
+       highlightcolor: Ajax.InPlaceEditor.defaultHighlightColor,
+       highlightendcolor: "#FFFFFF",
+-      externalControl:	null,
++      externalControl: null,
+       submitOnBlur: false,
+-      ajaxOptions: {}
++      ajaxOptions: {},
++      evalScripts: false
+     }, options || {});
+ 
+     if(!this.options.formId && this.element.id) {
+@@ -548,6 +555,7 @@
+       okButton = document.createElement("input");
+       okButton.type = "submit";
+       okButton.value = this.options.okText;
++      okButton.className = 'editor_ok_button';
+       this.form.appendChild(okButton);
+     }
+ 
+@@ -556,6 +564,7 @@
+       cancelLink.href = "#";
+       cancelLink.appendChild(document.createTextNode(this.options.cancelText));
+       cancelLink.onclick = this.onclickCancel.bind(this);
++      cancelLink.className = 'editor_cancel';      
+       this.form.appendChild(cancelLink);
+     }
+   },
+@@ -584,6 +593,7 @@
+       textField.name = "value";
+       textField.value = text;
+       textField.style.backgroundColor = this.options.highlightcolor;
++      textField.className = 'editor_field';
+       var size = this.options.size || this.options.cols || 0;
+       if (size != 0) textField.size = size;
+       if (this.options.submitOnBlur)
+@@ -597,6 +607,7 @@
+       textArea.value = this.convertHTMLLineBreaks(text);
+       textArea.rows = this.options.rows;
+       textArea.cols = this.options.cols || 40;
++      textArea.className = 'editor_field';      
+       if (this.options.submitOnBlur)
+         textArea.onblur = this.onSubmit.bind(this);
+       this.editField = textArea;
+@@ -649,19 +660,26 @@
+     // to be displayed indefinitely
+     this.onLoading();
+     
+-    new Ajax.Updater(
+-      { 
+-        success: this.element,
+-         // don't update on failure (this could be an option)
+-        failure: null
+-      },
+-      this.url,
+-      Object.extend({
+-        parameters: this.options.callback(form, value),
+-        onComplete: this.onComplete.bind(this),
+-        onFailure: this.onFailure.bind(this)
+-      }, this.options.ajaxOptions)
+-    );
++    if (this.options.evalScripts) {
++      new Ajax.Request(
++        this.url, Object.extend({
++          parameters: this.options.callback(form, value),
++          onComplete: this.onComplete.bind(this),
++          onFailure: this.onFailure.bind(this),
++          asynchronous:true, 
++          evalScripts:true
++        }, this.options.ajaxOptions));
++    } else  {
++      new Ajax.Updater(
++        { success: this.element,
++          // don't update on failure (this could be an option)
++          failure: null }, 
++        this.url, Object.extend({
++          parameters: this.options.callback(form, value),
++          onComplete: this.onComplete.bind(this),
++          onFailure: this.onFailure.bind(this)
++        }, this.options.ajaxOptions));
++    }
+     // stop the event to avoid a page refresh in Safari
+     if (arguments.length > 1) {
+       Event.stop(arguments[0]);
+@@ -743,6 +761,33 @@
+   }
+ };
+ 
++Ajax.InPlaceCollectionEditor = Class.create();
++Object.extend(Ajax.InPlaceCollectionEditor.prototype, Ajax.InPlaceEditor.prototype);
++Object.extend(Ajax.InPlaceCollectionEditor.prototype, {
++  createEditField: function() {
++    if (!this.cached_selectTag) {
++      var selectTag = document.createElement("select");
++      var collection = this.options.collection || [];
++      var optionTag;
++      collection.each(function(e,i) {
++        optionTag = document.createElement("option");
++        optionTag.value = (e instanceof Array) ? e[0] : e;
++        if(this.options.value==optionTag.value) optionTag.selected = true;
++        optionTag.appendChild(document.createTextNode((e instanceof Array) ? e[1] : e));
++        selectTag.appendChild(optionTag);
++      }.bind(this));
++      this.cached_selectTag = selectTag;
++    }
++
++    this.editField = this.cached_selectTag;
++    if(this.options.loadTextURL) this.loadExternalText();
++    this.form.appendChild(this.editField);
++    this.options.callback = function(form, value) {
++      return "value=" + encodeURIComponent(value);
++    }
++  }
++});
++
+ // Delayed observer, like Form.Element.Observer, 
+ // but waits for delay after last key input
+ // Ideal for live-search fields
+
+Modified: applications/eltodo/public/javascript/dragdrop.js
+===================================================================
+--- applications/eltodo/public/javascript/dragdrop.js	2006-02-19 18:07:57 UTC (rev 353)
++++ applications/eltodo/public/javascript/dragdrop.js	2006-02-22 19:26:26 UTC (rev 354)
+@@ -128,7 +128,7 @@
+     this.activeDraggable = draggable;
+   },
+   
+-  deactivate: function(draggbale) {
++  deactivate: function() {
+     this.activeDraggable = null;
+   },
+   
+@@ -199,6 +199,9 @@
+       },
+       zindex: 1000,
+       revert: false,
++      scroll: false,
++      scrollSensitivity: 20,
++      scrollSpeed: 15,
+       snap: false   // false, or xy or [x,y] or function(x,y){ return [x,y] }
+     }, arguments[1] || {});
+ 
+@@ -208,6 +211,8 @@
+       this.handle = Element.childrenWithClassName(this.element, options.handle)[0];  
+     if(!this.handle) this.handle = $(options.handle);
+     if(!this.handle) this.handle = this.element;
++    
++    if(options.scroll) options.scroll = $(options.scroll);
+ 
+     Element.makePositioned(this.element); // fix IE    
+ 
+@@ -239,6 +244,7 @@
+       if(src.tagName && (
+         src.tagName=='INPUT' ||
+         src.tagName=='SELECT' ||
++        src.tagName=='OPTION' ||
+         src.tagName=='BUTTON' ||
+         src.tagName=='TEXTAREA')) return;
+         
+@@ -270,6 +276,11 @@
+       this.element.parentNode.insertBefore(this._clone, this.element);
+     }
+     
++    if(this.options.scroll) {
++      this.originalScrollLeft = this.options.scroll.scrollLeft;
++      this.originalScrollTop = this.options.scroll.scrollTop;
++    }
++    
+     Draggables.notify('onStart', this, event);
+     if(this.options.starteffect) this.options.starteffect(this.element);
+   },
+@@ -282,8 +293,25 @@
+     this.draw(pointer);
+     if(this.options.change) this.options.change(this);
+     
++    if(this.options.scroll) {
++      //if(this.scrollInterval) this.scroll();
++      this.stopScrolling();
++      var p = Position.page(this.options.scroll);
++      p[0] += this.options.scroll.scrollLeft;
++      p[1] += this.options.scroll.scrollTop;
++      p.push(p[0]+this.options.scroll.offsetWidth);
++      p.push(p[1]+this.options.scroll.offsetHeight);
++      var speed = [0,0];
++      if(pointer[0] < (p[0]+this.options.scrollSensitivity)) speed[0] = pointer[0]-(p[0]+this.options.scrollSensitivity);
++      if(pointer[1] < (p[1]+this.options.scrollSensitivity)) speed[1] = pointer[1]-(p[1]+this.options.scrollSensitivity);
++      if(pointer[0] > (p[2]-this.options.scrollSensitivity)) speed[0] = pointer[0]-(p[2]-this.options.scrollSensitivity);
++      if(pointer[1] > (p[3]-this.options.scrollSensitivity)) speed[1] = pointer[1]-(p[3]-this.options.scrollSensitivity);
++      this.startScrolling(speed);
++    }
++    
+     // fix AppleWebKit rendering
+     if(navigator.appVersion.indexOf('AppleWebKit')>0) window.scrollBy(0,0);
++    
+     Event.stop(event);
+   },
+   
+@@ -321,13 +349,14 @@
+   },
+   
+   keyPress: function(event) {
+-    if(!event.keyCode==Event.KEY_ESC) return;
++    if(event.keyCode!=Event.KEY_ESC) return;
+     this.finishDrag(event, false);
+     Event.stop(event);
+   },
+   
+   endDrag: function(event) {
+     if(!this.dragging) return;
++    this.stopScrolling();
+     this.finishDrag(event, true);
+     Event.stop(event);
+   },
+@@ -337,8 +366,15 @@
+     var d = this.currentDelta();
+     pos[0] -= d[0]; pos[1] -= d[1];
+     
+-    var p = [0,1].map(function(i){ return (point[i]-pos[i]-this.offset[i]) }.bind(this));
++    if(this.options.scroll) {
++      pos[0] -= this.options.scroll.scrollLeft-this.originalScrollLeft;
++      pos[1] -= this.options.scroll.scrollTop-this.originalScrollTop;
++    }
+     
++    var p = [0,1].map(function(i){ 
++      return (point[i]-pos[i]-this.offset[i]) 
++    }.bind(this));
++    
+     if(this.options.snap) {
+       if(typeof this.options.snap == 'function') {
+         p = this.options.snap(p[0],p[1]);
+@@ -358,6 +394,34 @@
+     if((!this.options.constraint) || (this.options.constraint=='vertical'))
+       style.top  = p[1] + "px";
+     if(style.visibility=="hidden") style.visibility = ""; // fix gecko rendering
++  },
++  
++  stopScrolling: function() {
++    if(this.scrollInterval) {
++      clearInterval(this.scrollInterval);
++      this.scrollInterval = null;
++    }
++  },
++  
++  startScrolling: function(speed) {
++    this.scrollSpeed = [speed[0]*this.options.scrollSpeed,speed[1]*this.options.scrollSpeed];
++    this.lastScrolled = new Date();
++    this.scrollInterval = setInterval(this.scroll.bind(this), 10);
++  },
++  
++  scroll: function() {
++    var current = new Date();
++    var delta = current - this.lastScrolled;
++    this.lastScrolled = current;
++    this.options.scroll.scrollLeft += this.scrollSpeed[0] * delta / 1000;
++    this.options.scroll.scrollTop  += this.scrollSpeed[1] * delta / 1000;
++    
++    Position.prepare();
++    Droppables.show(Draggables._lastPointer, this.element);
++    Draggables.notify('onDrag', this);
++    this.draw(Draggables._lastPointer);    
++    
++    if(this.options.change) this.options.change(this);
+   }
+ }
+ 
+@@ -414,7 +478,8 @@
+       only:        false,
+       hoverclass:  null,
+       ghosting:    false,
+-      format:      null,
++      scroll:      false,
++      format:      /^[^_]*_(.*)$/,
+       onChange:    Prototype.emptyFunction,
+       onUpdate:    Prototype.emptyFunction
+     }, arguments[1] || {});
+@@ -425,6 +490,7 @@
+     // build options for the draggables
+     var options_for_draggable = {
+       revert:      true,
++      scroll:      options.scroll,
+       ghosting:    options.ghosting,
+       constraint:  options.constraint,
+       handle:      options.handle };
+@@ -568,18 +634,41 @@
+     Element.show(Sortable._marker);
+   },
+ 
++  sequence: function(element) {
++    element = $(element);
++    var options = Object.extend(this.options(element), arguments[1] || {});
++    
++    return $(this.findElements(element, options) || []).map( function(item) {
++      return item.id.match(options.format) ? item.id.match(options.format)[1] : '';
++    });
++  },
++
++  setSequence: function(element, new_sequence) {
++    element = $(element);
++    var options = Object.extend(this.options(element), arguments[2] || {});
++    
++    var nodeMap = {};
++    this.findElements(element, options).each( function(n) {
++        if (n.id.match(options.format))
++            nodeMap[n.id.match(options.format)[1]] = [n, n.parentNode];
++        n.parentNode.removeChild(n);
++    });
++   
++    new_sequence.each(function(ident) {
++        var n = nodeMap[ident];
++        if (n) {
++            n[1].appendChild(n[0]);
++            delete nodeMap[ident];
++        }
++    });
++  },
++
+   serialize: function(element) {
+     element = $(element);
+-    var sortableOptions = this.options(element);
+-    var options = Object.extend({
+-      tag:  sortableOptions.tag,
+-      only: sortableOptions.only,
+-      name: element.id,
+-      format: sortableOptions.format || /^[^_]*_(.*)$/
+-    }, arguments[1] || {});
+-    return $(this.findElements(element, options) || []).map( function(item) {
+-      return (encodeURIComponent(options.name) + "[]=" + 
+-              encodeURIComponent(item.id.match(options.format) ? item.id.match(options.format)[1] : ''));
+-    }).join("&");
++    var name = encodeURIComponent(
++      (arguments[1] && arguments[1].name) ? arguments[1].name : element.id);
++    return Sortable.sequence(element, arguments[1]).map( function(item) {
++      return name + "[]=" + encodeURIComponent(item);
++    }).join('&');
+   }
+-}
+\ No newline at end of file
++}
+
+Modified: applications/eltodo/public/javascript/effects.js
+===================================================================
+--- applications/eltodo/public/javascript/effects.js	2006-02-19 18:07:57 UTC (rev 353)
++++ applications/eltodo/public/javascript/effects.js	2006-02-22 19:26:26 UTC (rev 354)
+@@ -35,7 +35,7 @@
+   return $A($(element).childNodes).collect( function(node) {
+     return (node.nodeType==3 ? node.nodeValue : 
+       ((node.hasChildNodes() && !Element.hasClassName(node,className)) ? 
+-        Element.collectTextNodes(node) : ''));
++        Element.collectTextNodesIgnoreClass(node, className) : ''));
+   }).flatten().join('');
+ }
+ 
+@@ -137,7 +137,7 @@
+     element = $(element);
+     effect = (effect || 'appear').toLowerCase();
+     var options = Object.extend({
+-      queue: { position:'end', scope:(element.id || 'global') }
++      queue: { position:'end', scope:(element.id || 'global'), limit: 1 }
+     }, arguments[2] || {});
+     Effect[Element.visible(element) ? 
+       Effect.PAIRS[effect][1] : Effect.PAIRS[effect][0]](element, options);
+@@ -209,7 +209,10 @@
+     
+     effect.startOn  += timestamp;
+     effect.finishOn += timestamp;
+-    this.effects.push(effect);
++
++    if(!effect.options.queue.limit || (this.effects.length < effect.options.queue.limit))
++      this.effects.push(effect);
++    
+     if(!this.interval) 
+       this.interval = setInterval(this.loop.bind(this), 40);
+   },
+@@ -581,7 +584,6 @@
+ 
+ Effect.BlindDown = function(element) {
+   element = $(element);
+-  var oldHeight = Element.getStyle(element, 'height');
+   var elementDimensions = Element.getDimensions(element);
+   return new Effect.Scale(element, 100, 
+     Object.extend({ scaleContent: false, 
+@@ -594,10 +596,9 @@
+         setStyle(effect.element, {height: '0px'});
+         show(effect.element); 
+       }},  
+-      afterFinishInternal: function(effect) { with(Element) {
+-        undoClipping(effect.element);
+-        setStyle(effect.element, {height: oldHeight});
+-      }}
++      afterFinishInternal: function(effect) {
++        Element.undoClipping(effect.element);
++      }
+     }, arguments[1] || {})
+   );
+ }
+@@ -690,8 +691,14 @@
+         (effect.dims[0] - effect.element.clientHeight) + 'px' }); }},
+     afterFinishInternal: function(effect) { with(Element) {
+       undoClipping(effect.element); 
+-      undoPositioned(effect.element.firstChild);
+-      undoPositioned(effect.element);
++      // IE will crash if child is undoPositioned first
++      if(/MSIE/.test(navigator.userAgent)){
++        undoPositioned(effect.element);
++        undoPositioned(effect.element.firstChild);
++      }else{
++        undoPositioned(effect.element.firstChild);
++        undoPositioned(effect.element);
++      }
+       setStyle(effect.element.firstChild, {bottom: oldInnerBottom}); }}
+     }, arguments[1] || {})
+   );
+@@ -741,7 +748,7 @@
+   element = $(element);
+   var options = Object.extend({
+     direction: 'center',
+-    moveTransistion: Effect.Transitions.sinoidal,
++    moveTransition: Effect.Transitions.sinoidal,
+     scaleTransition: Effect.Transitions.sinoidal,
+     opacityTransition: Effect.Transitions.full
+   }, arguments[1] || {});
+@@ -817,7 +824,7 @@
+   element = $(element);
+   var options = Object.extend({
+     direction: 'center',
+-    moveTransistion: Effect.Transitions.sinoidal,
++    moveTransition: Effect.Transitions.sinoidal,
+     scaleTransition: Effect.Transitions.sinoidal,
+     opacityTransition: Effect.Transitions.none
+   }, arguments[1] || {});
+
+Modified: applications/eltodo/public/javascript/scriptaculous.js
+===================================================================
+--- applications/eltodo/public/javascript/scriptaculous.js	2006-02-19 18:07:57 UTC (rev 353)
++++ applications/eltodo/public/javascript/scriptaculous.js	2006-02-22 19:26:26 UTC (rev 354)
+@@ -20,7 +20,7 @@
+ // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ 
+ var Scriptaculous = {
+-  Version: '1.5.1',
++  Version: '1.5.3',
+   require: function(libraryName) {
+     // inserting via DOM fails in Safari 2.0, so brute force approach
+     document.write('<script type="text/javascript" src="'+libraryName+'"></script>');
+
+Modified: applications/eltodo/public/javascript/slider.js
+===================================================================
+--- applications/eltodo/public/javascript/slider.js	2006-02-19 18:07:57 UTC (rev 353)
++++ applications/eltodo/public/javascript/slider.js	2006-02-22 19:26:26 UTC (rev 354)
+@@ -200,10 +200,10 @@
+   setSpan: function(span, range) {
+     if(this.isVertical()) {
+       span.style.top = this.translateToPx(range.start);
+-      span.style.height = this.translateToPx(range.end - range.start);
++      span.style.height = this.translateToPx(range.end - range.start + this.range.start);
+     } else {
+       span.style.left = this.translateToPx(range.start);
+-      span.style.width = this.translateToPx(range.end - range.start);
++      span.style.width = this.translateToPx(range.end - range.start + this.range.start);
+     }
+   },
+   updateStyles: function() {
+
+Modified: trunk/skel/public/javascript/controls.js
+===================================================================
+--- trunk/skel/public/javascript/controls.js	2006-02-19 18:07:57 UTC (rev 353)
++++ trunk/skel/public/javascript/controls.js	2006-02-22 19:26:26 UTC (rev 354)
+@@ -152,6 +152,12 @@
+         setTimeout(this.onObserverEvent.bind(this), this.options.frequency*1000);
+   },
+ 
++  activate: function() {
++    this.changed = false;
++    this.hasFocus = true;
++    this.getUpdatedChoices();
++  },
++
+   onHover: function(event) {
+     var element = Event.findElement(event, 'LI');
+     if(this.index != element.autocompleteIndex) 
+@@ -310,7 +316,7 @@
+ Ajax.Autocompleter = Class.create();
+ Object.extend(Object.extend(Ajax.Autocompleter.prototype, Autocompleter.Base.prototype), {
+   initialize: function(element, update, url, options) {
+-	  this.baseInitialize(element, update, options);
++    this.baseInitialize(element, update, options);
+     this.options.asynchronous  = true;
+     this.options.onComplete    = this.onComplete.bind(this);
+     this.options.defaultParams = this.options.parameters || null;
+@@ -477,9 +483,10 @@
+       formClassName: 'inplaceeditor-form',
+       highlightcolor: Ajax.InPlaceEditor.defaultHighlightColor,
+       highlightendcolor: "#FFFFFF",
+-      externalControl:	null,
++      externalControl: null,
+       submitOnBlur: false,
+-      ajaxOptions: {}
++      ajaxOptions: {},
++      evalScripts: false
+     }, options || {});
+ 
+     if(!this.options.formId && this.element.id) {
+@@ -548,6 +555,7 @@
+       okButton = document.createElement("input");
+       okButton.type = "submit";
+       okButton.value = this.options.okText;
++      okButton.className = 'editor_ok_button';
+       this.form.appendChild(okButton);
+     }
+ 
+@@ -556,6 +564,7 @@
+       cancelLink.href = "#";
+       cancelLink.appendChild(document.createTextNode(this.options.cancelText));
+       cancelLink.onclick = this.onclickCancel.bind(this);
++      cancelLink.className = 'editor_cancel';      
+       this.form.appendChild(cancelLink);
+     }
+   },
+@@ -584,6 +593,7 @@
+       textField.name = "value";
+       textField.value = text;
+       textField.style.backgroundColor = this.options.highlightcolor;
++      textField.className = 'editor_field';
+       var size = this.options.size || this.options.cols || 0;
+       if (size != 0) textField.size = size;
+       if (this.options.submitOnBlur)
+@@ -597,6 +607,7 @@
+       textArea.value = this.convertHTMLLineBreaks(text);
+       textArea.rows = this.options.rows;
+       textArea.cols = this.options.cols || 40;
++      textArea.className = 'editor_field';      
+       if (this.options.submitOnBlur)
+         textArea.onblur = this.onSubmit.bind(this);
+       this.editField = textArea;
+@@ -649,19 +660,26 @@
+     // to be displayed indefinitely
+     this.onLoading();
+     
+-    new Ajax.Updater(
+-      { 
+-        success: this.element,
+-         // don't update on failure (this could be an option)
+-        failure: null
+-      },
+-      this.url,
+-      Object.extend({
+-        parameters: this.options.callback(form, value),
+-        onComplete: this.onComplete.bind(this),
+-        onFailure: this.onFailure.bind(this)
+-      }, this.options.ajaxOptions)
+-    );
++    if (this.options.evalScripts) {
++      new Ajax.Request(
++        this.url, Object.extend({
++          parameters: this.options.callback(form, value),
++          onComplete: this.onComplete.bind(this),
++          onFailure: this.onFailure.bind(this),
++          asynchronous:true, 
++          evalScripts:true
++        }, this.options.ajaxOptions));
++    } else  {
++      new Ajax.Updater(
++        { success: this.element,
++          // don't update on failure (this could be an option)
++          failure: null }, 
++        this.url, Object.extend({
++          parameters: this.options.callback(form, value),
++          onComplete: this.onComplete.bind(this),
++          onFailure: this.onFailure.bind(this)
++        }, this.options.ajaxOptions));
++    }
+     // stop the event to avoid a page refresh in Safari
+     if (arguments.length > 1) {
+       Event.stop(arguments[0]);
+@@ -743,6 +761,33 @@
+   }
+ };
+ 
++Ajax.InPlaceCollectionEditor = Class.create();
++Object.extend(Ajax.InPlaceCollectionEditor.prototype, Ajax.InPlaceEditor.prototype);
++Object.extend(Ajax.InPlaceCollectionEditor.prototype, {
++  createEditField: function() {
++    if (!this.cached_selectTag) {
++      var selectTag = document.createElement("select");
++      var collection = this.options.collection || [];
++      var optionTag;
++      collection.each(function(e,i) {
++        optionTag = document.createElement("option");
++        optionTag.value = (e instanceof Array) ? e[0] : e;
++        if(this.options.value==optionTag.value) optionTag.selected = true;
++        optionTag.appendChild(document.createTextNode((e instanceof Array) ? e[1] : e));
++        selectTag.appendChild(optionTag);
++      }.bind(this));
++      this.cached_selectTag = selectTag;
++    }
++
++    this.editField = this.cached_selectTag;
++    if(this.options.loadTextURL) this.loadExternalText();
++    this.form.appendChild(this.editField);
++    this.options.callback = function(form, value) {
++      return "value=" + encodeURIComponent(value);
++    }
++  }
++});
++
+ // Delayed observer, like Form.Element.Observer, 
+ // but waits for delay after last key input
+ // Ideal for live-search fields
+
+Modified: trunk/skel/public/javascript/dragdrop.js
+===================================================================
+--- trunk/skel/public/javascript/dragdrop.js	2006-02-19 18:07:57 UTC (rev 353)
++++ trunk/skel/public/javascript/dragdrop.js	2006-02-22 19:26:26 UTC (rev 354)
+@@ -128,7 +128,7 @@
+     this.activeDraggable = draggable;
+   },
+   
+-  deactivate: function(draggbale) {
++  deactivate: function() {
+     this.activeDraggable = null;
+   },
+   
+@@ -199,6 +199,9 @@
+       },
+       zindex: 1000,
+       revert: false,
++      scroll: false,
++      scrollSensitivity: 20,
++      scrollSpeed: 15,
+       snap: false   // false, or xy or [x,y] or function(x,y){ return [x,y] }
+     }, arguments[1] || {});
+ 
+@@ -208,6 +211,8 @@
+       this.handle = Element.childrenWithClassName(this.element, options.handle)[0];  
+     if(!this.handle) this.handle = $(options.handle);
+     if(!this.handle) this.handle = this.element;
++    
++    if(options.scroll) options.scroll = $(options.scroll);
+ 
+     Element.makePositioned(this.element); // fix IE    
+ 
+@@ -239,6 +244,7 @@
+       if(src.tagName && (
+         src.tagName=='INPUT' ||
+         src.tagName=='SELECT' ||
++        src.tagName=='OPTION' ||
+         src.tagName=='BUTTON' ||
+         src.tagName=='TEXTAREA')) return;
+         
+@@ -270,6 +276,11 @@
+       this.element.parentNode.insertBefore(this._clone, this.element);
+     }
+     
++    if(this.options.scroll) {
++      this.originalScrollLeft = this.options.scroll.scrollLeft;
++      this.originalScrollTop = this.options.scroll.scrollTop;
++    }
++    
+     Draggables.notify('onStart', this, event);
+     if(this.options.starteffect) this.options.starteffect(this.element);
+   },
+@@ -282,8 +293,25 @@
+     this.draw(pointer);
+     if(this.options.change) this.options.change(this);
+     
++    if(this.options.scroll) {
++      //if(this.scrollInterval) this.scroll();
++      this.stopScrolling();
++      var p = Position.page(this.options.scroll);
++      p[0] += this.options.scroll.scrollLeft;
++      p[1] += this.options.scroll.scrollTop;
++      p.push(p[0]+this.options.scroll.offsetWidth);
++      p.push(p[1]+this.options.scroll.offsetHeight);
++      var speed = [0,0];
++      if(pointer[0] < (p[0]+this.options.scrollSensitivity)) speed[0] = pointer[0]-(p[0]+this.options.scrollSensitivity);
++      if(pointer[1] < (p[1]+this.options.scrollSensitivity)) speed[1] = pointer[1]-(p[1]+this.options.scrollSensitivity);
++      if(pointer[0] > (p[2]-this.options.scrollSensitivity)) speed[0] = pointer[0]-(p[2]-this.options.scrollSensitivity);
++      if(pointer[1] > (p[3]-this.options.scrollSensitivity)) speed[1] = pointer[1]-(p[3]-this.options.scrollSensitivity);
++      this.startScrolling(speed);
++    }
++    
+     // fix AppleWebKit rendering
+     if(navigator.appVersion.indexOf('AppleWebKit')>0) window.scrollBy(0,0);
++    
+     Event.stop(event);
+   },
+   
+@@ -321,13 +349,14 @@
+   },
+   
+   keyPress: function(event) {
+-    if(!event.keyCode==Event.KEY_ESC) return;
++    if(event.keyCode!=Event.KEY_ESC) return;
+     this.finishDrag(event, false);
+     Event.stop(event);
+   },
+   
+   endDrag: function(event) {
+     if(!this.dragging) return;
++    this.stopScrolling();
+     this.finishDrag(event, true);
+     Event.stop(event);
+   },
+@@ -337,8 +366,15 @@
+     var d = this.currentDelta();
+     pos[0] -= d[0]; pos[1] -= d[1];
+     
+-    var p = [0,1].map(function(i){ return (point[i]-pos[i]-this.offset[i]) }.bind(this));
++    if(this.options.scroll) {
++      pos[0] -= this.options.scroll.scrollLeft-this.originalScrollLeft;
++      pos[1] -= this.options.scroll.scrollTop-this.originalScrollTop;
++    }
+     
++    var p = [0,1].map(function(i){ 
++      return (point[i]-pos[i]-this.offset[i]) 
++    }.bind(this));
++    
+     if(this.options.snap) {
+       if(typeof this.options.snap == 'function') {
+         p = this.options.snap(p[0],p[1]);
+@@ -358,6 +394,34 @@
+     if((!this.options.constraint) || (this.options.constraint=='vertical'))
+       style.top  = p[1] + "px";
+     if(style.visibility=="hidden") style.visibility = ""; // fix gecko rendering
++  },
++  
++  stopScrolling: function() {
++    if(this.scrollInterval) {
++      clearInterval(this.scrollInterval);
++      this.scrollInterval = null;
++    }
++  },
++  
++  startScrolling: function(speed) {
++    this.scrollSpeed = [speed[0]*this.options.scrollSpeed,speed[1]*this.options.scrollSpeed];
++    this.lastScrolled = new Date();
++    this.scrollInterval = setInterval(this.scroll.bind(this), 10);
++  },
++  
++  scroll: function() {
++    var current = new Date();
++    var delta = current - this.lastScrolled;
++    this.lastScrolled = current;
++    this.options.scroll.scrollLeft += this.scrollSpeed[0] * delta / 1000;
++    this.options.scroll.scrollTop  += this.scrollSpeed[1] * delta / 1000;
++    
++    Position.prepare();
++    Droppables.show(Draggables._lastPointer, this.element);
++    Draggables.notify('onDrag', this);
++    this.draw(Draggables._lastPointer);    
++    
++    if(this.options.change) this.options.change(this);
+   }
+ }
+ 
+@@ -414,7 +478,8 @@
+       only:        false,
+       hoverclass:  null,
+       ghosting:    false,
+-      format:      null,
++      scroll:      false,
++      format:      /^[^_]*_(.*)$/,
+       onChange:    Prototype.emptyFunction,
+       onUpdate:    Prototype.emptyFunction
+     }, arguments[1] || {});
+@@ -425,6 +490,7 @@
+     // build options for the draggables
+     var options_for_draggable = {
+       revert:      true,
++      scroll:      options.scroll,
+       ghosting:    options.ghosting,
+       constraint:  options.constraint,
+       handle:      options.handle };
+@@ -568,18 +634,41 @@
+     Element.show(Sortable._marker);
+   },
+ 
++  sequence: function(element) {
++    element = $(element);
++    var options = Object.extend(this.options(element), arguments[1] || {});
++    
++    return $(this.findElements(element, options) || []).map( function(item) {
++      return item.id.match(options.format) ? item.id.match(options.format)[1] : '';
++    });
++  },
++
++  setSequence: function(element, new_sequence) {
++    element = $(element);
++    var options = Object.extend(this.options(element), arguments[2] || {});
++    
++    var nodeMap = {};
++    this.findElements(element, options).each( function(n) {
++        if (n.id.match(options.format))
++            nodeMap[n.id.match(options.format)[1]] = [n, n.parentNode];
++        n.parentNode.removeChild(n);
++    });
++   
++    new_sequence.each(function(ident) {
++        var n = nodeMap[ident];
++        if (n) {
++            n[1].appendChild(n[0]);
++            delete nodeMap[ident];
++        }
++    });
++  },
++
+   serialize: function(element) {
+     element = $(element);
+-    var sortableOptions = this.options(element);
+-    var options = Object.extend({
+-      tag:  sortableOptions.tag,
+-      only: sortableOptions.only,
+-      name: element.id,
+-      format: sortableOptions.format || /^[^_]*_(.*)$/
+-    }, arguments[1] || {});
+-    return $(this.findElements(element, options) || []).map( function(item) {
+-      return (encodeURIComponent(options.name) + "[]=" + 
+-              encodeURIComponent(item.id.match(options.format) ? item.id.match(options.format)[1] : ''));
+-    }).join("&");
++    var name = encodeURIComponent(
++      (arguments[1] && arguments[1].name) ? arguments[1].name : element.id);
++    return Sortable.sequence(element, arguments[1]).map( function(item) {
++      return name + "[]=" + encodeURIComponent(item);
++    }).join('&');
+   }
+-}
+\ No newline at end of file
++}
+
+Modified: trunk/skel/public/javascript/effects.js
+===================================================================
+--- trunk/skel/public/javascript/effects.js	2006-02-19 18:07:57 UTC (rev 353)
++++ trunk/skel/public/javascript/effects.js	2006-02-22 19:26:26 UTC (rev 354)
+@@ -35,7 +35,7 @@
+   return $A($(element).childNodes).collect( function(node) {
+     return (node.nodeType==3 ? node.nodeValue : 
+       ((node.hasChildNodes() && !Element.hasClassName(node,className)) ? 
+-        Element.collectTextNodes(node) : ''));
++        Element.collectTextNodesIgnoreClass(node, className) : ''));
+   }).flatten().join('');
+ }
+ 
+@@ -137,7 +137,7 @@
+     element = $(element);
+     effect = (effect || 'appear').toLowerCase();
+     var options = Object.extend({
+-      queue: { position:'end', scope:(element.id || 'global') }
++      queue: { position:'end', scope:(element.id || 'global'), limit: 1 }
+     }, arguments[2] || {});
+     Effect[Element.visible(element) ? 
+       Effect.PAIRS[effect][1] : Effect.PAIRS[effect][0]](element, options);
+@@ -209,7 +209,10 @@
+     
+     effect.startOn  += timestamp;
+     effect.finishOn += timestamp;
+-    this.effects.push(effect);
++
++    if(!effect.options.queue.limit || (this.effects.length < effect.options.queue.limit))
++      this.effects.push(effect);
++    
+     if(!this.interval) 
+       this.interval = setInterval(this.loop.bind(this), 40);
+   },
+@@ -581,7 +584,6 @@
+ 
+ Effect.BlindDown = function(element) {
+   element = $(element);
+-  var oldHeight = Element.getStyle(element, 'height');
+   var elementDimensions = Element.getDimensions(element);
+   return new Effect.Scale(element, 100, 
+     Object.extend({ scaleContent: false, 
+@@ -594,10 +596,9 @@
+         setStyle(effect.element, {height: '0px'});
+         show(effect.element); 
+       }},  
+-      afterFinishInternal: function(effect) { with(Element) {
+-        undoClipping(effect.element);
+-        setStyle(effect.element, {height: oldHeight});
+-      }}
++      afterFinishInternal: function(effect) {
++        Element.undoClipping(effect.element);
++      }
+     }, arguments[1] || {})
+   );
+ }
+@@ -690,8 +691,14 @@
+         (effect.dims[0] - effect.element.clientHeight) + 'px' }); }},
+     afterFinishInternal: function(effect) { with(Element) {
+       undoClipping(effect.element); 
+-      undoPositioned(effect.element.firstChild);
+-      undoPositioned(effect.element);
++      // IE will crash if child is undoPositioned first
++      if(/MSIE/.test(navigator.userAgent)){
++        undoPositioned(effect.element);
++        undoPositioned(effect.element.firstChild);
++      }else{
++        undoPositioned(effect.element.firstChild);
++        undoPositioned(effect.element);
++      }
+       setStyle(effect.element.firstChild, {bottom: oldInnerBottom}); }}
+     }, arguments[1] || {})
+   );
+@@ -741,7 +748,7 @@
+   element = $(element);
+   var options = Object.extend({
+     direction: 'center',
+-    moveTransistion: Effect.Transitions.sinoidal,
++    moveTransition: Effect.Transitions.sinoidal,
+     scaleTransition: Effect.Transitions.sinoidal,
+     opacityTransition: Effect.Transitions.full
+   }, arguments[1] || {});
+@@ -817,7 +824,7 @@
+   element = $(element);
+   var options = Object.extend({
+     direction: 'center',
+-    moveTransistion: Effect.Transitions.sinoidal,
++    moveTransition: Effect.Transitions.sinoidal,
+     scaleTransition: Effect.Transitions.sinoidal,
+     opacityTransition: Effect.Transitions.none
+   }, arguments[1] || {});
+
+Modified: trunk/skel/public/javascript/scriptaculous.js
+===================================================================
+--- trunk/skel/public/javascript/scriptaculous.js	2006-02-19 18:07:57 UTC (rev 353)
++++ trunk/skel/public/javascript/scriptaculous.js	2006-02-22 19:26:26 UTC (rev 354)
+@@ -20,7 +20,7 @@
+ // WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+ 
+ var Scriptaculous = {
+-  Version: '1.5.1',
++  Version: '1.5.3',
+   require: function(libraryName) {
+     // inserting via DOM fails in Safari 2.0, so brute force approach
+     document.write('<script type="text/javascript" src="'+libraryName+'"></script>');
+
+Modified: trunk/skel/public/javascript/slider.js
+===================================================================
+--- trunk/skel/public/javascript/slider.js	2006-02-19 18:07:57 UTC (rev 353)
++++ trunk/skel/public/javascript/slider.js	2006-02-22 19:26:26 UTC (rev 354)
+@@ -200,10 +200,10 @@
+   setSpan: function(span, range) {
+     if(this.isVertical()) {
+       span.style.top = this.translateToPx(range.start);
+-      span.style.height = this.translateToPx(range.end - range.start);
++      span.style.height = this.translateToPx(range.end - range.start + this.range.start);
+     } else {
+       span.style.left = this.translateToPx(range.start);
+-      span.style.width = this.translateToPx(range.end - range.start);
++      span.style.width = this.translateToPx(range.end - range.start + this.range.start);
+     }
+   },
+   updateStyles: function() {
+
+Modified: trunk/test/runner.php
+===================================================================
+--- trunk/test/runner.php	2006-02-19 18:07:57 UTC (rev 353)
++++ trunk/test/runner.php	2006-02-22 19:26:26 UTC (rev 354)
+@@ -3,9 +3,11 @@
+ // $Id$
+ 
+ // Script that runs all the *Test.php* files from the test folder.
++// Read README.tests for details on running tests.
+ 
+ $time_start = microtime(true);
+ 
++// {{{ settings
+ define('TOP_LOCATION', dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR);
+ define('TMP', 'tmp' . DIRECTORY_SEPARATOR);
+ 
+@@ -16,31 +18,34 @@
+ error_reporting(E_ALL);
+ set_time_limit(0);
+ ini_set('display_errors', 1);
++// }}}
+ 
++// {{{ paths
+ include_once('medick/Object.php');
+ include_once('medick/Exception.php');
+ include_once('medick/Registry.php');
+ include_once('medick/util.php');
+ include_once('medick/io/Folder.php');
+ include_once('medick/ConsoleOptions.php');
+-
+ // include_once('simpletest/web_tester.php');
+-
+ include_once('simpletest/unit_tester.php');
+ include_once('simpletest/reporter.php');
++include_once('configurator/LoggerConfigurator.php');
++include_once('logger/Logger.php');
++// }}}
+ 
++// {{{ configure console
+ $options= new ConsoleOptions();
+ $options->setNoValueFor('debug', '-d', '--debug');
+ $options->load(isset($argv)?$argv:$_SERVER['argv']);
+ $options->alias('debug', '-d, --debug');
++// }}}
+ 
+-include_once('configurator/LoggerConfigurator.php');
+-include_once('logger/Logger.php');
+-
++// {{{ logger.
+ $logger= new Logger(new LoggerConfigurator());
++// }}}
+ 
+ $test= new GroupTest("=== Medick Framework Unit Tests ===");
+-
+ $test_files = Folder::recursiveFindRelative('.', 'test', 'Test.php');
+ foreach($test_files as $file) {
+     if ($options->has('debug')) {
+@@ -56,5 +61,6 @@
+     $logger->debug('Done in ' . round($time_end - $time_start,4) . ' seconds');
+ }
+ 
++// {{{ clean-up
+ @unlink(TMP . 'test.db');
+-
++// }}}
+
+
+
+From aurelian at berlios.de  Fri Feb 24 20:28:34 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Fri, 24 Feb 2006 20:28:34 +0100
+Subject: [Medick-svn] r355 - applications/eltodo/app/views/layouts applications/eltodo/public applications/eltodo/public/stylesheet trunk trunk/libs/action/controller trunk/libs/action/controller/http trunk/libs/medick trunk/skel/public
+Message-ID: <200602241928.k1OJSYON026639@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-24 20:28:29 +0100 (Fri, 24 Feb 2006)
+New Revision: 355
+
+Added:
+   trunk/libs/action/controller/Dispatcher.php
+   trunk/libs/medick/Medick.php
+Removed:
+   trunk/libs/medick/Dispatcher.php
+   trunk/libs/medick/Version.php
+Modified:
+   applications/eltodo/app/views/layouts/eltodo.phtml
+   applications/eltodo/public/.htaccess
+   applications/eltodo/public/stylesheet/eltodo.v0.2.css
+   trunk/boot.php
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Response.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/controller/http/HTTPResponse.php
+   trunk/skel/public/default.htaccess
+Log:
+ -- Request/Response not abstract classes anymore (just protected constructors)
+ -- moved response codes from Response to HTTPResponse (that`s there place)
+ -- moved Dispatcher to action.controller.Dispatcher
+ -- added short_open_tags and display_errors on .htaccess
+ 
+
+
+Modified: applications/eltodo/app/views/layouts/eltodo.phtml
+===================================================================
+--- applications/eltodo/app/views/layouts/eltodo.phtml	2006-02-22 19:26:26 UTC (rev 354)
++++ applications/eltodo/app/views/layouts/eltodo.phtml	2006-02-24 19:28:29 UTC (rev 355)
+@@ -5,7 +5,7 @@
+ <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en">
+     <head>
+         <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+-        <base href="http://localhost/eltodo/" />
++        <base href="<?=$__server . $__base;?>" />
+         <link rel="stylesheet" href="stylesheet/eltodo.v0.2.css" />
+         <script src="javascript/prototype.js" type="text/javascript"></script>
+         <script src="javascript/scriptaculous.js" type="text/javascript"></script>
+@@ -16,7 +16,9 @@
+ 
+         <div id="container">
+ 
+-            <div id="header">elTodo</div>
++            <div id="header">
++              <h3>elTodo</h3>
++            </div>
+ 
+             <div id="sidebar">
+                 <h1>sidebar</h1>
+
+Modified: applications/eltodo/public/.htaccess
+===================================================================
+--- applications/eltodo/public/.htaccess	2006-02-22 19:26:26 UTC (rev 354)
++++ applications/eltodo/public/.htaccess	2006-02-24 19:28:29 UTC (rev 355)
+@@ -7,6 +7,8 @@
+ SetEnv MEDICK_APPLICATION_PATH /wwwroot/medick/applications/eltodo
+ SetEnv MEDICK_APPLICATION_NAME eltodo
+ 
++php_value short_open_tag 1
++
+ #ErrorDocument 404 /todo.html
+  
+ RewriteEngine on
+
+Modified: applications/eltodo/public/stylesheet/eltodo.v0.2.css
+===================================================================
+--- applications/eltodo/public/stylesheet/eltodo.v0.2.css	2006-02-22 19:26:26 UTC (rev 354)
++++ applications/eltodo/public/stylesheet/eltodo.v0.2.css	2006-02-24 19:28:29 UTC (rev 355)
+@@ -75,13 +75,13 @@
+   background-color: #fff;
+ }
+ 
+-a:link, a:visited{
++a:link, a:visited {
+     color: #30c;
+     background-color: transparent;
+     text-decoration: underline;
+ }
+ 
+-a:hover,a:active{
++a:hover,a:active {
+     color: #c03;
+     background-color: transparent;
+ }
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/boot.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -40,7 +40,7 @@
+ // medick path.
+ define( 'MEDICK_PATH', dirname(__FILE__) . DIRECTORY_SEPARATOR );
+ // rewrite system include path
+-set_include_path( MEDICK_PATH . 'libs'   . DIRECTORY_SEPARATOR  );
++set_include_path( MEDICK_PATH . 'libs'   . DIRECTORY_SEPARATOR );
+ 
+ // this should depend on environment
+ error_reporting(E_ALL|E_STRICT);
+@@ -48,6 +48,7 @@
+ if (version_compare(PHP_VERSION, '5.1.0') > 0) {
+     date_default_timezone_set('Europe/Bucharest');
+ }
++
+ // load core classes
+ include_once('medick/Object.php');
+ include_once('medick/Exception.php');
+@@ -55,7 +56,7 @@
+ set_error_handler(array(new ErrorHandler(), 'raiseError'));
+ include_once('medick/util.php');
+ include_once('medick/Registry.php');
+-include_once('medick/Dispatcher.php');
++include_once('action/controller/Dispatcher.php');
+ include_once('medick/Version.php');
+ include_once('configurator/XMLConfigurator.php');
+ include_once('logger/Logger.php');
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/action/controller/Base.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -126,7 +126,7 @@
+         $template = ActionView::factory('php');
+         $template->error= $exception;
+         $text= $template->render_file(MEDICK_PATH . '/libs/action/controller/templates/error.phtml');
+-        $response->setStatus(Response::SC_INTERNAL_SERVER_ERROR);
++        $response->setStatus(HTTPResponse::SC_INTERNAL_SERVER_ERROR);
+         $response->setContent($text);
+         return $response;
+     }
+@@ -161,7 +161,7 @@
+      *  }
+      * </code>
+      * @param string template_name, [optional], the template name, default is null, the curent action.
+-     * @param Response::SC_*, status, [optional] status code, default is 200 OK
++     * @param HTTPResponse::SC_*, status, [optional] status code, default is 200 OK
+      * @return void
+      */
+     protected function render($template_name = NULL, $status = NULL) {
+@@ -242,7 +242,7 @@
+             $this->logger->info('Action already performed...');
+             return;
+         }
+-        $status = $status === NULL ? Response::SC_OK : $status;
++        $status = $status === NULL ? HTTPResponse::SC_OK : $status;
+         $this->response->setStatus($status);
+         $this->response->setContent($text);
+         $this->action_performed = TRUE;
+@@ -289,7 +289,8 @@
+ 
+         $this->template = ActionView::factory('php');
+         // predefined variables:
+-        $this->template->assign('__base', $this->config->getProperty('document_root'));
++        // TODO: check if we have a / at the end, if not, add one
++        $this->template->assign('__base', $this->config->getProperty('document_root').'/');
+         $this->template->assign('__server', $this->config->getProperty('server_name'));
+         $this->template->assign('__controller', $this->params['controller']);
+         $this->logger->debug($this->request->toString());
+@@ -374,8 +375,8 @@
+             $action= $this->createMethod($action_name);
+             if (!$action || $action->isStatic()) {
+                 throw new RoutingException(
+-                    'Cannot invoke default action, \'index\' for this Route!',
+-                    'Method named \'index\' is not defined in class: ' . $this->getClassName()
++                    'Cannot invoke default action, ``index" for this Route!',
++                    'Method named ``index" is not defined in class: ' . $this->getClassName()
+                 );
+             }
+         }
+@@ -423,15 +424,16 @@
+         foreach($this->before_filter as $filter_name) {
+             if (!$filter= $this->createMethod($filter_name)) {
+                 $this->logger->info(
+-                    'Could not create filter: `'.$filter_name.'`, skipping...');
++                    'Could not create filter: ``'.$filter_name.'", skipping...');
+                 continue;
+             }
+             // a filter should be declared as protected.
+             if (!$filter->isProtected()) {
+                 throw new MedickException(
+-                    'Your filter,`'. $filter_name . '` is declared as a
+-                        public method of class `' . $this->getClassName() .'` !');
++                    'Your filter,``'. $filter_name . '" is declared as a
++                        public method of class ``' . $this->getClassName() .'" !');
+             }
++            // can we use invoke?
+             $this->$filter_name();
+         }
+     }
+
+Copied: trunk/libs/action/controller/Dispatcher.php (from rev 344, trunk/libs/medick/Dispatcher.php)
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/action/controller/Request.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -37,12 +37,15 @@
+ /**
+  * @package locknet7.action.controller.request
+  */
+-abstract class Request extends Object {
++class Request extends Object {
+ 
+     /** @var array
+         current request parameters */
+     private $params = array();
+ 
++    /** Hidden Constructor */
++    protected function Request() {  }
++
+     /**
+      * It gets the param
+      * @param mixed, param, the paremeter name
+@@ -91,6 +94,4 @@
+         }
+         return $buff;
+     }
+-    
+ }
+-
+
+Modified: trunk/libs/action/controller/Response.php
+===================================================================
+--- trunk/libs/action/controller/Response.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/action/controller/Response.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -37,38 +37,18 @@
+ /**
+  * @package locknet7.action.controller.response
+  */
+-abstract class Response extends Object {
+-
+-    /** Status code (200) indicating the request succeeded normally. */
+-    const SC_OK = 200;
+-
+-    /** Status code (304) indicating that a conditional GET
+-        operation found that the resource was available and not modified. */
+-    const SC_NOT_MODIFIED = 304;
+-
+-    /** Status code (400) indicating the request sent by the
+-        client was syntactically incorrect. */
+-    const SC_BAD_REQUEST = 400;
+-
+-    /** Status code (403) indicating the server
+-        understood the request but refused to fulfill it. */
+-    const SC_FORBIDDEN = 403;
+-
+-    /** Status code (404) indicating that the requested
+-        resource is not available. */
+-    const SC_NOT_FOUND = 404;
+-
+-    /** Status code (500) indicating an error inside
+-        the HTTP server which prevented it from fulfilling the request. */
+-    const SC_INTERNAL_SERVER_ERROR = 500;
+-
+-    /** Status code (503) indicating that the HTTP server
+-        is temporarily overloaded, and unable to handle the request. */
+-    const SC_SERVICE_UNAVAILABLE = 503;
+-
++class Response extends Object {
++    
++    /** @var string
++        response content */
+     protected $content;
+ 
+     /**
++     * Hidden Constructor
++     */
++    protected function Response(){  }
++
++    /**
+      * Set the content
+      * @param mixed content, the content
+      */
+@@ -91,11 +71,5 @@
+         echo $this->content;
+     }
+ 
+-    /**
+-     * Sets the status of this response
+-     * @param Response::SC_*, status, the status of this response
+-     */
+-    abstract function setStatus($status);
+-
+ }
+ 
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -46,11 +46,15 @@
+         path_info_parts */
+     private $path_info= NULL;
+ 
++    /** @var array
++        the list of headers associated with this HTTPRequest */
++    private $headers= array();
++
+     /**
+      * Constructor.
+      * It builds the HTTPRequest object
+      */
+-    public function __construct() {
++    public function HTTPRequest() {
+         foreach ($_REQUEST as $key=>$value) {
+             $this->setParameter($key, $value);
+         }
+@@ -61,8 +65,21 @@
+             $this->path_info= $_SERVER['PATH_INFO'];
+         }
+         $this->session = new Session();
++        $this->headers = HTTPRequest::getAllHeaders();
+     }
+ 
++    public function getHeaders() {
++        return $this->headers;
++    }
++    
++    public function getHeader($name) {
++        return $this->hasHeader($name) ? $this->headers[ucfirst($name)] : FALSE;
++    }
++    
++    public function hasHeader($name) {
++        return isset($this->headers[ucfirst($name)]);
++    }
++
+     /**
+      * It gets a part of the path info associated with this request
+      * @param int, key, the part index
+@@ -90,6 +107,28 @@
+     public function getRequestURI() {  }
+     public function getProtocol() {  }
+     // }}}
++    
++    /**
++     * A wrapper around getallheaders apache function that gets a list
++     * of headers associated with this HTTPRequest.
++     *
++     * @TODO: 
++     * @return array
++     */
++    protected static function getAllHeaders() {
++        $headers= array();
++        if (function_exists('getallheaders')) {
++            // this will work only for mod_php
++            $headers= getallheaders();
++        } else {
++            foreach($_SERVER as $header=>$value) {
++                if(ereg('HTTP_(.+)',$header,$hp)) {
++                    $headers[ucfirst(strtolower($hp[1]))] = $value;
++                }
++            }       
++        }
++        return $headers;
++    }
+ 
+ }
+ 
+
+Modified: trunk/libs/action/controller/http/HTTPResponse.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPResponse.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/action/controller/http/HTTPResponse.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -35,11 +35,43 @@
+ /**
+  * @package locknet7.action.controller.response
+  */
+-
+ class HTTPResponse extends Response {
+ 
++    /** Status code (200) indicating the request succeeded normally. */
++    const SC_OK = 200;
++
++    /** Status code (304) indicating that a conditional GET
++        operation found that the resource was available and not modified. */
++    const SC_NOT_MODIFIED = 304;
++
++    /** Status code (400) indicating the request sent by the
++        client was syntactically incorrect. */
++    const SC_BAD_REQUEST = 400;
++
++    /** Status code (403) indicating the server
++        understood the request but refused to fulfill it. */
++    const SC_FORBIDDEN = 403;
++
++    /** Status code (404) indicating that the requested
++        resource is not available. */
++    const SC_NOT_FOUND = 404;
++
++    /** Status code (500) indicating an error inside
++        the HTTP server which prevented it from fulfilling the request. */
++    const SC_INTERNAL_SERVER_ERROR = 500;
++
++    /** Status code (503) indicating that the HTTP server
++        is temporarily overloaded, and unable to handle the request. */
++    const SC_SERVICE_UNAVAILABLE = 503;
++
++    /** Constructor */
++    public function HTTPResponse() {
++
++    }
++    
+     /**
+      * Sets the header $name with $value
++     *
+      * @param string, name the name of the header
+      * @param mixed, value, the value of this header
+      */
+@@ -49,6 +81,7 @@
+ 
+     /**
+      * Sets the content type header
++     *
+      * @param strign type, the content type
+      */
+     public function setContentType($type) {
+@@ -56,20 +89,24 @@
+     }
+ 
+     /**
+-     * @see Response::setStatus($status)
++     * Sets the status of this response
++     *
++     * @TODO: should choose between HTTP/1.1 and HTTP/1.0
++     * @TODO: more cases in the switch
++     * @param HTTPResponse::SC_*, status, the status of this response
+      */
+     public function setStatus($status) {
+         switch($status){
+-            case self::SC_OK: // 200
++            case HTTPResponse::SC_OK: // 200
+                 $message = 'OK';
+                 break;
+-            case self::SC_NOT_MODIFIED: // 304
++            case HTTPResponse::SC_NOT_MODIFIED: // 304
+                 $message = 'Not Modified';
+                 break;
+-            case self::SC_NOT_FOUND: // 404
++            case HTTPResponse::SC_NOT_FOUND: // 404
+                 $message = 'Not Found';
+                 break;
+-            case self::SC_INTERNAL_SERVER_ERROR: // 500
++            case HTTPResponse::SC_INTERNAL_SERVER_ERROR: // 500
+                 $message = 'Internal Server Error';
+                 break;
+             default:
+@@ -78,7 +115,11 @@
+         header("HTTP/1.1 " . $status . $message, TRUE, $status);
+     }
+ 
+-    /** Perform a HTTP redirection */
++    /**
++     * Perform a HTTP redirect
++     *
++     * @param string location, location to redirect to
++     */
+     public function redirect($location) {
+         $this->setHeader('Location', $location);
+         $this->content = "<html><body>You are being <a href=\"$location\">redirected</a>.</body></html>";
+
+Deleted: trunk/libs/medick/Dispatcher.php
+===================================================================
+--- trunk/libs/medick/Dispatcher.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/medick/Dispatcher.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -1,61 +0,0 @@
+-<?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice,
+-//   this list of conditions and the following disclaimer.
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation
+-//   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
+-//   be used to endorse or promote products derived from this software without
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-//
+-// $Id$
+-//
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-include_once('action/controller/Routing.php');
+-include_once('action/controller/Request.php');
+-include_once('action/controller/Response.php');
+-include_once('action/controller/Base.php');
+-
+-/**
+- * It knows how to dispatch a request
+- *
+- * @package locknet7.medick
+- */
+-class Dispatcher extends Object {
+-
+-    /**
+-     * Framework entry point
+-     * @return void.
+-     */
+-    public static function dispatch() {
+-        $request  = new HTTPRequest();
+-        $response = new HTTPResponse();
+-        try {
+-            ActionControllerRouting::recognize($request)->process($request, $response)->dump();
+-        } catch (Exception $ex) {
+-            ActionController::process_with_exception($request, $response, $ex)->dump();
+-            Registry::get('__logger')->warn($ex->getMessage());
+-        }
+-    }
+-}
+
+Copied: trunk/libs/medick/Medick.php (from rev 343, trunk/libs/medick/Version.php)
+
+Deleted: trunk/libs/medick/Version.php
+===================================================================
+--- trunk/libs/medick/Version.php	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/libs/medick/Version.php	2006-02-24 19:28:29 UTC (rev 355)
+@@ -1,55 +0,0 @@
+-<?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005, 2006 Oancea Aurelian <aurelian at locknet.ro>
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice,
+-//   this list of conditions and the following disclaimer.
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation
+-//   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
+-//   be used to endorse or promote products derived from this software without
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-//
+-// $Id$
+-//
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * Holds the current Medick version
+- * @package locknet7.medick
+- */
+-
+-class Version extends Object {
+-
+-    const TINY  = 5;
+-    const MINOR = 0;
+-    const MAJOR = 0;
+-
+-    /**
+-     * It gets the medick version.
+-     * @return string the medick version
+-     */
+-    public static function getVersion() {
+-        return Version::MAJOR . '.' . Version::MINOR . '.' . Version::TINY . '-svn';
+-    }
+-
+-}
+-
+
+Modified: trunk/skel/public/default.htaccess
+===================================================================
+--- trunk/skel/public/default.htaccess	2006-02-22 19:26:26 UTC (rev 354)
++++ trunk/skel/public/default.htaccess	2006-02-24 19:28:29 UTC (rev 355)
+@@ -2,13 +2,19 @@
+ # $Id$
+ 
+ # Configuration
+-
++# 1. Medick Related.
+ SetEnv MEDICK_APPLICATION_PATH ${APP_PATH}
+ SetEnv MEDICK_APPLICATION_NAME ${APP_NAME}
+- 
++
++# 2. php options.
++php_value short_open_tag 1
++# this should depend on environment.
++# while we are on "planning", we will 
++# keep this to 1
++php_value display_errors 1
++
++# Rewrite
+ RewriteEngine on
+-
+-########## Set 2
+ RewriteCond %{REQUEST_FILENAME} !-s
+ RewriteCond %{REQUEST_URI} !^index.php/$
+ RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+
+
+
+From aurelian at berlios.de  Fri Feb 24 21:01:53 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Fri, 24 Feb 2006 21:01:53 +0100
+Subject: [Medick-svn] r356 - in trunk: . libs/action/controller libs/medick
+Message-ID: <200602242001.k1OK1rUw009083@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-24 21:01:48 +0100 (Fri, 24 Feb 2006)
+New Revision: 356
+
+Modified:
+   trunk/boot.php
+   trunk/libs/action/controller/Dispatcher.php
+   trunk/libs/medick/Medick.php
+Log:
+ -- moved some includes
+
+Modified: trunk/boot.php
+===================================================================
+--- trunk/boot.php	2006-02-24 19:28:29 UTC (rev 355)
++++ trunk/boot.php	2006-02-24 20:01:48 UTC (rev 356)
+@@ -50,19 +50,11 @@
+ }
+ 
+ // load core classes
+-include_once('medick/Object.php');
+-include_once('medick/Exception.php');
+-include_once('medick/ErrorHandler.php');
++include_once('medick/Medick.php');
+ set_error_handler(array(new ErrorHandler(), 'raiseError'));
+-include_once('medick/util.php');
+-include_once('medick/Registry.php');
+ include_once('action/controller/Dispatcher.php');
+-include_once('medick/Version.php');
+ include_once('configurator/XMLConfigurator.php');
+ include_once('logger/Logger.php');
+-include_once('action/controller/Map.php');
+-include_once('action/controller/Route.php');
+-include_once('action/controller/Routing.php');
+ 
+ $conf_files = $_SERVER['MEDICK_APPLICATION_PATH'] . DIRECTORY_SEPARATOR . 'conf' .
+                         DIRECTORY_SEPARATOR . $_SERVER['MEDICK_APPLICATION_NAME'];
+@@ -72,7 +64,7 @@
+ 
+ $logger= Registry::put(new Logger($configurator), '__logger');
+ 
+-$logger->debug('Medick $v: ' . Version::getVersion());
++$logger->debug('Medick $v: ' . Medick::getVersion());
+ $logger->debug('Config: ' . $conf_files . '.xml');
+ $logger->debug('Routes: ' . $conf_files . '.routes.php');
+ include_once($conf_files . '.routes.php');
+
+Modified: trunk/libs/action/controller/Dispatcher.php
+===================================================================
+--- trunk/libs/action/controller/Dispatcher.php	2006-02-24 19:28:29 UTC (rev 355)
++++ trunk/libs/action/controller/Dispatcher.php	2006-02-24 20:01:48 UTC (rev 356)
+@@ -32,6 +32,8 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
++include_once('action/controller/Map.php');
++include_once('action/controller/Route.php');
+ include_once('action/controller/Routing.php');
+ include_once('action/controller/Request.php');
+ include_once('action/controller/Response.php');
+@@ -40,7 +42,7 @@
+ /**
+  * It knows how to dispatch a request
+  *
+- * @package locknet7.medick
++ * @package locknet7.action.controller
+  */
+ class Dispatcher extends Object {
+ 
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-02-24 19:28:29 UTC (rev 355)
++++ trunk/libs/medick/Medick.php	2006-02-24 20:01:48 UTC (rev 356)
+@@ -32,23 +32,25 @@
+ // ///////////////////////////////////////////////////////////////////////////////
+ // }}}
+ 
+-/**
+- * Holds the current Medick version
+- * @package locknet7.medick
++// loads main framework dependecies.
++include_once('medick/Object.php');
++include_once('medick/Exception.php');
++include_once('medick/util.php');
++include_once('medick/ErrorHandler.php');
++include_once('medick/Registry.php');
++
++/** 
++ * @package locknet7.medick 
+  */
++class Medick extends Object {
+ 
+-class Version extends Object {
+-
+-    const TINY  = 5;
+-    const MINOR = 0;
+-    const MAJOR = 0;
+-
+     /**
+      * It gets the medick version.
++     * 
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return Version::MAJOR . '.' . Version::MINOR . '.' . Version::TINY . '-svn';
++        return '0.0.5-svn';
+     }
+ 
+ }
+
+
+
+From aurelian at berlios.de  Fri Feb 24 21:43:20 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Fri, 24 Feb 2006 21:43:20 +0100
+Subject: [Medick-svn] r357 - applications/eltodo/db
+Message-ID: <200602242043.k1OKhKrH022922@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-24 21:43:19 +0100 (Fri, 24 Feb 2006)
+New Revision: 357
+
+Added:
+   applications/eltodo/db/schema.mysql
+   applications/eltodo/db/schema.sqlite
+Removed:
+   applications/eltodo/db/schema.sql
+Log:
+ -- added db schema for sqlite, renamed schema.sql to schema.mysql
+
+Copied: applications/eltodo/db/schema.mysql (from rev 340, applications/eltodo/db/schema.sql)
+
+Deleted: applications/eltodo/db/schema.sql
+===================================================================
+--- applications/eltodo/db/schema.sql	2006-02-24 20:01:48 UTC (rev 356)
++++ applications/eltodo/db/schema.sql	2006-02-24 20:43:19 UTC (rev 357)
+@@ -1,25 +0,0 @@
+--- ------------------------
+--- eltodo database schema.
+--- $Id$
+--- ------------------------
+-
+-SET AUTOCOMMIT=0;
+-START TRANSACTION;
+-DROP DATABASE IF EXISTS eltodo;
+-CREATE DATABASE eltodo DEFAULT CHARACTER SET utf8 COLLATE utf8_general_ci;
+-USE eltodo;
+-
+--- ------------------------------------------------
+--- projects table
+-
+-CREATE TABLE projects (
+-    id          INT(11)       NOT NULL auto_increment,
+-    name        VARCHAR(255)  NOT NULL,
+-    description TEXT          NOT NULL,
+-    created_at  DATETIME      NOT NULL,
+-    PRIMARY KEY (id)
+-) Engine=InnoDB;
+-
+-
+-COMMIT;
+-
+
+Added: applications/eltodo/db/schema.sqlite
+===================================================================
+--- applications/eltodo/db/schema.sqlite	2006-02-24 20:01:48 UTC (rev 356)
++++ applications/eltodo/db/schema.sqlite	2006-02-24 20:43:19 UTC (rev 357)
+@@ -0,0 +1,16 @@
++-- ------------------------
++-- eltodo database schema for SQLite
++-- $Id$
++-- ------------------------
++
++-- ------------------------------------------------
++-- projects table
++
++CREATE TABLE projects (
++    id          INT(11)       NOT NULL,
++    name        VARCHAR(255)  NOT NULL,
++    description TEXT          NOT NULL,
++    created_at  DATETIME      NOT NULL,
++    PRIMARY KEY (id)
++);
++
+
+
+Property changes on: applications/eltodo/db/schema.sqlite
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+
+
+From aurelian at berlios.de  Sat Feb 25 20:57:55 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 25 Feb 2006 20:57:55 +0100
+Subject: [Medick-svn] r358 - applications/eltodo/public trunk/libs/action/controller/http trunk/skel/public
+Message-ID: <200602251957.k1PJvt2C003191@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-25 20:57:47 +0100 (Sat, 25 Feb 2006)
+New Revision: 358
+
+Modified:
+   applications/eltodo/public/.htaccess
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/skel/public/default.htaccess
+Log:
+ -- minor changes to make-it work for php as CGI or Apache 1
+
+Modified: applications/eltodo/public/.htaccess
+===================================================================
+--- applications/eltodo/public/.htaccess	2006-02-24 20:43:19 UTC (rev 357)
++++ applications/eltodo/public/.htaccess	2006-02-25 19:57:47 UTC (rev 358)
+@@ -13,6 +13,11 @@
+  
+ RewriteEngine on
+ 
++RewriteRule ^$ index.php  [L]
++RewriteCond %{REQUEST_FILENAME} !-f
++RewriteCond %{REQUEST_FILENAME} !-d
++RewriteRule (.*) index.php/$1  [QSA,L]
++
+ # all files with .something are skipped
+ # RewriteCond %{REQUEST_URI} \..+$
+ # RewriteCond %{REQUEST_URI} !\.html$
+@@ -20,7 +25,7 @@
+ # the others are redirected to the front web controller
+ # RewriteRule ^(.*)$ index.php [QSA,L]
+ 
+-RewriteCond %{REQUEST_FILENAME} !-s
+-RewriteCond %{REQUEST_URI} !^index.php/$
+-RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
++#RewriteCond %{REQUEST_FILENAME} !-s
++#RewriteCond %{REQUEST_URI} !^index.php/$
++#RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+ 
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-02-24 20:43:19 UTC (rev 357)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-02-25 19:57:47 UTC (rev 358)
+@@ -61,9 +61,16 @@
+ 
+         unset($_REQUEST); unset($_GET); unset($_POST);
+ 
+-        if (array_key_exists('PATH_INFO', $_SERVER)) {
++        if (array_key_exists('PATH_INFO', $_SERVER) && $_SERVER['PATH_INFO']!='' ) {
+             $this->path_info= $_SERVER['PATH_INFO'];
+         }
++        // TODO:
++        //      -> this is for php as cgi
++        //      -> should substract the documnet root
++        elseif (array_key_exists('REQUEST_URI', $_SERVER)) {
++            $this->path_info= substr($_SERVER['REQUEST_URI'],7);
++        }
++        
+         $this->session = new Session();
+         $this->headers = HTTPRequest::getAllHeaders();
+     }
+
+Modified: trunk/skel/public/default.htaccess
+===================================================================
+--- trunk/skel/public/default.htaccess	2006-02-24 20:43:19 UTC (rev 357)
++++ trunk/skel/public/default.htaccess	2006-02-25 19:57:47 UTC (rev 358)
+@@ -3,10 +3,12 @@
+ 
+ # Configuration
+ # 1. Medick Related.
++# this will not work for php as cgi
+ SetEnv MEDICK_APPLICATION_PATH ${APP_PATH}
+ SetEnv MEDICK_APPLICATION_NAME ${APP_NAME}
+ 
+ # 2. php options.
++# this will not work for php as cgi
+ php_value short_open_tag 1
+ # this should depend on environment.
+ # while we are on "planning", we will 
+@@ -14,10 +16,18 @@
+ php_value display_errors 1
+ 
+ # Rewrite
++
+ RewriteEngine on
+-RewriteCond %{REQUEST_FILENAME} !-s
+-RewriteCond %{REQUEST_URI} !^index.php/$
+-RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+ 
+-#RewriteRule !^(stylesheet|images|javascript)/ index.php [NC,L]
++# Set 1.
++#RewriteCond %{REQUEST_FILENAME} !-s
++#RewriteCond %{REQUEST_URI} !^index.php/$
++#RewriteRule   ^([^i][^n][^d][^e][^x].*)$  index.php/$1/ [NS,L]
+ 
++# Set 2.
++# RewriteBase /${APP_NAME}
++RewriteRule ^$ index.php  [L]
++RewriteCond %{REQUEST_FILENAME} !-f
++RewriteCond %{REQUEST_FILENAME} !-d
++RewriteRule (.*) index.php/$1  [QSA,L]
++
+
+
+
+From aurelian at berlios.de  Sat Feb 25 21:35:25 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 25 Feb 2006 21:35:25 +0100
+Subject: [Medick-svn] r360 - branches/release_0.1 branches/release_0.1/libs/medick trunk trunk/libs/medick
+Message-ID: <200602252035.k1PKZPtf015304@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-25 21:34:46 +0100 (Sat, 25 Feb 2006)
+New Revision: 360
+
+Modified:
+   branches/release_0.1/VERSION
+   branches/release_0.1/libs/medick/Medick.php
+   trunk/VERSION
+   trunk/libs/medick/Medick.php
+Log:
+ -- roll version numbers
+
+Modified: branches/release_0.1/VERSION
+===================================================================
+--- branches/release_0.1/VERSION	2006-02-25 20:26:18 UTC (rev 359)
++++ branches/release_0.1/VERSION	2006-02-25 20:34:46 UTC (rev 360)
+@@ -1 +1 @@
+-0.0.5-svn
++0.1.0-svn
+
+Modified: branches/release_0.1/libs/medick/Medick.php
+===================================================================
+--- branches/release_0.1/libs/medick/Medick.php	2006-02-25 20:26:18 UTC (rev 359)
++++ branches/release_0.1/libs/medick/Medick.php	2006-02-25 20:34:46 UTC (rev 360)
+@@ -50,7 +50,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.0.5-svn';
++        return '0.1.0-svn';
+     }
+ 
+ }
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2006-02-25 20:26:18 UTC (rev 359)
++++ trunk/VERSION	2006-02-25 20:34:46 UTC (rev 360)
+@@ -1 +1 @@
+-0.0.5-svn
++0.2.0-svn
+
+Modified: trunk/libs/medick/Medick.php
+===================================================================
+--- trunk/libs/medick/Medick.php	2006-02-25 20:26:18 UTC (rev 359)
++++ trunk/libs/medick/Medick.php	2006-02-25 20:34:46 UTC (rev 360)
+@@ -50,7 +50,7 @@
+      * @return string the medick version
+      */
+     public static function getVersion() {
+-        return '0.0.5-svn';
++        return '0.2.0-svn';
+     }
+ 
+ }
+
+
+
+From aurelian at berlios.de  Sat Feb 25 22:02:48 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 25 Feb 2006 22:02:48 +0100
+Subject: [Medick-svn] r361 - trunk
+Message-ID: <200602252102.k1PL2mFh001760@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-25 22:02:40 +0100 (Sat, 25 Feb 2006)
+New Revision: 361
+
+Modified:
+   trunk/CHANGELOG
+Log:
+ -- more logs
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-02-25 20:34:46 UTC (rev 360)
++++ trunk/CHANGELOG	2006-02-25 21:02:40 UTC (rev 361)
+@@ -18,6 +18,7 @@
+         otherwise changing an object state will fail;
+     - added the "flash" thing;
+     - added ActiveRecordHelper and FormHelper classes on ActionView:::HTML;
++    - minor fixes for apache 1 and php as a CGI;   
+     - added 3 new methods on Inflector: sanitize, tabelize() and humanize();
+     - on logger, the full path to application is replaced with the name of the application;
+     - removed some debugging infos;
+
+
+
+From aurelian at berlios.de  Sat Feb 25 22:06:00 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Sat, 25 Feb 2006 22:06:00 +0100
+Subject: [Medick-svn] r362 - branches/release_0.1
+Message-ID: <200602252106.k1PL60gA007012@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-25 22:05:51 +0100 (Sat, 25 Feb 2006)
+New Revision: 362
+
+Modified:
+   branches/release_0.1/CHANGELOG
+Log:
+ -- MFT
+
+Modified: branches/release_0.1/CHANGELOG
+===================================================================
+--- branches/release_0.1/CHANGELOG	2006-02-25 21:02:40 UTC (rev 361)
++++ branches/release_0.1/CHANGELOG	2006-02-25 21:05:51 UTC (rev 362)
+@@ -18,6 +18,7 @@
+         otherwise changing an object state will fail;
+     - added the "flash" thing;
+     - added ActiveRecordHelper and FormHelper classes on ActionView:::HTML;
++    - minor fixes for apache 1 and php as a CGI;   
+     - added 3 new methods on Inflector: sanitize, tabelize() and humanize();
+     - on logger, the full path to application is replaced with the name of the application;
+     - removed some debugging infos;
+
+
+
+From aurelian at berlios.de  Mon Feb 27 21:44:45 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 27 Feb 2006 21:44:45 +0100
+Subject: [Medick-svn] r363 - trunk/libs/action/controller
+Message-ID: <200602272044.k1RKij0j016436@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-27 21:44:41 +0100 (Mon, 27 Feb 2006)
+New Revision: 363
+
+Modified:
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/Routing.php
+Log:
+ -- preparing ground for named routes
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2006-02-25 21:05:51 UTC (rev 362)
++++ trunk/libs/action/controller/Route.php	2006-02-27 20:44:41 UTC (rev 363)
+@@ -41,7 +41,7 @@
+ 
+     private $name;
+ 
+-    private $dymanic;
++    private $dynamic;
+ 
+     private $position;
+ 
+@@ -58,13 +58,21 @@
+     }
+ 
+     public function isDynamic() {
+-        return $this->isDynamic;
++        return $this->dynamic;
+     }
+ 
+     public function setPosition($position) {
+         $this->position= (int)$position;
+     }
+ 
++    public function getPosition() {
++        return $this->position;
++    }
++
++    public function toString() {
++        return sprintf('{%s}--->name=%s[dynamic=%s]', $this->getClassName(), $this->name, $this->dynamic ? 'TRUE':'FALSE');
++    }
++
+ }
+ 
+ /**
+@@ -74,6 +82,12 @@
+  */
+ class Route extends Object {
+ 
++    const WELCOME  = 0x200;
++
++    const ERROR    = 0x500;
++
++    const NOTFOUND = 0x400;
++
+     /** @var string
+         incoming Route Definition list. */
+     private $route_list;
+
+Modified: trunk/libs/action/controller/Routing.php
+===================================================================
+--- trunk/libs/action/controller/Routing.php	2006-02-25 21:05:51 UTC (rev 362)
++++ trunk/libs/action/controller/Routing.php	2006-02-27 20:44:41 UTC (rev 363)
+@@ -59,9 +59,9 @@
+             // load 404 route, if fails too try the default route, this are named routes.
+             // echo $rEx;
+             try {
+-                return Map::getInstance()->getRouteByName('default')->createControllerInstance();
++                return Map::getInstance()->getRouteByName(Route::NOTFOUND)->createControllerInstance();
+             } catch (RoutingException $rEx2) {
+-                return Map::getInstance()->getRouteByName('404')->createControllerInstance();
++                return Map::getInstance()->getRouteByName(Route::WELCOME)->createControllerInstance();
+             }
+         }
+     }
+
+
+
+From aurelian at berlios.de  Mon Feb 27 21:56:34 2006
+From: aurelian at berlios.de (aurelian at BerliOS)
+Date: Mon, 27 Feb 2006 21:56:34 +0100
+Subject: [Medick-svn] r364 - branches/release_0.1/libs/action/controller
+Message-ID: <200602272056.k1RKuYP2022161@sheep.berlios.de>
+
+Author: aurelian
+Date: 2006-02-27 21:56:33 +0100 (Mon, 27 Feb 2006)
+New Revision: 364
+
+Modified:
+   branches/release_0.1/libs/action/controller/Route.php
+   branches/release_0.1/libs/action/controller/Routing.php
+Log:
+ -- MFT
+
+Modified: branches/release_0.1/libs/action/controller/Route.php
+===================================================================
+--- branches/release_0.1/libs/action/controller/Route.php	2006-02-27 20:44:41 UTC (rev 363)
++++ branches/release_0.1/libs/action/controller/Route.php	2006-02-27 20:56:33 UTC (rev 364)
+@@ -41,7 +41,7 @@
+ 
+     private $name;
+ 
+-    private $dymanic;
++    private $dynamic;
+ 
+     private $position;
+ 
+@@ -58,13 +58,21 @@
+     }
+ 
+     public function isDynamic() {
+-        return $this->isDynamic;
++        return $this->dynamic;
+     }
+ 
+     public function setPosition($position) {
+         $this->position= (int)$position;
+     }
+ 
++    public function getPosition() {
++        return $this->position;
++    }
++
++    public function toString() {
++        return sprintf('{%s}--->name=%s[dynamic=%s]', $this->getClassName(), $this->name, $this->dynamic ? 'TRUE':'FALSE');
++    }
++
+ }
+ 
+ /**
+@@ -74,6 +82,12 @@
+  */
+ class Route extends Object {
+ 
++    const WELCOME  = 0x200;
++
++    const ERROR    = 0x500;
++
++    const NOTFOUND = 0x400;
++
+     /** @var string
+         incoming Route Definition list. */
+     private $route_list;
+
+Modified: branches/release_0.1/libs/action/controller/Routing.php
+===================================================================
+--- branches/release_0.1/libs/action/controller/Routing.php	2006-02-27 20:44:41 UTC (rev 363)
++++ branches/release_0.1/libs/action/controller/Routing.php	2006-02-27 20:56:33 UTC (rev 364)
+@@ -59,9 +59,9 @@
+             // load 404 route, if fails too try the default route, this are named routes.
+             // echo $rEx;
+             try {
+-                return Map::getInstance()->getRouteByName('default')->createControllerInstance();
++                return Map::getInstance()->getRouteByName(Route::NOTFOUND)->createControllerInstance();
+             } catch (RoutingException $rEx2) {
+-                return Map::getInstance()->getRouteByName('404')->createControllerInstance();
++                return Map::getInstance()->getRouteByName(Route::WELCOME)->createControllerInstance();
+             }
+         }
+     }
+
+
+

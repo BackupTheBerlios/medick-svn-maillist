@@ -1,0 +1,664 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r455 - in exp/ar5: . libs libs/context	libs/context/configurator
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-August/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r455%20-%20in%20exp/ar5%3A%20.%20libs%20libs/context%0A%09libs/context/configurator&In-Reply-To=%3C200708201429.l7KETK9Q021038%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000234.html">
+   <LINK REL="Next"  HREF="000236.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r455 - in exp/ar5: . libs libs/context	libs/context/configurator</H1>
+    <B>aurelian at mail.berlios.de</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r455%20-%20in%20exp/ar5%3A%20.%20libs%20libs/context%0A%09libs/context/configurator&In-Reply-To=%3C200708201429.l7KETK9Q021038%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r455 - in exp/ar5: . libs libs/context	libs/context/configurator">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Mon Aug 20 16:29:20 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000234.html">[Medick-svn] r454 - in exp/ar5: . db libs libs/active	libs/active/record libs/active/record/drivers	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite libs/active/support
+</A></li>
+        <LI>Next message: <A HREF="000236.html">[Medick-svn] r456 - in exp/ar5: . libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#235">[ date ]</a>
+              <a href="thread.html#235">[ thread ]</a>
+              <a href="subject.html#235">[ subject ]</a>
+              <a href="author.html#235">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-08-20 16:29:17 +0200 (Mon, 20 Aug 2007)
+New Revision: 455
+
+Added:
+   exp/ar5/libs/context/
+   exp/ar5/libs/context/ContextManager.php
+   exp/ar5/libs/context/configurator/
+   exp/ar5/libs/context/configurator/IConfigurator.php
+   exp/ar5/libs/context/configurator/INIConfigurator.php
+   exp/ar5/libs/context/configurator/LoggerConfigurator.php
+   exp/ar5/libs/context/configurator/XMLConfigurator.php
+Modified:
+   exp/ar5/ar5.php
+Log:
+ -- imported context
+
+Modified: exp/ar5/ar5.php
+===================================================================
+--- exp/ar5/ar5.php	2007-08-20 13:18:56 UTC (rev 454)
++++ exp/ar5/ar5.php	2007-08-20 14:29:17 UTC (rev 455)
+@@ -1,15 +1,20 @@
+ &lt;?php
+ // $Id$
+ 
++set_include_path('libs');
++
+ include_once('ar5_base.php');
+-include_once('libs/active/record/drivers/abstract/SQLConnection.php');
+-include_once('libs/active/record/drivers/abstract/SQLPreparedStatement.php');
+ 
++include_once('context/configurator/XMLConfigurator.php');
++
++include_once('active/record/drivers/abstract/SQLConnection.php');
++include_once('active/record/drivers/abstract/SQLPreparedStatement.php');
++
+ include_once('ar5_sql.php');
+ 
+-include_once('libs/active/record/drivers/sqlite/sqlite.php');
++include_once('active/record/drivers/sqlite/sqlite.php');
+ 
+-include_once('libs/active/support/Inflector.php');
++include_once('active/support/Inflector.php');
+ 
+ class ActiveRecordException extends MedickException { }
+ 
+@@ -67,7 +72,6 @@
+     return $r;
+   }
+ 
+- 
+   public function getPrimaryKey() {
+     return $this-&gt;__primary_key;
+   }
+
+Added: exp/ar5/libs/context/ContextManager.php
+===================================================================
+--- exp/ar5/libs/context/ContextManager.php	2007-08-20 13:18:56 UTC (rev 454)
++++ exp/ar5/libs/context/ContextManager.php	2007-08-20 14:29:17 UTC (rev 455)
+@@ -0,0 +1,73 @@
++&lt;?php
++// {{{ License
++//////////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: ContextManager.php 448 2007-07-23 17:53:06Z aurelian $
++//
++//////////////////////////////////////////////////////////////////////////////////
++// }}}
++
++include_once('context/configurator/XMLConfigurator.php');
++
++/**
++ * 
++ * @package medick.context
++ * @author Aurelian Oancea
++ */
++class ContextManager extends Object {
++
++    static protected $instance= NULL;
++
++    static public function load($stream, $environment) {
++        if (ContextManager::$instance === NULL) {
++            ContextManager::$instance= new ContextManager($stream, $environment);
++        }
++        return ContextManager::$instance;
++    }
++
++    private function ContextManager($stream, $environment) {
++        $this-&gt;configurator= new XMLConfigurator($stream, $environment);
++    }
++
++    public function getConfigurator() {
++        return $this-&gt;configurator;
++    }
++    
++    public function getWebContext() {
++        
++    }
++    
++    public function getApplicationContext() {
++        
++    }
++    
++    public function getDatabaseContext() {
++        
++    }
++    
++}
+
+Added: exp/ar5/libs/context/configurator/IConfigurator.php
+===================================================================
+--- exp/ar5/libs/context/configurator/IConfigurator.php	2007-08-20 13:18:56 UTC (rev 454)
++++ exp/ar5/libs/context/configurator/IConfigurator.php	2007-08-20 14:29:17 UTC (rev 455)
+@@ -0,0 +1,74 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: IConfigurator.php 449 2007-07-23 17:56:27Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++/**
++ * Configurator Interface is the central point for providing 
++ * configurations for a medick applications
++ *
++ * While the application is running, the configurations options are read-only,
++ * but one might provide methods for writing or changing values.
++ *
++ * A configuration is resolved using the application name. 
++ * Usually, the place for keeping configuration file is under conf/application_name.(xml|ini)
++ *
++ * The olny implementation that it's working right now is XMLConfigurator.
++ * Also, a plain php code configurator is used for testing the Logger.
++ *
++ * From medick 0.2, the options will be splitted based on context, and we will
++ * provide web specific configuration section as well as logger and database contextes.
++ * 
++ * From medick 0.3.0 this class and the old configuration methods will be removed
++ * 
++ * @package medick.configurator
++ * @see XMLConfigurator
++ * @see LoggerConfigurator
++ * @author Aurelian Oancea
++ */
++interface IConfigurator {
++
++    /**
++     * It gets the logger outputters.
++     *
++     * @return array
++     */
++    function getLoggerOutputters();
++
++    /**
++     * It gets the logger formatter
++     *
++     * @return string, Logger formatter name eg. FooFormatter.
++     */
++    function getLoggerFormatter();
++
++}
+
+Added: exp/ar5/libs/context/configurator/INIConfigurator.php
+===================================================================
+--- exp/ar5/libs/context/configurator/INIConfigurator.php	2007-08-20 13:18:56 UTC (rev 454)
++++ exp/ar5/libs/context/configurator/INIConfigurator.php	2007-08-20 14:29:17 UTC (rev 455)
+@@ -0,0 +1,81 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: INIConfigurator.php 449 2007-07-23 17:56:27Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++include_once('configurator/IConfigurator.php');
++
++/**
++ * INI file-based Configurator.
++ * 
++ * @deprecated this class is deprecated, use medick.configurator.XMLConfigurator
++ * @package medick.configurator
++ * @author Aurelian Oancea
++ */
++class INIConfigurator extends Object implements IConfigurator {
++
++    private $handler;
++    
++    public function INIConfigurator($file) {
++      $this-&gt;handler= parse_ini_file($file, TRUE);
++    }
++
++    public function getLoggerOutputters() {
++        $ret= array();
++        $ret[0]=$this-&gt;handler['logger.file.outputter'];
++        $ret[0]['name'] = 'file';
++        $ret[1]=$this-&gt;handler['logger.mail.outputter'];
++        $ret[1]['name']= 'mail';
++        $ret[2]=$this-&gt;handler['logger.stdout.outputter'];
++        $ret[2]['name']= 'stdout';
++        $ao = new ArrayObject($ret);
++        return $ao-&gt;getIterator();
++    }
++
++    public function getLoggerFormatter() {
++        return ucfirst($this-&gt;handler['logger']['formatter']) . 'Formatter';
++    }
++
++    public function getProperty($name) {
++        if (isset($this-&gt;handler['properties'][$name])) {
++            return $this-&gt;handler['properties'][$name];
++        } else {
++            throw new Exception('Property: ' . $name . ' not found!');
++        }
++    }
++
++    public function getDatabaseDsn($id = FALSE) {
++        if (!$id) $id= $this-&gt;handler['database']['default'];
++        return $this-&gt;handler['database.' . $id];
++    }
++
++}
+
+Added: exp/ar5/libs/context/configurator/LoggerConfigurator.php
+===================================================================
+--- exp/ar5/libs/context/configurator/LoggerConfigurator.php	2007-08-20 13:18:56 UTC (rev 454)
++++ exp/ar5/libs/context/configurator/LoggerConfigurator.php	2007-08-20 14:29:17 UTC (rev 455)
+@@ -0,0 +1,57 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: LoggerConfigurator.php 452 2007-08-15 08:06:49Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++include_once('context/configurator/IConfigurator.php');
++
++/**
++ * A plain Application Configurator
++ * 
++ * @package medick.configurator
++ * @author Aurelian Oancea
++ */ 
++class LoggerConfigurator extends Object implements IConfigurator {
++    /** @see medick.configurator.IConfigurator::getLoggerOutputters() */
++    public function getLoggerOutputters() {
++        return array(array('name' =&gt; 'stdout','level' =&gt; '0'));
++    }
++    /** @see medick.configurator.IConfigurator::getLoggerFormatter */
++    public function getLoggerFormatter() {
++        return 'SimpleFormatter';
++    }
++    /** @see medick.configurator.IConfigurator::getProperty(string name) */
++    public function getProperty($name) {     }
++    /** @see medick.configurator.IConfigurator::getDatabaseDsn(bool id) */
++    public function getDatabaseDsn($id = FALSE) {  }
++    
++}
+
+Added: exp/ar5/libs/context/configurator/XMLConfigurator.php
+===================================================================
+--- exp/ar5/libs/context/configurator/XMLConfigurator.php	2007-08-20 13:18:56 UTC (rev 454)
++++ exp/ar5/libs/context/configurator/XMLConfigurator.php	2007-08-20 14:29:17 UTC (rev 455)
+@@ -0,0 +1,233 @@
++&lt;?php
++// {{{ License
++// ///////////////////////////////////////////////////////////////////////////////
++//
++// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++//
++// Redistribution and use in source and binary forms, with or without
++// modification, are permitted provided that the following conditions are met:
++//
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
++//   * Redistributions in binary form must reproduce the above copyright notice,
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
++//   be used to endorse or promote products derived from this software without
++//   specific prior written permission.
++//
++// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
++// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
++// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
++// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
++// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
++// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
++// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
++// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
++// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
++// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
++//
++// $Id: XMLConfigurator.php 449 2007-07-23 17:56:27Z aurelian $
++//
++// ///////////////////////////////////////////////////////////////////////////////
++// }}}
++
++include_once('context/configurator/IConfigurator.php');
++
++/**
++ * XML file-based Configurator
++ * 
++ * @package medick.configurator
++ * @author Aurelian Oancea
++ */
++
++class XMLConfigurator extends Object implements IConfigurator {
++
++    /** @var SimpleXML */
++    protected $sxe;
++    
++    /** @var string
++        application name */
++    protected $application_name;
++    
++    /** @var string
++        configuration file */
++    protected $config_file;
++    
++    /** @var string
++        environment */
++    protected $environment;
++    
++    /**
++     * Constructor
++     * 
++     * @param string/file xml
++     * @throws ConfiguratorException
++     */
++    public function XMLConfigurator($stream, $env) {
++        $xmlelement= simplexml_load_file($stream);
++        foreach($xmlelement-&gt;environment as $e) {
++            if ($e['name']==$env) {
++                $this-&gt;sxe= $e;
++                break;
++            }
++        }
++        if ($this-&gt;sxe === NULL) {
++            throw new ConfiguratorException('Cannot find environment: ' . $env . ' in ' . $stream);
++        }
++        $this-&gt;application_name= $xmlelement['name'];
++        $this-&gt;config_file = $stream;
++        $this-&gt;environment = $env;
++    }
++
++    public function getEnvName() {
++        return trim((string)$this-&gt;environment);
++    }
++    
++    public function getApplicationName() {
++        return trim((string)$this-&gt;application_name);
++    }
++    
++    public function getApplicationPath() {
++        return trim((string)$this-&gt;sxe-&gt;properties-&gt;path);
++    }
++    
++    public function getWebContext() {
++        return $this-&gt;sxe-&gt;web;
++    }
++    
++    public function getConfigFile() {
++        return $this-&gt;config_file;
++    }
++    
++    /**
++     * Configuration Example:
++     * &lt;code&gt;
++     *   &lt;database default=&quot;foo&quot;&gt;
++     *     &lt;dsn id=&quot;one&quot;
++     *          phptype  = &quot;mysql&quot;
++     *          hostspec = &quot;localhost&quot;
++     *          database = &quot;baz&quot;
++     *          username = &quot;root&quot;
++     *          password = &quot;zzz&quot; /&gt;
++     *     &lt;dsn id = &quot;foo&quot;
++     *          phptype  = &quot;pgsql&quot;
++     *          hostspec = &quot;192.18.1.1&quot;
++     *          database =&quot;test&quot;
++     *          username =&quot;antonescu&quot;
++     *          password =&quot;x-creeme&quot; /&gt;
++     *   &lt;/database&gt;
++     * &lt;/code&gt;
++     * @see IConfigurator::getDatabaseDsn()
++     */
++    public function getDatabaseDsn($id = FALSE) {
++        if (!$id) $id = $this-&gt;sxe-&gt;database['default'];
++        foreach( $this-&gt;sxe-&gt;database-&gt;dsn as  $dsn ) {
++            if( trim($dsn['id']) == trim($id) ){
++                return array (
++                        'phptype'  =&gt; (string)trim($dsn['phptype']),
++                        'hostspec' =&gt; (string)trim($dsn['hostspec']),
++                        'username' =&gt; (string)trim($dsn['username']),
++                        'password' =&gt; (string)trim($dsn['password']),
++                        'database' =&gt; (string)trim($dsn['database'])
++                );
++            }
++        }
++        throw new ConfiguratorException('Database Id ' . $id . ' not found!');
++    }    
++    
++    /**
++     * Configuration example:
++     * &lt;code&gt;
++     *   &lt;logger&gt;
++     *     &lt;outputters&gt;
++     *       &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
++     *         &lt;property name=&quot;path&quot; value=&quot;/wwwroot/whereto.log&quot; /&gt;
++     *       &lt;/outputter&gt;
++     *       &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt;
++     *       &lt;outputter name=&quot;mail&quot; level=&quot;3&quot;&gt;
++     *         &lt;property name=&quot;subject&quot; value=&quot;[Uh-Ah]Fatality on my server!&quot; /&gt;
++     *         &lt;property name=&quot;address&quot; value=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">user at example.com</A>&quot; /&gt;
++     *       &lt;/outputter&gt;
++     *     &lt;/outputters&gt;
++     *   &lt;/logger&gt;
++     * &lt;/code&gt;
++     * @see IConfigurator::getLoggerOutputters()
++     * @return array
++     */
++    public function getLoggerOutputters() {
++        $i=0; $ret= array();
++        if (is_null($this-&gt;sxe-&gt;logger-&gt;outputters)) return $ret;
++        foreach ($this-&gt;sxe-&gt;logger-&gt;outputters-&gt;outputter as $outputter) {
++            $ret[$i]['name']    = (string)trim($outputter['name']);
++            $ret[$i]['level']   = (string)trim($outputter['level']);
++            foreach ($outputter-&gt;property as $property) {
++                $ret[$i]['properties'][(string)trim($property['name'])]= (string)trim($property['value']);
++            }
++            $i++;
++        }
++        return $ret;
++
++    }
++
++    /** @see IConfigurator::getLoggerFormatter() */
++    public function getLoggerFormatter() {
++        return ucfirst((string)trim($this-&gt;sxe-&gt;logger-&gt;formatter) . 'Formatter');
++    }
++
++    /**
++     * Dinamically sets a proprety on runtime.
++     *
++     * Assuming that we have
++     * &lt;code&gt;
++     *   &lt;property name=&quot;application_path&quot; value=&quot;/wwwroot/htdocs/locknet7/app&quot; /&gt;
++     * &lt;/code&gt;  
++     * To change the value of application_path property:
++     * &lt;code&gt;
++     *   $config-&gt;setProperty('application_path', 'C:\\Fast\\www\\medick\\app');
++     * &lt;/code&gt;
++     *
++     * @param string, name, the name of the property.
++     * @param string, value, the value of the property.
++     * @throws ConfiguratorException if the property that we want to set don't exists in the xml file/string
++     */
++    public function setProperty($name, $value) {
++        $xp = new domxpath($dom = $this-&gt;toDom());
++        $property = $xp-&gt;query(&quot;//application/property[@name=\&quot;&quot; . $name . &quot;\&quot;]&quot;);
++        if ($property-&gt;length != 1) {
++            throw new ConfiguratorException('Cannot set the property name: ' . $name .
++                'Property don\'t exist or there are two propreties with the same name');
++        }
++        $property-&gt;item(0)-&gt;setAttribute('value', $value);
++        // save the new xml tree
++        $this-&gt;sxe = simplexml_import_dom($dom, 'SimpleXMLIterator');
++    }
++
++    /**
++     * Dinamically sets the logger formatter
++     *
++     * Note: this method is used only in unittests.
++     * @param string, formatter, the formatter to use for logger
++     */
++    public function setLoggerFormatter($formatter) {
++        $this-&gt;sxe-&gt;logger-&gt;formatter = $formatter;
++    }
++
++    /**
++     * Convert this document from SXE to DOM
++     * 
++     * @return DomDocument
++     */
++    public function toDom() {
++        $dom_sxe = dom_import_simplexml($this-&gt;sxe);
++        $dom = new DomDocument();
++        $dom_sxe = $dom-&gt;importNode($dom_sxe, true);
++        $dom_sxe = $dom-&gt;appendChild($dom_sxe);
++        return $dom;
++    }
++
++    /** @return the string representation of this object */
++    public function toString() {
++        return $this-&gt;sxe-&gt;asXML();
++    }
++}
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000234.html">[Medick-svn] r454 - in exp/ar5: . db libs libs/active	libs/active/record libs/active/record/drivers	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite libs/active/support
+</A></li>
+	<LI>Next message: <A HREF="000236.html">[Medick-svn] r456 - in exp/ar5: . libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#235">[ date ]</a>
+              <a href="thread.html#235">[ thread ]</a>
+              <a href="subject.html#235">[ subject ]</a>
+              <a href="author.html#235">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,790 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r472 - in exp/medick2: . config	vendor/medick/lib/action/controller	vendor/medick/lib/action/controller/cli	vendor/medick/lib/action/controller/http	vendor/medick/lib/context vendor/medick/lib/medick	vendor/medick/lib/plugin vendor/plugins/foo/lib
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2008-April/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r472%20-%20in%20exp/medick2%3A%20.%20config%0A%09vendor/medick/lib/action/controller%0A%09vendor/medick/lib/action/controller/cli%0A%09vendor/medick/lib/action/controller/http%0A%09vendor/medick/lib/context%20vendor/medick/lib/medick%0A%09vendor/medick/lib/plugin%20vendor/plugins/foo/lib&In-Reply-To=%3C200804251554.m3PFs8wh013833%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000251.html">
+   <LINK REL="Next"  HREF="000253.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r472 - in exp/medick2: . config	vendor/medick/lib/action/controller	vendor/medick/lib/action/controller/cli	vendor/medick/lib/action/controller/http	vendor/medick/lib/context vendor/medick/lib/medick	vendor/medick/lib/plugin vendor/plugins/foo/lib</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r472%20-%20in%20exp/medick2%3A%20.%20config%0A%09vendor/medick/lib/action/controller%0A%09vendor/medick/lib/action/controller/cli%0A%09vendor/medick/lib/action/controller/http%0A%09vendor/medick/lib/context%20vendor/medick/lib/medick%0A%09vendor/medick/lib/plugin%20vendor/plugins/foo/lib&In-Reply-To=%3C200804251554.m3PFs8wh013833%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r472 - in exp/medick2: . config	vendor/medick/lib/action/controller	vendor/medick/lib/action/controller/cli	vendor/medick/lib/action/controller/http	vendor/medick/lib/context vendor/medick/lib/medick	vendor/medick/lib/plugin vendor/plugins/foo/lib">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Fri Apr 25 17:54:08 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000251.html">[Medick-svn] r471 - in exp/medick2: .	vendor/medick/lib/action/controller	vendor/medick/lib/action/controller/http vendor/medick/lib/medick
+</A></li>
+        <LI>Next message: <A HREF="000253.html">[Medick-svn] r473 - exp/medick2/vendor/medick/lib/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#252">[ date ]</a>
+              <a href="thread.html#252">[ thread ]</a>
+              <a href="subject.html#252">[ subject ]</a>
+              <a href="author.html#252">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2008-04-25 17:54:05 +0200 (Fri, 25 Apr 2008)
+New Revision: 472
+
+Added:
+   exp/medick2/test.php
+   exp/medick2/vendor/medick/lib/action/controller/cli/
+   exp/medick2/vendor/medick/lib/action/controller/cli/CLIRequest.php
+Modified:
+   exp/medick2/CONCEPTS
+   exp/medick2/PLUGINS
+   exp/medick2/boot.php
+   exp/medick2/config/cfields.xml
+   exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+   exp/medick2/vendor/medick/lib/action/controller/Map.php
+   exp/medick2/vendor/medick/lib/action/controller/Request.php
+   exp/medick2/vendor/medick/lib/action/controller/Route.php
+   exp/medick2/vendor/medick/lib/action/controller/Router.php
+   exp/medick2/vendor/medick/lib/action/controller/http/HTTPRequest.php
+   exp/medick2/vendor/medick/lib/action/controller/init.php
+   exp/medick2/vendor/medick/lib/context/ContextManager.php
+   exp/medick2/vendor/medick/lib/context/XMLConfigurator.php
+   exp/medick2/vendor/medick/lib/medick/Medick.php
+   exp/medick2/vendor/medick/lib/plugin/Plugins.php
+   exp/medick2/vendor/plugins/foo/lib/FooPlugin.php
+Log:
+ * added CLIRequest and test so I can run a request form the command line
+ * added a way to &quot;Benchmark&quot; stuff
+ * working defaults for route
+ * that's $v= 2.0.5
+
+
+Modified: exp/medick2/CONCEPTS
+===================================================================
+--- exp/medick2/CONCEPTS	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/CONCEPTS	2008-04-25 15:54:05 UTC (rev 472)
+@@ -3,15 +3,21 @@
+ * no more get/set: use a public property if needed!
+ * no camelCase but under_score
+ 
+-
+ h2. Definitions
+   
+   MEDICK_PATH -&gt; path to Medick Framework.
+   APP_PATH    -&gt; path to boot.php file
+- 
++
++h2. Importance of ContextManager
++
++
++
+ h2. TODOs
++  Move $uri/$method to Request class (25.04)
++  Rename ContextManager to Context (25.04)
+ 
+-  Create a Context Object with config and logger, inject this one then (25.03)
++h2. DONE
++  Create a Context Object with config and logger, inject this one then (25.03 - 25.04)
+ 
+ h2. Structure
+ 
+@@ -25,7 +31,7 @@
+   vendor/medick ( MEDICK_PATH )
+   vendor/plugins
+ 
+-h2. Medick Initialization
++h2. Medick Initialization (TBD-&gt; review)
+ 
+   index.php 
+   | boot.php
+
+Modified: exp/medick2/PLUGINS
+===================================================================
+--- exp/medick2/PLUGINS	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/PLUGINS	2008-04-25 15:54:05 UTC (rev 472)
+@@ -10,7 +10,7 @@
+ 
+ * A plugin is a folder with php files and other resources located in:
+   -&gt; vendor/plugins
+-  -&gt; user specified locations in config.xml file
++  -&gt; user specified location in config.xml file
+ 
+ * Eg. Foo is a Medick plugin if the folder foo exists and in has a init.php file on it.
+ 
+@@ -20,9 +20,7 @@
+ * one can use a init.php similar to ones provided by medick frameworks
+ * one can use and alter include_path settings
+ * one can require/include all the files
+-* available objects/variables:
+-  -&gt; $logger, current Logger instance
+-  -&gt; $config, current Configurator instance
++* $context is available in init.php
+ 
+ h3. Options
+ 
+
+Modified: exp/medick2/boot.php
+===================================================================
+--- exp/medick2/boot.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/boot.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -23,7 +23,7 @@
+ 
+ // php 5.1 strict sdandards.
+ if (version_compare(PHP_VERSION, '5.1.0') &gt; 0) {
+-    date_default_timezone_set('Europe/Bucharest');
++    date_default_timezone_set('Europe/Madrid');
+ }
+ 
+ // load core classes
+
+Modified: exp/medick2/config/cfields.xml
+===================================================================
+--- exp/medick2/config/cfields.xml	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/config/cfields.xml	2008-04-25 15:54:05 UTC (rev 472)
+@@ -16,23 +16,37 @@
+   &lt;/plugins&gt;
+ 
+   &lt;routes&gt;
++    &lt;route name=&quot;__root&quot;    value=&quot;/&quot;&gt;
++      &lt;default name=&quot;controller&quot; value=&quot;foo&quot; /&gt;
++      &lt;default name=&quot;action&quot;     value=&quot;bar&quot; /&gt;
++    &lt;/route&gt;
+     &lt;route name=&quot;__default&quot; value=&quot;:controller/:action/:id&quot; /&gt;
+   &lt;/routes&gt;
+ 
+   &lt;environments&gt;
+     &lt;environment name=&quot;localhost&quot;&gt;
+-      
+       &lt;logger&gt;
+         &lt;formatter&gt;default&lt;/formatter&gt;
+         &lt;outputters&gt;
+           &lt;!-- &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt; --&gt;
+           &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
+-            &lt;property name=&quot;path&quot; value=&quot;/W/Devel/medick/exp/medick2/log/localhost.log&quot; /&gt;
++            &lt;property name=&quot;path&quot; value=&quot;/home/aurelian/Code/medick/exp/medick2/log/localhost.log&quot; /&gt;
+           &lt;/outputter&gt;
+         &lt;/outputters&gt;
+       &lt;/logger&gt; &lt;!-- /logger --&gt;
++    &lt;/environment&gt;
+ 
+-    &lt;/environment&gt;
++    &lt;environment name=&quot;test&quot;&gt;
++      &lt;logger&gt;
++        &lt;formatter&gt;default&lt;/formatter&gt;
++        &lt;outputters&gt;
++          &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt;
++          &lt;!-- &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
++            &lt;property name=&quot;path&quot; value=&quot;/home/aurelian/Code/medick/exp/medick2/log/test.log&quot; /&gt;
++          &lt;/outputter&gt;--&gt;
++        &lt;/outputters&gt;
++      &lt;/logger&gt; &lt;!-- /logger --&gt;
++    &lt;/environment&gt; &lt;!-- / test env. --&gt;
+   &lt;/environments&gt;
+ 
+ &lt;/application&gt;
+
+Added: exp/medick2/test.php
+===================================================================
+--- exp/medick2/test.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/test.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -0,0 +1,13 @@
++&lt;?php
++
++include_once('boot.php');
++
++// complete path to cFields.xml
++// and environment to load
++$d= new Dispatcher(
++          ContextManager::load(
++            '/home/aurelian/Code/medick/exp/medick2/config/cfields.xml',
++            'test')
++        );
++$d-&gt;dispatch();
++
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/vendor/medick/lib/action/controller/Dispatcher.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -4,9 +4,6 @@
+ // $Id: $
+ //
+ 
+-/*
+- * 
+- */ 
+ class Dispatcher extends Object {
+ 
+   private $context;
+@@ -19,17 +16,18 @@
+     // context
+     $this-&gt;context= $context;
+ 
+-    // ready to log stuff
+-    $this-&gt;context-&gt;logger()-&gt;debugf( '[frw.action_controller] Medick v.$%s ready to dispatch!', Medick::version() );
+-
+     // plugins
+     $this-&gt;plugins= Plugins::discover( $this-&gt;context );
+ 
+   }
+ 
+   public function dispatch() {
+-    $request = new HTTPRequest();
++    $request = (php_sapi_name()=='cli')? new CLIRequest() : new HTTPRequest();
+     $response= new HTTPResponse();
++
++    $this-&gt;context-&gt;logger()-&gt;debug( 
++      sprintf('medick v.$%s ready to dispatch (took %.3f sec. to boot)', Medick::version(), $this-&gt;context-&gt;timer()-&gt;tick()));
++
+     try {
+       Router::recognize( $request, $this-&gt;context );
+       // -&gt;process( $request, $response )-&gt;dump();
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Map.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Map.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/vendor/medick/lib/action/controller/Map.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -23,15 +23,16 @@
+    * Finds a Route
+    */
+   public function find_route(Request $request) {
+-    $this-&gt;context-&gt;logger()-&gt;debug( '[frw.action_controller] Processing Request ' . $request );
++    $this-&gt;context-&gt;logger()-&gt;debug( 'processing Request ' . $request );
+     if(empty($this-&gt;routes)) $this-&gt;load_routes();
++
+     foreach($this-&gt;routes as $route) {
+       if($route-&gt;match($request)) {
+-        $this-&gt;context-&gt;logger()-&gt;debug( '[frw.action_controller] Matched to Route ' . $route );
++        $this-&gt;context-&gt;logger()-&gt;debug( 'matched to Route ' . $route );
+         return $route;
+       }
+     }
+-    throw new Exception( &quot;Couldn't find a route to match your request.&quot; );
++    throw new Exception(sprintf('Couldn\'t find a route to match your request: %s', $request));
+   }
+ 
+   /*
+@@ -39,13 +40,14 @@
+    */ 
+   private function load_routes() {
+     // 1. config.xml routes
+-    foreach($this-&gt;context-&gt;config()-&gt;routes() as $r) {
+-      $this-&gt;routes[]= new Route( (string)trim($r['value']) );
++    $config_routes= $this-&gt;context-&gt;config()-&gt;routes();
++    foreach( $config_routes as $r ) {
++      // xxx. requirements
++      $this-&gt;routes[]= new Route( (string)trim($r['name']), (string)trim($r['value']), $this-&gt;context-&gt;config()-&gt;route_defaults($r) );
+     }
+     // 2. plugins routes
+ 
+-    // XXX:
+-    //  throw exception if 0 routes? or load the __default always?
++    // xxx: throw exception if 0 routes
+   }
+ 
+ }
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Request.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Request.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/vendor/medick/lib/action/controller/Request.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -13,65 +13,54 @@
+  */
+ class Request extends Object {
+ 
+-    /** @var array
+-        current request parameters */
+-    private $params = array();
+-    
+-    /** 
+-     * Hidden Constructor 
+-     */
+-     protected function Request() { }
++  /** @var array
++      current request parameters */
++  private $params = array();
++   
++  public function parameter($name) {
++    return (isset($this-&gt;params[$name]) &amp;&amp; trim($this-&gt;params[$name]) != '')? $this-&gt;params[$name] : null;
++  }
+ 
+-    public function parameter($name) {
+-      return isset($this-&gt;params[$name]) ? $this-&gt;params[$name] : null;
+-      // $args= func_get_args();
+-      // if( sizeof($args) == 1 ) {
+-      //   return isset($this-&gt;params[$name]) ? $this-&gt;params[$name] : null;
+-      // } else {
+-      //   $this-&gt;params[$name]= $args[1];
+-      // }
++  /**
++   * It adds an array of parameters on this Request
++   *
++   * @param array parameters, parameters name/value pairs
++   * @return void
++   */ 
++  public function parameters( Array $parameters=array() ) {
++    foreach ($parameters as $name=&gt;$value) {
++      $this-&gt;params[$name]= $value;
+     }
+-
+-    /**
+-     * It adds an array of parameters on this Request
+-     *
+-     * @param array parameters, parameters name/value pairs
+-     * @return void
+-     */ 
+-    public function parameters( Array $parameters=array() ) {
+-        foreach ($parameters as $name=&gt;$value) {
+-            $this-&gt;params[$name]= $value;
+-        }
+-    }
++  }
+     
+-    /**
+-     * Gets a string representation of this Object
+-     *
+-     * @return string
+-     */ 
+-    public function toString() {
+-        $buff = &quot;{&quot;.$this-&gt;getClassName().&quot;}--&gt;\n&quot;;
+-        foreach ($this-&gt;getParameters() as $name=&gt;$value) {
+-            $buff .= &quot;[{$name}=&quot;;
+-            if (is_array($value)) {
+-                $buff .= &quot;\n\t[Array:\n&quot;;
+-                foreach ($value as $k=&gt;$v) {
+-                    $buff .= &quot;\t\t[{$k}=&quot;;
+-                    if (is_array($v)) {
+-                        $buff .= &quot;[Array]\n&quot;;
+-                        continue;
+-                    }
+-                    if (strlen($v)&gt;75) {
+-                        $buff .= substr(str_replace(&quot;&quot;,&quot;\n&quot;,$v),0,75) .&quot; .....]\n&quot;;
+-                    } else {
+-                        $buff .= &quot;$v]\n&quot;;
+-                    }
+-                }
+-                $buff .= &quot;]]\n&quot;;
++  /**
++   * Gets a string representation of this Object
++   *
++   * @return string
++   */ 
++  public function toString() {
++    $buff = &quot;{&quot;.$this-&gt;class_name().&quot;}--&gt;\n&quot;;
++    foreach ($this-&gt;params as $name=&gt;$value) {
++      $buff .= &quot;[{$name}=&quot;;
++      if (is_array($value)) {
++        $buff .= &quot;\n\t[Array:\n&quot;;
++          foreach ($value as $k=&gt;$v) {
++            $buff .= &quot;\t\t[{$k}=&quot;;
++            if (is_array($v)) {
++              $buff .= &quot;[Array]\n&quot;;
++              continue;
++            }
++            if (strlen($v)&gt;75) {
++              $buff .= substr(str_replace(&quot;&quot;,&quot;\n&quot;,$v),0,75) .&quot; .....]\n&quot;;
+             } else {
+-                $buff .= &quot;{$value}]&quot;;
++              $buff .= &quot;$v]\n&quot;;
+             }
+-        }
+-        return $buff;
++          }
++          $buff .= &quot;]]\n&quot;;
++      } else {
++        $buff .= &quot;{$value}]&quot;;
++      }
+     }
++    return $buff;
++  }
+ }
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Route.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Route.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/vendor/medick/lib/action/controller/Route.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -32,20 +32,34 @@
+ 
+   private $merges;
+ 
+-  private static $old_merges   = array();
+-  private static $old_defaults = array();
++  private $id;
+ 
+-  public function __construct( $definition, Array $requirements= array(), Array $defaults= array() ) {
++  private $name;
++
++  // private static $old_merges   = array();
++  // private static $old_defaults = array();
++
++  // $name -&gt; route name
++  // $definition -&gt; route signature :controller/foo/:id.html
++  // $defaults -&gt; default values
++  // $requirements -&gt; a route requirement
++  public function __construct( $name, $definition, Array $defaults= array(), Array $requirements= array() ) {
++    $this-&gt;name = $name;
+     $this-&gt;definition   = $definition;
+     $this-&gt;requirements = $requirements;
+     $this-&gt;defaults     = $defaults;
++    $this-&gt;id           = md5($this-&gt;definition);
+     // internal structures
+     $this-&gt;segments     = array();
+     $this-&gt;merges       = array();
+   }
+ 
++  public function name() {
++    return $this-&gt;name;
++  }
++
+   public function toString() {
+-    return $this-&gt;definition;
++    return sprintf('(%s:%s)-&gt; %s', $this-&gt;name, $this-&gt;id, $this-&gt;definition);
+   }
+ 
+   private function load_segments() {
+@@ -69,11 +83,13 @@
+   }
+ 
+   private function defaults(Request $request) {
+-
++    $request-&gt;parameters($this-&gt;defaults);
+   }
+ 
+-  private function validate(Request $request) {
+-
++  // a Route is valid if it has a controller/action + all the requirements are meet
++  // xxx. add requirements
++  private function validate( Request $request ) {
++    return !($request-&gt;parameter('controller') === null) || !($request-&gt;parameter('action') === null);
+   }
+ 
+   public function match( Request $request ) {
+@@ -111,13 +127,10 @@
+     $this-&gt;merge( $request );
+ 
+     // load default values
+-    // $this-&gt;defaults( $request );
++    $this-&gt;defaults( $request );
+ 
+     // validate 
+-    // $this-&gt;validate( $request );
+-
+-    // Medick::dump('huh?');
+-    return true;
++    return $this-&gt;validate( $request );
+   }
+ 
+   //
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/Router.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/Router.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/vendor/medick/lib/action/controller/Router.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -1,5 +1,7 @@
+ &lt;?php
+ 
++// $Id: $
++
+ class Router extends Object {
+ 
+   // current Route
+@@ -24,8 +26,12 @@
+    * Should return a controller instance
+    */ 
+   public static function recognize(Request $request, ContextManager $context ) {
+-    $map= new Map( $context );
+-    $router= new Router( $map-&gt;find_route( $request ), $context);
++    // create a Map of loaded Routes
++    // $map= new Map( $context );
++    // save it to the current context
++    // $context-&gt;map( $map );
++
++    $router= new Router( $context-&gt;map()-&gt;find_route( $request ), $context);
+     return $router-&gt;create_controller( $request );
+     
+     // $route= $map-&gt;find_route( $request );
+
+Added: exp/medick2/vendor/medick/lib/action/controller/cli/CLIRequest.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/cli/CLIRequest.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/vendor/medick/lib/action/controller/cli/CLIRequest.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -0,0 +1,25 @@
++&lt;?php
++
++// $Id: $
++
++//
++// xxx. should be able to handle:
++//  
++//  php script.php --uri=/foo/bar --method=GET
++//
++// just to make sure we emulate http requests.
++// 
++class CLIRequest extends Request {
++
++  public $uri= &quot;&quot;;
++
++  public function __construct() {
++    $this-&gt;uri= '/' . join('/', array_slice($_SERVER['argv'], 1, $_SERVER['argc']));
++  }
++
++  public function toString() {
++    return sprintf('cli: %s', $this-&gt;uri);
++  }
++
++}
++
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/http/HTTPRequest.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/http/HTTPRequest.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/vendor/medick/lib/action/controller/http/HTTPRequest.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -27,7 +27,7 @@
+ 
+   /** @var string
+       path_info, /foo/bar.html */
+-  public $uri= null;
++  public $uri= '/';
+ 
+   /** @var array
+       the list of headers associated with this HTTPRequest */
+@@ -63,9 +63,10 @@
+       $this-&gt;uri= $_SERVER['ORIG_PATH_INFO']; 
+     } else {
+       // fallback to REQUEST_URI
+-      $this-&gt;uri= substr($_SERVER['REQUEST_URI'],7);
++      $this-&gt;uri= $_SERVER['REQUEST_URI'];
++      // $this-&gt;uri= substr($_SERVER['REQUEST_URI'],7);
+     }
+-
++    // setup session and headers
+     $this-&gt;session = new HTTPSession();
+     $this-&gt;headers = HTTPRequest::getAllHeaders();
+   }
+
+Modified: exp/medick2/vendor/medick/lib/action/controller/init.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/action/controller/init.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/vendor/medick/lib/action/controller/init.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -16,6 +16,11 @@
+     return require 'action'.DIRECTORY_SEPARATOR.'controller'.DIRECTORY_SEPARATOR.'http'.DIRECTORY_SEPARATOR.$class.'.php';
+   }
+ 
++  // action/controller/http
++  if(strpos(strtolower($class), 'cli') !== false &amp;&amp; is_file($base.'cli'.DIRECTORY_SEPARATOR.$class.'.php') ) {
++    return require 'action'.DIRECTORY_SEPARATOR.'controller'.DIRECTORY_SEPARATOR.'cli'.DIRECTORY_SEPARATOR.$class.'.php';
++  }
++
+   // the rest
+   $file= 'action'.DIRECTORY_SEPARATOR.'controller'.DIRECTORY_SEPARATOR.$class.'.php';
+   if(is_file( dirname(__FILE__) . DIRECTORY_SEPARATOR . $class . '.php' )) {
+
+Modified: exp/medick2/vendor/medick/lib/context/ContextManager.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/ContextManager.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/vendor/medick/lib/context/ContextManager.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -1,18 +1,47 @@
+ &lt;?php
+ 
++class Timer extends Object {
++  
++  private $start;
++  private $end;
++
++  public function __construct($start) {
++    $this-&gt;start= $start;
++    $this-&gt;end= null;
++  }
++
++  public function tick() {
++    $this-&gt;end= microtime(true);
++    $r= (float)$this-&gt;end - (float)$this-&gt;start;
++    $this-&gt;start= $this-&gt;end;
++    return $r;
++  }
++
++}
++
++// $Id: $
++
+ class ContextManager extends Object {
+ 
++  // log everyware!
+   private $logger;
+ 
++  // the config parser/loaded, to have access to configuration options
+   private $config;
+ 
++  // a Map, you get access to Routes like this
++  private $map;
++
++  private $timer;
++
+   public function __construct( Iconfigurator $config ) {
+     $this-&gt;config= $config;
+     // configure the logger
+     $this-&gt;logger= new Logger();
+     $this-&gt;logger-&gt;setFormatter( Logger::formatter($this-&gt;config) );
+     $this-&gt;logger-&gt;attachOutputters( Logger::outputters($this-&gt;config) );
+-
++    // create a Map
++    $this-&gt;map= new Map( $this );
+   }
+ 
+   public function logger() {
+@@ -23,9 +52,23 @@
+     return $this-&gt;config;
+   }
+ 
+-  public static function load( $xml_file, $environment ) {
++  public function map() {
++    return $this-&gt;map;
++  }
++
++  public function timer($start= null) {
++    if($this-&gt;timer===null) {
++      $this-&gt;timer= new Timer($start===null? microtime(true) : $start);
++    }
++    return $this-&gt;timer;
++  }
++
++  public static function load( $file, $environment ) {
++    $start= microtime(true);
+     // XXX: factory based on the file type for configurator
+-    return new ContextManager(new XMLConfigurator( $xml_file, $environment ));
++    $context= new ContextManager(new XMLConfigurator( $file, $environment ));
++    $context-&gt;timer($start)-&gt;tick();
++    return $context;
+   }
+ 
+ }
+
+Modified: exp/medick2/vendor/medick/lib/context/XMLConfigurator.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/context/XMLConfigurator.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/vendor/medick/lib/context/XMLConfigurator.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -17,7 +17,7 @@
+     $this-&gt;sxe= simplexml_load_file($file);
+     // find env in doc.
+     foreach($this-&gt;sxe-&gt;environments-&gt;environment as $e) {
+-      if($e-&gt;name == $e) {
++      if($e['name'] == $environment) {
+         $this-&gt;env= $e;
+         break;
+       }
+@@ -74,11 +74,22 @@
+     else return $value;
+   }
+ 
+-
+   public function routes() {
+     return $this-&gt;sxe-&gt;routes-&gt;route;
+   }
+ 
++  // here, route is a xml node
++  //
++  // should return array('segment_name'=&gt;'segment_value', 'segment_name'=&gt;'segment_value')
++  //
++  public function route_defaults($route) {
++    $defaults= array();
++    foreach($route-&gt;default as $def) {
++      $defaults[(string)trim($def['name'])]= (string)trim($def['value']);
++    }
++    return $defaults;
++  }
++
+   // referes to a env. logger outputters
+   public function logger_outputters() {
+     if (is_null($this-&gt;env-&gt;logger-&gt;outputters)) return array();
+
+Modified: exp/medick2/vendor/medick/lib/medick/Medick.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/medick/Medick.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/vendor/medick/lib/medick/Medick.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -33,7 +33,7 @@
+   }
+ 
+   public static function version() {
+-    return '2.0.4';
++    return '2.0.5';
+   }
+ 
+   public static function dump($o) {
+
+Modified: exp/medick2/vendor/medick/lib/plugin/Plugins.php
+===================================================================
+--- exp/medick2/vendor/medick/lib/plugin/Plugins.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/vendor/medick/lib/plugin/Plugins.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -1,5 +1,7 @@
+ &lt;?php
+ 
++// $Id: $
++
+ class Plugins extends Object {
+ 
+   static private $registry= array();
+@@ -38,8 +40,7 @@
+       if( $plugin_path-&gt;isDir() &amp;&amp; is_file($plugin_load_file) &amp;&amp; require($plugin_load_file)) {
+         $class= Plugins::plugin_class_name($plugin_path);
+         Plugins::add( new $class($context) );
+-        $context-&gt;logger()-&gt;debugf( 
+-          &quot;[frw.plugin] %s --&gt; %s&quot;, str_replace(MEDICK_PATH, '${'.$context-&gt;config()-&gt;application_name().'}', $plugin_load_file), $class );
++        $context-&gt;logger()-&gt;debugf('%s --&gt; %s', str_replace(MEDICK_PATH, '${'.$context-&gt;config()-&gt;application_name().'}', $plugin_load_file), $class );
+       }
+     }
+ 
+
+Modified: exp/medick2/vendor/plugins/foo/lib/FooPlugin.php
+===================================================================
+--- exp/medick2/vendor/plugins/foo/lib/FooPlugin.php	2008-04-25 07:59:41 UTC (rev 471)
++++ exp/medick2/vendor/plugins/foo/lib/FooPlugin.php	2008-04-25 15:54:05 UTC (rev 472)
+@@ -1,5 +1,7 @@
+ &lt;?php
+ 
++// $Id: $
++
+ class FooPlugin extends Object implements IPlugin {
+ 
+   public $metadata;
+@@ -11,7 +13,7 @@
+       'version'=&gt; 0.1,
+       'url'    =&gt; '<A HREF="http://example.com/foo_plugin">http://example.com/foo_plugin</A>'
+     );
+-    $context-&gt;logger()-&gt;debugf( &quot;[frw.plugin] Plugin %s loaded&quot;, $this-&gt;name() );
++    $context-&gt;logger()-&gt;debugf( &quot;Plugin %s loaded&quot;, $this-&gt;name() );
+   }
+  
+   public function metadata() {
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000251.html">[Medick-svn] r471 - in exp/medick2: .	vendor/medick/lib/action/controller	vendor/medick/lib/action/controller/http vendor/medick/lib/medick
+</A></li>
+	<LI>Next message: <A HREF="000253.html">[Medick-svn] r473 - exp/medick2/vendor/medick/lib/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#252">[ date ]</a>
+              <a href="thread.html#252">[ thread ]</a>
+              <a href="subject.html#252">[ subject ]</a>
+              <a href="author.html#252">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

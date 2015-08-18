@@ -1,0 +1,1022 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r235 - in trunk/test: . application application/models test test/action test/action/controller test/active test/active/record test/active/record/associations test/active/support test/configurator test/medick
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-October/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r235%20-%20in%20trunk/test%3A%20.%20application%20application/models%20test%20test/action%20test/action/controller%20test/active%20test/active/record%20test/active/record/associations%20test/active/support%20test/configurator%20test/medick&In-Reply-To=%3C200510231328.j9NDSKMh005639%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000038.html">
+   <LINK REL="Next"  HREF="000040.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r235 - in trunk/test: . application application/models test test/action test/action/controller test/active test/active/record test/active/record/associations test/active/support test/configurator test/medick</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r235%20-%20in%20trunk/test%3A%20.%20application%20application/models%20test%20test/action%20test/action/controller%20test/active%20test/active/record%20test/active/record/associations%20test/active/support%20test/configurator%20test/medick&In-Reply-To=%3C200510231328.j9NDSKMh005639%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r235 - in trunk/test: . application application/models test test/action test/action/controller test/active test/active/record test/active/record/associations test/active/support test/configurator test/medick">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Oct 23 15:28:20 CEST 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000038.html">[Medick-svn] r234 - in trunk: libs/active/record libs/medick test/dummy/models
+</A></li>
+        <LI>Next message: <A HREF="000040.html">[Medick-svn] r236 - in trunk/test: . application mock test/active/record test/active/record/associations test/configurator tmp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#39">[ date ]</a>
+              <a href="thread.html#39">[ thread ]</a>
+              <a href="subject.html#39">[ subject ]</a>
+              <a href="author.html#39">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-10-23 15:28:19 +0200 (Sun, 23 Oct 2005)
+New Revision: 235
+
+Added:
+   trunk/test/application/
+   trunk/test/application/controllers/
+   trunk/test/application/dummy.xml
+   trunk/test/application/models/author.php
+   trunk/test/application/models/book.php
+   trunk/test/runner.php
+   trunk/test/test/
+   trunk/test/test/action/
+   trunk/test/test/action/controller/
+   trunk/test/test/action/controller/RoutingTest.php
+   trunk/test/test/active/
+   trunk/test/test/active/record/
+   trunk/test/test/active/record/DBOperationsTest.php
+   trunk/test/test/active/record/FindTest.php
+   trunk/test/test/active/record/associations/
+   trunk/test/test/active/record/associations/HasOneTest.php
+   trunk/test/test/active/support/
+   trunk/test/test/active/support/InflectorTest.php
+   trunk/test/test/configurator/
+   trunk/test/test/configurator/XMLConfiguratorTest.php
+   trunk/test/test/medick/
+   trunk/test/test/medick/CollectionTest.php
+   trunk/test/test/medick/RegistryTest.php
+Removed:
+   trunk/test/ARBaseAssocHas_OneTest.php
+   trunk/test/ARBaseBasicsTest.php
+   trunk/test/ARBaseFindTest.php
+   trunk/test/CollectionTest.php
+   trunk/test/InflectorTest.php
+   trunk/test/RegistryTest.php
+   trunk/test/RoutingTest.php
+   trunk/test/XMLConfiguratorTest.php
+   trunk/test/application/models/todo.php
+   trunk/test/dummy/
+   trunk/test/testrunner.php
+Log:
+ - [ test/* ] restructuration in progress.
+
+Deleted: trunk/test/ARBaseAssocHas_OneTest.php
+===================================================================
+--- trunk/test/ARBaseAssocHas_OneTest.php	2005-10-23 11:20:20 UTC (rev 234)
++++ trunk/test/ARBaseAssocHas_OneTest.php	2005-10-23 13:28:19 UTC (rev 235)
+@@ -1,71 +0,0 @@
+-&lt;?php
+-
+-// $Id$
+-    
+-include_once('dummy/models/author.php');
+-include_once('dummy/models/book.php');
+-include_once('mock/MockConfigurator.php');
+-include_once('logger/Logger.php');
+-
+-/** Test Has_One Association */
+-class ARBaseAssocHas_OneTest extends UnitTestCase {
+-
+-    /**
+-     * Constructor Once/TestCase
+-     * Prequsites for this TestCase to run: Create a sqlite DB with 2 tables and a foreign key.
+-     */
+-    public function __construct() {
+-        if (is_file('test.db')) unlink('test.db');
+-        $tbd= sqlite_open('test.db');
+-        $query='
+-            CREATE TABLE AUTHORS (
+-                id INTEGER PRIMARY KEY,
+-                name VARCHAR(100),
+-                email VARCHAR(150)
+-            )';
+-        $ex= sqlite_query($tbd, $query);
+-        $_query='    
+-            CREATE TABLE BOOKS (
+-                id INTEGER PRIMARY KEY,
+-                title VARCHAR(100),
+-                author_id INTEGER NOT NULL CONSTRAINT fk_author_id REFERENCES AUTHORS(id) ON DELETE CASCADE
+-            )';
+-        $exp= sqlite_query($tbd, $_query);
+-    }
+-
+-    /** set up */
+-    public function setUp() {
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
+-        ActiveRecordBase::close();
+-        
+-        $author= new Author();
+-        $author-&gt;name= 'Andrei Cristescu';
+-        $author-&gt;email= '<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">andrei at foocompany.com</A>';
+-        
+-        $id= $author-&gt;save();
+-        
+-        $book = new Book();
+-        $book-&gt;author_id= $id;
+-        $book-&gt;title= 'The End is NEAR!';
+-        $book-&gt;save();
+-    }
+-    
+-    /** tearDown */
+-    public function tearDown() {
+-        Registry::close();
+-    }
+-
+-    /** */
+-    public function testHasOne() {
+-        $books= Book::find();
+-        foreach($books as $book) {
+-            $this-&gt;assertIsA($book-&gt;author, 'Author');
+-            $this-&gt;assertIsA($book, 'Book');
+-        }
+-        $this-&gt;assertEqual($book-&gt;author-&gt;name, 'Andrei Cristescu');
+-        // TBD. This is not supported right now!
+-        // $book-&gt;author-&gt;delete();
+-        // $this-&gt;assertEqual(sizeof(Book::find()), 0);
+-    }
+-}
+
+Deleted: trunk/test/ARBaseBasicsTest.php
+===================================================================
+--- trunk/test/ARBaseBasicsTest.php	2005-10-23 11:20:20 UTC (rev 234)
++++ trunk/test/ARBaseBasicsTest.php	2005-10-23 13:28:19 UTC (rev 235)
+@@ -1,73 +0,0 @@
+-&lt;?php
+-
+-// $Id$
+-    
+-include_once('dummy/models/author.php');
+-include_once('mock/MockConfigurator.php');
+-include_once('logger/Logger.php');
+-
+-/** Tests insert, update, save (insert/update), delete. */
+-class ARBaseBasicsTest extends UnitTestCase {
+-
+-    /**
+-     * Constructor Once/TestCase
+-     * Prequsites for this TestCase to run: Create a sqlite DB
+-     */
+-    public function __construct() {
+-        if (is_file('test.db')) unlink('test.db');
+-        $query='
+-            CREATE TABLE authors (
+-                id INTEGER PRIMARY KEY,
+-                name VARCHAR(100),
+-                email VARCHAR(150)
+-            );
+-        ';
+-        sqlite_query(sqlite_open('test.db'), $query);
+-    }
+-
+-    /** set up */
+-    public function setUp() {
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
+-        ActiveRecordBase::close();
+-    }
+-    
+-    /** tearDown */
+-    public function tearDown() {
+-        Registry::close();
+-    }
+-
+-    /** &lt;tt&gt;save &amp;&amp; delete test&lt;/tt&gt; */
+-    public function testSave() {
+-        $item= new Author();
+-        $item-&gt;name= 'Andrei Cristescu';
+-        $this-&gt;assertEqual($item-&gt;save(), $item-&gt;id);
+-        $this-&gt;assertEqual($item-&gt;delete(), 1);
+-    }
+-
+-    /** &lt;tt&gt;save &amp;&amp; delete test&lt;/tt&gt; */
+-    public function testDelete() {
+-        $item = new Author();
+-        $item-&gt;name = 'Andrei Cristescu';
+-        $item-&gt;save();
+-        $this-&gt;assertEqual($item-&gt;delete(), 1);
+-        $this-&gt;assertEqual($item-&gt;delete(), 0);
+-    }
+-    
+-    /** &lt;tt&gt;insert&lt;/tt&gt; */
+-    public function testInsert() {
+-        $item = new Author();
+-        $item-&gt;name = 'Andrei Cristescu';
+-        $this-&gt;assertEqual($item-&gt;insert(), $item-&gt;id);
+-        $item-&gt;delete();
+-    }
+-    /** &lt;tt&gt;update test&lt;/tt&gt; */
+-    public function testUpdate() {
+-        $item = new Author();
+-        $item-&gt;name = 'Andrei Cristescu';
+-        $this-&gt;assertEqual($item-&gt;insert(), $item-&gt;id);
+-        $item-&gt;email = '<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">cristescu at yahoo.com</A>';
+-        $this-&gt;assertEqual($item-&gt;update(), 1);
+-        $this-&gt;assertEqual($item-&gt;delete(), 1);
+-    }
+-}
+
+Deleted: trunk/test/ARBaseFindTest.php
+===================================================================
+--- trunk/test/ARBaseFindTest.php	2005-10-23 11:20:20 UTC (rev 234)
++++ trunk/test/ARBaseFindTest.php	2005-10-23 13:28:19 UTC (rev 235)
+@@ -1,100 +0,0 @@
+-&lt;?php
+-
+-// $Id$
+-    
+-include_once('dummy/models/author.php');
+-include_once('mock/MockConfigurator.php');
+-include_once('logger/Logger.php');
+-  
+-/** Tests find */
+-class ARBaseFindTest extends UnitTestCase {
+-  
+-    /** our authors container */
+-    private $authors= array();
+-     
+-    /**
+-     * Constructor Once/TestCase
+-     * Prequsites for this TestCase to run: Create a sqlite DB
+-     */
+-    public function __construct() {
+-        if (is_file('test.db')) unlink('test.db');
+-        $query='
+-            CREATE TABLE authors (
+-                id INTEGER PRIMARY KEY,
+-                name VARCHAR(100),
+-                email VARCHAR(150)
+-            );
+-        ';
+-        sqlite_query(sqlite_open('test.db'), $query);
+-     }
+-  
+-     /** set up this test case, we insert 3 fileds in DB table */
+-     public function setUp() {
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
+-        ActiveRecordBase::close();
+-        $author= new Author();
+-        $author-&gt;name= &quot;Andrei Cristescu&quot;;
+-        $author-&gt;email= &quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">andrei.cristescu at foo-factory.info</A>&quot;;
+-        $this-&gt;authors[]= $author;
+-        $author-&gt;insert();
+-        $author= new Author();
+-        $author-&gt;name= &quot;Cristescu&quot;;
+-        $this-&gt;authors[]= $author;
+-        $author-&gt;insert();
+-        $author= new Author();
+-        $author-&gt;name= &quot;Andrei&quot;;
+-        $this-&gt;authors[]= $author;
+-        $author-&gt;insert();
+-    }
+-
+-    /** remove all the fields from DB, clean-up the Registry */
+-    public function tearDown() {
+-        foreach ($this-&gt;authors as $author) {
+-            $author-&gt;delete();
+-        }
+-        Registry::close();
+-    }
+-
+-    /** find all syntax. */
+-    public function testFindAll() {
+-        $this-&gt;assertEqual(Author::find()-&gt;count(), Author::find('all')-&gt;count());
+-    }
+-
+-    /** id field is not selected, should be NULL */
+-    public function testFindAllArrayInclude() {
+-        $authors= Author::find('all', array('include'=&gt;'name, email'));
+-        foreach ($authors as $author) {
+-            $this-&gt;assertNull($author-&gt;id);
+-        }
+-    }
+-
+-    /** select by condition */
+-    public function testFindAllArrayCondition() {
+-        $authors= Author::find('all', array('condition'=&gt;'name=&quot;Andrei Cristescu&quot;'));
+-        $this-&gt;assertEqual($authors-&gt;count(), 1);
+-        foreach ($authors as $author) {
+-            $this-&gt;assertEqual('<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">andrei.cristescu at foo-factory.info</A>', $author-&gt;email);
+-        }
+-    }
+-
+-    /** limit syntax. */
+-    public function testFindAllArrayLimit() {
+-        $authors= Author::find('all', array('limit'=&gt;2));
+-        $this-&gt;assertEqual($authors-&gt;count(), 2);
+-    }
+-
+-    /** order syntax. */
+-    public function testFindAllArrayOrder() {
+-        $authors= Author::find('all', array('order'=&gt;'id DESC'));
+-        $i=4; foreach ($authors as $author) {
+-            $this-&gt;assertEqual(--$i, $author-&gt;id);
+-        }
+-    }
+-
+-    /** offset syntax. */
+-    public function testFindAllArrayOffset() {
+-        $authors= Author::find('all', array('offset'=&gt;2));
+-        $this-&gt;assertEqual($authors-&gt;count(), 1);
+-    }
+-}
+
+Deleted: trunk/test/CollectionTest.php
+===================================================================
+--- trunk/test/CollectionTest.php	2005-10-23 11:20:20 UTC (rev 234)
++++ trunk/test/CollectionTest.php	2005-10-23 13:28:19 UTC (rev 235)
+@@ -1,79 +0,0 @@
+-&lt;?php
+-
+-// $Id$
+-    
+-include_once('mock/MockCollection.php');
+-    
+-class Foo Extends Object {      }
+-
+-class Bar extends Object {      }
+-
+-class Baz extends Object {      }
+-
+-class CollectionTest extends UnitTestCase {
+-
+-    private $col = NULL;
+-
+-    function setUp() {
+-        $this-&gt;col = new MockCollection();
+-    }
+-    
+-    function tearDown() {
+-        $this-&gt;col = NULL;
+-    }
+-    
+-    function testAdd() {
+-        $f= $this-&gt;col-&gt;add(new Foo());
+-        $this-&gt;assertEqual('Foo', $f-&gt;getClassName());
+-    }
+-    
+-    function testEmpty() {
+-        $this-&gt;col-&gt;add(new Foo());
+-        $this-&gt;assertFalse($this-&gt;col-&gt;isEmpty());
+-    }
+-    
+-    function testRemove() {
+-         $f= new Foo();
+-         $this-&gt;col-&gt;add($f);
+-         $this-&gt;col-&gt;remove($f);
+-         $this-&gt;assertTrue($this-&gt;col-&gt;isEmpty());
+-    }
+-    
+-    function testSize() {
+-        $this-&gt;col-&gt;add(new Foo());
+-        $this-&gt;col-&gt;add(new Foo());
+-        $this-&gt;assertEqual(2, $this-&gt;col-&gt;size());
+-        $this-&gt;col-&gt;add(new Bar());
+-        $this-&gt;assertEqual(3, $this-&gt;col-&gt;count());
+-    }
+-
+-    function testAddAll() {
+-        $this-&gt;col-&gt;add(new Foo());
+-        $this-&gt;col-&gt;add(new Bar());
+-        $col= new MockCollection();
+-        $col-&gt;add(new Bar());
+-        $col-&gt;add(new Baz());
+-        $this-&gt;col-&gt;addAll($col);
+-        $this-&gt;assertEqual(4, $this-&gt;col-&gt;size());
+-    }
+-
+-    function testArray() {
+-        $this-&gt;col[] = new Foo();
+-        $this-&gt;col[] = new Bar();
+-        $this-&gt;col[] = new Baz();
+-        $this-&gt;assertEqual($this-&gt;col-&gt;size(), 3);
+-    }
+-
+-    function testOffsetExists() {
+-        $this-&gt;col[] = new Bar();
+-        $this-&gt;assertTrue($this-&gt;col-&gt;offsetExists(0));
+-   }
+-
+-   function testContains() {
+-       $f= new Foo();
+-       $this-&gt;col[] = $f;
+-       $this-&gt;assertTrue($this-&gt;col-&gt;contains($f)); 
+-   }
+-
+-}
+-
+
+Deleted: trunk/test/InflectorTest.php
+===================================================================
+--- trunk/test/InflectorTest.php	2005-10-23 11:20:20 UTC (rev 234)
++++ trunk/test/InflectorTest.php	2005-10-23 13:28:19 UTC (rev 235)
+@@ -1,25 +0,0 @@
+-&lt;?php
+-
+-// $Id$    
+-    
+-include_once('active/support/Inflector.php');
+- 
+-class InflectorTest extends UnitTestCase {
+-
+-    public function testPlurals() {
+-        $this-&gt;assertEqual(Inflector::pluralize('category'), 'categories');
+-        $this-&gt;assertEqual(Inflector::pluralize('person'), 'persons');
+-        $this-&gt;assertEqual(Inflector::pluralize('mouse'),    'mice');
+-        $this-&gt;assertEqual(Inflector::pluralize('search'),   'searches');
+-        $this-&gt;assertEqual(Inflector::pluralize('alias'),    'aliases');
+-        $this-&gt;assertEqual(Inflector::pluralize('monitor'),  'monitors');
+-    }
+-
+-    public function testSingulars() {
+-        $this-&gt;assertEqual(Inflector::singularize('categories'), 'category');
+-        $this-&gt;assertEqual(Inflector::singularize('mice'),       'mouse');
+-        $this-&gt;assertEqual(Inflector::singularize('searches'),   'search');
+-        $this-&gt;assertEqual(Inflector::singularize('years'),      'year');
+-        $this-&gt;assertEqual(Inflector::singularize('aliases'),    'alias');
+-    }
+-}
+
+Deleted: trunk/test/RegistryTest.php
+===================================================================
+--- trunk/test/RegistryTest.php	2005-10-23 11:20:20 UTC (rev 234)
++++ trunk/test/RegistryTest.php	2005-10-23 13:28:19 UTC (rev 235)
+@@ -1,38 +0,0 @@
+-&lt;?php
+-
+-// $Id$
+-    
+-include_once('mock/MockObject.php');
+-
+-
+-
+-class RegistryTest extends UnitTestCase {
+-
+-    private $registry = NULL;
+-    private $obj      = NULL;
+-    
+-    function setUp() {
+-        $this-&gt;obj = new MockObject();
+-        $this-&gt;registry = Registry::put($this-&gt;obj, 'mock');
+-    }
+-    
+-    function tearDown() {
+-        $this-&gt;obj      = NULL;
+-        $this-&gt;registry = NULL;
+-    }
+-    
+-    function testRegistry() {
+-        $this-&gt;assertEqual($this-&gt;obj-&gt;getClassName(), Registry::get('mock')-&gt;getClassName());
+-    }
+-    
+-    function testDispose() {
+-        Registry::remove('mock');
+-        try {
+-            Registry::get('mock');
+-            $this-&gt;fail('InvalidOffsetException should be thrown!');
+-        } catch (Exception $nEx) {
+-            $this-&gt;assertIsA($nEx, 'InvalidOffsetException');
+-        }
+-    }
+-
+-}
+
+Deleted: trunk/test/RoutingTest.php
+===================================================================
+--- trunk/test/RoutingTest.php	2005-10-23 11:20:20 UTC (rev 234)
++++ trunk/test/RoutingTest.php	2005-10-23 13:28:19 UTC (rev 235)
+@@ -1,38 +0,0 @@
+-&lt;?php
+-
+-// $Id$
+-
+-include_once('medick/Registry.php');
+-include_once('logger/Logger.php');
+-
+-include_once('mock/MockConfigurator.php');
+-include_once('mock/MockRequest.php');
+-
+-include_once('action/controller/Route.php');
+-include_once('action/controller/Map.php');
+-include_once('action/controller/Routing.php');
+-include_once('action/controller/Base.php');
+-
+-class RoutingTest extends UnitTestCase {
+-
+-    private $map;
+-
+-    public function setUp() {
+-        Registry::put(new MockConfigurator(), '__configurator');
+-        Registry::put(new Logger(), '__logger');
+-        $this-&gt;map= Registry::put(new Map(), '__map');
+-    }
+-    
+-    public function tearDown() {
+-        Registry::close();
+-    }
+-    
+-    public function testRec() {
+-        $route= new Route('foo', 'bar');
+-        $request= new MockRequest();
+-        $request-&gt;setParam('controller', 'foo');
+-        $request-&gt;setParam('action', 'bar');
+-        $this-&gt;map-&gt;add($route);
+-        $this-&gt;assertIsA(ActionControllerRouting::recognize($request), 'ActionControllerBase');
+-    }
+-}
+
+Deleted: trunk/test/XMLConfiguratorTest.php
+===================================================================
+--- trunk/test/XMLConfiguratorTest.php	2005-10-23 11:20:20 UTC (rev 234)
++++ trunk/test/XMLConfiguratorTest.php	2005-10-23 13:28:19 UTC (rev 235)
+@@ -1,99 +0,0 @@
+-&lt;?php
+-
+-// $Id$
+-
+-include_once('configurator/XMLConfigurator.php');
+-
+-class XMLConfiguratorTest extends UnitTestCase {
+-
+-    public function testCreation() {
+-        $this-&gt;assertNotNull(new XMLConfigurator('dummy/dummy.xml'));
+-        $this-&gt;assertNotNull(new XMLConfigurator('&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;application&gt;&lt;/application&gt;'));
+-        try {
+-            new XMLConfigurator('non_existant_file.xml');
+-            $this-&gt;fail('ConfiguratorException should be thrown!');
+-        } catch (Exception $e) {
+-            $this-&gt;assertIsA($e, 'ConfiguratorException');
+-        }
+-    }
+-
+-    public function testDatabaseDsn() {
+-        $xml='&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;application&gt;
+-                &lt;database default=&quot;two&quot;&gt;
+-                    &lt;dsn id=&quot;one&quot;
+-                        phptype  = &quot;mysql&quot;
+-                        hostspec = &quot;localhost&quot;
+-                        database = &quot;todo&quot;
+-                        username = &quot;root&quot;
+-                        password = &quot;zzz&quot; /&gt;
+-                    &lt;dsn id = &quot;two&quot;
+-                        phptype  = &quot;pgsql&quot;
+-                        hostspec = &quot;192.18.1.1&quot;
+-                        database =&quot;test&quot;
+-                        username =&quot;antonescu&quot;
+-                        password =&quot;x-creeme&quot; /&gt;
+-                &lt;/database&gt;
+-            &lt;/application&gt;';
+-        $config= new XMLConfigurator($xml);
+-        try {
+-            $config-&gt;getDatabaseDsn('foo');
+-            $this-&gt;fail('ConfiguratorException should be thrown!');
+-        } catch (MedickException $cEx) {
+-            $this-&gt;assertIsA($cEx, 'ConfiguratorException');
+-        }
+-        $dsn= $config-&gt;getDatabaseDsn();
+-        $this-&gt;assertEqual('pgsql', $dsn['phptype']);
+-        $dsn= $config-&gt;getDatabaseDsn('one');
+-        $this-&gt;assertEqual('mysql', $dsn['phptype']);
+-    }
+-
+-    public function testLoggerOutputters() {
+-        $xml='&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;application&gt;
+-                &lt;logger&gt;
+-                    &lt;outputters&gt;
+-                        &lt;outputter name=&quot;file&quot;    level=&quot;0&quot; value=&quot;/wwwroot/htdocs/locknet7/log/locknet7.log&quot; /&gt;
+-                        &lt;outputter name=&quot;stdout&quot;  level=&quot;0&quot; /&gt;
+-                    &lt;/outputters&gt;
+-                &lt;/logger&gt;
+-            &lt;/application&gt;';
+-        $config= new XMLConfigurator($xml);
+-        $this-&gt;assertEqual(2, sizeof($config-&gt;getLoggerOutputters()));
+-        $xml='&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;application&gt;&lt;outputter name=&quot;stdout&quot;  level=&quot;0&quot; /&gt;&lt;/application&gt;';
+-        $config= new XMLConfigurator($xml);
+-        $this-&gt;assertEqual(0, sizeof($config-&gt;getLoggerOutputters()));
+-    }
+-
+-    public function testLoggerFormatter() {
+-        $xml='&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;application&gt;&lt;logger&gt;&lt;formatter&gt;simple&lt;/formatter&gt;&lt;/logger&gt;&lt;/application&gt;';
+-        $config= new XMLConfigurator($xml);
+-        $this-&gt;assertEqual('SimpleFormatter', $config-&gt;getLoggerFormatter());
+-    }
+-
+-    public function testProperty() {
+-       $xml='&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;&lt;application&gt;
+-                &lt;property name=&quot;one&quot;    value=&quot;/wwwroot&quot; /&gt;
+-                &lt;property name=&quot;two&quot;    value=&quot;on&quot; /&gt;
+-                &lt;property name=&quot;three&quot;  value=&quot;1&quot; /&gt;
+-                &lt;property name=&quot;four&quot;   value=&quot;TRUE&quot; /&gt;
+-                &lt;property name=&quot;five&quot;   value=&quot;off&quot; /&gt;
+-                &lt;property name=&quot;six&quot;    value=&quot;0&quot; /&gt;
+-                &lt;property name=&quot;seven&quot;  value=&quot;false&quot; /&gt;
+-            &lt;/application&gt;';
+-        $config= new XMLConfigurator($xml);
+-        $this-&gt;assertEqual('/wwwroot', $config-&gt;getProperty('one'));
+-        $this-&gt;assertTrue($config-&gt;getProperty('two'));
+-        $this-&gt;assertTrue($config-&gt;getProperty('three'));
+-        $this-&gt;assertTrue($config-&gt;getProperty('four'));
+-        $this-&gt;assertFalse($config-&gt;getProperty('five'));
+-        $this-&gt;assertFalse($config-&gt;getProperty('six'));
+-        $this-&gt;assertFalse($config-&gt;getProperty('seven'));
+-        try {
+-            $config-&gt;getProperty('foo');
+-            $this-&gt;fail('ConfiguratorException should be thrown!');
+-        } catch (Exception $cEx) {
+-            $this-&gt;assertIsA($cEx, 'ConfiguratorException');
+-        }
+-    }
+-
+-}
+-
+
+Copied: trunk/test/application (from rev 199, trunk/test/dummy)
+
+Copied: trunk/test/application/controllers (from rev 227, trunk/test/dummy/controllers)
+
+Copied: trunk/test/application/dummy.xml (from rev 217, trunk/test/dummy/dummy.xml)
+
+Copied: trunk/test/application/models/author.php (from rev 234, trunk/test/dummy/models/author.php)
+
+Copied: trunk/test/application/models/book.php (from rev 234, trunk/test/dummy/models/book.php)
+
+Deleted: trunk/test/application/models/todo.php
+===================================================================
+--- trunk/test/dummy/models/todo.php	2005-10-14 18:04:52 UTC (rev 199)
++++ trunk/test/application/models/todo.php	2005-10-23 13:28:19 UTC (rev 235)
+@@ -1,8 +0,0 @@
+-&lt;?php
+-
+-// $Id$    
+-
+-include_once('active/record/Base.php');
+-
+-class Todo extends ActiveRecordBase {   }
+-
+
+Copied: trunk/test/runner.php (from rev 227, trunk/test/testrunner.php)
+
+Copied: trunk/test/test/action/controller/RoutingTest.php (from rev 228, trunk/test/RoutingTest.php)
+
+Copied: trunk/test/test/active/record/DBOperationsTest.php (from rev 227, trunk/test/ARBaseBasicsTest.php)
+===================================================================
+--- trunk/test/ARBaseBasicsTest.php	2005-10-20 18:54:26 UTC (rev 227)
++++ trunk/test/test/active/record/DBOperationsTest.php	2005-10-23 13:28:19 UTC (rev 235)
+@@ -0,0 +1,73 @@
++&lt;?php
++
++// $Id$
++    
++include_once('dummy/models/author.php');
++include_once('mock/MockConfigurator.php');
++include_once('logger/Logger.php');
++
++/** Tests insert, update, save (insert/update), delete. */
++class DBOperationsTest extends UnitTestCase {
++
++    /**
++     * Constructor Once/TestCase
++     * Prequsites for this TestCase to run: Create a sqlite DB
++     */
++    public function __construct() {
++        if (is_file(TMP . 'test.db')) unlink(TMP . 'test.db');
++        $query='
++            CREATE TABLE authors (
++                id INTEGER PRIMARY KEY,
++                name VARCHAR(100),
++                email VARCHAR(150)
++            );
++        ';
++        sqlite_query(sqlite_open('test.db'), $query);
++    }
++
++    /** set up */
++    public function setUp() {
++        Registry::put(new MockConfigurator(), '__configurator');
++        Registry::put(new Logger(), '__logger');
++        ActiveRecordBase::close();
++    }
++    
++    /** tearDown */
++    public function tearDown() {
++        Registry::close();
++    }
++
++    /** &lt;tt&gt;save &amp;&amp; delete test&lt;/tt&gt; */
++    public function testSave() {
++        $item= new Author();
++        $item-&gt;name= 'Andrei Cristescu';
++        $this-&gt;assertEqual($item-&gt;save(), $item-&gt;id);
++        $this-&gt;assertEqual($item-&gt;delete(), 1);
++    }
++
++    /** &lt;tt&gt;save &amp;&amp; delete test&lt;/tt&gt; */
++    public function testDelete() {
++        $item = new Author();
++        $item-&gt;name = 'Andrei Cristescu';
++        $item-&gt;save();
++        $this-&gt;assertEqual($item-&gt;delete(), 1);
++        $this-&gt;assertEqual($item-&gt;delete(), 0);
++    }
++    
++    /** &lt;tt&gt;insert&lt;/tt&gt; */
++    public function testInsert() {
++        $item = new Author();
++        $item-&gt;name = 'Andrei Cristescu';
++        $this-&gt;assertEqual($item-&gt;insert(), $item-&gt;id);
++        $item-&gt;delete();
++    }
++    /** &lt;tt&gt;update test&lt;/tt&gt; */
++    public function testUpdate() {
++        $item = new Author();
++        $item-&gt;name = 'Andrei Cristescu';
++        $this-&gt;assertEqual($item-&gt;insert(), $item-&gt;id);
++        $item-&gt;email = '<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">cristescu at yahoo.com</A>';
++        $this-&gt;assertEqual($item-&gt;update(), 1);
++        $this-&gt;assertEqual($item-&gt;delete(), 1);
++    }
++}
+
+Copied: trunk/test/test/active/record/FindTest.php (from rev 227, trunk/test/ARBaseFindTest.php)
+===================================================================
+--- trunk/test/ARBaseFindTest.php	2005-10-20 18:54:26 UTC (rev 227)
++++ trunk/test/test/active/record/FindTest.php	2005-10-23 13:28:19 UTC (rev 235)
+@@ -0,0 +1,100 @@
++&lt;?php
++
++// $Id$
++    
++include_once('dummy/models/author.php');
++include_once('mock/MockConfigurator.php');
++include_once('logger/Logger.php');
++  
++/** Tests find */
++class FindTest extends UnitTestCase {
++  
++    /** our authors container */
++    private $authors= array();
++     
++    /**
++     * Constructor Once/TestCase
++     * Prequsites for this TestCase to run: Create a sqlite DB
++     */
++    public function __construct() {
++        if (is_file(TMP . 'test.db')) unlink(TMP . 'test.db');
++        $query='
++            CREATE TABLE authors (
++                id INTEGER PRIMARY KEY,
++                name VARCHAR(100),
++                email VARCHAR(150)
++            );
++        ';
++        sqlite_query(sqlite_open(TMP . 'test.db'), $query);
++     }
++  
++     /** set up this test case, we insert 3 fileds in DB table */
++     public function setUp() {
++        Registry::put(new MockConfigurator(), '__configurator');
++        Registry::put(new Logger(), '__logger');
++        ActiveRecordBase::close();
++        $author= new Author();
++        $author-&gt;name= &quot;Andrei Cristescu&quot;;
++        $author-&gt;email= &quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">andrei.cristescu at foo-factory.info</A>&quot;;
++        $this-&gt;authors[]= $author;
++        $author-&gt;insert();
++        $author= new Author();
++        $author-&gt;name= &quot;Cristescu&quot;;
++        $this-&gt;authors[]= $author;
++        $author-&gt;insert();
++        $author= new Author();
++        $author-&gt;name= &quot;Andrei&quot;;
++        $this-&gt;authors[]= $author;
++        $author-&gt;insert();
++    }
++
++    /** remove all the fields from DB, clean-up the Registry */
++    public function tearDown() {
++        foreach ($this-&gt;authors as $author) {
++            $author-&gt;delete();
++        }
++        Registry::close();
++    }
++
++    /** find all syntax. */
++    public function testFindAll() {
++        $this-&gt;assertEqual(Author::find()-&gt;count(), Author::find('all')-&gt;count());
++    }
++
++    /** id field is not selected, should be NULL */
++    public function testFindAllArrayInclude() {
++        $authors= Author::find('all', array('include'=&gt;'name, email'));
++        foreach ($authors as $author) {
++            $this-&gt;assertNull($author-&gt;id);
++        }
++    }
++
++    /** select by condition */
++    public function testFindAllArrayCondition() {
++        $authors= Author::find('all', array('condition'=&gt;'name=&quot;Andrei Cristescu&quot;'));
++        $this-&gt;assertEqual($authors-&gt;count(), 1);
++        foreach ($authors as $author) {
++            $this-&gt;assertEqual('<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">andrei.cristescu at foo-factory.info</A>', $author-&gt;email);
++        }
++    }
++
++    /** limit syntax. */
++    public function testFindAllArrayLimit() {
++        $authors= Author::find('all', array('limit'=&gt;2));
++        $this-&gt;assertEqual($authors-&gt;count(), 2);
++    }
++
++    /** order syntax. */
++    public function testFindAllArrayOrder() {
++        $authors= Author::find('all', array('order'=&gt;'id DESC'));
++        $i=4; foreach ($authors as $author) {
++            $this-&gt;assertEqual(--$i, $author-&gt;id);
++        }
++    }
++
++    /** offset syntax. */
++    public function testFindAllArrayOffset() {
++        $authors= Author::find('all', array('offset'=&gt;2));
++        $this-&gt;assertEqual($authors-&gt;count(), 1);
++    }
++}
+
+Copied: trunk/test/test/active/record/associations/HasOneTest.php (from rev 228, trunk/test/ARBaseAssocHas_OneTest.php)
+===================================================================
+--- trunk/test/ARBaseAssocHas_OneTest.php	2005-10-21 18:35:26 UTC (rev 228)
++++ trunk/test/test/active/record/associations/HasOneTest.php	2005-10-23 13:28:19 UTC (rev 235)
+@@ -0,0 +1,71 @@
++&lt;?php
++
++// $Id$
++    
++include_once('dummy/models/author.php');
++include_once('dummy/models/book.php');
++include_once('mock/MockConfigurator.php');
++include_once('logger/Logger.php');
++
++/** Test Has_One Association */
++class HasOneTest extends UnitTestCase {
++
++    /**
++     * Constructor Once/TestCase
++     * Prequsites for this TestCase to run: Create a sqlite DB with 2 tables and a foreign key.
++     */
++    public function __construct() {
++        if (is_file(TMP . 'test.db')) unlink(TMP . 'test.db');
++        $tbd= sqlite_open(TMP . 'test.db');
++        $query='
++            CREATE TABLE AUTHORS (
++                id INTEGER PRIMARY KEY,
++                name VARCHAR(100),
++                email VARCHAR(150)
++            )';
++        $ex= sqlite_query($tbd, $query);
++        $_query='    
++            CREATE TABLE BOOKS (
++                id INTEGER PRIMARY KEY,
++                title VARCHAR(100),
++                author_id INTEGER NOT NULL CONSTRAINT fk_author_id REFERENCES AUTHORS(id) ON DELETE CASCADE
++            )';
++        $exp= sqlite_query($tbd, $_query);
++    }
++
++    /** set up */
++    public function setUp() {
++        Registry::put(new MockConfigurator(), '__configurator');
++        Registry::put(new Logger(), '__logger');
++        ActiveRecordBase::close();
++        
++        $author= new Author();
++        $author-&gt;name= 'Andrei Cristescu';
++        $author-&gt;email= '<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">andrei at foocompany.com</A>';
++        
++        $id= $author-&gt;save();
++        
++        $book = new Book();
++        $book-&gt;author_id= $id;
++        $book-&gt;title= 'The End is NEAR!';
++        $book-&gt;save();
++    }
++    
++    /** tearDown */
++    public function tearDown() {
++        Registry::close();
++    }
++
++    /** */
++    public function testHasOne() {
++        $books= Book::find();
++        foreach($books as $book) {
++            $this-&gt;assertIsA($book-&gt;author, 'Author');
++            $this-&gt;assertIsA($book, 'Book');
++        }
++        $this-&gt;assertEqual($book-&gt;author-&gt;name, 'Andrei Cristescu');
++        // TBD. This is not supported right now!
++        // $book-&gt;author-&gt;delete();
++        // $this-&gt;assertEqual(sizeof(Book::find()), 0);
++    }
++}
+
+Copied: trunk/test/test/active/support/InflectorTest.php (from rev 195, trunk/test/InflectorTest.php)
+
+Copied: trunk/test/test/configurator/XMLConfiguratorTest.php (from rev 226, trunk/test/XMLConfiguratorTest.php)
+
+Copied: trunk/test/test/medick/CollectionTest.php (from rev 195, trunk/test/CollectionTest.php)
+
+Copied: trunk/test/test/medick/RegistryTest.php (from rev 227, trunk/test/RegistryTest.php)
+
+Deleted: trunk/test/testrunner.php
+===================================================================
+--- trunk/test/testrunner.php	2005-10-23 11:20:20 UTC (rev 234)
++++ trunk/test/testrunner.php	2005-10-23 13:28:19 UTC (rev 235)
+@@ -1,43 +0,0 @@
+-#!/wwwroot/bin/php -q
+-&lt;?php
+-
+-// $Id$
+-
+-// Script that runs all the *Test.php* files from the current folder.
+-    
+-$time_start = microtime(true);
+-
+-define('TOP_LOCATION', dirname(__FILE__) . DIRECTORY_SEPARATOR . '..' . DIRECTORY_SEPARATOR);
+-
+-set_include_path( TOP_LOCATION . 'libs' . DIRECTORY_SEPARATOR . PATH_SEPARATOR .
+-                  TOP_LOCATION . 'vendor' . DIRECTORY_SEPARATOR . PATH_SEPARATOR . 
+-                  dirname(__FILE__) 
+-                );
+-
+-error_reporting(E_ALL);
+-set_time_limit(0);
+-ini_set('display_errors', 1);
+-
+-include_once('medick/Object.php');
+-include_once('medick/Exception.php');
+-include_once('medick/Registry.php');
+-include_once('medick/Collection.php');
+-
+-include_once('simpletest/web_tester.php');
+-include_once('simpletest/unit_tester.php');
+-include_once('simpletest/reporter.php');
+-
+-$test= new GroupTest('====== Medick Framework Unit Tests =====');
+-
+-$it = new DirectoryIterator(dirname(__FILE__));
+-foreach($it as $file) {
+-    if ($file-&gt;isDir()) continue;
+-    if (preg_match(&quot;/Test.php/i&quot;, $file-&gt;getFileName())) $test-&gt;addTestFile($file-&gt;getFileName());
+-}
+-
+-$test-&gt;run(new TextReporter());
+-
+-$time_end = microtime(true);
+-echo &quot;Done in &quot; . ($time_end - $time_start) . &quot; seconds\n&quot;;
+-
+-unlink('test.db');
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000038.html">[Medick-svn] r234 - in trunk: libs/active/record libs/medick test/dummy/models
+</A></li>
+	<LI>Next message: <A HREF="000040.html">[Medick-svn] r236 - in trunk/test: . application mock test/active/record test/active/record/associations test/configurator tmp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#39">[ date ]</a>
+              <a href="thread.html#39">[ thread ]</a>
+              <a href="subject.html#39">[ subject ]</a>
+              <a href="author.html#39">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

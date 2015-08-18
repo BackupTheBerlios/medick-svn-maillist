@@ -1,0 +1,149 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r460 - in exp/ar5: . test/mock
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-August/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r460%20-%20in%20exp/ar5%3A%20.%20test/mock&In-Reply-To=%3C200708281429.l7SETVbO001818%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000239.html">
+   <LINK REL="Next"  HREF="000241.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r460 - in exp/ar5: . test/mock</H1>
+    <B>aurelian at mail.berlios.de</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r460%20-%20in%20exp/ar5%3A%20.%20test/mock&In-Reply-To=%3C200708281429.l7SETVbO001818%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r460 - in exp/ar5: . test/mock">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Tue Aug 28 16:29:31 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000239.html">[Medick-svn] r459 - exp/ar5
+</A></li>
+        <LI>Next message: <A HREF="000241.html">[Medick-svn] r461 - in exp/ar5: . libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#240">[ date ]</a>
+              <a href="thread.html#240">[ thread ]</a>
+              <a href="subject.html#240">[ subject ]</a>
+              <a href="author.html#240">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-08-28 16:29:29 +0200 (Tue, 28 Aug 2007)
+New Revision: 460
+
+Modified:
+   exp/ar5/README
+   exp/ar5/test/mock/driver.php
+Log:
+ -- updated README + more mocks
+
+Modified: exp/ar5/README
+===================================================================
+--- exp/ar5/README	2007-08-26 19:05:12 UTC (rev 459)
++++ exp/ar5/README	2007-08-28 14:29:29 UTC (rev 460)
+@@ -5,7 +5,7 @@
+ 
+ This Medick experiment is licensed under BSD Licence, see LICENSE for details.
+ 
+-Status:
++Done:
+   -&gt; removed Creole
+   -&gt; SQLConnection -&gt; database connection class
+   -&gt; SQLTableInfo -&gt; metadata for database tables
+@@ -21,8 +21,14 @@
+   -&gt; ActiveRecord: base find
+ 
+ Todo:
++  -&gt; port Logger
++  -&gt; add MTimer to logs
++  -&gt; SQL Limit/Offset
++  -&gt; ActiveRecord: advanced find(see SQLBuilder comments)
+   -&gt; ActiveRecord: filters
+   -&gt; ActiveRecord: validators
++  -&gt; ActiveRecord: find with array --&gt; User::find( array(1,2,3,4), $clauses, $bindings )
++  -&gt; SQL Transactions
+   -&gt; Driver: MySQL
+   -&gt; Driver: MySQLi
+   -&gt; Driver: PostgreSQL
+@@ -31,5 +37,6 @@
+ Unit Tests:
+   -&gt; setup simpletest, a runner
+   -&gt; setup mocks for accessing data
++  -&gt; test1. sqlbuilder with mock-sql
+   -&gt; active record tests.
+ 
+
+Modified: exp/ar5/test/mock/driver.php
+===================================================================
+--- exp/ar5/test/mock/driver.php	2007-08-26 19:05:12 UTC (rev 459)
++++ exp/ar5/test/mock/driver.php	2007-08-28 14:29:29 UTC (rev 460)
+@@ -7,6 +7,10 @@
+ include_once('active/record/drivers/abstract/SQLResultSet.php');
+ include_once('active/record/drivers/abstract/SQLTableInfo.php');
+ 
++class MocTableInfo extends SQLTableInfo {
++
++}
++
+ class MockConnection extends SQLConnection {
+   
+   public function connect(Array $dsn=array()) {
+@@ -24,5 +28,25 @@
+   public function getLastErrorMessage() {
+     return 'mock.';
+   }
++
++  public function getTableInfo($name, $force=false) {
++    return new MockTableInfo($name, $this);
++  }
++
++  public function execute( $sql ) {
++
++  }
++
++  public function exec( $sql ) {
++
++  }
++
++  public function getUpdateCount($rs=null) {
++
++  }
++
++  public function prepare( $sql ) {
++    return new MockPreparedStatement($sql, $this);
++  }
+   
+ }
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000239.html">[Medick-svn] r459 - exp/ar5
+</A></li>
+	<LI>Next message: <A HREF="000241.html">[Medick-svn] r461 - in exp/ar5: . libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#240">[ date ]</a>
+              <a href="thread.html#240">[ thread ]</a>
+              <a href="subject.html#240">[ subject ]</a>
+              <a href="author.html#240">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

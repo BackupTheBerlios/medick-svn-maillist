@@ -1,0 +1,98 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r468 - trunk
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2008-April/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r468%20-%20trunk&In-Reply-To=%3C200804180831.m3I8Vm9u022626%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000247.html">
+   <LINK REL="Next"  HREF="000249.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r468 - trunk</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r468%20-%20trunk&In-Reply-To=%3C200804180831.m3I8Vm9u022626%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r468 - trunk">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Fri Apr 18 10:31:48 CEST 2008</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000247.html">[Medick-svn] r467 - in trunk/libs: action/controller active/record	active/support medick
+</A></li>
+        <LI>Next message: <A HREF="000249.html">[Medick-svn] r469 - in exp/medick2: .	vendor/medick/lib/action/controller vendor/medick/lib/context	vendor/medick/lib/medick vendor/medick/lib/plugin	vendor/plugins/foo/lib
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#248">[ date ]</a>
+              <a href="thread.html#248">[ thread ]</a>
+              <a href="subject.html#248">[ subject ]</a>
+              <a href="author.html#248">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2008-04-18 10:31:47 +0200 (Fri, 18 Apr 2008)
+New Revision: 468
+
+Modified:
+   trunk/CHANGELOG
+   trunk/VERSION
+Log:
+ -- that's complete to make a release
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2008-04-18 08:22:16 UTC (rev 467)
++++ trunk/CHANGELOG	2008-04-18 08:31:47 UTC (rev 468)
+@@ -1,5 +1,13 @@
+ $Id$
+ 
++0.4.2 (18.Apr.2008)
++    - (fixed) underscore in table name
++    - (fixed) update records call to undefinied method isAffected
++    - added InclusionOfValidator
++    - added ActiveRecord::new_record method
++    - ActionController will render inline text on errors/exceptios if the request was mede with XHR
++    - Route will merge a parameter only if it's dynamic
++    
+ 0.4.1 (15.Aug.2007)
+     - (fixed) URL::create when rewrite is off (still needs more testing)
+     - (fixed) syntax error in HTML.JSON
+
+Modified: trunk/VERSION
+===================================================================
+--- trunk/VERSION	2008-04-18 08:22:16 UTC (rev 467)
++++ trunk/VERSION	2008-04-18 08:31:47 UTC (rev 468)
+@@ -1 +1 @@
+-0.4.1
++0.4.2
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000247.html">[Medick-svn] r467 - in trunk/libs: action/controller active/record	active/support medick
+</A></li>
+	<LI>Next message: <A HREF="000249.html">[Medick-svn] r469 - in exp/medick2: .	vendor/medick/lib/action/controller vendor/medick/lib/context	vendor/medick/lib/medick vendor/medick/lib/plugin	vendor/plugins/foo/lib
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#248">[ date ]</a>
+              <a href="thread.html#248">[ thread ]</a>
+              <a href="subject.html#248">[ subject ]</a>
+              <a href="author.html#248">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

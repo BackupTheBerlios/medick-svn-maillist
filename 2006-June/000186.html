@@ -1,0 +1,473 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r403 - in trunk: . libs/action/controller libs/action/controller/http libs/action/view libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-June/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r403%20-%20in%20trunk%3A%20.%20libs/action/controller%20libs/action/controller/http%20libs/action/view%20libs/active/record&In-Reply-To=%3C200606070837.k578bwdX004658%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000185.html">
+   <LINK REL="Next"  HREF="000187.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r403 - in trunk: . libs/action/controller libs/action/controller/http libs/action/view libs/active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r403%20-%20in%20trunk%3A%20.%20libs/action/controller%20libs/action/controller/http%20libs/action/view%20libs/active/record&In-Reply-To=%3C200606070837.k578bwdX004658%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r403 - in trunk: . libs/action/controller libs/action/controller/http libs/action/view libs/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Wed Jun  7 10:37:58 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000185.html">[Medick-svn] r402 - in trunk/libs: action/controller/session action/view active/support
+</A></li>
+        <LI>Next message: <A HREF="000187.html">[Medick-svn] r404 - trunk/libs/action/view
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#186">[ date ]</a>
+              <a href="thread.html#186">[ thread ]</a>
+              <a href="subject.html#186">[ subject ]</a>
+              <a href="author.html#186">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-06-07 10:37:46 +0200 (Wed, 07 Jun 2006)
+New Revision: 403
+
+Modified:
+   trunk/CHANGELOG
+   trunk/libs/action/controller/Base.php
+   trunk/libs/action/controller/Map.php
+   trunk/libs/action/controller/Request.php
+   trunk/libs/action/controller/Route.php
+   trunk/libs/action/controller/http/HTTPRequest.php
+   trunk/libs/action/view/HTML.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Validator.php
+Log:
+ -- ActionController (fix) merges flash values
+ -- ActionController added magic __self template variable
+ -- HTTPRequest, Map some API docs
+ -- Request printing first level array in toString
+
+
+Modified: trunk/CHANGELOG
+===================================================================
+--- trunk/CHANGELOG	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/CHANGELOG	2006-06-07 08:37:46 UTC (rev 403)
+@@ -9,7 +9,8 @@
+     - added Field::toString, Field::length and Field::h methods
+     - HTTPRequest added new methods to get the current HTTPRequest method: getMethod, isPost, isGet
+     - ActionController ``beautiful&quot;(TM) error template
+-    - ActionController will throw a medick exception when trying to load an unexistent before_filter  
++    - ActionController will throw a medick exception when trying to load an unexistent before_filter
++    - ActionController (fix) flash values are merged on the same run  
+     - FormHelper minor code clean-ups and added password_field method
+     - more API docs
+     
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/action/controller/Base.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -138,11 +138,11 @@
+ 
+     /** @var Configurator
+         configurator instance */
+-    private $config;
++    protected $config;
+ 
+     /** @var Injector
+         the injector. */
+-    private $injector;
++    protected $injector;
+ 
+     /**
+      * Process this Request when an exception occured
+@@ -233,10 +233,7 @@
+         try {
+             $this-&gt;injector-&gt;inject('helper', $this-&gt;params['controller']);
+         } catch (FileNotFoundException $fnfEx) {
+-            $this-&gt;logger-&gt;info(
+-                'skipping helper: '
+-                . $this-&gt;injector-&gt;getPath('helpers')
+-                . '_' . $this-&gt;params['controller'] . ' ' . $fnfEx-&gt;getMessage());
++            $this-&gt;logger-&gt;info('Skiped helper: ' . $this-&gt;params['controller'] . '_helper.php');
+         }
+         $this-&gt;register_flash();
+         if ($this-&gt;use_layout) {
+@@ -244,11 +241,9 @@
+             $layout_file= $this-&gt;injector-&gt;getPath('layouts') . $layout . '.phtml';
+             $this-&gt;logger-&gt;debug('Layout: ' . $layout_file);
+             if (!is_file($layout_file)) {
+-                $this-&gt;logger-&gt;debug('...failed.');
+                 return $this-&gt;render_without_layout($template_file, $status);
+             } else {
+                 $this-&gt;template-&gt;content_for_layout= $this-&gt;template-&gt;render_file($template_file);
+-                // $this-&gt;logger-&gt;debug('...done.');
+                 return $this-&gt;render_text($this-&gt;template-&gt;render_file($layout_file), $status);
+             }
+         } else {
+@@ -319,7 +314,11 @@
+     }
+ 
+     protected function flash($name, $value) {
+-        $this-&gt;session-&gt;putValue('flash', array($name=&gt;$value));
++        if ($this-&gt;session-&gt;hasValue('flash')) {
++            $this-&gt;session-&gt;putValue('flash', array_merge($this-&gt;session-&gt;getValue('flash'), array($name=&gt;$value)));
++        } else {
++            $this-&gt;session-&gt;putValue('flash', array($name=&gt;$value));
++        }
+     }
+ 
+     /**
+@@ -365,7 +364,7 @@
+         $this-&gt;template-&gt;assign('__server',     (string)$this-&gt;config-&gt;getWebContext()-&gt;server_name);
+         $this-&gt;template-&gt;assign('__controller', $this-&gt;params['controller']);
+         $this-&gt;template-&gt;assign('__version',    Medick::getVersion());
+-        
++        $this-&gt;template-&gt;assign('__self', $this-&gt;__base . $this-&gt;request-&gt;getRequestUri());
+         $this-&gt;logger-&gt;debug($this-&gt;request-&gt;toString());
+     }
+ 
+
+Modified: trunk/libs/action/controller/Map.php
+===================================================================
+--- trunk/libs/action/controller/Map.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/action/controller/Map.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -43,10 +43,20 @@
+ 
+     private static $instance= NULL;
+ 
++    /**
++     * Hidden constructor
++     *
++     * Use Map::getInstance to get an instance
++     */ 
+     protected function Map() {
+         parent::Collection();
+     }
+ 
++    /**
++     * It gets this object instance
++     * 
++     * @return Map
++     */ 
+     public static function getInstance() {
+         if (Map::$instance===NULL) {
+             Map::$instance= new Map();
+@@ -54,6 +64,12 @@
+         return Map::$instance;
+     }
+     
++    /**
++     * Match the incoming Request against defined Routes
++     *
++     * @param Request incoming request
++     * @throws RoutingException if we cannot resolve this request to a route
++     */ 
+     public function match(Request $request) {
+         foreach ($this-&gt;elements as $element) {
+             if ($element-&gt;match($request)) return $element;
+@@ -61,6 +77,12 @@
+         throw new RoutingException('Cannot find a Route for this hash: ' . $request-&gt;getRequestURI());
+     }
+     
++    /**
++     * It gets a Route of this Map by the Route name
++     *
++     * @param string route name
++     * @throws RoutingException if we cannot find a Route by the givven name
++     */ 
+     public function getRouteByName($name) {
+         foreach ($this-&gt;elements as $element) {
+             if ($element-&gt;getName() == $name) return $element;
+
+Modified: trunk/libs/action/controller/Request.php
+===================================================================
+--- trunk/libs/action/controller/Request.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/action/controller/Request.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -47,11 +47,11 @@
+     /** @var array
+         current request parameters */
+     private $params = array();
+-
++    
+     /** 
+      * Hidden Constructor 
+      */
+-    protected function Request() {  }
++     protected function Request() { }
+ 
+     /**
+      * It gets a Request Parameter
+@@ -111,9 +111,23 @@
+      * @return string
+      */ 
+     public function toString() {
+-        $buff = &quot;{&quot;.$this-&gt;getClassName().&quot;}--&gt;&quot;;
++        $buff = &quot;{&quot;.$this-&gt;getClassName().&quot;}--&gt;\n&quot;;
+         foreach ($this-&gt;getParameters() as $name=&gt;$value) {
+-            $buff .= &quot;[{$name}={$value}]&quot;;
++            $buff .= &quot;[{$name}=&quot;;
++            if (is_array($value)) {
++                $buff .= &quot;\n\t[Array:\n&quot;;
++                foreach ($value as $k=&gt;$v) {
++                    $buff .= &quot;\t\t[{$k}=&quot;;
++                    if (strlen($v)&gt;75) {
++                        $buff .= substr(str_replace(&quot;&quot;,&quot;\n&quot;,$v),0,75) .&quot; .....]\n&quot;;
++                    } else {
++                        $buff .= &quot;$v]\n&quot;;
++                    }
++                }
++                $buff .= &quot;]]\n&quot;;
++            } else {
++                $buff .= &quot;{$value}]&quot;;
++            }
+         }
+         return $buff;
+     }
+
+Modified: trunk/libs/action/controller/Route.php
+===================================================================
+--- trunk/libs/action/controller/Route.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/action/controller/Route.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -333,7 +333,7 @@
+     public function createControllerInstance(Request $request) {
+         if (!$this-&gt;isLoaded) $this-&gt;load($request);
+         try {
+-            Registry::get('__logger')-&gt;debug($this-&gt;toString());
++            // Registry::get('__logger')-&gt;debug($this-&gt;toString());
+             return Registry::put(new Injector(), '__injector')-&gt;inject('controller', $request-&gt;getParameter('controller'));
+         } catch (FileNotFoundException $fnfEx) {
+             throw new RoutingException('Cannot create a controller instance, ' . $fnfEx-&gt;getMessage());
+@@ -346,7 +346,6 @@
+      * @return string
+      */ 
+     public function toString() {
+-	return '';
+         return sprintf('{%s}--&gt;Name: %s; List: %s;', 
+                         $this-&gt;getClassName(), 
+                         $this-&gt;getNameToHuman(), 
+@@ -374,12 +373,16 @@
+      * @param Request request, the request on witch we want to merge
+      */ 
+     private function doMerge(Request $request) {
++        // $l = Registry::get('__logger');
+         foreach ($this-&gt;merges as $name=&gt;$value) {
+             if (isset(Route::$old_merges[$name])) unset(Route::$old_merges[$name]);
++            // $l-&gt;debug('+++++ ' . $name);
++            // $l-&gt;debug('+++++ ' . $value);
+             $request-&gt;setParameter($name, $value);
+         }
+         // discard previously route parameters.
+         foreach (Route::$old_merges as $name=&gt;$value) {
++            // $l-&gt;debug('----- ' . $name);
+             $request-&gt;setParameter($name, NULL);
+         }
+         // cache merged parameters  
+
+Modified: trunk/libs/action/controller/http/HTTPRequest.php
+===================================================================
+--- trunk/libs/action/controller/http/HTTPRequest.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/action/controller/http/HTTPRequest.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -95,38 +95,87 @@
+         $this-&gt;headers = HTTPRequest::getAllHeaders();
+     }
+ 
++    /**
++     * Get the current request method
++     *
++     * @return string can be POST or GET
++     */ 
+     public function getMethod() {
+         return $this-&gt;method;
+     }
+     
++    /**
++     * Check if this request was made using POST
++     *
++     * @return bool true if it's a POST
++     */ 
+     public function isPost() {
+         return $this-&gt;method == 'POST';
+     }
+     
++    /**
++     * Check if this Request was made using GET
++     *
++     * @return bool true if it was GET
++     */ 
+     public function isGet() {
+         return $this-&gt;method == 'GET';
+     }
+     
++    /**
++     * Gets an array of Cookies
++     *
++     * @return array
++     */ 
+     public function getCookies() {
+         return $this-&gt;cookies;
+     }
+ 
++    /**
++     * Check if it has a Cookie with the specfied name
++     *
++     * @param string the Cookie name
++     * @return bool true if it has
++     */ 
+     public function hasCookie($name) {
+         return isset($this-&gt;cookies[$name]);
+     }
+ 
++    /**
++     * It gets a cookie by it's name
++     *
++     * @param string cookie name
++     * @return Cookie or FALSE if this Request don't have the requested cookie
++     */ 
+     public function getCookie($name) {
+         return $this-&gt;hasCookie($name) ? $this-&gt;cookies[$name] : FALSE;
+     }
+     
++    /**
++     * It gets an array of headers associated with this request
++     *
++     * @return array
++     */ 
+     public function getHeaders() {
+         return $this-&gt;headers;
+     }
+-
++    
++    /**
++     * It gets a header
++     * 
++     * @param strign name of the header to look for
++     * @return string header value or FALSE if it don't have the header
++     */ 
+     public function getHeader($name) {
+         return $this-&gt;hasHeader($name) ? $this-&gt;headers[ucfirst($name)] : FALSE;
+     }
+-
++    
++    /**
++     * Check if it has a specific header
++     *
++     * @param string name of the header to check for
++     * @return bool true if it has
++     */ 
+     public function hasHeader($name) {
+         return isset($this-&gt;headers[ucfirst($name)]);
+     }
+@@ -144,7 +193,7 @@
+ 
+     /**
+      * It gets a part of the path info associated with this request
+-     * @param int, key, the part index
++     *
+      * @return value of this part or NULL if this part is not defined
+      */
+     public function getRequestUri() {
+
+Modified: trunk/libs/action/view/HTML.php
+===================================================================
+--- trunk/libs/action/view/HTML.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/action/view/HTML.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -219,17 +219,13 @@
+         $value= $object-&gt;$method === NULL ? 0: $object-&gt;$method;
+         
+         if ( (int)$value &gt; 0 ) {
+-            $buff .= 'checked=&quot;checked&quot;';// value=&quot;' . $value . '&quot;';
+-        } else {
+-            // $buff .= 'value=&quot;0&quot;';
++            $buff .= 'checked=&quot;checked&quot;';
+         }
+         $buff .= ' /&gt;';
+         if ($errors) {
+             $buff .= '&lt;/div&gt;';
+         }
+         return $buff;
+-        // . '&lt;input name=&quot;' . $name . '&quot; value=&quot;' . $value . '&quot; type=&quot;hidden&quot; /&gt;';
+-        // return $buff;
+     }
+ }
+ 
+@@ -251,10 +247,13 @@
+         $buff= $base . '/';
+         if ($controller) $buff .= $controller . '/';
+         $buff .= $action;
++        
+         foreach ($params as $key=&gt;$value) {
+             $buff .= '/' . $value;
+         }
+-        return $buff . '.' . $ext;
++        
++        if ($ext=='') return $buff;
++        else return $buff . '.' . $ext;
+     }
+ }
+ 
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/active/record/Base.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -530,6 +530,12 @@
+         }
+     }
+     
++    /**
++     * Executes a plain sql query
++     *
++     * @param string sql query to execute
++     * @return ResultSet
++     */ 
+     public static function execute($sql) {
+         $r= ActiveRecord::connection()-&gt;executeQuery($sql);
+         Registry::get('__logger')-&gt;debug(ActiveRecord::$conn-&gt;lastQuery);
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2006-06-02 17:36:33 UTC (rev 402)
++++ trunk/libs/active/record/Validator.php	2006-06-07 08:37:46 UTC (rev 403)
+@@ -83,7 +83,7 @@
+                 } elseif ($method == &quot;uniqueness_of&quot; ) {
+                     $has_errors = $this-&gt;isNotUnique($field);
+                 } else {
+-                    trigger_error('No such method validation method:' . $method, E_USER_ERROR);
++                    trigger_error('No such method validation method: ' . $method, E_USER_ERROR);
+                 }
+             } else {
+                 // exception?
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000185.html">[Medick-svn] r402 - in trunk/libs: action/controller/session action/view active/support
+</A></li>
+	<LI>Next message: <A HREF="000187.html">[Medick-svn] r404 - trunk/libs/action/view
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#186">[ date ]</a>
+              <a href="thread.html#186">[ thread ]</a>
+              <a href="subject.html#186">[ subject ]</a>
+              <a href="author.html#186">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

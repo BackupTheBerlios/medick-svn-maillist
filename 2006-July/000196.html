@@ -1,0 +1,263 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r413 - exp
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-July/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r413%20-%20exp&In-Reply-To=%3C200607011536.k61FasNI029520%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000195.html">
+   <LINK REL="Next"  HREF="000197.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r413 - exp</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r413%20-%20exp&In-Reply-To=%3C200607011536.k61FasNI029520%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r413 - exp">aurelian at berlios.de
+       </A><BR>
+    <I>Sat Jul  1 17:36:54 CEST 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000195.html">[Medick-svn] r412 - / exp
+</A></li>
+        <LI>Next message: <A HREF="000197.html">[Medick-svn] r414 - exp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#196">[ date ]</a>
+              <a href="thread.html#196">[ thread ]</a>
+              <a href="subject.html#196">[ subject ]</a>
+              <a href="author.html#196">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-07-01 17:36:54 +0200 (Sat, 01 Jul 2006)
+New Revision: 413
+
+Modified:
+   exp/validator_api.php
+Log:
+ -- removed FieldError class &amp;&amp; added FormatOfValidator
+
+Modified: exp/validator_api.php
+===================================================================
+--- exp/validator_api.php	2006-07-01 10:16:07 UTC (rev 412)
++++ exp/validator_api.php	2006-07-01 15:36:54 UTC (rev 413)
+@@ -33,12 +33,11 @@
+ // }}}
+ 
+ /**
+- * Medick ActiveRecord Validation API
++ * Medick ActiveRecord Validation API (2)
+  */
++ 
++error_reporting(E_STRICT | E_ALL);
+ 
+-error_reporting(E_STRICT|E_ALL);
+-ini_set('display_errors', 1);
+-
+ class MedickClass extends ReflectionClass { }
+ 
+ class Object {
+@@ -61,24 +60,6 @@
+ 
+ }
+ 
+-class FieldError extends Object {
+-
+-    private $message;
+-
+-    public function FieldError($message) {
+-        $this-&gt;message= $message;
+-    }
+-
+-    public function getMessage() {
+-        return $this-&gt;message;
+-    }
+-
+-    public function toString() {
+-        return $this-&gt;message;
+-    }
+-
+-}
+-
+ class Field extends Object {
+ 
+     private $name;
+@@ -103,7 +84,7 @@
+         return $this-&gt;name;
+     }
+ 
+-    public function addError(FieldError $error) {
++    public function addError($error) {
+         $this-&gt;errors[]= $error;
+     }
+ 
+@@ -146,13 +127,32 @@
+ 
+ }
+ 
++class FormatOfValidator extends Validator {
++
++    protected $message= '%s has invalid format!';
++
++    private $with= '';
++    
++    public function with($regex='') {
++        $this-&gt;with= $regex;
++        return $this;
++    }
++    
++    public function validate(Field $field) {
++        if ( $this-&gt;with === '' ||  !preg_match($this-&gt;with, $field-&gt;getValue())) {
++            $field-&gt;addError(sprintf($this-&gt;message, $field-&gt;getName()));
++        }
++    }
++
++}
++
+ class PresenceOfValidator extends Validator {
+ 
+-    protected $message= '%s is empty';
++    protected $message= '%s is empty!';
+ 
+     public function validate(Field $field) {
+         if ($field-&gt;getValue() == '') { 
+-            $field-&gt;addError(new FieldError(sprintf($this-&gt;message, $field-&gt;getName())));
++            $field-&gt;addError(sprintf($this-&gt;message, $field-&gt;getName()));
+         }
+     }
+ 
+@@ -165,7 +165,7 @@
+     public function validate(Field $field) {
+         $v=$field-&gt;getValue();
+         if(!((is_numeric($v)) &amp;&amp; (intval(0+$v)==$v))) { 
+-            $field-&gt;addError(new FieldError(sprintf($this-&gt;message, $field-&gt;getName())));
++            $field-&gt;addError(sprintf($this-&gt;message, $field-&gt;getName()));
+         }
+     }
+ 
+@@ -175,8 +175,8 @@
+ 
+     protected $too_short= '%s is too short, min is %d';
+     protected $too_long = '%s is too long, max is %d';
+-    protected $min;
+-    protected $max;
++    protected $min= 0;
++    protected $max= 1;
+ 
+     public function in($min, $max) {
+         if ( $max &lt;= $min ) { 
+@@ -210,9 +210,9 @@
+     public function validate(Field $field) {
+         $l= strlen($field-&gt;getValue());
+         if ($l &lt; $this-&gt;min) { 
+-            return $field-&gt;addError(new FieldError(sprintf($this-&gt;too_short, $field-&gt;getName(), $this-&gt;min)));
++            return $field-&gt;addError(sprintf($this-&gt;too_short, $field-&gt;getName(), $this-&gt;min));
+         } elseif ($l &gt; $this-&gt;max) { 
+-            return $field-&gt;addError(new FieldError(sprintf($this-&gt;too_long, $field-&gt;getName(), $this-&gt;max)));
++            return $field-&gt;addError(sprintf($this-&gt;too_long, $field-&gt;getName(), $this-&gt;max));
+         }
+     }
+ 
+@@ -266,18 +266,23 @@
+             if ($this-&gt;getClass()-&gt;hasMethod($method)) return $this-&gt;getClass()-&gt;getMethod($method)-&gt;invoke($this);
+             return;
+         }
++        trigger_error('Call to a undefined method: ' . $this-&gt;getClassName() . '::' . $method, E_USER_ERROR);
+     }
+ 
+     protected function collect_errors() {
+-        foreach ($this-&gt;validators as $v) {
+-            $v-&gt;validate_each($this);
+-        }
++        $this-&gt;run_validators();
+         foreach ($this-&gt;fields as $field) {
+             if ($field-&gt;hasErrors()) return 1;
+         }
+         return 0;
+     }
+ 
++    private function run_validators() {
++        foreach ($this-&gt;validators as $v) {
++            $v-&gt;validate_each($this);
++        }
++    }
++    
+     public function save() {
+         if ($this-&gt;before_save() &amp;&amp; $this-&gt;collect_errors() === 0) {
+             return true;
+@@ -293,6 +298,7 @@
+         $this-&gt;fields['name']    = new Field('name');
+         $this-&gt;fields['address'] = new Field('address');
+         $this-&gt;fields['phone']   = new Field('phone');
++        $this-&gt;fields['email']   = new Field('email');
+     }
+ 
+     protected function before_save() {
+@@ -300,24 +306,30 @@
+         $this-&gt;validates_length_of('name')-&gt;in(1,5)-&gt;too_short('Too short: %s [min: %d]')-&gt;too_long('Too long: %s, [max: %d]');
+         $this-&gt;validates_length_of('address')-&gt;max(5)-&gt;too_long('%s is too long, maximum is %d charachters');
+         $this-&gt;validates_numericality_of('phone');
++        $this-&gt;validates_format_of('email')-&gt;with('/^([^@\s]+)@((?:[-a-z0-9]+\.)+[a-z]{2,})$/i');
+         return true;
+     }
+ 
+ }
+ 
+-function error_messages_for(ActiveRecord $record) {
+-    foreach ($record-&gt;getFields() as $field) {
+-        foreach ($field-&gt;getErrors() as $error) {
+-            echo $error-&gt;getMessage() . &quot;\n&quot;;
++class ActiveRecordHelper extends Object {
++    
++    public static function error_messages_for(ActiveRecord $record) {
++        foreach ($record-&gt;getFields() as $field) {
++            foreach ($field-&gt;getErrors() as $error) {
++                echo $error . &quot;\n&quot;;
++            }
+         }
+     }
++
+ }
+ 
+ $p= new Person();
++$p-&gt;email= 'F';
+ $p-&gt;phone= 'a';
+ $p-&gt;name= 'Marel';
+ $p-&gt;address= 'Andro';
+ var_dump($p-&gt;save());
+ 
+-error_messages_for($p);
++ActiveRecordHelper::error_messages_for($p);
+ 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000195.html">[Medick-svn] r412 - / exp
+</A></li>
+	<LI>Next message: <A HREF="000197.html">[Medick-svn] r414 - exp
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#196">[ date ]</a>
+              <a href="thread.html#196">[ thread ]</a>
+              <a href="subject.html#196">[ subject ]</a>
+              <a href="author.html#196">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

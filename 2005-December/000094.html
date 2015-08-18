@@ -1,0 +1,1121 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r298 - in trunk/libs/creole: . common contrib drivers/mssql drivers/mysql drivers/odbc drivers/oracle drivers/sqlite/metadata
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-December/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r298%20-%20in%20trunk/libs/creole%3A%20.%20common%20contrib%20drivers/mssql%20drivers/mysql%20drivers/odbc%20drivers/oracle%20drivers/sqlite/metadata&In-Reply-To=%3C200512121913.jBCJDGMR013501%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000093.html">
+   <LINK REL="Next"  HREF="000095.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r298 - in trunk/libs/creole: . common contrib drivers/mssql drivers/mysql drivers/odbc drivers/oracle drivers/sqlite/metadata</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r298%20-%20in%20trunk/libs/creole%3A%20.%20common%20contrib%20drivers/mssql%20drivers/mysql%20drivers/odbc%20drivers/oracle%20drivers/sqlite/metadata&In-Reply-To=%3C200512121913.jBCJDGMR013501%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r298 - in trunk/libs/creole: . common contrib drivers/mssql drivers/mysql drivers/odbc drivers/oracle drivers/sqlite/metadata">aurelian at berlios.de
+       </A><BR>
+    <I>Mon Dec 12 20:13:16 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000093.html">[Medick-svn] r297 - applications/eltodo/conf
+</A></li>
+        <LI>Next message: <A HREF="000095.html">[Medick-svn] r299 - in trunk/libs/action/controller: . http
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#94">[ date ]</a>
+              <a href="thread.html#94">[ thread ]</a>
+              <a href="subject.html#94">[ subject ]</a>
+              <a href="author.html#94">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-12-12 20:13:00 +0100 (Mon, 12 Dec 2005)
+New Revision: 298
+
+Modified:
+   trunk/libs/creole/CreoleTypes.php
+   trunk/libs/creole/SQLException.php
+   trunk/libs/creole/common/PreparedStatementCommon.php
+   trunk/libs/creole/contrib/DebugConnection.php
+   trunk/libs/creole/drivers/mssql/MSSQLPreparedStatement.php
+   trunk/libs/creole/drivers/mysql/MySQLPreparedStatement.php
+   trunk/libs/creole/drivers/odbc/ODBCPreparedStatement.php
+   trunk/libs/creole/drivers/oracle/OCI8PreparedStatement.php
+   trunk/libs/creole/drivers/sqlite/metadata/SQLiteDatabaseInfo.php
+Log:
+ - [ creole ] merged from Creole HEAD
+
+Modified: trunk/libs/creole/CreoleTypes.php
+===================================================================
+--- trunk/libs/creole/CreoleTypes.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/CreoleTypes.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,6 +1,6 @@
+ &lt;?php
+ /*
+- *  $Id: CreoleTypes.php,v 1.17 2005/09/28 13:18:19 hlellelid Exp $
++ *  $Id: CreoleTypes.php,v 1.18 2005/11/07 22:38:52 hlellelid Exp $
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  * &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+@@ -24,7 +24,7 @@
+  * 
+  * @author    David Giffin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">david at giffin.org</A>&gt;
+  * @author    Hans Lellelid &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">hans at xmpl.org</A>&gt;
+- * @version   $Revision: 1.17 $
++ * @version   $Revision: 1.18 $
+  * @package   creole
+  */
+ abstract class CreoleTypes {
+@@ -149,7 +149,6 @@
+         {
+             if (!isset(self::$affixMap[$creoleType])) {
+                 $e = new SQLException(&quot;Unable to return 'affix' for unknown CreoleType: &quot; . $creoleType);
+-                print $e;
+                 throw $e;
+             }
+             return self::$affixMap[$creoleType];
+
+Modified: trunk/libs/creole/SQLException.php
+===================================================================
+--- trunk/libs/creole/SQLException.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/SQLException.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -27,13 +27,13 @@
+  * @package   creole
+  */
+ class SQLException extends Exception {
+-
++    
+     /** Information that provides additional information for context of Exception (e.g. SQL statement or DSN). */
+     protected $userInfo;
+-
++    
+     /** Native RDBMS error string */
+     protected $nativeError;
+-
++    
+     /**
+      * Constructs a SQLException.
+      * @param string $msg Error message
+@@ -50,51 +50,51 @@
+             $this-&gt;setUserInfo($userinfo);
+         }
+     }
+-
++    
+     /**
+      * Sets additional user / debug information for this error.
+-     *
++     *  
+      * @param array $info
+      * @return void
+-     */
++     */ 
+     public function setUserInfo($info)
+     {
+         $this-&gt;userInfo = $info;
+-        // $this-&gt;message .= &quot; [User Info: &quot; .$this-&gt;userInfo . &quot;]&quot;;
++        $this-&gt;message .= &quot; [User Info: &quot; .$this-&gt;userInfo . &quot;]&quot;;
+     }
+-
++    
+     /**
+-     * Returns the additional / debug information for this error.
+-     *
++     * Returns the additional / debug information for this error. 
++     * 
+      * @return array hash of user info properties.
+      */
+     public function getUserInfo()
+     {
+         return $this-&gt;userInfo;
+     }
+-
++    
+     /**
+      * Sets driver native error message.
+-     *
++     *  
+      * @param string $info
+      * @return void
+-     */
++     */ 
+     public function setNativeError($msg)
+     {
+         $this-&gt;nativeError = $msg;
+-        // $this-&gt;message .= &quot; [Native Error: &quot; .$this-&gt;nativeError . &quot;]&quot;;
++        $this-&gt;message .= &quot; [Native Error: &quot; .$this-&gt;nativeError . &quot;]&quot;;
+     }
+-
++    
+     /**
+      * Gets driver native error message.
+-     *
++     * 
+      * @return string
+      */
+     public function getNativeError()
+     {
+         return $this-&gt;nativeError;
+-    }
+-
++    }        
++    
+     /**
+      * @deprecated This method only exists right now for easier compatibility w/ PHPUnit!
+      */
+
+Modified: trunk/libs/creole/common/PreparedStatementCommon.php
+===================================================================
+--- trunk/libs/creole/common/PreparedStatementCommon.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/common/PreparedStatementCommon.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,6 +1,6 @@
+ &lt;?php
+ /*
+- *  $Id: PreparedStatementCommon.php,v 1.14 2005/04/16 18:55:28 hlellelid Exp $
++ *  $Id: PreparedStatementCommon.php,v 1.16 2005/11/13 01:30:00 gamr Exp $
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  * &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+@@ -28,7 +28,7 @@
+  * to work with BLOB and CLOB values w/o needing special LOB-specific routines.
+  *
+  * @author    Hans Lellelid &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">hans at xmpl.org</A>&gt;
+- * @version   $Revision: 1.14 $
++ * @version   $Revision: 1.16 $
+  * @package   creole.common
+  */
+ abstract class PreparedStatementCommon {
+@@ -59,6 +59,21 @@
+     protected $sql;
+ 
+     /**
++     * Possibly contains a cached prepared SQL Statement.
++     * Gives an early out to replaceParams if the same
++     * query is run multiple times without changing the
++     * params.
++     * @var string
++     */
++    protected $sql_cache;
++
++    /**
++     * Flag to set if the cache is upto date or not
++     * @var boolean
++     */
++    protected $sql_cache_valid = false;
++
++    /**
+      * The string positions of the parameters in the SQL.
+      * @var array
+      */
+@@ -251,14 +266,18 @@
+      */
+     protected function replaceParams()
+     {
++    	// early out if we still have the same query ready
++    	if ( $this-&gt;sql_cache_valid === true ) {
++		return $this-&gt;sql_cache;
++	}
++
+         // Default behavior for this function is to behave in 'emulated' mode.    
+         $sql = '';    
+         $last_position = 0;
+ 
+         for ($position = 0; $position &lt; $this-&gt;positionsCount; $position++) {
+             if (!isset($this-&gt;boundInVars[$position + 1])) {
+-              throw new SQLException(
+-                'Replace params: undefined query param @postion: ' . ($position + 1) .'||' . 'Trying to execute: ' . $this-&gt;sql);
++                throw new SQLException('Replace params: undefined query param: ' . ($position + 1));
+             }
+             $current_position = $this-&gt;positions[$position];            
+             $sql .= substr($this-&gt;sql, $last_position, $current_position - $last_position);
+@@ -267,8 +286,15 @@
+         }
+         // append the rest of the query
+         $sql .= substr($this-&gt;sql, $last_position);
+-        
+-        return $sql;
++
++	// just so we dont touch anything with a blob/clob
++	if ( strlen ( $sql ) &gt; 2048 ) { 
++		$this-&gt;sql_cache = $sql;
++    		$this-&gt;sql_cache_valid = true;
++		return $this-&gt;sql_cache;
++	} else {
++		return $sql;
++	}
+     }
+ 
+     /**
+@@ -377,6 +403,7 @@
+ 		//case 'gmp':
+ 	    }
+             $setter = 'set' . ucfirst($type); // PHP types are case-insensitive, but we'll do this in case that changes
++	    $this-&gt;sql_cache_valid = false;
+             $this-&gt;$setter($paramIndex, $value);
+         }        
+     }
+@@ -391,6 +418,7 @@
+      */
+     function setArray($paramIndex, $value) 
+     {        
++	    $this-&gt;sql_cache_valid = false;
+         if ($value === null) {
+             $this-&gt;setNull($paramIndex);
+         } else {
+@@ -407,6 +435,7 @@
+      */
+     function setBoolean($paramIndex, $value) 
+     {                
++	    $this-&gt;sql_cache_valid = false;
+         if ($value === null) {
+             $this-&gt;setNull($paramIndex);
+         } else {
+@@ -420,6 +449,7 @@
+      */
+     function setBlob($paramIndex, $blob) 
+     {        
++	    $this-&gt;sql_cache_valid = false;
+         if ($blob === null) {
+             $this-&gt;setNull($paramIndex);
+         } else {
+@@ -437,6 +467,7 @@
+      */
+     function setClob($paramIndex, $clob) 
+     {
++	    $this-&gt;sql_cache_valid = false;
+         if ($clob === null) {
+             $this-&gt;setNull($paramIndex);
+         } else {      
+@@ -456,6 +487,7 @@
+      */
+     function setDate($paramIndex, $value) 
+     {
++	    $this-&gt;sql_cache_valid = false;
+         if ($value === null) {
+             $this-&gt;setNull($paramIndex);
+         } else {
+@@ -472,6 +504,7 @@
+      */
+     function setDecimal($paramIndex, $value) 
+     {
++	    $this-&gt;sql_cache_valid = false;
+         if ($value === null) {
+             $this-&gt;setNull($paramIndex);
+         } else {
+@@ -486,6 +519,7 @@
+      */
+     function setDouble($paramIndex, $value) 
+     {
++	    $this-&gt;sql_cache_valid = false;
+         if ($value === null) {
+             $this-&gt;setNull($paramIndex);
+         } else {
+@@ -500,6 +534,7 @@
+      */
+     function setFloat($paramIndex, $value) 
+     {
++	    $this-&gt;sql_cache_valid = false;
+         if ($value === null) {
+             $this-&gt;setNull($paramIndex);
+         } else {
+@@ -514,6 +549,7 @@
+      */
+     function setInt($paramIndex, $value) 
+     {
++	    $this-&gt;sql_cache_valid = false;
+         if ($value === null) {
+             $this-&gt;setNull($paramIndex);
+         } else {
+@@ -528,6 +564,7 @@
+      */
+     function setInteger($paramIndex, $value)
+     {
++	    $this-&gt;sql_cache_valid = false;
+         $this-&gt;setInt($paramIndex, $value);
+     }
+ 
+@@ -537,6 +574,7 @@
+      */
+     function setNull($paramIndex) 
+     {
++	    $this-&gt;sql_cache_valid = false;
+         $this-&gt;boundInVars[$paramIndex] = 'NULL';
+     }
+ 
+@@ -547,6 +585,7 @@
+      */
+     function setString($paramIndex, $value) 
+     {
++	    $this-&gt;sql_cache_valid = false;
+         if ($value === null) {
+             $this-&gt;setNull($paramIndex);
+         } else {
+@@ -567,6 +606,7 @@
+      */
+     function setTime($paramIndex, $value) 
+     {        
++	    $this-&gt;sql_cache_valid = false;
+         if ($value === null) {
+             $this-&gt;setNull($paramIndex);
+         } else {
+@@ -586,6 +626,7 @@
+      */
+     function setTimestamp($paramIndex, $value) 
+     {        
++	    $this-&gt;sql_cache_valid = false;
+         if ($value === null) {
+             $this-&gt;setNull($paramIndex);
+         } else {
+
+Modified: trunk/libs/creole/contrib/DebugConnection.php
+===================================================================
+--- trunk/libs/creole/contrib/DebugConnection.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/contrib/DebugConnection.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,91 +1,268 @@
+ &lt;?php
+-  /**
+-   * Debug implementation of Connection.
+-   *
+-   * This is a Connection that implements the decorator pattern, wrapping around
+-   * the true Connection object (stored in $childConnection). This Connection
+-   * tracks information about queries executed and makes that information available
+-   * for debugging purposes. The information tracked is the last query executed
+-   * on the connection (getLastExecutedQuery()) and the total number of
+-   * queries executed on the connection thus far (getNumQueriesExecuted()).
+-   *
+-   * To use this debug connection, you need to register it as a new Creole
+-   * driver that handles all connection types. To do this, call the following
+-   * before calling Creole::getConnection():
+-   *
+-   * &lt;code&gt;
+-   * Creole::registerDriver('*', 'creole.drivers.debug.DebugConnection');
+-   * &lt;/code&gt;
+-   *
+-   * The next call to Creole::getConnection() will return an instance of
+-   * DebugConnection.
+-   * 
+-   * @author Michael Sims
+-   * @package creole.drivers.debug
+-   */
+-  class DebugConnection implements Connection {
+-    /** @var Connection */
+-     private $childConnection = null;
+-     /** @var int */
+-     private $numQueriesExecuted = 0;
+-     /** @var string */
+-     private $lastExecutedQuery = '';
+-     /**
+-      * @var object Instance of PEAR Log (or other class with log() method).*/
+-     private $logger;
+-     /** 
+-      * Sets a Logger class (e.g. PEAR Log) to use for logging.
+-      * The logger class must have a log() method.  All messages are logged at default log level.
+-      * @param object $logger
+-      */
+-     public function setLogger($logger)
+-     {
+-       $this-&gt;logger = $logger;
+-     }
+-     /**
+-      * Returns the number of queries executed on this connection so far
+-      *
+-      * @return int
+-      */
+-     public function getNumQueriesExecuted()
+-     {
+-       return $this-&gt;numQueriesExecuted;
+-     }
+-     /**
+-      * Returns the last query executed on this connection
+-      *
+-      * @return string
+-      */
+-     public function getLastExecutedQuery()
+-     {
+-       return $this-&gt;lastExecutedQuery;
+-     }
+-     
+-     /**
+-      * connect()
+-      */
+-      public function connect($dsninfo, $flags = 0)
+-      {
+-        if (!($driver = Creole::getDriver($dsninfo['phptype']))) {
+-          throw new SQLException(&quot;No driver has been registered to handle connection type: $type&quot;);
+-        }		
+-        $connectionClass = Creole::import($driver);
+-        $this-&gt;childConnection = new $connectionClass();
+-        $this-&gt;log(&quot;connect(): DSN: &quot;. var_export($dsninfo, true) . &quot;, FLAGS: &quot; . var_export($flags, true));
+-        return $this-&gt;childConnection-&gt;connect($dsninfo, $flags);
+-      }	
+-      
+-      /**
+-       * @see Connection::getDatabaseInfo()
+-       */
+-      public function getDatabaseInfo()
+-      {
+-        return $this-&gt;childConnection-&gt;getDatabaseInfo();
+-      }	
+-      
+-      /**
+-       * @see Connection::getIdGenerator()
+-       */
+-      public function getIdGenerator()	
+-      {
+-        return $this-&gt;childConnection-&gt;getIdGenerator();
+	}
+	
+	/**
+	 * @see Connection::prepareStatement()
+	 */
+	public function prepareStatement($sql)
+	{
+		$this-&gt;log(&quot;prepareStatement(): $sql&quot;);
+		$obj = $this-&gt;childConnection-&gt;prepareStatement($sql);
+		$objClass = get_class($obj);		
+		return new $objClass($this, $sql);
+	}
+	
+	/**
+	 * @see Connection::createStatement()
+	 */
+	public function createStatement()
+	{
+		$obj = $this-&gt;childConnection-&gt;createStatement();
+		$objClass = get_class($obj);		
+		return new $objClass($this);
+	}
+	
+	/**
+	 * @see Connection::applyLimit()
+	 */
+	public function applyLimit(&amp;$sql, $offset, $limit)
+	{
+		$this-&gt;log(&quot;applyLimit(): $sql, offset: $offset, limit: $limit&quot;);
+		return $this-&gt;childConnection-&gt;applyLimit($sql, $offset, $limit);
+	}
+	
+	/**
+	 * @see Connection::close()
+	 */
+	public function close()
+	{
+		$this-&gt;log(&quot;close(): Closing connection.&quot;);
+		return $this-&gt;childConnection-&gt;close();
+	}
+	
+	/**
+	 * @see Connection::executeQuery()
+	 */
+	publ!
+ ic function executeQuery($sql, $fetchmode = null)
+	{
+		$this-&gt;log(&quot;executeQuery(): $sql&quot;);
+		$this-&gt;lastExecutedQuery = $sql;
+		$this-&gt;numQueriesExecuted++;
+		return $this-&gt;childConnection-&gt;executeQuery($sql, $fetchmode);	
+	}
+	
+	/**
+	 * @see Connection::executeUpdate()
+	 */
+	public function executeUpdate($sql)
+	{
+		$this-&gt;log(&quot;executeUpdate(): $sql&quot;);
+		$this-&gt;lastExecutedQuery = $sql;
+		$this-&gt;numQueriesExecuted++;
+		return $this-&gt;childConnection-&gt;executeUpdate($sql);	
+	}
+	
+	/**
+	 * @see Connection::getUpdateCount()
+	 */
+	public function getUpdateCount()
+	{
+		return $this-&gt;childConnection-&gt;getUpdateCount();
+	}
+	
+	/**
+	 * @see Connection::prepareCall()
+	 **/
+	public function prepareCall($sql)
+	{
+		$this-&gt;log(&quot;prepareCall(): $sql&quot;);
+		return $this-&gt;childConnection-&gt;prepareCall($sql);
+	}
+	
+	/**
+	 * @see Connection::getResource()
+	 */
+	public function getResource()
+	{
+		return $this-&gt;childConnection-&gt;getResource();
+	}
+	
+	/**
+	 * @see Connection::connect()
+	 */
+	public function!
+  getDSN()
+	{
+		return $this-&gt;childConnection-&gt;getDSN();
+	}
+	
+	!
+ /**
+	 * 
+@see Connection::getFlags()
+	 */
+	public function getFlags()
+	{
+		return $this-&gt;childConnection-&gt;getFlags();
+	}
+	
+	/**
+	 * @see Connection::begin()
+	 */
+	public function begin()
+	{
+		$this-&gt;log(&quot;Beginning transaction.&quot;);
+		return $this-&gt;childConnection-&gt;begin();
+	}
+	
+	/**
+	 * @see Connection::commit()
+	 */
+	public function commit()
+	{
+		$this-&gt;log(&quot;Committing transaction.&quot;);
+		return $this-&gt;childConnection-&gt;commit();
+	}
+	
+	/**
+	 * @see Connection::rollback()
+	 */
+	public function rollback()
+	{
+		$this-&gt;log(&quot;Rolling back transaction.&quot;);
+		return $this-&gt;childConnection-&gt;rollback();
+	}
+	
+	/**
+	 * @see Connection::setAutoCommit()
+	 */
+	public function setAutoCommit($bit)
+	{
+		$this-&gt;log(&quot;Setting autocommit to: &quot; . var_export($bit, true));
+		return $this-&gt;childConnection-&gt;setAutoCommit($bit);
+	}
+	
+	/**
+	 * @see Connection::getAutoCommit()
+	 */
+	public function getAutoCommit()
+	{
+		return $this-&gt;childConnection-&gt;getAutoCommit();
+	}
+	
+	/**
+	 * Private function that logs message usi!
+ ng specified logger (if provided).
+	 * @param string $msg Message to log.
+	 */
+	private function log($msg)
+	{
+		if ($this-&gt;logger) {
+			$this-&gt;logger-&gt;log($msg);
+		}
+	}
+
+}
++
++/**
++ * Debug implementation of Connection.
++ *
++ * This is a Connection that implements the decorator pattern, wrapping around
++ * the true Connection object (stored in $childConnection). This Connection
++ * tracks information about queries executed and makes that information available
++ * for debugging purposes. The information tracked is the last query executed
++ * on the connection (getLastExecutedQuery()) and the total number of
++ * queries executed on the connection thus far (getNumQueriesExecuted()).
++ *
++ * To use this debug connection, you need to register it as a new Creole
++ * driver that handles all connection types. To do this, call the following
++ * before calling Creole::getConnection():
++ *
++ * &lt;code&gt;
++ * Creole::registerDriver('*', 'creole.drivers.debug.DebugConnection');
++ * &lt;/code&gt;
++ *
++ * The next call to Creole::getConnection() will return an instance of
++ * DebugConnection.
++ *
++ * @author Michael Sims
++ * @package creole.drivers.debug
++ */
++class DebugConnection implements Connection {
++
++	/** @var Connection */
++	private $childConnection = null;
++	
++	/** @var int */
++	private $numQueriesExecuted = 0;
++	
++	/** @var string */
++	private $lastExecutedQuery = '';
++
++	/**
++	 * @var object Instance of PEAR Log (or other class with log() method).
++	 */
++	private $logger;
++	
++	/**
++	 * Sets a Logger class (e.g. PEAR Log) to use for logging.
++	 * The logger class must have a log() method.  All messages are logged at default log level.
++	 * @param object $logger
++	 */
++	public function setLogger($logger)
++	{
++		$this-&gt;logger = $logger;
++	}
++	
++	/**
++	 * Returns the number of queries executed on this connection so far
++	 *
++	 * @return int
++	 */
++	public function getNumQueriesExecuted()
++	{
++		return $this-&gt;numQueriesExecuted;
++	}
++	
++	/**
++	 * Returns the last query executed on this connection
++	 *
++	 * @return string
++	 */
++	public function getLastExecutedQuery()
++	{
++		return $this-&gt;lastExecutedQuery;
++	}
++	
++	/**
++	 * connect()
++	 */
++	public function connect($dsninfo, $flags = 0)
++	{
++		if (!($driver = Creole::getDriver($dsninfo['phptype']))) {
++			throw new SQLException(&quot;No driver has been registered to handle connection type: $type&quot;);
++		}		
++		$connectionClass = Creole::import($driver);
++		$this-&gt;childConnection = new $connectionClass();
++		$this-&gt;log(&quot;connect(): DSN: &quot;. var_export($dsninfo, true) . &quot;, FLAGS: &quot; . var_export($flags, true));
++		return $this-&gt;childConnection-&gt;connect($dsninfo, $flags);
++	}
++	
++	/**
++	 * @see Connection::getDatabaseInfo()
++	 */
++	public function getDatabaseInfo()
++	{
++		return $this-&gt;childConnection-&gt;getDatabaseInfo();
++	}
++	
++	/**
++	 * @see Connection::getIdGenerator()
++	 */
++	public function getIdGenerator()
++	{
++		return $this-&gt;childConnection-&gt;getIdGenerator();
++	}
++	
++	/**
++	 * @see Connection::isConnected()
++	 */
++	public function isConnected()
++	{
++		return $this-&gt;childConnection-&gt;isConnected();
++	}
++	
++	/**
++	 * @see Connection::prepareStatement()
++	 */
++	public function prepareStatement($sql)
++	{
++		$this-&gt;log(&quot;prepareStatement(): $sql&quot;);
++		$obj = $this-&gt;childConnection-&gt;prepareStatement($sql);
++		$objClass = get_class($obj);		
++		return new $objClass($this, $sql);
++	}
++	
++	/**
++	 * @see Connection::createStatement()
++	 */
++	public function createStatement()
++	{
++		$obj = $this-&gt;childConnection-&gt;createStatement();
++		$objClass = get_class($obj);		
++		return new $objClass($this);
++	}
++	
++	/**
++	 * @see Connection::applyLimit()
++	 */
++	public function applyLimit(&amp;$sql, $offset, $limit)
++	{
++		$this-&gt;log(&quot;applyLimit(): $sql, offset: $offset, limit: $limit&quot;);
++		return $this-&gt;childConnection-&gt;applyLimit($sql, $offset, $limit);
++	}
++	
++	/**
++	 * @see Connection::close()
++	 */
++	public function close()
++	{
++		$this-&gt;log(&quot;close(): Closing connection.&quot;);
++		return $this-&gt;childConnection-&gt;close();
++	}
++	
++	/**
++	 * @see Connection::executeQuery()
++	 */
++	public function executeQuery($sql, $fetchmode = null)
++	{
++		$this-&gt;log(&quot;executeQuery(): $sql&quot;);
++		$this-&gt;lastExecutedQuery = $sql;
++		$this-&gt;numQueriesExecuted++;
++		return $this-&gt;childConnection-&gt;executeQuery($sql, $fetchmode);	
++	}
++	
++	/**
++	 * @see Connection::executeUpdate()
++	 */
++	public function executeUpdate($sql)
++	{
++		$this-&gt;log(&quot;executeUpdate(): $sql&quot;);
++		$this-&gt;lastExecutedQuery = $sql;
++		$this-&gt;numQueriesExecuted++;
++		return $this-&gt;childConnection-&gt;executeUpdate($sql);	
++	}
++	
++	/**
++	 * @see Connection::getUpdateCount()
++	 */
++	public function getUpdateCount()
++	{
++		return $this-&gt;childConnection-&gt;getUpdateCount();
++	}
++	
++	/**
++	 * @see Connection::prepareCall()
++	 **/
++	public function prepareCall($sql)
++	{
++		$this-&gt;log(&quot;prepareCall(): $sql&quot;);
++		return $this-&gt;childConnection-&gt;prepareCall($sql);
++	}
++	
++	/**
++	 * @see Connection::getResource()
++	 */
++	public function getResource()
++	{
++		return $this-&gt;childConnection-&gt;getResource();
++	}
++	
++	/**
++	 * @see Connection::connect()
++	 */
++	public function getDSN()
++	{
++		return $this-&gt;childConnection-&gt;getDSN();
++	}
++	
++	/**
++	 * @see Connection::getFlags()
++	 */
++	public function getFlags()
++	{
++		return $this-&gt;childConnection-&gt;getFlags();
++	}
++	
++	/**
++	 * @see Connection::begin()
++	 */
++	public function begin()
++	{
++		$this-&gt;log(&quot;Beginning transaction.&quot;);
++		return $this-&gt;childConnection-&gt;begin();
++	}
++	
++	/**
++	 * @see Connection::commit()
++	 */
++	public function commit()
++	{
++		$this-&gt;log(&quot;Committing transaction.&quot;);
++		return $this-&gt;childConnection-&gt;commit();
++	}
++	
++	/**
++	 * @see Connection::rollback()
++	 */
++	public function rollback()
++	{
++		$this-&gt;log(&quot;Rolling back transaction.&quot;);
++		return $this-&gt;childConnection-&gt;rollback();
++	}
++	
++	/**
++	 * @see Connection::setAutoCommit()
++	 */
++	public function setAutoCommit($bit)
++	{
++		$this-&gt;log(&quot;Setting autocommit to: &quot; . var_export($bit, true));
++		return $this-&gt;childConnection-&gt;setAutoCommit($bit);
++	}
++	
++	/**
++	 * @see Connection::getAutoCommit()
++	 */
++	public function getAutoCommit()
++	{
++		return $this-&gt;childConnection-&gt;getAutoCommit();
++	}
++	
++	/**
++	 * Private function that logs message using specified logger (if provided).
++	 * @param string $msg Message to log.
++	 */
++	private function log($msg)
++	{
++		if ($this-&gt;logger) {
++			$this-&gt;logger-&gt;log($msg);
++		}
++	}
++
++}
+\ No newline at end of file
+
+Modified: trunk/libs/creole/drivers/mssql/MSSQLPreparedStatement.php
+===================================================================
+--- trunk/libs/creole/drivers/mssql/MSSQLPreparedStatement.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/drivers/mssql/MSSQLPreparedStatement.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,6 +1,6 @@
+ &lt;?php
+ /*
+- *  $Id: MSSQLPreparedStatement.php,v 1.12 2004/06/13 02:31:07 hlellelid Exp $
++ *  $Id: MSSQLPreparedStatement.php,v 1.13 2005/11/13 01:29:01 gamr Exp $
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  * &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+@@ -26,7 +26,7 @@
+  * MSSQL specific PreparedStatement functions.
+  * 
+  * @author    Hans Lellelid &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">hans at xmpl.org</A>&gt;
+- * @version   $Revision: 1.12 $
++ * @version   $Revision: 1.13 $
+  * @package   creole.drivers.mssql
+  */
+ class MSSQLPreparedStatement extends PreparedStatementCommon implements PreparedStatement {
+@@ -44,6 +44,7 @@
+      */
+     function setBlob($paramIndex, $blob) 
+     {
++    	$this-&gt;sql_cache_valid = false;
+         if ($blob === null) {
+             $this-&gt;setNull($paramIndex);
+         } else {
+
+Modified: trunk/libs/creole/drivers/mysql/MySQLPreparedStatement.php
+===================================================================
+--- trunk/libs/creole/drivers/mysql/MySQLPreparedStatement.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/drivers/mysql/MySQLPreparedStatement.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,6 +1,6 @@
+ &lt;?php
+ /*
+- *  $Id: MySQLPreparedStatement.php,v 1.6 2004/03/20 04:16:49 hlellelid Exp $
++ *  $Id: MySQLPreparedStatement.php,v 1.7 2005/12/10 13:46:55 hlellelid Exp $
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  * &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+@@ -26,19 +26,19 @@
+  * MySQL subclass for prepared statements.
+  * 
+  * @author    Hans Lellelid &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">hans at xmpl.org</A>&gt;
+- * @version   $Revision: 1.6 $
++ * @version   $Revision: 1.7 $
+  * @package   creole.drivers.mysql
+  */
+ class MySQLPreparedStatement extends PreparedStatementCommon implements PreparedStatement {        
+     
+     /**
+-     * Quotes string using native mysql function.
++     * Quotes string using native mysql function (mysql_real_escape_string()).
+      * @param string $str
+      * @return string
+      */
+     protected function escape($str)
+     {
+-        return mysql_escape_string($str);
++        return mysql_real_escape_string($str, $this-&gt;conn-&gt;getResource());
+     }    
+     
+ }
+
+Modified: trunk/libs/creole/drivers/odbc/ODBCPreparedStatement.php
+===================================================================
+--- trunk/libs/creole/drivers/odbc/ODBCPreparedStatement.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/drivers/odbc/ODBCPreparedStatement.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,6 +1,6 @@
+ &lt;?php
+ /*
+- *  $Id: ODBCPreparedStatement.php,v 1.3 2005/04/01 17:08:37 dlawson_mi Exp $
++ *  $Id: ODBCPreparedStatement.php,v 1.4 2005/11/13 01:29:01 gamr Exp $
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  * &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+@@ -27,7 +27,7 @@
+  * ODBC specific PreparedStatement functions.
+  *
+  * @author    Dave Lawson &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">dlawson at masterytech.com</A>&gt;
+- * @version   $Revision: 1.3 $
++ * @version   $Revision: 1.4 $
+  * @package   creole.drivers.odbc
+  */
+ class ODBCPreparedStatement extends PreparedStatementCommon implements PreparedStatement
+@@ -181,6 +181,7 @@
+      */
+     function setNull($paramIndex)
+     {
++    	$this-&gt;sql_cache_valid = false;
+         $this-&gt;boundInVars[$paramIndex] = null;
+     }
+ 
+@@ -192,6 +193,7 @@
+         if ($this-&gt;conn-&gt;getAdapter()-&gt;emulatePrepareStmt())
+             return parent::setBlob($paramIndex, $blob);
+             
++    	$this-&gt;sql_cache_valid = false;
+         if ($blob === null)
+         {
+             $this-&gt;setNull($paramIndex);
+@@ -220,6 +222,7 @@
+         if ($this-&gt;conn-&gt;getAdapter()-&gt;emulatePrepareStmt())
+             return parent::setClob($paramIndex, $clob);
+ 
++    	$this-&gt;sql_cache_valid = false;
+         if ($clob === null)
+         {
+             $this-&gt;setNull($paramIndex);
+@@ -240,4 +243,4 @@
+         $this-&gt;boundInVars[$paramIndex] = &quot;'&quot; . $this-&gt;escape($clob) . &quot;'&quot;;
+     }
+ 
+-}
+\ No newline at end of file
++}
+
+Modified: trunk/libs/creole/drivers/oracle/OCI8PreparedStatement.php
+===================================================================
+--- trunk/libs/creole/drivers/oracle/OCI8PreparedStatement.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/drivers/oracle/OCI8PreparedStatement.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -1,6 +1,6 @@
+ &lt;?php
+ /*
+- *  $Id: OCI8PreparedStatement.php,v 1.23 2005/10/06 20:42:52 sethr Exp $
++ *  $Id: OCI8PreparedStatement.php,v 1.25 2005/11/21 17:54:11 sethr Exp $
+  *
+  * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS
+  * &quot;AS IS&quot; AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT
+@@ -27,7 +27,7 @@
+  * 
+  * @author    David Giffin &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">david at giffin.org</A>&gt;
+  * @author    Hans Lellelid &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">hans at xmpl.org</A>&gt;
+- * @version   $Revision: 1.23 $
++ * @version   $Revision: 1.25 $
+  * @package   creole.drivers.oracle
+  */
+ class OCI8PreparedStatement extends PreparedStatementCommon implements PreparedStatement {
+@@ -141,8 +141,9 @@
+ 
+         if($this-&gt;resultSet) $this-&gt;resultSet-&gt;close();
+         $this-&gt;resultSet = null; // reset
+-        
++
+         $stmt = oci_parse($this-&gt;conn-&gt;getResource(), $this-&gt;sqlToOracleBindVars($this-&gt;sql));
++
+         if (!$stmt) {
+             throw new SQLException(&quot;Unable to prepare update&quot;, $this-&gt;conn-&gt;nativeError(), $this-&gt;sqlToOracleBindVars($this-&gt;sql));
+         }
+@@ -199,7 +200,7 @@
+             $idxName = &quot;:var&quot; . $idx;
+             if (!oci_bind_by_name($stmt, $idxName, $this-&gt;boundInVars[$idx], -1)) {
+                 throw new SQLException(&quot;Erorr binding value to placeholder &quot; . $idx);
+-            }            
++            } 
+         } // foreach
+ 
+         foreach ($this-&gt;lobs as $idx =&gt; $val) {
+@@ -409,5 +410,15 @@
+         }
+    }
+ 
++   /**
++     * @param int $paramIndex
++     * @return void
++     */
++    function setNull($paramIndex)
++    {
++        $this-&gt;boundInVars[$paramIndex] = '';
++    }
++
++
+ }
+ 
+
+Modified: trunk/libs/creole/drivers/sqlite/metadata/SQLiteDatabaseInfo.php
+===================================================================
+--- trunk/libs/creole/drivers/sqlite/metadata/SQLiteDatabaseInfo.php	2005-12-11 19:58:35 UTC (rev 297)
++++ trunk/libs/creole/drivers/sqlite/metadata/SQLiteDatabaseInfo.php	2005-12-12 19:13:00 UTC (rev 298)
+@@ -42,7 +42,7 @@
+         $result = sqlite_query($this-&gt;dblink, $sql);
+             
+         if (!$result) {
+-            throw new SQLException(&quot;Could not list tables&quot;, sqlite_error_string(sqlite_last_error($this-&gt;dblink)));
++            throw new SQLException(&quot;Could not list tables&quot;, sqlite_last_error($this-&gt;dblink));
+         }
+         
+         while ($row = sqlite_fetch_array($result)) {
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000093.html">[Medick-svn] r297 - applications/eltodo/conf
+</A></li>
+	<LI>Next message: <A HREF="000095.html">[Medick-svn] r299 - in trunk/libs/action/controller: . http
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#94">[ date ]</a>
+              <a href="thread.html#94">[ thread ]</a>
+              <a href="subject.html#94">[ subject ]</a>
+              <a href="author.html#94">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,297 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r371 - in trunk/docs/medick.website: . css i
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2006-March/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r371%20-%20in%20trunk/docs/medick.website%3A%20.%20css%20i&In-Reply-To=%3C200603081832.k28IWZ0D010541%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000159.html">
+   <LINK REL="Next"  HREF="000161.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r371 - in trunk/docs/medick.website: . css i</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r371%20-%20in%20trunk/docs/medick.website%3A%20.%20css%20i&In-Reply-To=%3C200603081832.k28IWZ0D010541%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r371 - in trunk/docs/medick.website: . css i">aurelian at berlios.de
+       </A><BR>
+    <I>Wed Mar  8 19:32:35 CET 2006</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000159.html">[Medick-svn] r369 - in branches/release_0.1: bin skel/public
+</A></li>
+        <LI>Next message: <A HREF="000161.html">[Medick-svn] r373 - in trunk/libs: action/controller/session active/record logger/outputter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#160">[ date ]</a>
+              <a href="thread.html#160">[ thread ]</a>
+              <a href="subject.html#160">[ subject ]</a>
+              <a href="author.html#160">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2006-03-08 19:32:14 +0100 (Wed, 08 Mar 2006)
+New Revision: 371
+
+Modified:
+   trunk/docs/medick.website/css/medick.css
+   trunk/docs/medick.website/documentation.html
+   trunk/docs/medick.website/i/say_web.jpg
+   trunk/docs/medick.website/i/welcome_route_web.jpg
+Log:
+ -- minor layout fixes
+
+Modified: trunk/docs/medick.website/css/medick.css
+===================================================================
+--- trunk/docs/medick.website/css/medick.css	2006-03-07 19:36:38 UTC (rev 370)
++++ trunk/docs/medick.website/css/medick.css	2006-03-08 18:32:14 UTC (rev 371)
+@@ -63,6 +63,7 @@
+   padding: 15px; 
+   margin-right: 1.0em; 
+   margin-left: 1.0em;
++  text-align: center;
+ }
+ 
+ .toc {
+
+Modified: trunk/docs/medick.website/documentation.html
+===================================================================
+--- trunk/docs/medick.website/documentation.html	2006-03-07 19:36:38 UTC (rev 370)
++++ trunk/docs/medick.website/documentation.html	2006-03-08 18:32:14 UTC (rev 371)
+@@ -25,7 +25,13 @@
+       &lt;h3&gt;&lt;a name=&quot;top&quot;&gt;Intro - Table of Contents&lt;/a&gt;&lt;/h3&gt;
+       &lt;ul class=&quot;toc&quot;&gt;
+         &lt;li&gt;&lt;a href=&quot;#what_is_this&quot;&gt;What is this?&lt;/a&gt;&lt;/li&gt;
+-        &lt;li&gt;&lt;a href=&quot;#requirements&quot;&gt;Requirements&lt;/a&gt;&lt;/li&gt;
++        &lt;li&gt;&lt;a href=&quot;#requirements&quot;&gt;Requirements&lt;/a&gt;
++          &lt;ul class=&quot;subtoc&quot;&gt;
++            &lt;li&gt;2.1&nbsp;&lt;a href=&quot;#php&quot;&gt;PHP&lt;/a&gt;&lt;/li&gt;
++            &lt;li&gt;2.2&nbsp;&lt;a href=&quot;#web_server&quot;&gt;Web Server&lt;/a&gt;&lt;/li&gt;
++            &lt;li&gt;2.3&nbsp;&lt;a href=&quot;#database_server&quot;&gt;Database&lt;/a&gt;&lt;/li&gt;
++          &lt;/ul&gt;
++        &lt;/li&gt;
+         &lt;li&gt;&lt;a href=&quot;#state&quot;&gt;Project State&lt;/a&gt;&lt;/li&gt;
+         &lt;li&gt;&lt;a href=&quot;#getting_started&quot;&gt;Getting Started&lt;/a&gt;
+           &lt;ul class=&quot;subtoc&quot;&gt;
+@@ -45,6 +51,13 @@
+             &lt;li&gt;5.4&nbsp;&lt;a href=&quot;#new_controller&quot;&gt;Controllers, Actions and URLs&lt;/a&gt;&lt;/li&gt;
+           &lt;/ul&gt;
+         &lt;/li&gt;
++        &lt;li&gt;&lt;a href=&quot;#contribute&quot;&gt;Contribute&lt;/a&gt;
++          &lt;ul class=&quot;subtoc&quot;&gt;
++            &lt;li&gt;6.1&nbsp;&lt;a href=&quot;#whats_next&quot;&gt;What's next?&lt;/a&gt;&lt;/li&gt;
++            &lt;li&gt;6.2&nbsp;&lt;a href=&quot;#coding&quot;&gt;Coding&lt;/a&gt;&lt;/li&gt;
++            &lt;li&gt;6.3&nbsp;&lt;a href=&quot;#where&quot;&gt;Where&lt;/a&gt;&lt;/li&gt;
++          &lt;/ul&gt;
++        &lt;/li&gt;
+         &lt;li&gt;&lt;a href=&quot;#history&quot;&gt;Project History&lt;/a&gt;&lt;/li&gt;
+       &lt;/ul&gt;
+ 
+@@ -82,8 +95,8 @@
+       &lt;!-- requirements --&gt;
+       &lt;div class=&quot;chapter&quot;&gt;
+         &lt;h4 class=&quot;chapter_title&quot;&gt;&lt;a name=&quot;requirements&quot;&gt;Requirements&lt;/a&gt;&lt;/h4&gt;
+-        &nbsp;&nbsp;&lt;b&gt;PHP, version 5.0.3 or higher, 5.1.2 recommended&lt;/b&gt;&lt;br /&gt;
+-        PHP Extensions and Settings:&lt;br /&gt;
++        &nbsp;&nbsp;&lt;h4&gt;&lt;a name=&quot;php&quot;&gt;2.1 PHP, version 5.0.3 or higher, 5.1.2 recommended&lt;/a&gt;&lt;/h4&gt;
++        Extensions and Settings:&lt;br /&gt;
+         &nbsp;&nbsp;&lt;i&gt;&lt;a href=&quot;<A HREF="http://php.net/simplexml">http://php.net/simplexml</A>&quot; title=&quot;Simple XML&quot; target=&quot;_blank&quot;&gt;SimpleXML&lt;/a&gt;&lt;/i&gt;, 
+         for parsing app.xml file, it's enabled by default on every php installation otherwise, 
+         compile php with: &lt;i&gt;--enable-simplexml&lt;/i&gt;&lt;br /&gt;
+@@ -93,8 +106,8 @@
+         Reflection is enabled by default on every php installation, otherwise, compile php with: &lt;i&gt;--enable-reflection&lt;/i&gt;&lt;br /&gt;
+         &nbsp;&nbsp;&lt;i&gt;&lt;a href=&quot;<A HREF="http://php.net/spl">http://php.net/spl</A>&quot; target=&quot;_blank&quot; title=&quot;Standard PHP Lybrary&quot;&gt;SPL&lt;/a&gt;&lt;/i&gt;, 
+         enabled by default on every php installation, otherwise, compile php with: &lt;i&gt;--enable-spl&lt;/i&gt;&lt;br /&gt;
+-        On Windows, this 3 extensions cannot be disabled so you will not have to activate anything to run medick.&lt;br /&gt;
+-        &nbsp;&nbsp;&lt;b&gt;Web Server, Apache 2.0 recommended&lt;/b&gt;&lt;br /&gt;
++        On Windows, this 3 extensions cannot be disabled so you will not have to activate anything to run medick.
++        &nbsp;&nbsp;&lt;h4&gt;&lt;a name=&quot;web_server&quot;&gt;2.2 Web Server, Apache 2.0 recommended&lt;/a&gt;&lt;/h4&gt;
+         Alltrough I tested medick with &lt;a 
+           href=&quot;<A HREF="http://www.lighttpd.net/">http://www.lighttpd.net/</A>&quot; 
+           target=&quot;_blank&quot; 
+@@ -122,8 +135,8 @@
+         &nbsp;&nbsp;&lt;i&gt;&lt;a 
+             href=&quot;<A HREF="http://httpd.apache.org/docs/2.0/mod/mod_rewrite.html">http://httpd.apache.org/docs/2.0/mod/mod_rewrite.html</A>&quot;
+             title=&quot;Apache Module mod_rewrite&quot;
+-            target=&quot;_blank&quot;&gt;mod_rewrite&lt;/a&gt;&lt;/i&gt; for nice URLs.&lt;br /&gt;
+-        &nbsp;&nbsp;&lt;b&gt;Database Server&lt;/b&gt;&lt;br /&gt;
++            target=&quot;_blank&quot;&gt;mod_rewrite&lt;/a&gt;&lt;/i&gt; for nice URLs.
++        &nbsp;&nbsp;&lt;h4&gt;&lt;a name=&quot;database_server&quot;&gt;2.3 Database Server&lt;/a&gt;&lt;/h4&gt;
+         If you are going to use a database as a backend for your application, 
+         medick commes with &lt;a 
+           href=&quot;<A HREF="http://creole.phpdb.org">http://creole.phpdb.org</A>&quot; 
+@@ -303,7 +316,7 @@
+               width=&quot;400&quot; 
+               alt=&quot;Medick Welcome Screen&quot;
+               title=&quot;Medick Welcome Screen&quot;/&gt;
+-            &lt;center&gt;Click on image for a larger view.&lt;/center&gt;
++            &lt;br /&gt;Click on image for a larger view.
+             &lt;/a&gt;
+         &lt;/div&gt;
+         &nbsp;&nbsp;You should see the &quot;Welcome to Medick&quot; page as shown on my screenshoot. 
+@@ -320,7 +333,7 @@
+               width=&quot;400&quot;
+               alt=&quot;Medick Routing Exception&quot;
+               title=&quot;Medick Routing Exception&quot;/&gt;
+-              &lt;center&gt;Click on image for a larger view.&lt;/center&gt;
++              &lt;br /&gt;Click on image for a larger view.
+           &lt;/a&gt;
+         &lt;/div&gt;
+         &lt;br /&gt;
+@@ -349,7 +362,7 @@
+               width=&quot;400&quot;
+               alt=&quot;No index to invoke for this Controller&quot; 
+               title=&quot;No index to invoke for this Controller&quot;/&gt;
+-              &lt;center&gt;Click on image for a larger view.&lt;/center&gt;
++              &lt;br /&gt;Click on image for a larger view.
+           &lt;/a&gt;
+         &lt;/div&gt;
+         &lt;br /&gt;
+@@ -388,7 +401,7 @@
+               width=&quot;350&quot;
+               alt=&quot;We have an index!&quot;
+               title=&quot;We have an index!&quot;/&gt;
+-              &lt;center&gt;Click on image for a larger view.&lt;/center&gt;
++              &lt;br /&gt;Click on image for a larger view.
+           &lt;/a&gt;
+         &lt;/div&gt;
+         Reload your browser and you will see the default medick generated action: MainController#index 
+@@ -408,7 +421,7 @@
+               width=&quot;400&quot; 
+               alt=&quot;Render Text on Index&quot; 
+               title=&quot;Render Text on Index&quot;/&gt;
+-              &lt;center&gt;Click on image for a larger view.&lt;/center&gt;
++              &lt;br /&gt;Click on image for a larger view.
+           &lt;/a&gt;
+         &lt;/div&gt;
+         &nbsp;&lt;br style=&quot;clear:both&quot;/&gt;
+@@ -421,7 +434,7 @@
+               width=&quot;400&quot;
+               alt=&quot;Render Text on Index&quot;
+               title=&quot;Render Text on Index&quot;/&gt;
+-              &lt;center&gt;Click on image for a larger view.&lt;/center&gt;
++              &lt;br /&gt;Click on image for a larger view.
+           &lt;/a&gt;
+         &lt;/div&gt;
+         &lt;br /&gt;
+@@ -438,7 +451,7 @@
+               width=&quot;400&quot;
+               alt=&quot;Editing MainController&quot; 
+               title=&quot;Editing MainController&quot;/&gt;
+-              &lt;center&gt;Click on image for a larger view.&lt;/center&gt;
++              Click on image for a larger view.
+           &lt;/a&gt;
+         &lt;/div&gt;
+         &lt;b&gt;more to be added on editing maincontroller&lt;/b&gt;
+@@ -451,7 +464,7 @@
+               width=&quot;400&quot;
+               alt=&quot;Editing the Template&quot; 
+               title=&quot;Editing the Tempalate&quot;/&gt;
+-              &lt;center&gt;Click on image for a larger view.&lt;/center&gt;
++              &lt;br /&gt;Click on image for a larger view.
+           &lt;/a&gt;
+         &lt;/div&gt;
+         &lt;b&gt;more to be added on editing say template&lt;/b&gt;
+@@ -464,7 +477,7 @@
+               width=&quot;400&quot;
+               alt=&quot;The Result&quot; 
+               title=&quot;The Result&quot;/&gt;
+-              &lt;center&gt;Click on image for a larger view.&lt;/center&gt;
++              &lt;br /&gt;Click on image for a larger view.
+           &lt;/a&gt;
+         &lt;/div&gt;
+         &lt;b&gt;more to be added on editing say web&lt;/b&gt;
+@@ -477,7 +490,7 @@
+               width=&quot;400&quot;
+               alt=&quot;Editing hello.routes.php&quot; 
+               title=&quot;Editing hello.routes.php&quot;/&gt;
+-              &lt;center&gt;Click on image for a larger view.&lt;/center&gt;
++              &lt;br /&gt;Click on image for a larger view.
+           &lt;/a&gt;
+         &lt;/div&gt;
+         &lt;b&gt;more to be added on editing hello.routes.php&lt;/b&gt;
+@@ -491,7 +504,7 @@
+               width=&quot;400&quot;
+               alt=&quot;Default Application Entry&quot; 
+               title=&quot;Default Application Entry&quot;/&gt;
+-              &lt;center&gt;Click on image for a larger view.&lt;/center&gt;
++              &lt;br /&gt;Click on image for a larger view.
+           &lt;/a&gt;
+         &lt;/div&gt;
+         &lt;b&gt;more to be added on default application entry&lt;/b&gt;
+@@ -502,13 +515,13 @@
+       &lt;!-- /hello_world --&gt;
+       
+       &lt;!-- contribute --&gt;
+-      
+       &lt;div class=&quot;chapter&quot;&gt;
+         &lt;h4 class=&quot;chapter_title&quot;&gt;&lt;a name=&quot;contribute&quot;&gt;Contribute&lt;/a&gt;&lt;/h4&gt;
+-        &lt;b&gt;TBD.&lt;/b&gt;
++        &nbsp;&nbsp;&lt;h4&gt;&lt;a name=&quot;whats_next&quot;&gt;6.1 What's next?&lt;/a&gt;&lt;/h4&gt;
++        &nbsp;&nbsp;&lt;h4&gt;&lt;a name=&quot;coding&quot;&gt;6.2 Coding&lt;/a&gt;&lt;/h4&gt;
++        &nbsp;&nbsp;&lt;h4&gt;&lt;a name=&quot;where&quot;&gt;6.3 Where&lt;/a&gt;&lt;/h4&gt;
+         &lt;a href=&quot;#top&quot; class=&quot;top&quot;&gt;Top&lt;/a&gt;
+-      &lt;/div&gt;
+-      
++      &lt;/div&gt;      
+       &lt;!-- /contribute --&gt;
+       
+       &lt;!-- history --&gt;
+@@ -551,11 +564,13 @@
+   &lt;/div&gt;
+   &lt;div id=&quot;footer&quot;&gt;
+     &lt;p&gt;
+-      Medick is an &lt;a href=&quot;<A HREF="http://www.opensource.org/docs/definition.php">http://www.opensource.org/docs/definition.php</A>&quot;
+-title=&quot;Open Source Definition&quot; target=&quot;_blank&quot;&gt;open source&lt;/a&gt; project released
+-under a &lt;a href=&quot;<A HREF="http://www.opensource.org/licenses/bsd-license.php">http://www.opensource.org/licenses/bsd-license.php</A>&quot;
+-title=&quot;BSD-style LICENSE&quot; target=&quot;_blank&quot;&gt;BSD-style&lt;/a&gt; &lt;a href=&quot;/LICENSE&quot;
+-title=&quot;BSD-style Licence&quot;&gt;LICENSE&lt;/a&gt;.
++      Medick is an &lt;a 
++        href=&quot;<A HREF="http://www.opensource.org/docs/definition.php">http://www.opensource.org/docs/definition.php</A>&quot;
++	title=&quot;Open Source Definition&quot; 
++	target=&quot;_blank&quot;&gt;open source&lt;/a&gt; project released under a &lt;a 
++	href=&quot;<A HREF="http://www.opensource.org/licenses/bsd-license.php">http://www.opensource.org/licenses/bsd-license.php</A>&quot;
++	title=&quot;BSD-style LICENSE&quot; 
++	target=&quot;_blank&quot;&gt;BSD-style&lt;/a&gt; &lt;a href=&quot;/LICENSE&quot; title=&quot;BSD-style Licence&quot;&gt;LICENSE&lt;/a&gt;.
+     &lt;/p&gt;
+   &lt;/div&gt;
+ 
+
+Modified: trunk/docs/medick.website/i/say_web.jpg
+===================================================================
+(Binary files differ)
+
+Modified: trunk/docs/medick.website/i/welcome_route_web.jpg
+===================================================================
+(Binary files differ)
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000159.html">[Medick-svn] r369 - in branches/release_0.1: bin skel/public
+</A></li>
+	<LI>Next message: <A HREF="000161.html">[Medick-svn] r373 - in trunk/libs: action/controller/session active/record logger/outputter
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#160">[ date ]</a>
+              <a href="thread.html#160">[ thread ]</a>
+              <a href="subject.html#160">[ subject ]</a>
+              <a href="author.html#160">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

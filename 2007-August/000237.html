@@ -1,0 +1,554 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r457 - in exp/ar5: . conf	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-August/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r457%20-%20in%20exp/ar5%3A%20.%20conf%0A%09libs/active/record/drivers/abstract%0A%09libs/active/record/drivers/sqlite&In-Reply-To=%3C200708241437.l7OEbiAV018937%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000236.html">
+   <LINK REL="Next"  HREF="000238.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r457 - in exp/ar5: . conf	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite</H1>
+    <B>aurelian at mail.berlios.de</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r457%20-%20in%20exp/ar5%3A%20.%20conf%0A%09libs/active/record/drivers/abstract%0A%09libs/active/record/drivers/sqlite&In-Reply-To=%3C200708241437.l7OEbiAV018937%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r457 - in exp/ar5: . conf	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Fri Aug 24 16:37:44 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000236.html">[Medick-svn] r456 - in exp/ar5: . libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite
+</A></li>
+        <LI>Next message: <A HREF="000238.html">[Medick-svn] r458 - in exp/ar5: . conf db libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite libs/context/configurator	test test/libs test/mock
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#237">[ date ]</a>
+              <a href="thread.html#237">[ thread ]</a>
+              <a href="subject.html#237">[ subject ]</a>
+              <a href="author.html#237">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-08-24 16:37:39 +0200 (Fri, 24 Aug 2007)
+New Revision: 457
+
+Added:
+   exp/ar5/conf/
+   exp/ar5/conf/aymo.xml
+   exp/ar5/libs/active/record/drivers/abstract/SQLResultSet.php
+Modified:
+   exp/ar5/ar5.php
+   exp/ar5/ar5_sql.php
+   exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php
+   exp/ar5/libs/active/record/drivers/sqlite/sqlite.php
+Log:
+ -- using configurator
+
+Modified: exp/ar5/ar5.php
+===================================================================
+--- exp/ar5/ar5.php	2007-08-22 12:05:02 UTC (rev 456)
++++ exp/ar5/ar5.php	2007-08-24 14:37:39 UTC (rev 457)
+@@ -3,27 +3,26 @@
+ 
+ set_include_path('libs');
+ 
++// medick base stuff
+ include_once('ar5_base.php');
+-
+-// include_once('context/configurator/XMLConfigurator.php');
+-
++// not yet ported classes
++include_once('ar5_sql.php');
++// medick trunk ported classes
++include_once('context/configurator/XMLConfigurator.php');
++include_once('active/support/Inflector.php');
++// active record helpers
+ include_once('active/record/SQLField.php');
+ include_once('active/record/SQLBuilder.php');
+ include_once('active/record/SQLCommand.php');
+-
++// abstract hooks
+ include_once('active/record/drivers/abstract/SQLConnection.php');
+ include_once('active/record/drivers/abstract/SQLPreparedStatement.php');
++include_once('active/record/drivers/abstract/SQLResultSet.php');
+ include_once('active/record/drivers/abstract/SQLTableInfo.php');
+-
+-include_once('ar5_sql.php');
+-
++// specific driver
+ include_once('active/record/drivers/sqlite/sqlite.php');
+ 
+-include_once('active/support/Inflector.php');
+-// include_once('active/support/Reflector.php');
+ 
+-class ActiveRecordException extends MedickException { }
+-
+ class ActiveRecord extends Object {
+ 
+   protected $__class_name;
+@@ -41,6 +40,9 @@
+     }
+   }
+ 
++  // ----------
++  // magick
++  // ----------
+   public function __set($name, $value) {
+     if( isset($this-&gt;__fields[$name]) ) return $this-&gt;__fields[$name]-&gt;alter( $value );
+     throw new ActiveRecordException('No such field &quot;' . $name . '&quot;');
+@@ -51,10 +53,16 @@
+     throw new ActiveRecordException('No such field &quot;' . $name . '&quot;');
+   }
+ 
++  // ----------
++  // convenient public methods
++  // ----------
+   public function getPrimaryKey() {
+     return $this-&gt;__primary_key;
+   }
+ 
++  // ----------
++  // alter data
++  // ----------
+   public function save() {
+     return $this-&gt;__primary_key-&gt;isAffected() ? $this-&gt;update() : $this-&gt;insert();
+   }
+@@ -77,6 +85,9 @@
+     $this-&gt;performQuery($sql, $fields);
+   }
+ 
++  // ----------
++  // internal helpers
++  // ----------
+   private function performQuery( $sql, $fields ) {
+     $stmt= self::connection()-&gt;prepare( $sql );
+     $stmt-&gt;populateValues( $fields );
+@@ -94,6 +105,10 @@
+     return array_walk( $this-&gt;__fields, array($this,'__notAffected'));
+   }
+ 
++  // ---------
++  // internal callbacks
++  // ---------
++
+   // callback for array_filter
+   private function __affectedField( SQLField $field ) {
+     return $field-&gt;isAffected();
+@@ -111,15 +126,26 @@
+   // -----------
+   // static
+   // -----------
+-  protected static $__table_info = null;
+-  protected static $__connection = null;
++  private static $__connection     = null;
++  private static $__connection_dsn = array();
++  private static $__connection_key = '';
+ 
++  protected static $__connection_dsn_id = null;
++
++  public static function setConnectionDsn( IConfigurator $config ) {
++    self::$__connection_dsn= $config-&gt;getDatabaseDsn( self::$__connection_dsn_id );
++    ksort(self::$__connection_dsn);
++    self::$__connection_key= crc32(serialize( self::$__connection_dsn ));
++  }
++
+   public static function connection() {
+-    if(self::$__connection===null) {
+-      self::$__connection= new SQLiteConnection();
+-      self::$__connection-&gt;connect();
++    if( !isset( self::$__connection[self::$__connection_key] ) ) {
++      // todo: load driver connection implementation.
++      $class = new ReflectionClass( SQLConnection::$__drivers[self::$__connection_dsn['phptype']] . 'Connection' );
++      self::$__connection[self::$__connection_key] = $class-&gt;newInstance();
++      self::$__connection[self::$__connection_key]-&gt;connect( self::$__connection_dsn );
+     }
+-    return self::$__connection;
++    return self::$__connection[self::$__connection_key];
+   }
+ 
+   public static function find() {
+@@ -132,6 +158,11 @@
+ 
+ }
+ 
++
++// ----------
++// tests :)
++// ----------
++
+ class User extends ActiveRecord { 
+ 
+   public static function find() {
+@@ -141,6 +172,8 @@
+ 
+ }
+ 
++$config= new XMLConfigurator('conf/aymo.xml', 'test');
++ActiveRecord::setConnectionDsn( $config );
+ 
+ $u = new User();
+ $u-&gt;firstname= 'aurelian2';
+
+Modified: exp/ar5/ar5_sql.php
+===================================================================
+--- exp/ar5/ar5_sql.php	2007-08-22 12:05:02 UTC (rev 456)
++++ exp/ar5/ar5_sql.php	2007-08-24 14:37:39 UTC (rev 457)
+@@ -3,6 +3,8 @@
+ 
+ class SQLException extends MedickException {  }
+ 
++class ActiveRecordException extends MedickException { }
++
+ // xxx.
+ class SQLType extends Object {
+ 
+@@ -17,43 +19,3 @@
+ 
+ }
+ 
+-abstract class SQLResultSet extends Object implements ArrayAccess {
+-
+-  protected $result, $connection;
+-  protected $row= array();
+-
+-  public function SQLResultSet($result, SQLConnection $connection) {
+-    $this-&gt;result= $result;
+-    $this-&gt;connection  = $connection;
+-  }
+-
+-  public function offsetExists($offset) {
+-    return isset( $this-&gt;row[$offset] );
+-  }
+-
+-  public function offsetGet($offset) {
+-    return $this-&gt;row[$offset];
+-  }
+-
+-  public function offsetSet($offset, $value) {
+-    throw new MedickError(&quot;A ResultSet is read-only!&quot;);
+-  }
+-
+-  public function offsetUnset($offset) {
+-    throw new MedickError(&quot;A ResultSet is read-only!&quot;);
+-  }
+-
+-  public function getRow() { 
+-    return $this-&gt;row;
+-  }
+-
+-  public function __get($name) {
+-    if(isset($this-&gt;row[$name])) return $this-&gt;row[$name];
+-    throw new SQLException('Cannot get the value of &quot;' . $name . '&quot; no such field!');
+-  }
+-
+-  abstract public function next();
+-
+-}
+-
+-
+
+Added: exp/ar5/conf/aymo.xml
+===================================================================
+--- exp/ar5/conf/aymo.xml	2007-08-22 12:05:02 UTC (rev 456)
++++ exp/ar5/conf/aymo.xml	2007-08-24 14:37:39 UTC (rev 457)
+@@ -0,0 +1,95 @@
++&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;
++&lt;!-- 
++ ! $Id$
++ ! --&gt;
++&lt;application name=&quot;aymo&quot;&gt;
++    &lt;!-- localhost environment --&gt;
++    &lt;environment name=&quot;localhost&quot;&gt;
++        &lt;!-- general properties --&gt;
++        &lt;properties&gt;
++            &lt;path&gt;/W/medick/applications/aymo&lt;/path&gt;
++        &lt;/properties&gt;
++        &lt;!-- web context --&gt;
++        &lt;web&gt;
++            &lt;server_name&gt;<A HREF="http://localhost&lt;/server_name">http://localhost&lt;/server_name</A>&gt;
++            &lt;document_root&gt;/aymo&lt;/document_root&gt;
++            &lt;rewrite&gt;on&lt;/rewrite&gt;
++            &lt;!-- Session Container
++            Only CreoleSessionContainer is available.
++            It needs a database table:
++            === start ===
++            create table c_sessions (
++                `session_id`   VARCHAR (255) PRIMARY KEY,
++                `session_data` TEXT,
++                `session_lastmodified` DATETIME
++            );
++            ===  end  ===
++            NOTE: this was tested only on mysql driver
++            NOTE: to implement your own session container (handler), see ISessionContainer inteface
++            === end comment here ===
++            &lt;session&gt;
++                &lt;container&gt;action.controller.session.CreoleSessionContainer&lt;/container&gt;
++            &lt;/session&gt;
++            --&gt;
++        &lt;/web&gt;
++        &lt;!-- logger system --&gt;
++        &lt;logger&gt;
++            &lt;formatter&gt;simple&lt;/formatter&gt;
++            &lt;outputters&gt;
++                &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
++                    &lt;property name=&quot;path&quot; value=&quot;/W/medick/applications/aymo/log/aymo.log&quot; /&gt;
++                &lt;/outputter&gt;
++                &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt;
++                &lt;outputter name=&quot;mail&quot; level=&quot;3&quot;&gt;
++                    &lt;property name=&quot;subject&quot; value=&quot;Fatality on aymo&quot; /&gt;
++                    &lt;property name=&quot;address&quot; value=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">user at example.com</A>&quot; /&gt;
++                &lt;/outputter&gt;
++            &lt;/outputters&gt;
++        &lt;/logger&gt;
++        &lt;!-- database(s) settings --&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;mysql&quot;
++                 hostspec = &quot;localhost&quot;
++                 database = &quot;aymo&quot;
++                 username = &quot;root&quot;
++                 password = &quot;&quot; /&gt;
++        &lt;/database&gt;
++    &lt;/environment&gt;
++
++    &lt;!-- a sample test environment --&gt;
++    &lt;environment name=&quot;test&quot;&gt;
++        &lt;!-- general properties --&gt;
++        &lt;properties&gt;
++            &lt;path&gt;/W/medick/applications/aymo&lt;/path&gt;
++        &lt;/properties&gt;
++        &lt;!-- web context --&gt;
++        &lt;web&gt;
++            &lt;server_name&gt;<A HREF="http://exemplu.com&lt;/server_name">http://exemplu.com&lt;/server_name</A>&gt;
++            &lt;document_root&gt;/aymo&lt;/document_root&gt;
++            &lt;rewrite&gt;on&lt;/rewrite&gt;
++        &lt;/web&gt;
++        &lt;!-- logger system --&gt;
++        &lt;logger&gt;
++            &lt;formatter&gt;simple&lt;/formatter&gt;
++            &lt;outputters&gt;
++                &lt;outputter name=&quot;file&quot; level=&quot;0&quot;&gt;
++                    &lt;property name=&quot;path&quot; value=&quot;/W/medick/applications/aymo/log/aymo.log&quot; /&gt;
++                &lt;/outputter&gt;
++                &lt;outputter name=&quot;stdout&quot; level=&quot;0&quot; /&gt;
++                &lt;outputter name=&quot;mail&quot; level=&quot;3&quot;&gt;
++                    &lt;property name=&quot;subject&quot; value=&quot;Fatality on Exemplu.com::aymo&quot; /&gt;
++                    &lt;property name=&quot;address&quot; value=&quot;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">user at example.com</A>&quot; /&gt;
++                &lt;/outputter&gt;
++            &lt;/outputters&gt;
++        &lt;/logger&gt;
++        &lt;!-- database(s) settings --&gt;
++        &lt;database default=&quot;one&quot;&gt;
++            &lt;dsn id = &quot;one&quot;
++                 phptype  = &quot;sqlite&quot;
++                 database = &quot;/W/medick/applications/aymo/db/aymo.sqlite&quot; /&gt;
++        &lt;/database&gt;
++    &lt;/environment&gt;
++  
++&lt;/application&gt;
++  
+
+
+Property changes on: exp/ar5/conf/aymo.xml
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php	2007-08-22 12:05:02 UTC (rev 456)
++++ exp/ar5/libs/active/record/drivers/abstract/SQLConnection.php	2007-08-24 14:37:39 UTC (rev 457)
+@@ -3,16 +3,39 @@
+ 
+ abstract class SQLConnection extends Object {
+ 
+-  protected $resource, $database, $lastQuery;
++  /** @var array 
++   */
++  public static $__drivers= array('sqlite'=&gt;'SQLite');
+ 
+-  public function getDatabase() { return $this-&gt;database; }
+-  public function setDatabase( $database ) { $this-&gt;database=$database;}
+-  public function getResource() { return $this-&gt;resource; }
+-  public function setResource( $resource ) { $this-&gt;resource= $resource; }
+-  public function getLastQuery() { return $this-&gt;lastQuery; }
++  protected $resource; 
++  
++  protected $database;
++  
++  protected $lastQuery;
+ 
+-  abstract public function connect();
++  // return int
++  public function executeUpdate( $sql ) {
++    return $this-&gt;getUpdateCount( $this-&gt;exec( $sql ) );
++  }
+ 
++  public function getDatabase() { 
++    return $this-&gt;database;
++  }
++  
++  public function setDatabase( $database ) { 
++    $this-&gt;database=$database;
++  }
++
++  public function getResource() { 
++    return $this-&gt;resource;
++  }
++
++  public function getLastQuery() { 
++    return $this-&gt;lastQuery;
++  }
++
++  abstract public function connect( Array $dsn= array() );
++
+   abstract public function close(); 
+ 
+   // return int
+@@ -36,11 +59,6 @@
+   // return int
+   abstract public function getUpdateCount( $rs=null );
+   
+-  // return int
+-  public function executeUpdate( $sql ) {
+-    return $this-&gt;getUpdateCount( $this-&gt;exec( $sql ) );
+-  }
+-
+ }
+ 
+ 
+
+Added: exp/ar5/libs/active/record/drivers/abstract/SQLResultSet.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/abstract/SQLResultSet.php	2007-08-22 12:05:02 UTC (rev 456)
++++ exp/ar5/libs/active/record/drivers/abstract/SQLResultSet.php	2007-08-24 14:37:39 UTC (rev 457)
+@@ -0,0 +1,44 @@
++&lt;?php
++
++// $Id$
++
++abstract class SQLResultSet extends Object implements ArrayAccess {
++
++  protected $result, $connection;
++  protected $row= array();
++
++  public function SQLResultSet($result, SQLConnection $connection) {
++    $this-&gt;result= $result;
++    $this-&gt;connection  = $connection;
++  }
++
++  public function offsetExists($offset) {
++    return isset( $this-&gt;row[$offset] );
++  }
++
++  public function offsetGet($offset) {
++    return $this-&gt;row[$offset];
++  }
++
++  public function offsetSet($offset, $value) {
++    throw new SQLException(&quot;A ResultSet is read-only!&quot;);
++  }
++
++  public function offsetUnset($offset) {
++    throw new SQLException(&quot;A ResultSet is read-only!&quot;);
++  }
++
++  public function getRow() { 
++    return $this-&gt;row;
++  }
++
++  public function __get($name) {
++    if(isset($this-&gt;row[$name])) return $this-&gt;row[$name];
++    throw new SQLException('Cannot get the value of &quot;' . $name . '&quot; no such field!');
++  }
++
++  abstract public function next();
++
++}
++
++
+
+
+Property changes on: exp/ar5/libs/active/record/drivers/abstract/SQLResultSet.php
+___________________________________________________________________
+Name: svn:keywords
+   + Id
+
+Modified: exp/ar5/libs/active/record/drivers/sqlite/sqlite.php
+===================================================================
+--- exp/ar5/libs/active/record/drivers/sqlite/sqlite.php	2007-08-22 12:05:02 UTC (rev 456)
++++ exp/ar5/libs/active/record/drivers/sqlite/sqlite.php	2007-08-24 14:37:39 UTC (rev 457)
+@@ -42,7 +42,7 @@
+ class SQLiteResultSet extends SQLResultSet {
+ 
+   public function next() {
+-    $this-&gt;row= sqlite_fetch_array( $this-&gt;result );
++    $this-&gt;row= sqlite_fetch_array( $this-&gt;result, SQLITE_ASSOC );
+     return (bool)$this-&gt;row;
+   }
+ 
+@@ -89,12 +89,9 @@
+ 
+ class SQLiteConnection extends SQLConnection {
+ 
+-  public function SQLiteConnection() {
+-    $this-&gt;database= 'db/aymo.sqlite';
+-  }
+-
+-  public function connect() {
++  public function connect( Array $dsn = array() ) {
+     try {
++      $this-&gt;database= $dsn['database'];
+       $this-&gt;resource= sqlite_open( $this-&gt;database );
+     } catch (Error $err) {
+       throw new SQLException( $err-&gt;getMessage() );
+@@ -104,14 +101,15 @@
+   public function exec( $sql ) {
+    $this-&gt;lastQuery= $sql;
+     try {
+-      return sqlite_query( $this-&gt;resource, $sql, SQLITE_ASSOC );
++      return sqlite_query( $this-&gt;resource, $this-&gt;lastQuery, SQLITE_ASSOC );
+     } catch (Error $err) {
+       throw new SQLException( $err-&gt;getMessage() );
+     }
+   }
+ 
+   public function execute( $sql ) {
+-    return new SQLiteResultSet( $this-&gt;exec( $sql ), $this );
++    $this-&gt;lastQuery= $sql;
++    return new SQLiteResultSet( $this-&gt;exec( $this-&gt;lastQuery ), $this );
+   }
+ 
+   public function getUpdateCount( $rs=null ) {
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000236.html">[Medick-svn] r456 - in exp/ar5: . libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite
+</A></li>
+	<LI>Next message: <A HREF="000238.html">[Medick-svn] r458 - in exp/ar5: . conf db libs/active/record	libs/active/record/drivers/abstract	libs/active/record/drivers/sqlite libs/context/configurator	test test/libs test/mock
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#237">[ date ]</a>
+              <a href="thread.html#237">[ thread ]</a>
+              <a href="subject.html#237">[ subject ]</a>
+              <a href="author.html#237">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

@@ -1,0 +1,253 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r258 - trunk/libs/active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2005-November/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r258%20-%20trunk/libs/active/record&In-Reply-To=%3C200511061956.jA6JuHkJ026246%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000061.html">
+   <LINK REL="Next"  HREF="000063.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r258 - trunk/libs/active/record</H1>
+    <B>oancea aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r258%20-%20trunk/libs/active/record&In-Reply-To=%3C200511061956.jA6JuHkJ026246%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r258 - trunk/libs/active/record">aurelian at berlios.de
+       </A><BR>
+    <I>Sun Nov  6 20:56:17 CET 2005</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000061.html">[Medick-svn] r257 - trunk/libs/logger
+</A></li>
+        <LI>Next message: <A HREF="000063.html">[Medick-svn] r259 - trunk/libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#62">[ date ]</a>
+              <a href="thread.html#62">[ thread ]</a>
+              <a href="subject.html#62">[ subject ]</a>
+              <a href="author.html#62">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2005-11-06 20:56:17 +0100 (Sun, 06 Nov 2005)
+New Revision: 258
+
+Removed:
+   trunk/libs/active/record/ActiveRecordException.php
+   trunk/libs/active/record/RecordNotFoundException.php
+Modified:
+   trunk/libs/active/record/Base.php
+Log:
+ [ active/record ] removed Exceptions, removed imports.
+
+Deleted: trunk/libs/active/record/ActiveRecordException.php
+===================================================================
+--- trunk/libs/active/record/ActiveRecordException.php	2005-11-06 19:53:02 UTC (rev 257)
++++ trunk/libs/active/record/ActiveRecordException.php	2005-11-06 19:56:17 UTC (rev 258)
+@@ -1,38 +0,0 @@
+-&lt;?php
+-// {{{ License
+-// ///////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-// ///////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * @package locknet7.active.record
+- */
+-class ActiveRecordException extends MedickException {     }
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2005-11-06 19:53:02 UTC (rev 257)
++++ trunk/libs/active/record/Base.php	2005-11-06 19:56:17 UTC (rev 258)
+@@ -7,13 +7,13 @@
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+ //
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
++//   * Redistributions of source code must retain the above copyright notice,
++//   this list of conditions and the following disclaimer.
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
++//   this list of conditions and the following disclaimer in the documentation
++//   and/or other materials provided with the distribution.
++//   * Neither the name of locknet.ro nor the names of its contributors may
++//   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+ // THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+@@ -38,9 +38,6 @@
+ include_once('active/record/QueryBuilder.php');
+ include_once('active/support/Inflector.php');
+ include_once('active/record/Association.php');
+-// Errors and Exceptions.
+-include_once('active/record/ActiveRecordException.php');
+-include_once('active/record/RecordNotFoundException.php');
+ // 3-rd party.
+ include_once('creole/Creole.php');
+ 
+@@ -62,15 +59,15 @@
+     protected $logger;
+ 
+     // {{{ static members
+-    
++
+     /** @var Connection
+         database connection*/
+     protected static $conn;
+-    
+-    /** @var string 
++
++    /** @var string
+         current table name */
+     protected static $table_name;
+-    
++
+     // }}}
+ 
+     /**
+@@ -81,14 +78,14 @@
+             self::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn());
+         }
+     }
+-    
++
+     /**
+      * Force a closing of the database connection
+      */
+     public static function close() {
+         self::$conn = Creole::getConnection(Registry::get('__configurator')-&gt;getDatabaseDsn())-&gt;close();
+     }
+-    
++
+     /**
+      * Constructor
+      *
+@@ -324,7 +321,7 @@
+     }
+ 
+     private function getInsertSql() {
+-        return 'INSERT INTO ' . self::$table_name 
++        return 'INSERT INTO ' . self::$table_name
+                . ' (' . implode(',', $this-&gt;fields-&gt;getAffectedFieldsNames()) . ')'
+                . ' VALUES (' . substr(str_repeat('?,', count($this-&gt;fields-&gt;getAffectedFields())), 0, -1) . ')';
+     }
+@@ -377,7 +374,7 @@
+             }
+             $stmt = self::$conn-&gt;prepareStatement($query-&gt;buildQuery());
+             $stmt-&gt;setInt(1, $params[0]);
+-            $rs   = $stmt-&gt;executeQuery();  
++            $rs   = $stmt-&gt;executeQuery();
+             if ($rs-&gt;getRecordCount() == 1) {
+                 $rs-&gt;next();
+                 return $class-&gt;newInstance($rs-&gt;getRow());
+
+Deleted: trunk/libs/active/record/RecordNotFoundException.php
+===================================================================
+--- trunk/libs/active/record/RecordNotFoundException.php	2005-11-06 19:53:02 UTC (rev 257)
++++ trunk/libs/active/record/RecordNotFoundException.php	2005-11-06 19:56:17 UTC (rev 258)
+@@ -1,40 +0,0 @@
+-&lt;?php
+-// {{{ License
+-//////////////////////////////////////////////////////////////////////////////////
+-//
+-// Copyright (c) 2005 Oancea Aurelian &lt;<A HREF="https://lists.berlios.de/mailman/listinfo/medick-svn">aurelian at locknet.ro</A>&gt;
+-//
+-// Redistribution and use in source and binary forms, with or without
+-// modification, are permitted provided that the following conditions are met:
+-//
+-//   * Redistributions of source code must retain the above copyright notice, 
+-//   this list of conditions and the following disclaimer. 
+-//   * Redistributions in binary form must reproduce the above copyright notice,
+-//   this list of conditions and the following disclaimer in the documentation 
+-//   and/or other materials provided with the distribution. 
+-//   * Neither the name of locknet.ro nor the names of its contributors may 
+-//   be used to endorse or promote products derived from this software without 
+-//   specific prior written permission.
+-//
+-// THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS &quot;AS IS&quot;
+-// AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+-// IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE
+-// DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE LIABLE
+-// FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL
+-// DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR
+-// SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER
+-// CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY,
+-// OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
+-// OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+-// 
+-// $Id$
+-// 
+-//////////////////////////////////////////////////////////////////////////////////
+-// }}}
+-
+-/**
+- * @package locknet7.active.record
+- */
+-
+-class RecordNotFoundException extends ActiveRecordException { }
+-
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000061.html">[Medick-svn] r257 - trunk/libs/logger
+</A></li>
+	<LI>Next message: <A HREF="000063.html">[Medick-svn] r259 - trunk/libs/medick
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#62">[ date ]</a>
+              <a href="thread.html#62">[ thread ]</a>
+              <a href="subject.html#62">[ subject ]</a>
+              <a href="author.html#62">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>

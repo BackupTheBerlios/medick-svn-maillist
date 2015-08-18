@@ -1,0 +1,227 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML>
+ <HEAD>
+   <TITLE> [Medick-svn] r446 - in trunk/libs: action/controller active/record
+   </TITLE>
+   <LINK REL="Index" HREF="http://lists.berlios.de/pipermail/medick-svn/2007-July/index.html" >
+   <LINK REL="made" HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r446%20-%20in%20trunk/libs%3A%20action/controller%20active/record&In-Reply-To=%3C200707212202.l6LM2G4D024579%40sheep.berlios.de%3E">
+   <META NAME="robots" CONTENT="index,nofollow">
+   <style type="text/css">
+       pre {
+           white-space: pre-wrap;       /* css-2.1, curent FF, Opera, Safari */
+           }
+   </style>
+   <META http-equiv="Content-Type" content="text/html; charset=us-ascii">
+   <LINK REL="Previous"  HREF="000225.html">
+   <LINK REL="Next"  HREF="000229.html">
+ </HEAD>
+ <BODY BGCOLOR="#ffffff">
+   <H1>[Medick-svn] r446 - in trunk/libs: action/controller active/record</H1>
+    <B>aurelian at BerliOS</B> 
+    <A HREF="mailto:medick-svn%40lists.berlios.de?Subject=Re%3A%20%5BMedick-svn%5D%20r446%20-%20in%20trunk/libs%3A%20action/controller%20active/record&In-Reply-To=%3C200707212202.l6LM2G4D024579%40sheep.berlios.de%3E"
+       TITLE="[Medick-svn] r446 - in trunk/libs: action/controller active/record">aurelian at mail.berlios.de
+       </A><BR>
+    <I>Sun Jul 22 00:02:16 CEST 2007</I>
+    <P><UL>
+        <LI>Previous message: <A HREF="000225.html">[Medick-svn] r445 - trunk/bin
+</A></li>
+        <LI>Next message: <A HREF="000229.html">[Medick-svn] r447 - trunk/libs/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#226">[ date ]</a>
+              <a href="thread.html#226">[ thread ]</a>
+              <a href="subject.html#226">[ subject ]</a>
+              <a href="author.html#226">[ author ]</a>
+         </LI>
+       </UL>
+    <HR>  
+<!--beginarticle-->
+<PRE>Author: aurelian
+Date: 2007-07-22 00:02:15 +0200 (Sun, 22 Jul 2007)
+New Revision: 446
+
+Modified:
+   trunk/libs/action/controller/Base.php
+   trunk/libs/active/record/Base.php
+   trunk/libs/active/record/Field.php
+   trunk/libs/active/record/Validator.php
+Log:
+- Content-Type is set to application/json when rendering JSON
+- some typos and more on logger unification on ActiveRecord::Base
+
+Modified: trunk/libs/action/controller/Base.php
+===================================================================
+--- trunk/libs/action/controller/Base.php	2007-07-20 18:34:44 UTC (rev 445)
++++ trunk/libs/action/controller/Base.php	2007-07-21 22:02:15 UTC (rev 446)
+@@ -33,6 +33,7 @@
+ // }}}
+ 
+ include_once('action/view/Base.php');
++include_once('action/view/JSON.php');
+ 
+ /**
+  * Base Class For User Application Controllers
+@@ -429,9 +430,10 @@
+     }
+ 
+     protected function render_json($text, $status = NULL) {
+-        include_once('action/view/JSON.php');
+-        $this-&gt;response-&gt;setHeader('X-JSON', '('.JSON::encode($text).')');
+-        $this-&gt;render_text('', $status);
++        $this-&gt;response-&gt;setContentType('application/json');
++        $text= JSON::encode($text);
++        $this-&gt;response-&gt;setHeader('X-JSON', '('.$text.')');
++        $this-&gt;render_text($text, $status);
+     }
+ 
+     /**
+
+Modified: trunk/libs/active/record/Base.php
+===================================================================
+--- trunk/libs/active/record/Base.php	2007-07-20 18:34:44 UTC (rev 445)
++++ trunk/libs/active/record/Base.php	2007-07-21 22:02:15 UTC (rev 446)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+@@ -167,7 +167,7 @@
+             return Association::resolve($this, $name)-&gt;execute();
+         } catch (AssociationNotFoundException $anfEx) {
+             throw new ActiveRecordException(
+-                'Cannot Get the value of filed: `' . $name . '`. No such filed!', $anfEx-&gt;getMessage() );
++                'Cannot Get the value of field: `' . $name . '`. No such field!', $anfEx-&gt;getMessage() );
+         }
+     }
+     
+@@ -267,9 +267,9 @@
+     }
+     
+     /**
+-     * Check if it has a Filed with the given name
++     * Check if it has a Field with the given name
+      *
+-     * @param string Filed name
++     * @param string Field name
+      * @return bool
+      */ 
+     public function hasField($name) {
+@@ -296,7 +296,7 @@
+     }
+     
+     /**
+-     * It gets the Filed that is Primary Key on this table
++     * It gets the Field that is Primary Key on this table
+      *
+      * @return Field
+      */ 
+@@ -343,6 +343,7 @@
+         foreach ($this-&gt;fields as $field) {
+             if ($field-&gt;hasErrors()) {
+                 foreach($field-&gt;getErrors() as $error) {
++                    // $this-&gt;errors[$field-&gt;getName()][] = $error;
+                     $this-&gt;errors[] = $error;
+                 }
+                 // $this-&gt;errors= $field-&gt;getErrors();
+@@ -523,7 +524,7 @@
+         ActiveRecord::populateStmtValues($stmt, $this-&gt;getAffectedFields());
+         $af_rows = $stmt-&gt;executeUpdate();
+         $stmt-&gt;close();
+-        Registry::get('__logger')-&gt;debug('Query: ' . ActiveRecord::$conn-&gt;lastQuery);
++        Registry::get('__logger')-&gt;debug(sprintf(&quot;[Medick] &gt;&gt; SQLQuery\n\t%s&quot;, ActiveRecord::$conn-&gt;lastQuery));
+         // $this-&gt;_reset();
+         return $af_rows;
+     }
+@@ -604,7 +605,7 @@
+      */ 
+     protected static function execute($sql) {
+         $r= ActiveRecord::connection()-&gt;executeQuery($sql);
+-        Registry::get('__logger')-&gt;debug(ActiveRecord::$conn-&gt;lastQuery);
++        Registry::get('__logger')-&gt;debug( ActiveRecord::$conn-&gt;lastQuery );
+         return $r;
+     }
+ 
+@@ -653,7 +654,7 @@
+         if ($limit  = $builder-&gt;getLimit())  $stmt-&gt;setLimit($limit);
+         if ($offset = $builder-&gt;getOffset()) $stmt-&gt;setOffset($offset);
+         $rs= $stmt-&gt;executeQuery();
+-        Registry::get('__logger')-&gt;debug('Query: ' . ActiveRecord::$conn-&gt;lastQuery);
++        Registry::get('__logger')-&gt;debug(sprintf(&quot;[Medick] &gt;&gt; SQLQuery\n\t%s&quot;, ActiveRecord::$conn-&gt;lastQuery));
+         $stmt-&gt;close();
+         return $rs;
+     }
+
+Modified: trunk/libs/active/record/Field.php
+===================================================================
+--- trunk/libs/active/record/Field.php	2007-07-20 18:34:44 UTC (rev 445)
++++ trunk/libs/active/record/Field.php	2007-07-21 22:02:15 UTC (rev 446)
+@@ -2,7 +2,7 @@
+ // {{{ License
+ // ///////////////////////////////////////////////////////////////////////////////
+ //
+-// Copyright (c) 2005 - 2007 Oancea Aurelian &lt; aurelian [ at ] locknet [ dot ] ro &gt;
++// Copyright (c) 2005 - 2007 Aurelian Oancea &lt; aurelian [ at ] locknet [ dot ] ro &gt;
+ //
+ // Redistribution and use in source and binary forms, with or without
+ // modification, are permitted provided that the following conditions are met:
+@@ -12,7 +12,7 @@
+ //   * Redistributions in binary form must reproduce the above copyright notice,
+ //   this list of conditions and the following disclaimer in the documentation
+ //   and/or other materials provided with the distribution.
+-//   * Neither the name of Oancea Aurelian nor the names of his contributors may
++//   * Neither the name of Aurelian Oancea nor the names of his contributors may
+ //   be used to endorse or promote products derived from this software without
+ //   specific prior written permission.
+ //
+
+Modified: trunk/libs/active/record/Validator.php
+===================================================================
+--- trunk/libs/active/record/Validator.php	2007-07-20 18:34:44 UTC (rev 445)
++++ trunk/libs/active/record/Validator.php	2007-07-21 22:02:15 UTC (rev 446)
+@@ -316,7 +316,8 @@
+      * @see Validator::validates
+      */ 
+     public function validate(Field $field) {
+-        $supp= $this-&gt;record-&gt;getPrimaryKey()-&gt;getValue()===NULL ? '' : ' and ' . $this-&gt;record-&gt;getPrimaryKey()-&gt;getName() . '!=?';
++        $supp= $this-&gt;record-&gt;getPrimaryKey()-&gt;getValue()===NULL ? '' : 
++                ' and ' . $this-&gt;record-&gt;getPrimaryKey()-&gt;getName() . '!=?';
+         try {
+             ActiveRecord::build(
+                 new QueryBuilder($this-&gt;record-&gt;getClassName(), 
+
+
+</PRE>
+
+<!--endarticle-->
+    <HR>
+    <P><UL>
+        <!--threads-->
+	<LI>Previous message: <A HREF="000225.html">[Medick-svn] r445 - trunk/bin
+</A></li>
+	<LI>Next message: <A HREF="000229.html">[Medick-svn] r447 - trunk/libs/action/controller
+</A></li>
+         <LI> <B>Messages sorted by:</B> 
+              <a href="date.html#226">[ date ]</a>
+              <a href="thread.html#226">[ thread ]</a>
+              <a href="subject.html#226">[ subject ]</a>
+              <a href="author.html#226">[ author ]</a>
+         </LI>
+       </UL>
+
+<hr>
+<a href="https://lists.berlios.de/mailman/listinfo/medick-svn">More information about the Medick-svn
+mailing list</a><br>
+</body></html>
